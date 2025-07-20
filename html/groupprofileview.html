@@ -1,0 +1,586 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Group</title>
+    <link rel="stylesheet" href="../css/groupprofileview.css">
+    <link rel="stylesheet" href="../css/general.css">
+    <link rel="stylesheet" href="../css/navbar.css">
+    <link rel="stylesheet" href="../css/calender.css">
+    <link rel="stylesheet" href="../css/notificationpopup.css">
+    <link rel="stylesheet" href="../css/post.css">
+    <link rel="stylesheet" href="../css/mediaquery.css">
+    <link rel="stylesheet" href="https://unicons.iconscout.com/release/v4.0.8/css/line.css">
+</head>
+
+<body>
+    <nav>
+        <div class="container">
+            <div class="nav-left">
+                <h2 class="logo">Hanthana</h2>
+            </div>
+            <div class="nav-center">
+                <div class="search-bar">
+                    <i class="uil uil-search"></i>
+                    <input type="search" placeholder="Search...">
+                </div>
+            </div>
+            <div class="nav-right">
+                <button class="btn btn-primary">Create</button>
+                <div class="calendar-icon">
+                    <i class="uil uil-calendar-alt"></i>
+                    <div class="calendar-popup" id="calendar-popup">
+                        <div class="cal">
+                            <div class="calender">
+                                <div class="month">
+                                    <i class="uil uil-angle-left prev"></i>
+                                    <div class="date"></div>
+                                    <i class="uil uil-angle-right next"></i>
+                                </div>
+                                <div class="weekdays">
+                                    <div>Sun</div>
+                                    <div>Mon</div>
+                                    <div>Tue</div>
+                                    <div>Wed</div>
+                                    <div>Thu</div>
+                                    <div>Fri</div>
+                                    <div>Sat</div>
+                                </div>
+                                <div class="days"></div>
+                                <div class="goto-today">
+                                    <div class="goto">
+                                        <input type="text" placeholder="mm/yyyy" class="date-input">
+                                        <button class="goto-btn">Go</button>
+                                    </div>
+                                    <button class="today-btn">Today</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Post Creation Modal -->
+                    <div class="post-modal" id="postModal">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h3>Create New Post</h3>
+                                <button class="close-modal">&times;</button>
+                            </div>
+                            <div class="modal-body">
+                                <div class="post-type-selector">
+                                    <button class="post-type-btn active" data-type="general">General Post</button>
+                                    <button class="post-type-btn" data-type="event">Event Post</button>
+                                </div>
+
+                                <div class="post-content">
+                                    <div class="image-upload">
+                                        <i class="uil uil-image-upload"></i>
+                                        <p>Drag photos and videos here or click to browse</p>
+                                        <input type="file" id="postImage" accept="image/*" style="display: none;">
+                                    </div>
+
+                                    <div class="post-details">
+                                        <div class="form-group">
+                                            <label for="postCaption">Caption</label>
+                                            <textarea id="postCaption" placeholder="Write a caption..."></textarea>
+                                        </div>
+
+                                        <div class="form-group">
+                                            <label for="postTags">Tags (minimum 5, separated by commas)</label>
+                                            <input type="text" id="postTags"
+                                                placeholder="e.g., travel, srilanka, beach, vacation, sunset">
+                                            <small class="tag-count">0/5 tags</small>
+                                        </div>
+
+                                        <div class="event-details" id="eventDetails" style="display: none;">
+                                            <div class="form-group">
+                                                <label for="eventTitle">Event Title</label>
+                                                <input type="text" id="eventTitle" placeholder="Event name">
+                                            </div>
+                                            <div class="form-group">
+                                                <label for="eventDate">Date & Time</label>
+                                                <input type="datetime-local" id="eventDate">
+                                            </div>
+                                            <div class="form-group">
+                                                <label for="eventLocation">Location</label>
+                                                <input type="text" id="eventLocation" placeholder="Where is the event?">
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button class="btn btn-secondary cancel-btn">Cancel</button>
+                                <button class="btn btn-primary share-btn" disabled>Share</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="notification">
+                    <i class="uil uil-bell">
+                        <small class="notification-count">9+</small>
+                    </i>
+                    <div class="notifications-popup">
+                        <div>
+                            <div class="profile-picture">
+                                <img src="../images/profile-1.jpg" />
+                            </div>
+                            <div class="notification-body">
+                                <b>Lahiru Fernando</b> liked your photo
+                                <small class="text-muted">JUST NOW</small>
+                            </div>
+                        </div>
+                        <div>
+                            <div class="profile-picture">
+                                <img src="../images/profile-10.jpg" />
+                            </div>
+                            <div class="notification-body">
+                                <b>Minthaka Jayawardena</b> commented: "Great shot!"
+                                <small class="text-muted">15 MINUTES AGO</small>
+                            </div>
+                        </div>
+                        <div>
+                            <div class="profile-picture">
+                                <img src="../images/profile-11.jpg" />
+                            </div>
+                            <div class="notification-body">
+                                <b>Alex Silva</b> mentioned you in a post
+                                <small class="text-muted">1 HOUR AGO</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="profile-picture" id="profileDropdown">
+                    <img src="../images/profile-12.jpg">
+                    <div class="profile-dropdown">
+                        <a href="#"><i class="uil uil-user"></i> My Profile</a>
+                        <a href="#"><i class="uil uil-cog"></i> Settings</a>
+                        <a href="#"><i class="uil uil-signout"></i> notifications</a>
+                        <div class="dropdown-divider"></div>
+                        <a href="#" class="logout"><i class="uil uil-signout"></i> Logout</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <main>
+        <div class="container">
+            <!-- Left Sidebar -->
+            <div class="left">
+                <div class="profile">
+                    <div class="profile-picture">
+                        <img src="../images/4.jpg">
+                    </div>
+                    <div class="handle">
+                        <h4>Lithmal Perera</h4>
+                        <p>@lithmal</p>
+                    </div>
+                </div>
+
+                <div class="side-bar">
+                    <a class="menu-item">
+                        <i class="uil uil-home"></i>
+                        <h3>My Feed</h3>
+                    </a>
+                    <a class="menu-item">
+                        <i class="uil uil-compass"></i>
+                        <h3>Discover</h3>
+                    </a>
+                    <a class="menu-item">
+                        <i class="uil uil-calendar-alt"></i>
+                        <h3>Events</h3>
+                    </a>
+                    <a class="menu-item">
+                        <i class="uil uil-users-alt"></i>
+                        <h3>Popular</h3>
+                    </a>
+                </div>
+
+                <div class="joined-groups">
+                    <h4>Related Groups</h4>
+                    <div class="group-list">
+                        <div class="group">
+                            <div class="profile-picture">
+                                <img src="../images/gpvrelatedAC_dp.jpg">
+                            </div>
+                            <div class="group-info">
+                                <h5>Anime Collectors</h5>
+                                <p>12.5k members</p>
+                            </div>
+                        </div>
+                        <div class="group">
+                            <div class="profile-picture">
+                                <img src="../images/gpvrelatedME_dp.jpg">
+                            </div>
+                            <div class="group-info">
+                                <h5>Manga Enthusiasts</h5>
+                                <p>8.2k members</p>
+                            </div>
+                        </div>
+                        <div class="group">
+                            <div class="profile-picture">
+                                <img src="../images/gpvrelatedCS_dp.jpg">
+                            </div>
+                            <div class="group-info">
+                                <h5>Cosplay Sri Lankaa</h5>
+                                <p>5.7k members</p>
+                            </div>
+                        </div>
+                    </div>
+                    <button class="btn btn-secondary">See All Groups</button>
+                </div>
+            </div>
+
+            <div class="middle">
+
+                <!-- Group Header -->
+                <div class="profile-header">
+                    <div class="profile-cover">
+                        <img src="../images/gpvprofAAT_cover.jpg" alt="Profile Cover">
+                        <button class="edit-cover-btn">
+                            <i class="uil uil-camera"></i> Edit Cover
+                        </button>
+                    </div>
+
+                    <div class="profile-info">
+                        <div class="profile-dp-container">
+                            <div class="profile-dp">
+                                <img src="../images/gpvprofAAT_dp.jpg" alt="Profile DP">
+                                <button class="edit-dp-btn">
+                                    <i class="uil uil-camera"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="profile-details">
+                            <p class="profile-name">Anime Art Tips</h1>
+                            <p class="profile-handle">@animearttips</p>
+
+                            <div class="profile-stats">
+                                <div class="stat">
+                                    <strong>12,111</strong>
+                                    <span>Posts</span>
+                                </div>
+                                <div class="stat">
+                                    <strong>5.8K</strong>
+                                    <span>Members</span>
+                                </div>
+                            </div>
+
+                            <p class="profile-bio">Share tutorials, techniques, sketches, and fan art! Connect with
+                                fellow anime artists and improve your skills together.</p>
+
+                            <div class="profile-actions">
+                                <button class="btn btn-primary">Join</button>
+                                <button class="btn btn-secondary">Invite</button>
+                                <button class="btn btn-icon">
+                                    <i class="uil uil-ellipsis-h"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Navigation Tabs -->
+                    <div class="profile-tabs">
+                        <ul>
+                            <li class="active">
+                                <a href="#" data-tab="post">Posts</a>
+                            </li>
+                            <li>
+                                <a href="#" data-tab="about">About</a>
+                            </li>
+                            <li>
+                                <a href="#" data-tab="files">Files</a>
+                            </li>
+                            <li>
+                                <a href="#" data-tab="events">Events</a>
+                            </li>
+                            <li>
+                                <a href="#" data-tab="members">Members</a>
+                            </li>
+                            <li>
+                                <a href="#" data-tab="photos">Photos</a>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Profile Content Area -->
+                <div class="group-content">
+
+                    <!-- Posts Tab Content -->
+                    <div class="tab-content active" id="posts-content">
+                        <!-- Post Creation -->
+                        <div class="create-post">
+                            <div class="post-input">
+                                <img src="../images/4.jpg" alt="Your profile">
+                                <input type="text" placeholder="What's on your mind, Lithmal?">
+                            </div>
+                            <div class="post-options">
+                                <button class="option">
+                                    <i class="uil uil-image"></i>
+                                    <span>Photo</span>
+                                </button>
+                                <button class="option">
+                                    <i class="uil uil-video"></i>
+                                    <span>Video</span>
+                                </button>
+                                <button class="option">
+                                    <i class="uil uil-calendar-alt"></i>
+                                    <span>Event</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- FEED: Default Active Tab -->
+                        <div class="posts-feed">
+                            <div class="feed">
+                                <div class="head">
+                                    <div class="user">
+                                        <div class="profile-picture">
+                                            <img src="../images/gpvpostTY_dp.jpg">
+                                        </div>
+                                        <div class="info">
+                                            <h3>Tachi Yamamoto</h3>
+                                            <small>Colombo, 15 mins ago</small>
+                                        </div>
+                                    </div>
+                                    <i class="uil uil-ellipsis-h"></i>
+                                </div>
+                                <div class="photo">
+                                    <img src="../images/gpvpost_content1.jpg">
+                                </div>
+                                <div class="action-buttons">
+                                    <div class="interaction-buttons">
+                                        <i class="uil uil-heart"></i>
+                                        <i class="uil uil-comment"></i>
+                                        <i class="uil uil-share-alt"></i>
+                                        <button class="add-to-calendar-btn"
+                                            data-event='{"title":"Temple Visit","date":"2023-11-15T09:00:00","location":"Temple of the Tooth, Kandy","image":"../images/2.jpg"}'>
+                                            <i class="uil uil-calendar-alt"></i> Add to Calendar</button>
+                                    </div>
+                                    <i class="uil uil-bookmark"></i>
+                                </div>
+                                <div class="liked-by">
+                                    <div class="liked-users">
+                                        <img src="../images/gpvpostNJ_dp.jpg">
+                                        <img src="../images/gpvpostfun_dp1.jpg">
+                                        <img src="../images/gpvpostfun_dp2.jpg">
+                                    </div>
+                                    <p>Liked by <b>Zanka</b> and <b>187 others</b></p>
+                                </div>
+                                <div class="caption">
+                                    <p><b>Tachi Yamamoto</b> Yuji Itadori drip! Slapped a supreme drip on yuji😎! Inspiration for Supreme-level meme fits
+                                        <br><p class="post-tags">#photoshop #itadori #dripvibes #funedit #animefit #justforfun</p></p>
+                                </div>
+                                <div class="comments">View all 42 comments</div>
+                            </div>
+
+                            <div class="feed">
+                                <div class="head">
+                                    <div class="user">
+                                        <div class="profile-picture">
+                                            <img src="../images/gpvpostNJ_dp.jpg">
+                                        </div>
+                                        <div class="info">
+                                            <h3>Nijou-Jou</h3>
+                                            <small>Kandy, 1 hour ago</small>
+                                        </div>
+                                    </div>
+                                    <i class="uil uil-ellipsis-h"></i>
+                                </div>
+                                <div class="photo">
+                                    <img src="../images/gpvpost_content2.jpg">
+                                </div>
+                                <div class="action-buttons">
+                                    <div class="interaction-buttons">
+                                        <i class="uil uil-heart"></i>
+                                        <i class="uil uil-comment"></i>
+                                        <i class="uil uil-share-alt"></i>
+                                    </div>
+                                    <i class="uil uil-bookmark"></i>
+                                </div>
+                                <div class="liked-by">
+                                    <div class="liked-users">
+                                        <img src="../images/gpvpostTY_dp.jpg">
+                                        <img src="../images/gpvpostfun_dp3.jpg">
+                                        <img src="../images/gpvpostfun_dp4.jpg">
+                                    </div>
+                                    <p>Liked by <b>Tachi</b> and <b>243 others</b></p>
+                                </div>
+                                <div class="caption">
+                                    <p><b>Nijou-Jou</b> Quick sketch practice ✏️
+                                        <br><p class="post-tags">#drawing-wramup #schoolrumble</p></p>
+                                </div>
+                                <div class="comments">View all 56 comments</div>
+                            </div>
+                        </div>
+                        <!-- More posts... -->
+                    </div>
+                </div>
+
+                <!-- ABOUT TAB -->
+                <div class="tab-content" id="about-content">
+                    <h3>About This Group</h3>
+                    <p>Share tutorials, techniques, sketches, and fan art! Connect with fellow anime artists and improve your skills together.</p>
+                    <ul>
+                        <li><strong>Created:</strong> Jan 2022</li>
+                        <li><strong>Location:</strong> Sri Lanka</li>
+                        <li><strong>Privacy:</strong> Public</li>
+                    </ul>
+                </div>
+
+                <!-- FILES TAB -->
+                <div class="tab-content" id="files-content">
+                    <h3>Shared Files</h3>
+                    <ul>
+                        <li><a href="#">Anime_Tutorial.pdf</a> <small>(uploaded by Lahiru F.)</small></li>
+                        <li><a href="#">prize_list.docx</a> <small>(uploaded by Minthaka J.)</small></li>
+                    </ul>
+                </div>
+
+                <!-- EVENTS TAB -->
+                <div class="tab-content" id="events-content">
+                    <h3>Upcoming Events</h3>
+                    <div class="event-card">
+                        <h4>Hayao Miyazaki - Conveying taste through anime art</h4>
+                        <p><strong>Date:</strong> Aug 20, 2025</p>
+                        <p><strong>Location:</strong>B.M.I.C.H</p>
+                        <button class="btn btn-secondary">Interested</button>
+                    </div>
+                </div>
+
+                <!-- MEMBERS TAB -->
+                <div class="tab-content" id="members-content">
+                    <h3>Members</h3>
+                    <div class="member">
+                        <div class="profile-picture"><img src="../images/4.jpg"></div>
+                        <h5>Lithmal Perera <small>(Admin)</small></h5>
+                    </div>
+                    <div class="member">
+                        <div class="profile-picture"><img src="../images/6.jpg"></div>
+                        <h5>Minthaka Jayawardena</h5>
+                    </div>
+                    <!-- More members... -->
+                </div>
+
+                <!-- PHOTOS TAB -->
+                <div class="tab-content" id="photos-content">
+                    <div class="photo-grid">
+                        <div class="photo-item">
+                            <img src="../images/gpvpost_content1.jpg" alt="Photo 1">
+                        </div>
+                        <div class="photo-item">
+                            <img src="../images/gpvpost_content2.jpg" alt="Photo 2">
+                        </div>
+                        <div class="photo-item">
+                            <img src="../images/gpvpost_content3.jpg" alt="Photo 3">
+                        </div>
+                        <div class="photo-item">
+                            <img src="../images/gpvpost_content4.jpg" alt="Photo 4">
+                        </div>
+                        <div class="photo-item">
+                            <img src="../images/gpvpost_content5.jpg" alt="Photo 5">
+                        </div>
+                        <div class="photo-item">
+                            <img src="../images/gpvpost_content6.jpg" alt="Photo 6">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="right">
+                <!-- Group Details -->
+                <div class="group-details">
+                    <h4>Group Details</h4>
+                    <div class="detail-list">
+                        <div class="detail-item">
+                            <i class="uil uil-user"></i>
+                            <span>Private Group</span>
+                        </div>
+                        <div class="detail-item">
+                            <i class="uil uil-compass"></i>
+                            <span>Art Based</span>
+                        </div>
+                        <div class="detail-item">
+                            <i class="uil uil-home"></i>
+                            <span>Global-Interest</span>
+                        </div>
+                        <div class="detail-item">
+                            <i class="uil uil-calendar-alt"></i>
+                            <span>Created June 2018</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Top Collaborators -->
+                <div class="top-collaborators">
+                    <div class="heading">
+                        <h4>Top Collaborators</h4>
+                        <a href="#" class="see-all">See all</a>
+                    </div>
+                    <div class="creator-list">
+                        <div class="creator-card">
+                            <div class="creator-info">
+                                <img src="../images/gpvpostfun_dp1.jpg" class="creator-avatar">
+                                <div class="creator-details">
+                                    <h5>Goth bunny</h5>
+                                    <p class="creator-bio">12 mutual friends</p>
+                                </div>
+                            </div>
+                            <button class="btn btn-primary">Add Friend</button>
+                        </div>
+
+                        <div class="creator-card">
+                            <div class="creator-info">
+                                <img src="../images/gpvpostfun_dp4.jpg" class="creator-avatar">
+                                <div class="creator-details">
+                                    <h5>Naruuuuto</h5>
+                                    <p class="creator-bio">8 mutual friends</p>
+                                </div>
+                            </div>
+                            <button class="btn btn-primary">Add Friend</button>
+                        </div>
+
+                        <div class="creator-card">
+                            <div class="creator-info">
+                                <img src="../images/gpvpostfun_dp3.jpg" class="creator-avatar">
+                                <div class="creator-details">
+                                    <h5>Ozamu Dazai</h5>
+                                    <p class="creator-bio">15 mutual friends</p>
+                                </div>
+                            </div>
+                            <button class="btn btn-primary">Add Friend</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <div class="calendar-popup" id="calendarPopup">
+        <div class="calendar-popup-header">
+            <h4>Events</h4>
+            <span id="popup-date">--</span>
+        </div>
+        <div class="calendar-popup-body" id="calendarEvents">
+            <div class="no-events">
+                <i class="uil uil-calendar-slash"></i>
+                <p>No events scheduled</p>
+            </div>
+        </div>
+    </div>
+
+    <script src="../js/calender.js"></script>
+    <script src="../js/feed.js"></script>
+    <!--- Add a friend type js for four side panels -->
+    <script src="../js/genral.js"></script>
+    <script src="../js/post.js"></script>
+    <script src="../js/notificationpopup.js"></script>
+    <script src="../js/navbar.js"></script>
+    <script src="myFeed.js"></script>
+</body>
+
+</html>
