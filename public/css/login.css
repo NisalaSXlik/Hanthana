@@ -1,0 +1,181 @@
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
+
+:root {
+    --color-dark: #1e293b;
+    --color-light: #f1f5f9;
+    --color-white: #ffffff;
+    --color-primary: #0ea5e9;
+    --color-secondary: #0369a1;
+    --color-success: #10b981;
+    --color-danger: #ef4444;
+    --color-gray: #64748b;
+    
+    --border-radius: 1rem;
+    --card-border-radius: 0.5rem;
+    --btn-padding: 0.5rem 1.5rem;
+    --card-padding: 1rem;
+}
+
+
+/* Auth Page Styles */
+body {
+    margin: 0;
+    background-color: var(--color-bg);
+    font-family: 'Poppins', sans-serif;
+    color: var(--color-dark);
+}
+
+.auth-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    padding: 1rem;
+}
+
+.auth-card {
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(8px);
+    border-radius: var(--card-border-radius);
+    width: 100%;
+    max-width: 420px;
+    padding: 2.5rem;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.auth-header {
+    text-align: center;
+    margin-bottom: 2rem;
+}
+
+.auth-header .logo {
+    color: var(--color-primary);
+    font-size: 2.5rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+}
+
+.tagline {
+    color: var(--color-gray);
+    font-weight: 400;
+    margin: 0;
+    font-size: 1.1rem;
+}
+
+.auth-form {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+    margin-bottom: 1.5rem;
+}
+
+.form-group-l {
+    position: relative;
+    display: flex;
+    align-items: center;
+    border: 1px solid var(--color-light); /* This creates the box */
+    border-radius: var(--border-radius);
+    padding: 0.8rem 1.2rem;
+    transition: all 0.2s ease;
+    background: rgba(255, 255, 255, 0.7);
+    margin-bottom: 1rem; /* Added for better spacing */
+}
+
+/* Alternative minimal style without the box */
+.form-group-l.minimal {
+    border: none;
+    padding: 0;
+    background: transparent;
+}
+
+.form-group-l.minimal i {
+    position: absolute;
+    left: 1rem;
+    color: var(--color-gray);
+}
+
+.form-group-l.minimal input {
+    padding-left: 2.5rem;
+    border: 1px solid var(--color-light);
+    border-radius: var(--border-radius);
+    padding: 0.8rem 1rem 0.8rem 2.5rem;
+    width: 100%;
+}
+
+.form-group-l:focus-within {
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 2px rgba(14, 165, 233, 0.2);
+}
+
+.form-group-l i {
+    color: var(--color-gray);
+    margin-right: 0.75rem;
+    font-size: 1.1rem;
+}
+
+.form-group-l input {
+    flex: 1;
+    border: none;
+    background: transparent;
+    padding: 0.2rem 0;
+    font-size: 1rem;
+    outline: none;
+}
+
+.btn {
+    padding: var(--btn-padding);
+    border-radius: var(--border-radius);
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border: none;
+    font-size: 1rem;
+}
+
+.btn-primary {
+    background: var(--color-primary);
+    color: var(--color-white);
+}
+
+.btn-primary:hover {
+    background: var(--color-secondary);
+}
+
+.btn-block {
+    width: 100%;
+    padding: 1rem;
+}
+
+.auth-footer {
+    text-align: center;
+    font-size: 0.95rem;
+}
+
+.auth-footer a {
+    color: var(--color-primary);
+    text-decoration: none;
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+
+.auth-footer a:hover {
+    text-decoration: underline;
+}
+
+.forgot-password {
+    display: block;
+    margin-top: 1rem;
+    font-size: 0.9rem;
+}
+/* Auth Button Styles */
+.btn-login {
+    background: transparent;
+    color: var(--color-primary);
+    border: 1px solid var(--color-primary);
+    margin-right: 0.5rem;
+}
+
+.btn-login:hover {
+    background: rgba(14, 165, 233, 0.1);
+}
