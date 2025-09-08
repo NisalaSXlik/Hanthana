@@ -4,14 +4,15 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Discover | Hanthana</title>
-    <link rel="stylesheet" href="../css/general.css">
-    <link rel="stylesheet" href="../css/discover.css">
-    <link rel="stylesheet" href="../css/navbar.css"> 
-    <link rel="stylesheet" href="../css/mediaquery.css">
-    <link rel="stylesheet" href="../css/calender.css">
-    <link rel="stylesheet" href="../css/post.css">
-    <link rel="stylesheet" href="../css/myfeed.css">
-    <link rel="stylesheet" href="../css/notificationpopup.css">
+    <link rel="stylesheet" href="../../public/css/myfeed.css">
+    <link rel="stylesheet" href="../../public/css/general.css">
+    <link rel="stylesheet" href="../../public/css/discover.css">
+    <link rel="stylesheet" href="../../public/css/navbar.css"> 
+    <link rel="stylesheet" href="../../public/css/mediaquery.css">
+    <link rel="stylesheet" href="../../public/css/calender.css">
+    <link rel="stylesheet" href="../../public/css/post.css">
+    <link rel="stylesheet" href="../../public/css/myfeed.css">
+    <link rel="stylesheet" href="../../public/css/notificationpopup.css">
     <link rel="stylesheet" href="https://unicons.iconscout.com/release/v4.0.8/css/line.css">
 </head>
 <body>
@@ -121,7 +122,7 @@
                     <div class="notifications-popup">
                         <div>
                             <div class="profile-picture">
-                                <img src="../images/profile-1.jpg" />
+                                <img src="../../public/images/profile-1.jpg" />
                             </div>
                             <div class="notification-body">
                                 <b>Lahiru Fernando</b> liked your photo
@@ -130,7 +131,7 @@
                         </div>
                         <div>
                             <div class="profile-picture">
-                                <img src="../images/profile-10.jpg" />
+                                <img src="../../public/images/profile-10.jpg" />
                             </div>
                             <div class="notification-body">
                                 <b>Minthaka Jayawardena</b> commented: "Great shot!"
@@ -139,7 +140,7 @@
                         </div>
                         <div>
                             <div class="profile-picture">
-                                <img src="../images/profile-11.jpg" />
+                                <img src="../../public/images/profile-11.jpg" />
                             </div>
                             <div class="notification-body">
                                 <b>Alex Silva</b> mentioned you in a post
@@ -149,7 +150,7 @@
                     </div>
                 </div>
                 <div class="profile-picture">
-                    <img src="../images/profile-12.jpg">
+                    <img src="../../public/images/profile-12.jpg">
                         <div class="profile-dropdown">
                             <a href="#"><i class="uil uil-user"></i> My Profile</a>
                             <a href="#"><i class="uil uil-cog"></i> Settings</a>
@@ -176,7 +177,7 @@
             <div class="left">
                 <div class="profile">
                     <div class="profile-picture">
-                        <img src="../images/4.jpg">
+                        <img src="../../public/images/4.jpg">
                     </div>
                     <div class="handle">
                         <h4>Lithmal Perera</h4>
@@ -251,56 +252,56 @@
                     <div class="discover-grid">
                         <!-- 9 Discover Items -->
                         <div class="discover-item">
-                            <img src="../images/1.jpg">
+                            <img src="../../public/images/1.jpg">
                             <div class="item-overlay">
                                 <span><i class="uil uil-heart"></i> 1.2k</span>
                                 <span><i class="uil uil-comment"></i> 243</span>
                             </div>
                         </div>
                         <div class="discover-item">
-                            <img src="../images/2.jpg">
+                            <img src="../../public/images/2.jpg">
                             <div class="item-overlay">
                                 <span><i class="uil uil-heart"></i> 890</span>
                                 <span><i class="uil uil-comment"></i> 156</span>
                             </div>
                         </div>
                         <div class="discover-item">
-                            <img src="../images/3.jpg">
+                            <img src="../../public/images/3.jpg">
                             <div class="item-overlay">
                                 <span><i class="uil uil-heart"></i> 820</span>
                                 <span><i class="uil uil-comment"></i> 256</span>
                             </div>
                         </div>
                         <div class="discover-item">
-                            <img src="../images/4.jpg">
+                            <img src="../../public/images/4.jpg">
                             <div class="item-overlay">
                                 <span><i class="uil uil-heart"></i> 1.3k</span>
                                 <span><i class="uil uil-comment"></i> 250</span>
                             </div>
                         </div>
                         <div class="discover-item">
-                            <img src="../images/5.jpg">
+                            <img src="../../public/images/5.jpg">
                             <div class="item-overlay">
                                 <span><i class="uil uil-heart"></i> 8.9k</span>
                                 <span><i class="uil uil-comment"></i> 156</span>
                             </div>
                         </div>
                         <div class="discover-item">
-                            <img src="../images/6.jpg">
+                            <img src="../../public/images/6.jpg">
                             <div class="item-overlay">
                                 <span><i class="uil uil-heart"></i> 750</span>
                                 <span><i class="uil uil-comment"></i> 56</span>
                             </div>
                         </div>
                         <div class="discover-item">
-                            <img src="../images/story-1.jpg">
+                            <img src="../../public/images/story-1.jpg">
                             <div class="item-overlay">
                                 <span><i class="uil uil-heart"></i> 2.5k</span>
                                 <span><i class="uil uil-comment"></i> 216</span>
                             </div>
                         </div>
                         <div class="discover-item">
-                            <img src="../images/story-3.jpg">
+                            <img src="../../public/images/story-3.jpg">
                             <div class="item-overlay">
                                 <span><i class="uil uil-heart"></i> 8.5k</span>
                                 <span><i class="uil uil-comment"></i> 256</span>
@@ -320,7 +321,7 @@
             </div>
             <div class="trending-list">
                 <!-- Trend 1 -->
-                <div class="trending-item" style="background-image: linear-gradient(rgba(0,0,0,0.3), rgba(0,0,0,0.3)), url('../images/1.jpg')">
+                <div class="trending-item" style="background-image: linear-gradient(rgba(0,0,0,0.3), rgba(0,0,0,0.3)), url('../../public/images/1.jpg')">
                     <div class="trending-content">
                         <span class="trending-rank">1</span>
                         <div class="trending-details">
@@ -331,7 +332,7 @@
                 </div>
                 
                 <!-- Trend 2 -->
-                <div class="trending-item" style="background-image: linear-gradient(rgba(0,0,0,0.3)), url('../images/2.jpg')">
+                <div class="trending-item" style="background-image: linear-gradient(rgba(0,0,0,0.3)), url('../../public/images/2.jpg')">
                     <div class="trending-content">
                         <span class="trending-rank">2</span>
                         <div class="trending-details">
@@ -342,7 +343,7 @@
                 </div>
                 
                 <!-- Trend 3 -->
-                <div class="trending-item" style="background-image: linear-gradient(rgba(0,0,0,0.3)), url('../images/3.jpg')">
+                <div class="trending-item" style="background-image: linear-gradient(rgba(0,0,0,0.3)), url('../../public/images/3.jpg')">
                     <div class="trending-content">
                         <span class="trending-rank">3</span>
                         <div class="trending-details">
@@ -353,7 +354,7 @@
                 </div>
                 
                 <!-- Trend 4 -->
-                <div class="trending-item" style="background-image: linear-gradient(rgba(0,0,0,0.3)), url('../images/4.jpg')">
+                <div class="trending-item" style="background-image: linear-gradient(rgba(0,0,0,0.3)), url('../../public/images/4.jpg')">
                     <div class="trending-content">
                         <span class="trending-rank">4</span>
                         <div class="trending-details">
@@ -374,7 +375,7 @@
                     <div class="creator-list">
                         <div class="creator-card">
                             <div class="creator-info">
-                                <img src="../images/profile-1.jpg" class="creator-avatar">
+                                <img src="../../public/images/profile-1.jpg" class="creator-avatar">
                                 <div class="creator-details">
                                     <h5>TravelWithNisal</h5>
                                     <p class="creator-bio">Travel Photographer</p>
@@ -384,7 +385,7 @@
                         </div>
                         <div class="creator-card">
                             <div class="creator-info">
-                                <img src="../images/profile-10.jpg" class="creator-avatar">
+                                <img src="../../public/images/profile-10.jpg" class="creator-avatar">
                                 <div class="creator-details">
                                     <h5>ChefAnoma</h5>
                                     <p class="creator-bio">Food Blogger</p>
@@ -394,7 +395,7 @@
                         </div>
                         <div class="creator-card">
                             <div class="creator-info">
-                                <img src="../images/profile-11.jpg" class="creator-avatar">
+                                <img src="../../public/images/profile-11.jpg" class="creator-avatar">
                                 <div class="creator-details">
                                     <h5>TechSagara</h5>
                                     <p class="creator-bio">Tech Enthusiast</p>
@@ -404,7 +405,7 @@
                         </div>
                         <div class="creator-card">
                             <div class="creator-info">
-                                <img src="../images/profile-13.jpg" class="creator-avatar">
+                                <img src="../../public/images/profile-13.jpg" class="creator-avatar">
                                 <div class="creator-details">
                                     <h5>ArtBySachini</h5>
                                     <p class="creator-bio">Digital Artist</p>
@@ -418,14 +419,14 @@
         </div>
     </main>
 
-    
+    <?php include __DIR__ . '../templates/chat-clean.php'; ?>
 
-    <script src="../js/navbar.js"></script>
-    <script src="../js/calender.js"></script>
-    <script src="../js/notificationpopup.js"></script>
-    <script src="../js/discover.js"></script>
-    <script src="../js/genral.js"></script>
-    <script src="../js/feed.js"></script>
-    <script src="../js/post.js"></script>
+    <script src="../../public/js/navbar.js"></script>
+    <script src="../../public/js/calender.js"></script>
+    <script src="../../public/js/notificationpopup.js"></script>
+    <script src="../../public/js/discover.js"></script>
+    <script src="../../public/js/genral.js"></script>
+    <script src="../../public/js/feed.js"></script>
+    <script src="../../public/js/post.js"></script>
 </body>
 </html>

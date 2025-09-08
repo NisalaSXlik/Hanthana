@@ -4,13 +4,15 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Hanthana</title>
-    <link rel="stylesheet" href="../css/myfeed.css">
-    <link rel="stylesheet" href="../css/general.css">
-    <link rel="stylesheet" href="../css/navbar.css">
-    <link rel="stylesheet" href="../css/mediaquery.css">
-    <link rel="stylesheet" href="../css/calender.css">
-    <link rel="stylesheet" href="../css/notificationpopup.css">
-    <link rel="stylesheet" href="../css/post.css">
+    <link rel="stylesheet" href="../../public/css/myfeed.css">
+    <link rel="stylesheet" href="../../public/css/general.css">
+    <link rel="stylesheet" href="../../public/css/myFeed.css">
+    <link rel="stylesheet" href="../../public/css/navbar.css"> 
+    <link rel="stylesheet" href="../../public/css/mediaquery.css">
+    <link rel="stylesheet" href="../../public/css/calender.css">
+    <link rel="stylesheet" href="../../public/css/post.css">
+    <link rel="stylesheet" href="../../public/css/myfeed.css">
+    <link rel="stylesheet" href="../../public/css/notificationpopup.css">
     <link rel="stylesheet" href="https://unicons.iconscout.com/release/v4.0.8/css/line.css">
 </head>
 <body>
@@ -120,7 +122,7 @@
                     <div class="notifications-popup">
                         <div>
                             <div class="profile-picture">
-                                <img src="../images/profile-1.jpg" />
+                                    <img src="../../public/images/profile-1.jpg" />
                             </div>
                             <div class="notification-body">
                                 <b>Lahiru Fernando</b> liked your photo
@@ -129,7 +131,7 @@
                         </div>
                         <div>
                             <div class="profile-picture">
-                                <img src="../images/profile-10.jpg" />
+                                    <img src="../../public/images/profile-10.jpg" />
                             </div>
                             <div class="notification-body">
                                 <b>Minthaka Jayawardena</b> commented: "Great shot!"
@@ -138,7 +140,7 @@
                         </div>
                         <div>
                             <div class="profile-picture">
-                                <img src="../images/profile-11.jpg" />
+                                    <img src="../../public/images/profile-11.jpg" />
                             </div>
                             <div class="notification-body">
                                 <b>Alex Silva</b> mentioned you in a post
@@ -148,8 +150,8 @@
                     </div>
                 </div>
                 <div class="profile-picture" id="profileDropdown">
-                    <img src="../images/profile-12.jpg">
-                        <div class="profile-dropdown">
+                    <img src="../../public/images/profile-12.jpg">
+                            <div class="profile-dropdown">
                             <a href="#"><i class="uil uil-user"></i> My Profile</a>
                             <a href="#"><i class="uil uil-cog"></i> Settings</a>
                             <a href="#"><i class="uil uil-signout"></i> notifications</a>
@@ -166,7 +168,7 @@
             <div class="left">
                 <div class="profile">
                     <div class="profile-picture">
-                        <img src="../images/4.jpg">
+                            <img src="../../public/images/4.jpg">
                     </div>
                     <div class="handle">
                         <h4>Lithmal Perera</h4>
@@ -179,7 +181,7 @@
                         <i class="uil uil-home"></i>
                         <h3>My Feed</h3>
                     </a>
-                    <a href="discover.html" class="menu-item" data-target="discover">
+                    <a href="discover.php" class="menu-item" data-target="discover">
                         <i class="uil uil-compass"></i>
                         <h3>Discover</h3>
                     </a>
@@ -236,7 +238,7 @@
                         <div class="head">
                             <div class="user">
                                 <div class="profile-picture">
-                                    <img src="../images/profile-1.jpg">
+                                        <img src="../../public/images/profile-1.jpg">
                                 </div>
                                 <div class="info">
                                     <h3>Nisal Gamage</h3>
@@ -246,23 +248,23 @@
                             <i class="uil uil-ellipsis-h"></i>
                         </div>
                         <div class="photo">
-                            <img src="../images/1.jpg">
+                                <img src="../../public/images/1.jpg">
                         </div>
                         <div class="action-buttons">
                             <div class="interaction-buttons">
                                 <i class="uil uil-heart"></i>
                                 <i class="uil uil-comment"></i>
                                 <i class="uil uil-share-alt"></i>
-                                <button class="add-to-calendar-btn" data-event='{"title":"Temple Visit","date":"2023-11-15T09:00:00","location":"Temple of the Tooth, Kandy","image":"../images/2.jpg"}'>
+                                <button class="add-to-calendar-btn" data-event='{"title":"Temple Visit","date":"2023-11-15T09:00:00","location":"Temple of the Tooth, Kandy","image":"../../public/images/2.jpg"}'>
                 <i class="uil uil-calendar-alt"></i> Add to Calendar</button>
                             </div>
                             <i class="uil uil-bookmark"></i>
                         </div>
                         <div class="liked-by">
                             <div class="liked-users">
-                                <img src="../images/6.jpg">
-                                <img src="../images/1.jpg">
-                                <img src="../images/2.jpg">
+                                    <img src="../../public/images/6.jpg">
+                                    <img src="../../public/images/1.jpg">
+                                    <img src="../../public/images/2.jpg">
                             </div>
                             <p>Liked by <b>tharusha</b> and <b>187 others</b></p>
                         </div>
@@ -276,7 +278,7 @@
                         <div class="head">
                             <div class="user">
                                 <div class="profile-picture">
-                                    <img src="../images/profile-14.jpg">
+                                        <img src="../../public/images/profile-14.jpg">
                                 </div>
                                 <div class="info">
                                     <h3>Tharusha Perera</h3>
@@ -286,7 +288,7 @@
                             <i class="uil uil-ellipsis-h"></i>
                         </div>
                         <div class="photo">
-                            <img src="../images/2.jpg">
+                                <img src="../../public/images/2.jpg">
                         </div>
                         <div class="action-buttons">
                             <div class="interaction-buttons">
@@ -298,9 +300,9 @@
                         </div>
                         <div class="liked-by">
                             <div class="liked-users">
-                                <img src="../images/3.jpg">
-                                <img src="../images/4.jpg">
-                                <img src="../images/5.jpg">
+                                    <img src="../../public/images/3.jpg">
+                                    <img src="../../public/images/4.jpg">
+                                    <img src="../../public/images/5.jpg">
                             </div>
                             <p>Liked by <b>lithmal</b> and <b>243 others</b></p>
                         </div>
@@ -325,7 +327,7 @@
                     <div class="message-list">
                         <div class="message">
                             <div class="profile-picture">
-                                <img src="../images/2.jpg">
+                                    <img src="../../public/images/2.jpg">
                                 <div class="active"></div>
                             </div>
                             <div class="message-body">
@@ -335,7 +337,7 @@
                         </div>
                         <div class="message">
                             <div class="profile-picture">
-                                <img src="../images/6.jpg">
+                                    <img src="../../public/images/6.jpg">
                             </div>
                             <div class="message-body">
                                 <h5>Lahiru F.</h5>
@@ -350,7 +352,7 @@
         <div class="request">
             <div class="info">
                 <div class="profile-picture">
-                    <img src="../images/4.jpg">
+                        <img src="../../public/images/4.jpg">
                 </div>
                 <div>
                     <h5>Emma Watson</h5>
@@ -365,7 +367,7 @@
         <div class="request">
             <div class="info">
                 <div class="profile-picture">
-                    <img src="../images/2.jpg">
+                        <img src="../../public/images/2.jpg">
                 </div>
                 <div>
                     <h5>Minthaka</h5>
@@ -380,7 +382,7 @@
         <div class="request">
             <div class="info">
                 <div class="profile-picture">
-                    <img src="../images/5.jpg">
+                        <img src="../../public/images/5.jpg">
                 </div>
                 <div>
                     <h5>Lahiru</h5>
@@ -395,7 +397,7 @@
         <div class="request">
             <div class="info">
                 <div class="profile-picture">
-                    <img src="../images/1.jpg">
+                        <img src="../../public/images/1.jpg">
                 </div>
                 <div>
                     <h5>Tharusha</h5>
@@ -410,7 +412,7 @@
         <div class="request">
             <div class="info">
                 <div class="profile-picture">
-                    <img src="../images/5.jpg">
+                        <img src="../../public/images/5.jpg">
                 </div>
                 <div>
                     <h5>Nisal</h5>
@@ -441,13 +443,15 @@
         </div>
     </div>
 
-    <script src="../js/calender.js"></script>
-    <script src="../js/feed.js"></script>
-    <script src="../js/friends.js"></script>
-    <script src="../js/genral.js"></script>
-    <script src="../js/notificationpopup.js"></script>
-    <script src="../js/navbar.js"></script>
-    <script src="../js/post.js"></script>
+    <?php include __DIR__ . '../templates/chat-clean.php'; ?>
+
+    <script src="../../public/js/calender.js"></script>
+    <script src="../../public/js/feed.js"></script>
+    <script src="../../public/js/friends.js"></script>
+    <script src="../../public/js/genral.js"></script>
+    <script src="../../public/js/notificationpopup.js"></script>
+    <script src="../../public/js/navbar.js"></script>
+    <script src="../../public/js/post.js"></script>
     
 </body>
 </html>

@@ -325,13 +325,47 @@ main .container {
     font-weight: 500;
 }
 
+/* Override link styles for menu items */
+.side-bar .menu-item {
+    color: var(--color-gray);
+    text-decoration: none;
+}
+
+.side-bar .menu-item:visited,
+.side-bar .menu-item:link {
+    color: var(--color-gray);
+    text-decoration: none;
+}
+
+.side-bar .menu-item:hover {
+    background: var(--color-light);
+    color: var(--color-dark);
+}
+
+.side-bar .menu-item.active {
+    color: var(--color-primary);
+    background: rgba(14, 165, 233, 0.1);
+}
+
+.side-bar .menu-item.active:visited,
+.side-bar .menu-item.active:link {
+    color: var(--color-primary);
+}
+
+/* Ensure icons and text inherit the correct color */
+.side-bar .menu-item i,
+.side-bar .menu-item h3 {
+    color: inherit;
+}
+
 /* Groups Section Styles */
-.joined-groups {
+.joined-groups{
     background: var(--color-white);
     border-radius: var(--card-border-radius);
     padding: var(--card-padding);
     margin: 1rem 0;
 }
+
 
 .joined-groups h4 {
     margin-bottom: 1rem;
@@ -339,6 +373,19 @@ main .container {
     color: var(--color-dark);
 }
 
+.popular-groups{
+    background: var(--color-white);
+    border-radius: var(--card-border-radius);
+    padding: var(--card-padding);
+    margin: 1rem 0;
+}
+
+
+.popular-groups h4 {
+    margin-bottom: 1rem;
+    font-size: 1rem;
+    color: var(--color-dark);
+}
 .group-list {
     display: flex;
     flex-direction: column;
@@ -395,4 +442,163 @@ main .container {
 
 .btn-secondary:hover {
     background: rgba(14, 165, 233, 0.1);
+}
+
+/* Removed Google Fonts import completely - now handled in HTML head */
+:root {
+  --color-dark: #1e293b;
+  --color-light: #f1f5f9;
+  --color-white: #ffffff;
+  --color-primary: #0ea5e9;
+  --color-secondary: #0369a1;
+  --color-success: #10b981;
+  --color-danger: #ef4444;
+  --color-gray: #64748b;
+
+  --border-radius: 1rem;
+  --card-border-radius: 0.5rem;
+  --btn-padding: 0.5rem 1.5rem;
+  --card-padding: 1rem;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: "Poppins", sans-serif;
+}
+
+body {
+  background: var(--color-light);
+  color: var(--color-dark);
+  line-height: 1.6;
+}
+
+.container {
+  width: 96%;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+a {
+  text-decoration: none !important;
+}
+
+.btn {
+  padding: var(--btn-padding);
+  border-radius: var(--border-radius);
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  border: none;
+  font-size: 0.9rem;
+  text-decoration: none !important;
+}
+
+.btn:hover {
+  opacity: 0.9;
+}
+
+.btn-primary {
+  background: var(--color-primary);
+  color: var(--color-white);
+}
+
+.btn-secondary {
+  background: var(--color-light);
+  color: var(--color-primary);
+  width: 100%;
+  padding: 0.7rem;
+  font-size: 0.9rem;
+}
+
+.btn-secondary:hover {
+  background: rgba(14, 165, 233, 0.1);
+}
+
+.search-bar {
+  display: flex;
+  align-items: center;
+  background: var(--color-white);
+  border-radius: 2rem;
+  padding: 0.6rem 1rem;
+  box-shadow: 0 2px 8px rgba(14, 165, 233, 0.15);
+  transition: all 0.3s ease;
+  border: 1px solid rgba(14, 165, 233, 0.3);
+  width: 100%;
+  max-width: 400px;
+}
+
+.search-bar:hover {
+  box-shadow: 0 4px 12px rgba(14, 165, 233, 0.25);
+  border-color: var(--color-primary);
+}
+
+.search-bar i {
+  font-size: 1.1rem;
+  color: var(--color-primary);
+  margin-right: 0.5rem;
+}
+
+.search-bar input {
+  background: transparent;
+  border: none;
+  outline: none;
+  width: 100%;
+  font-size: 0.95rem;
+  color: var(--color-dark);
+  padding: 0.2rem;
+}
+
+.search-bar input::placeholder {
+  color: var(--color-gray);
+  opacity: 0.8;
+}
+
+.profile-picture {
+  width: 2.7rem;
+  height: 2.7rem;
+  position: relative;
+  margin-right: 0.5rem;
+  transition: transform 0.2s;
+}
+
+.profile-picture:active {
+  transform: scale(0.95);
+}
+
+.profile-picture img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
+  display: block;
+}
+
+.notification {
+  position: relative;
+  cursor: pointer;
+}
+
+.notification-count {
+  position: absolute;
+  top: -0.3rem;
+  right: -0.3rem;
+  background: var(--color-danger);
+  color: white;
+  border-radius: 50%;
+  font-size: 0.7rem;
+  width: 1.2rem;
+  height: 1.2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+img {
+  width: 100%;
+  height: auto;
+  display: block;
+  object-fit: cover;
+  image-rendering: auto;
 }

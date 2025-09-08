@@ -4,12 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Welcome to Hanthana</title>
+    <link rel="stylesheet" href="../../public/css/general.css">
+    <link rel="stylesheet" href="../../public/css/login.css">
+    <link rel="stylesheet" href="../../public/css/notificationpopup.css">
     <link rel="stylesheet" href="https://unicons.iconscout.com/release/v4.0.8/css/line.css">
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="../css/login.css">
-    <link rel="stylesheet" href="../css/navbar.css">
-    <link rel="stylesheet" href="../css/login.css">
-    <link rel="stylesheet" href="../css/mediaquery.css">
 </head>
 <body>
     <div class="auth-container">
@@ -30,7 +28,7 @@
         </div>
     </div>
 
-    <script src="../js/login.js"></script>
-    
+    <script src="../../public/js/login.js"></script>
 </body>
 </html>
+

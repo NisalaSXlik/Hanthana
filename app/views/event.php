@@ -6,10 +6,10 @@
     <title>Hanthana Events</title>
     
     <!-- CSS Files -->
-    <link rel="stylesheet" href="../css/general.css">
-    <link rel="stylesheet" href="../css/navbar.css">
-    <link rel="stylesheet" href="../css/event-feed.css">
-    <link rel="stylesheet" href="../css/event-modal.css">
+    <link rel="stylesheet" href="/NewHanthaneAfterProperMVC/public/css/general.css">
+    <link rel="stylesheet" href="/NewHanthaneAfterProperMVC/public/css/navbar.css">
+    <link rel="stylesheet" href="/NewHanthaneAfterProperMVC/public/css/event-feed.css">
+    <link rel="stylesheet" href="/NewHanthaneAfterProperMVC/public/css/event-modal.css">
     
     <!-- Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -193,8 +193,8 @@
     </div>
 
     <!-- JavaScript Files -->
-    <script src="../js/navbar.js"></script>
-    <script src="../js/events.js"></script>
-    <script src="../js/event-modal.js"></script>
+    <script src="/NewHanthaneAfterProperMVC/public/js/navbar.js"></script>
+    <script src="/NewHanthaneAfterProperMVC/public/js/events.js"></script>
+    <script src="/NewHanthaneAfterProperMVC/public/js/event-modal.js"></script>
 </body>
 </html>
