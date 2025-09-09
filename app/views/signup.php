@@ -4,8 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sign Up | Hanthana</title>
-    <link rel="stylesheet" href="../../public/css/general.css">
-    <link rel="stylesheet" href="../../public/css/login.css">
+    <link rel="stylesheet" href="public/css/general.css">
+    <link rel="stylesheet" href="public/css/login.css">
     <link rel="stylesheet" href="https://unicons.iconscout.com/release/v4.0.8/css/line.css">
 </head>
 <body>
@@ -33,6 +33,6 @@
             <p style="text-align:center; margin-top:10px; color:#4a5568;">Already have an account? <a href="login.php" style="color:#2196f3; font-weight:500; text-decoration:none;">Login</a></p>
         </form>
     </div>
-    <script src="../../public/js/signup.js"></script>
+    <script src="public/js/signup.js"></script>
 </body>
 </html>

@@ -5,14 +5,14 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Group</title>
-    <link rel="stylesheet" href="../../public/css/general.css">
-    <link rel="stylesheet" href="../../public/css/groupprofileview.css">
-    <link rel="stylesheet" href="../../public/css/navbar.css"> 
-    <link rel="stylesheet" href="../../public/css/mediaquery.css">
-    <link rel="stylesheet" href="../../public/css/calender.css">
-    <link rel="stylesheet" href="../../public/css/post.css">
-    <link rel="stylesheet" href="../../public/css/myfeed.css">
-    <link rel="stylesheet" href="../../public/css/notificationpopup.css">
+    <link rel="stylesheet" href="public/css/general.css">
+    <link rel="stylesheet" href="public/css/groupprofileview.css">
+    <link rel="stylesheet" href="public/css/navbar.css"> 
+    <link rel="stylesheet" href="public/css/mediaquery.css">
+    <link rel="stylesheet" href="public/css/calender.css">
+    <link rel="stylesheet" href="public/css/post.css">
+    <link rel="stylesheet" href="public/css/myfeed.css">
+    <link rel="stylesheet" href="public/css/notificationpopup.css">
     <link rel="stylesheet" href="https://unicons.iconscout.com/release/v4.0.8/css/line.css">
 </head>
 
@@ -124,7 +124,7 @@
                     <div class="notifications-popup">
                         <div>
                             <div class="profile-picture">
-                                <img src="../../public/images/profile-1.jpg" />
+                                <img src="public/images/profile-1.jpg" />
                             </div>
                             <div class="notification-body">
                                 <b>Lahiru Fernando</b> liked your photo
@@ -133,7 +133,7 @@
                         </div>
                         <div>
                             <div class="profile-picture">
-                                <img src="../../public/images/profile-10.jpg" />
+                                <img src="public/images/profile-10.jpg" />
                             </div>
                             <div class="notification-body">
                                 <b>Minthaka Jayawardena</b> commented: "Great shot!"
@@ -142,7 +142,7 @@
                         </div>
                         <div>
                             <div class="profile-picture">
-                                <img src="../../public/images/profile-11.jpg" />
+                                <img src="public/images/profile-11.jpg" />
                             </div>
                             <div class="notification-body">
                                 <b>Alex Silva</b> mentioned you in a post
@@ -152,7 +152,7 @@
                     </div>
                 </div>
                 <div class="profile-picture" id="profileDropdown">
-                    <img src="../../public/images/profile-12.jpg">
+                    <img src="public/images/profile-12.jpg">
                     <div class="profile-dropdown">
                         <a href="#"><i class="uil uil-user"></i> My Profile</a>
                         <a href="#"><i class="uil uil-cog"></i> Settings</a>
@@ -171,7 +171,7 @@
             <div class="left">
                 <div class="profile">
                     <div class="profile-picture">
-                        <img src="../../public/images/4.jpg">
+                        <img src="public/images/4.jpg">
                     </div>
                     <div class="handle">
                         <h4>Lithmal Perera</h4>
@@ -203,7 +203,7 @@
                     <div class="group-list">
                         <div class="group">
                             <div class="profile-picture">
-                                <img src="../../public/images/gpvrelatedAC_dp.jpg">
+                                <img src="public/images/gpvrelatedAC_dp.jpg">
                             </div>
                             <div class="group-info">
                                 <h5>Anime Collectors</h5>
@@ -212,7 +212,7 @@
                         </div>
                         <div class="group">
                             <div class="profile-picture">
-                                <img src="../../public/images/gpvrelatedME_dp.jpg">
+                                <img src="public/images/gpvrelatedME_dp.jpg">
                             </div>
                             <div class="group-info">
                                 <h5>Manga Enthusiasts</h5>
@@ -221,7 +221,7 @@
                         </div>
                         <div class="group">
                             <div class="profile-picture">
-                                <img src="../../public/images/gpvrelatedCS_dp.jpg">
+                                <img src="public/images/gpvrelatedCS_dp.jpg">
                             </div>
                             <div class="group-info">
                                 <h5>Cosplay Sri Lankaa</h5>
@@ -238,7 +238,7 @@
                 <!-- Group Header -->
                 <div class="profile-header">
                     <div class="profile-cover">
-                        <img src="../../public/images/gpvprofAAT_cover.jpg" alt="Profile Cover">
+                        <img src="public/images/gpvprofAAT_cover.jpg" alt="Profile Cover">
                         <button class="edit-cover-btn">
                             <i class="uil uil-camera"></i> Edit Cover
                         </button>
@@ -247,7 +247,7 @@
                     <div class="profile-info">
                         <div class="profile-dp-container">
                             <div class="profile-dp">
-                                <img src="../../public/images/gpvprofAAT_dp.jpg" alt="Profile DP">
+                                <img src="public/images/gpvprofAAT_dp.jpg" alt="Profile DP">
                                 <button class="edit-dp-btn">
                                     <i class="uil uil-camera"></i>
                                 </button>
@@ -315,7 +315,7 @@
                         <!-- Post Creation -->
                         <div class="create-post">
                             <div class="post-input">
-                                <img src="../../public/images/4.jpg" alt="Your profile">
+                                <img src="public/images/4.jpg" alt="Your profile">
                                 <input type="text" placeholder="What's on your mind, Lithmal?">
                             </div>
                             <div class="post-options">
@@ -340,7 +340,7 @@
                                 <div class="head">
                                     <div class="user">
                                         <div class="profile-picture">
-                                            <img src="../../public/images/gpvpostTY_dp.jpg">
+                                            <img src="public/images/gpvpostTY_dp.jpg">
                                         </div>
                                         <div class="info">
                                             <h3>Tachi Yamamoto</h3>
@@ -350,7 +350,7 @@
                                     <i class="uil uil-ellipsis-h"></i>
                                 </div>
                                 <div class="photo">
-                                    <img src="../../public/images/gpvpost_content1.jpg">
+                                    <img src="public/images/gpvpost_content1.jpg">
                                 </div>
                                 <div class="action-buttons">
                                     <div class="interaction-buttons">
@@ -358,16 +358,16 @@
                                         <i class="uil uil-comment"></i>
                                         <i class="uil uil-share-alt"></i>
                                         <button class="add-to-calendar-btn"
-                                            data-event='{"title":"Temple Visit","date":"2023-11-15T09:00:00","location":"Temple of the Tooth, Kandy","image":"../../public/images/2.jpg"}'>
+                                            data-event='{"title":"Temple Visit","date":"2023-11-15T09:00:00","location":"Temple of the Tooth, Kandy","image":"public/images/2.jpg"}'>
                                             <i class="uil uil-calendar-alt"></i> Add to Calendar</button>
                                     </div>
                                     <i class="uil uil-bookmark"></i>
                                 </div>
                                 <div class="liked-by">
                                     <div class="liked-users">
-                                        <img src="../../public/images/gpvpostNJ_dp.jpg">
-                                        <img src="../../public/images/gpvpostfun_dp1.jpg">
-                                        <img src="../../public/images/gpvpostfun_dp2.jpg">
+                                        <img src="public/images/gpvpostNJ_dp.jpg">
+                                        <img src="public/images/gpvpostfun_dp1.jpg">
+                                        <img src="public/images/gpvpostfun_dp2.jpg">
                                     </div>
                                     <p>Liked by <b>Zanka</b> and <b>187 others</b></p>
                                 </div>
@@ -382,7 +382,7 @@
                                 <div class="head">
                                     <div class="user">
                                         <div class="profile-picture">
-                                            <img src="../../public/images/gpvpostNJ_dp.jpg">
+                                            <img src="public/images/gpvpostNJ_dp.jpg">
                                         </div>
                                         <div class="info">
                                             <h3>Nijou-Jou</h3>
@@ -392,7 +392,7 @@
                                     <i class="uil uil-ellipsis-h"></i>
                                 </div>
                                 <div class="photo">
-                                    <img src="../../public/images/gpvpost_content2.jpg">
+                                    <img src="public/images/gpvpost_content2.jpg">
                                 </div>
                                 <div class="action-buttons">
                                     <div class="interaction-buttons">
@@ -404,9 +404,9 @@
                                 </div>
                                 <div class="liked-by">
                                     <div class="liked-users">
-                                        <img src="../../public/images/gpvpostTY_dp.jpg">
-                                        <img src="../../public/images/gpvpostfun_dp3.jpg">
-                                        <img src="../../public/images/gpvpostfun_dp4.jpg">
+                                        <img src="public/images/gpvpostTY_dp.jpg">
+                                        <img src="public/images/gpvpostfun_dp3.jpg">
+                                        <img src="public/images/gpvpostfun_dp4.jpg">
                                     </div>
                                     <p>Liked by <b>Tachi</b> and <b>243 others</b></p>
                                 </div>
@@ -456,11 +456,11 @@
                 <div class="tab-content" id="members-content">
                     <h3>Members</h3>
                     <div class="member">
-                        <div class="profile-picture"><img src="../../public/images/4.jpg"></div>
+                        <div class="profile-picture"><img src="public/images/4.jpg"></div>
                         <h5>Lithmal Perera <small>(Admin)</small></h5>
                     </div>
                     <div class="member">
-                        <div class="profile-picture"><img src="../../public/images/6.jpg"></div>
+                        <div class="profile-picture"><img src="public/images/6.jpg"></div>
                         <h5>Minthaka Jayawardena</h5>
                     </div>
                     <!-- More members... -->
@@ -470,22 +470,22 @@
                 <div class="tab-content" id="photos-content">
                     <div class="photo-grid">
                         <div class="photo-item">
-                            <img src="../../public/images/gpvpost_content1.jpg" alt="Photo 1">
+                            <img src="public/images/gpvpost_content1.jpg" alt="Photo 1">
                         </div>
                         <div class="photo-item">
-                            <img src="../../public/images/gpvpost_content2.jpg" alt="Photo 2">
+                            <img src="public/images/gpvpost_content2.jpg" alt="Photo 2">
                         </div>
                         <div class="photo-item">
-                            <img src="../../public/images/gpvpost_content3.jpg" alt="Photo 3">
+                            <img src="public/images/gpvpost_content3.jpg" alt="Photo 3">
                         </div>
                         <div class="photo-item">
-                            <img src="../../public/images/gpvpost_content4.jpg" alt="Photo 4">
+                            <img src="public/images/gpvpost_content4.jpg" alt="Photo 4">
                         </div>
                         <div class="photo-item">
-                            <img src="../../public/images/gpvpost_content5.jpg" alt="Photo 5">
+                            <img src="public/images/gpvpost_content5.jpg" alt="Photo 5">
                         </div>
                         <div class="photo-item">
-                            <img src="../../public/images/gpvpost_content6.jpg" alt="Photo 6">
+                            <img src="public/images/gpvpost_content6.jpg" alt="Photo 6">
                         </div>
                     </div>
                 </div>
@@ -524,7 +524,7 @@
                     <div class="creator-list">
                         <div class="creator-card">
                             <div class="creator-info">
-                                <img src="../../public/images/gpvpostfun_dp1.jpg" class="creator-avatar">
+                                <img src="public/images/gpvpostfun_dp1.jpg" class="creator-avatar">
                                 <div class="creator-details">
                                     <h5>Goth bunny</h5>
                                     <p class="creator-bio">12 mutual friends</p>
@@ -535,7 +535,7 @@
 
                         <div class="creator-card">
                             <div class="creator-info">
-                                <img src="../../public/images/gpvpostfun_dp4.jpg" class="creator-avatar">
+                                <img src="public/images/gpvpostfun_dp4.jpg" class="creator-avatar">
                                 <div class="creator-details">
                                     <h5>Naruuuuto</h5>
                                     <p class="creator-bio">8 mutual friends</p>
@@ -546,7 +546,7 @@
 
                         <div class="creator-card">
                             <div class="creator-info">
-                                <img src="../../public/images/gpvpostfun_dp3.jpg" class="creator-avatar">
+                                <img src="public/images/gpvpostfun_dp3.jpg" class="creator-avatar">
                                 <div class="creator-details">
                                     <h5>Ozamu Dazai</h5>
                                     <p class="creator-bio">15 mutual friends</p>
@@ -574,13 +574,13 @@
         </div>
     </div>
 
-    <script src="../../public/js/calender.js"></script>
-    <script src="../../public/js/feed.js"></script>
+    <script src="public/js/calender.js"></script>
+    <script src="public/js/feed.js"></script>
     <!--- Add a friend type js for four side panels -->
-    <script src="../../public/js/genral.js"></script>
-    <script src="../../public/js/post.js"></script>
-    <script src="../../public/js/notificationpopup.js"></script>
-    <script src="../../public/js/navbar.js"></script>
+    <script src="public/js/genral.js"></script>
+    <script src="public/js/post.js"></script>
+    <script src="public/js/notificationpopup.js"></script>
+    <script src="public/js/navbar.js"></script>
     <script src="myFeed.js"></script>
 </body>
 
