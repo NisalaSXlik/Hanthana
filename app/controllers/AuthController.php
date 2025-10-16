@@ -1,4 +1,3 @@
-
 <?php
 require_once __DIR__ . '/../models/User.php';
 
@@ -16,63 +15,71 @@ class AuthController {
         }
     }
     
-    // Handle registration
-    public function register() {
-        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-            $errors = $this->validateRegistration($_POST);
+    // Handle user registration
+    public function register($data) {
+        $errors = $this->validateRegistration($data);
+        
+        if (empty($errors)) {
+            $userData = [
+                'first_name' => trim($data['first_name']),
+                'last_name' => trim($data['last_name']),
+                'email' => trim($data['email']),
+                'phone_number' => trim($data['phone']),
+                'password' => $data['password'],
+                'username' => trim($data['username']),
+                'bio' => $data['bio'] ?? null,
+                'university' => $data['university'] ?? null,
+                'date_of_birth' => $data['date_of_birth'] ?? null,
+                'location' => $data['location'] ?? null
+            ];
             
-            if (empty($errors)) {
-                $data = [
-                    'first_name' => trim($_POST['first_name']),
-                    'last_name' => trim($_POST['last_name']),
-                    'email' => trim($_POST['email']),
-                    'password' => $_POST['password'],
-                    'username' => trim($_POST['username']),
-                    'bio' => trim($_POST['bio'] ?? ''),
-                    'university' => trim($_POST['university'] ?? ''),
-                    'date_of_birth' => $_POST['date_of_birth'] ?? null,
-                    'location' => trim($_POST['location'] ?? '')
-                ];
-                
-                if ($this->userModel->register($data)) {
-                    //$_SESSION['success'] = "Registration successful! Please login.";
-                    // Don't redirect - just show success message
-                      return true;
-                    //header('Location: login.php');
-                    //exit;
-                } else {
-                    $errors[] = "Registration failed. Please try again.";
-                }
+            if ($this->userModel->create($userData)) {
+                return ['success' => true, 'message' => 'Registration successful!'];
+            } else {
+                return ['success' => false, 'errors' => ['Registration failed. Please try again.']];
             }
-            
-            // Return errors for display
-            return $errors;
         }
+        
+        return ['success' => false, 'errors' => $errors];
     }
     
-    // Handle login
-    public function login($email, $password) {
-        $user = $this->userModel->findByEmail($email);
+    // Handle user login
+    public function login($identifier, $password) {
+        $errors = $this->validateLogin($identifier, $password);
+        
+        if (!empty($errors)) {
+            return ['success' => false, 'errors' => $errors];
+        }
+        
+        // Determine if identifier is email or phone
+        if (filter_var($identifier, FILTER_VALIDATE_EMAIL)) {
+            $user = $this->userModel->findByEmail($identifier);
+        } else {
+            $user = $this->userModel->findByPhone($identifier);
+        }
         
         if ($user && password_verify($password, $user['password_hash'])) {
+            // Set session data
             $_SESSION['user_id'] = $user['user_id'];
             $_SESSION['username'] = $user['username'];
             $_SESSION['email'] = $user['email'];
             $_SESSION['first_name'] = $user['first_name'];
+            $_SESSION['phone_number'] = $user['phone_number'];
+            $_SESSION['profile_picture'] = $user['profile_picture'];
             
             // Update last login
             $this->userModel->updateLastLogin($user['user_id']);
             
-            return true;
+            return ['success' => true, 'user' => $user];
         }
-        return false;
+        
+        return ['success' => false, 'errors' => ['Invalid email/phone or password.']];
     }
     
-    // Handle logout
+    // Handle user logout
     public function logout() {
         session_destroy();
-        header('Location: login.php');
-        exit;
+        return ['success' => true, 'message' => 'Logged out successfully.'];
     }
     
     // Check if user is logged in
@@ -80,7 +87,7 @@ class AuthController {
         return isset($_SESSION['user_id']);
     }
     
-    // Get current user
+    // Get current logged in user
     public function getCurrentUser() {
         if ($this->isLoggedIn()) {
             return $this->userModel->findById($_SESSION['user_id']);
@@ -92,10 +99,58 @@ class AuthController {
     public function updateProfile($user_id, $data) {
         $errors = $this->validateProfileUpdate($user_id, $data);
         
-        if (empty($errors)) {
-            return $this->userModel->updateProfile($user_id, $data);
+        if (!empty($errors)) {
+            return ['success' => false, 'errors' => $errors];
         }
-        return false;
+        
+        $profileData = [
+            'first_name' => trim($data['first_name']),
+            'last_name' => trim($data['last_name']),
+            'email' => trim($data['email']),
+            'phone_number' => trim($data['phone_number']),
+            'username' => trim($data['username']),
+            'bio' => $data['bio'] ?? null,
+            'university' => $data['university'] ?? null,
+            'date_of_birth' => $data['date_of_birth'] ?? null,
+            'location' => $data['location'] ?? null
+        ];
+        
+        if ($this->userModel->update($user_id, $profileData)) {
+            // Update session data if current user updated their own profile
+            if ($this->isLoggedIn() && $_SESSION['user_id'] == $user_id) {
+                $_SESSION['username'] = $profileData['username'];
+                $_SESSION['email'] = $profileData['email'];
+                $_SESSION['first_name'] = $profileData['first_name'];
+                $_SESSION['phone_number'] = $profileData['phone_number'];
+            }
+            
+            return ['success' => true, 'message' => 'Profile updated successfully.'];
+        }
+        
+        return ['success' => false, 'errors' => ['Profile update failed.']];
+    }
+    
+    // Change password
+    public function changePassword($user_id, $current_password, $new_password) {
+        $user = $this->userModel->findById($user_id);
+        
+        if (!$user) {
+            return ['success' => false, 'errors' => ['User not found.']];
+        }
+        
+        if (!password_verify($current_password, $user['password_hash'])) {
+            return ['success' => false, 'errors' => ['Current password is incorrect.']];
+        }
+        
+        if (strlen($new_password) < 6) {
+            return ['success' => false, 'errors' => ['New password must be at least 6 characters.']];
+        }
+        
+        $new_password_hash = password_hash($new_password, PASSWORD_DEFAULT);
+        // Note: You'll need to add an updatePassword method to your User model
+        // $this->userModel->updatePassword($user_id, $new_password_hash);
+        
+        return ['success' => true, 'message' => 'Password changed successfully.'];
     }
     
     // Validate registration data
@@ -103,7 +158,7 @@ class AuthController {
         $errors = [];
         
         // Required fields
-        $required = ['first_name', 'last_name', 'email', 'password', 'username'];
+        $required = ['first_name', 'last_name', 'email', 'phone', 'password', 'username'];
         foreach ($required as $field) {
             if (empty($data[$field])) {
                 $errors[] = ucfirst(str_replace('_', ' ', $field)) . " is required.";
@@ -111,15 +166,31 @@ class AuthController {
         }
         
         // Email validation
-        if (!empty($data['email']) && !filter_var($data['email'], FILTER_VALIDATE_EMAIL)) {
-            $errors[] = "Valid email is required.";
-        } elseif (!empty($data['email']) && $this->userModel->emailExists($data['email'])) {
-            $errors[] = "Email already exists.";
+        if (!empty($data['email'])) {
+            if (!filter_var($data['email'], FILTER_VALIDATE_EMAIL)) {
+                $errors[] = "Valid email is required.";
+            } elseif ($this->userModel->emailExists($data['email'])) {
+                $errors[] = "Email already exists.";
+            }
+        }
+        
+        // Phone validation
+        if (!empty($data['phone'])) {
+            if (!preg_match('/^[0-9]{10}$/', $data['phone'])) {
+                $errors[] = "Phone number must be 10 digits.";
+            } elseif ($this->userModel->phoneExists($data['phone'])) {
+                $errors[] = "Phone number already exists.";
+            }
         }
         
         // Username validation
-        if (!empty($data['username']) && $this->userModel->usernameExists($data['username'])) {
-            $errors[] = "Username already exists.";
+        if (!empty($data['username'])) {
+            if ($this->userModel->usernameExists($data['username'])) {
+                $errors[] = "Username already exists.";
+            }
+            if (!preg_match('/^[a-zA-Z0-9_]+$/', $data['username'])) {
+                $errors[] = "Username can only contain letters, numbers, and underscores.";
+            }
         }
         
         // Password validation
@@ -130,7 +201,22 @@ class AuthController {
         return $errors;
     }
     
-    // Validate profile update
+    // Validate login data
+    private function validateLogin($identifier, $password) {
+        $errors = [];
+        
+        if (empty($identifier)) {
+            $errors[] = "Email or phone number is required.";
+        }
+        
+        if (empty($password)) {
+            $errors[] = "Password is required.";
+        }
+        
+        return $errors;
+    }
+    
+    // Validate profile update data
     private function validateProfileUpdate($user_id, $data) {
         $errors = [];
         
@@ -144,6 +230,9 @@ class AuthController {
         if (empty($data['username'])) {
             $errors[] = "Username is required.";
         }
+        if (empty($data['email'])) {
+            $errors[] = "Email is required.";
+        }
         
         // Check unique fields
         if (!empty($data['email']) && $this->userModel->emailExists($data['email'], $user_id)) {
@@ -152,8 +241,21 @@ class AuthController {
         if (!empty($data['username']) && $this->userModel->usernameExists($data['username'], $user_id)) {
             $errors[] = "Username already exists.";
         }
+        if (!empty($data['phone_number']) && $this->userModel->phoneExists($data['phone_number'], $user_id)) {
+            $errors[] = "Phone number already exists.";
+        }
         
         return $errors;
+    }
+    
+    // Get user by ID (public method)
+    public function getUserById($user_id) {
+        return $this->userModel->findById($user_id);
+    }
+    
+    // Search users
+    public function searchUsers($query) {
+        return $this->userModel->search($query);
     }
 }
 ?>

@@ -1,6 +1,6 @@
-
 <?php
-//make the connection with database and the models and check the connection
+// Add this line to load the config file
+require_once __DIR__ . '/../../config/config.php';
 
 class Database {
     private $connection;

@@ -1,9 +1,10 @@
--- Users table (enhanced)
+-- Users table (enhanced with phone number)
 CREATE TABLE Users (
     user_id INT AUTO_INCREMENT PRIMARY KEY,
     first_name VARCHAR(100) NOT NULL,
     last_name VARCHAR(100) NOT NULL,
     email VARCHAR(255) UNIQUE NOT NULL,
+    phone_number VARCHAR(20) NULL, -- ADDED PHONE NUMBER
     password_hash VARCHAR(255) NOT NULL,
     username VARCHAR(50) UNIQUE NOT NULL,
     bio TEXT,
@@ -17,7 +18,6 @@ CREATE TABLE Users (
     is_active BOOLEAN DEFAULT TRUE,
     date_of_birth DATE,
     location VARCHAR(255)
-
 );
 
 -- User Settings
@@ -124,15 +124,16 @@ CREATE TABLE Post (
     visibility ENUM('public','friends_only','private','group') DEFAULT 'public',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    event_title VARCHAR(255),
     event_date DATE NULL,
-    event_time TIME NULL,
+    event_time TIME NULL,--no need 
     event_location VARCHAR(255) NULL,
     is_group_post BOOLEAN DEFAULT FALSE,
     group_id INT NULL,
     author_id INT NOT NULL,
     upvote_count INT DEFAULT 0,
     downvote_count INT DEFAULT 0,
-    view_count INT DEFAULT 0,
+    view_count INT DEFAULT 0,--no need
     comment_count INT DEFAULT 0,
     share_count INT DEFAULT 0,
     is_edited BOOLEAN DEFAULT FALSE,
