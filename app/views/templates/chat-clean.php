@@ -530,8 +530,8 @@
         </div>
     </div>
 
-    <link rel="stylesheet" href="public/css/general.css">
-    <link rel="stylesheet" href="public/css/chat-new.css">
-    <script src="public/js/chat-new.js"></script>
+    <link rel="stylesheet" href="../../public/css/general.css">
+    <link rel="stylesheet" href="../../public/css/chat-new.css">
+    <script src="../../public/js/chat-new.js"></script>
 </body>
 </html>
