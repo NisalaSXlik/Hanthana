@@ -1,17 +1,19 @@
 <?php
-require_once __DIR__ . '/../controllers/AuthController.php';
+require_once '../app/controllers/AuthController.php';
 
 $authController = new AuthController();
 $errors = [];
-$success = '';
 
+// Handle form submission
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $result = $authController->register($_POST);
+    $result = $authController->register();
     
-    if ($result['success']) {
-        $success = "Registration successful!";
+    if ($result === true) {
+        // Success - redirect to login
+        header('Location: login.php');
+        exit;
     } else {
-        $errors = $result['errors'];
+        $errors = $result;
     }
 }
 ?>
@@ -21,32 +23,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sign Up | Hanthana</title>
-    <link rel="stylesheet" href="../../public/css/general.css">
-    <link rel="stylesheet" href="../../public/css/login.css">
+    <link rel="stylesheet" href="css/general.css">
+    <link rel="stylesheet" href="css/login.css">
     <link rel="stylesheet" href="https://unicons.iconscout.com/release/v4.0.8/css/line.css">
 </head>
 <body>
     <div class="auth-container">
         <div class="auth-card signup-card">
-            <form method="POST" action="" class="auth-form" data-form="signup">
+            <form method="POST" action="">
                 <div class="auth-header">
                     <div class="logo">Hanthana</div>
                     <div class="tagline">Connect with your community</div>
                 </div>
 
-                <!-- Success Message -->
-                <?php if ($success): ?>
-                    <div class="success-message" style="color: green; padding: 10px; text-align: center; margin-bottom: 15px;">
-                        ✅ <?php echo htmlspecialchars($success); ?>
+                <?php if (!empty($errors)): ?>
+                    <div class="error-messages">
+                        <?php foreach ($errors as $error): ?>
+                            <div class="error-message"><?php echo htmlspecialchars($error); ?></div>
+                        <?php endforeach; ?>
                     </div>
                 <?php endif; ?>
 
-                <!-- Error Messages -->
-                <?php if (!empty($errors)): ?>
-                    <div class="error-messages" style="color: red; padding: 10px; margin-bottom: 15px;">
-                        <?php foreach ($errors as $error): ?>
-                            <div>❌ <?php echo htmlspecialchars($error); ?></div>
-                        <?php endforeach; ?>
+                <?php if (isset($_SESSION['success'])): ?>
+                    <div class="success-message">
+                        <?php echo htmlspecialchars($_SESSION['success']); ?>
+                        <?php unset($_SESSION['success']); ?>
                     </div>
                 <?php endif; ?>
 
@@ -98,6 +99,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         </div>
     </div>
 
-    <script src="../../public/js/signup.js"></script>
+    <script src="js/signup.js"></script>
 </body>
 </html>
