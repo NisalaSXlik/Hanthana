@@ -76,14 +76,32 @@ class AuthController {
         return ['success' => false, 'errors' => ['Invalid email/phone or password.']];
     }
     
-    // Handle user logout
+    // Handle user logout - FIXED VERSION
     public function logout() {
+        // Ensure session is started
+        $this->startSession();
+        
+        // Clear all session variables
+        $_SESSION = [];
+        
+        // If it's desired to kill the session, also delete the session cookie
+        if (ini_get("session.use_cookies")) {
+            $params = session_get_cookie_params();
+            setcookie(session_name(), '', time() - 42000,
+                $params["path"], $params["domain"],
+                $params["secure"], $params["httponly"]
+            );
+        }
+        
+        // Finally, destroy the session
         session_destroy();
+        
         return ['success' => true, 'message' => 'Logged out successfully.'];
     }
     
-    // Check if user is logged in
+    // Check if user is logged in - UPDATED
     public function isLoggedIn() {
+        $this->startSession(); // Ensure session is started before checking
         return isset($_SESSION['user_id']);
     }
     
