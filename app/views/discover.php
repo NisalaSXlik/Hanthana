@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Discover | Hanthana</title>
+    <link rel="stylesheet" href="public/css/myfeed.css">
     <link rel="stylesheet" href="public/css/general.css">
     <link rel="stylesheet" href="public/css/discover.css">
     <link rel="stylesheet" href="public/css/navbar.css"> 
@@ -418,7 +419,7 @@
         </div>
     </main>
 
-    
+    <?php include __DIR__ . '/templates/chat-clean.php'; ?>
 
     <script src="public/js/navbar.js"></script>
     <script src="public/js/calender.js"></script>

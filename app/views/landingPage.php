@@ -5,8 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Discover | Hanthana</title>
     <link rel="stylesheet" href="public/css/general.css">
-    <link rel="stylesheet" href="public/css/navbar.css">
     <link rel="stylesheet" href="public/css/discover.css">
+    <link rel="stylesheet" href="public/css/navbar.css"> 
     <link rel="stylesheet" href="public/css/mediaquery.css">
     <link rel="stylesheet" href="https://unicons.iconscout.com/release/v4.0.8/css/line.css">
 </head>
@@ -18,8 +18,8 @@
             <h3 class="modal-title">Join Hanthana to continue</h3>
             <p class="modal-text">Sign up to like, comment, save posts, and access all features.</p>
             <div class="modal-actions">
-                <a href="login.html" class="btn btn-secondary" id="loginBtn">Log In</a>
-                <a href="login.html" class="btn btn-primary" id="signupBtn">Sign Up</a>
+                <a href="login.php" class="btn btn-secondary" id="loginBtn">Log In</a>
+                <a href="signup.php" class="btn btn-primary" id="signupBtn">Sign Up</a>
             </div>
         </div>
     </div>
@@ -38,16 +38,13 @@
                 <button class="btn btn-primary">Create</button>
                 <div class="calendar-icon">
                     <i class="uil uil-calendar-alt"></i>
-                    
                 </div>
                 <div class="notification">
                     <i class="uil uil-bell">
                         <small class="notification-count">9+</small>
                     </i>
-                    
                 </div>
-                <a href="/project/login.html" class="btn btn-login">Log In</a>
-                <a href="/project/login.html" class="btn btn-primary">Sign Up</a>
+                <a href="login.php" class="btn btn-primary btn-login" style="min-width: 90px; text-align: center; border-radius: var(--border-radius); background: var(--color-primary); color: var(--color-white); box-shadow: 0 2px 8px rgba(14, 165, 233, 0.15); font-weight: 500; padding: 0.5rem 1.5rem; border: none; font-size: 0.9rem; transition: all 0.3s ease;">Log In</a>
             </div>
         </div>
     </nav>
@@ -55,16 +52,6 @@
     <main>
         <div class="container">
             <div class="left">
-                <div class="profile">
-                    <div class="profile-picture">
-                        <img src="public/images/4.jpg">
-                    </div>
-                    <div class="handle">
-                        <h4>Lithmal Perera</h4>
-                        <p>@lithmal</p>
-                    </div>
-                </div>
-
                 <div class="side-bar">
                     <a class="menu-item">
                         <i class="uil uil-home"></i>
@@ -84,8 +71,8 @@
                     </a>
                 </div>
 
-                <div class="joined-groups">
-                    <h4>Groups You've Joined</h4>
+                <div class="popular-groups">
+                    <h4>Popular Groups</h4>
                     <div class="group-list">
                         <div class="group">
                             <div class="group-icon">
@@ -114,8 +101,107 @@
                                 <p>5.7k members</p>
                             </div>
                         </div>
+                        <div class="group">
+                            <div class="group-icon">
+                                <i class="uil uil-book-alt"></i>
+                            </div>
+                            <div class="group-info">
+                                <h5>Book Club LK</h5>
+                                <p>3.2k members</p>
+                            </div>
+                        </div>
+                        <div class="group">
+                            <div class="group-icon">
+                                <i class="uil uil-music"></i>
+                            </div>
+                            <div class="group-info">
+                                <h5>Sri Lankan Musicians</h5>
+                                <p>7.8k members</p>
+                            </div>
+                        </div>
+                        <div class="group">
+                            <div class="group-icon">
+                                <i class="uil uil-graduation-cap"></i>
+                            </div>
+                            <div class="group-info">
+                                <h5>University Students LK</h5>
+                                <p>15.3k members</p>
+                            </div>
+                        </div>
+                        <div class="group">
+                            <div class="group-icon">
+                                <i class="uil uil-car"></i>
+                            </div>
+                            <div class="group-info">
+                                <h5>Car Enthusiasts SL</h5>
+                                <p>4.6k members</p>
+                            </div>
+                        </div>
+                        <div class="group">
+                            <div class="group-icon">
+                                <i class="uil uil-palette"></i>
+                            </div>
+                            <div class="group-info">
+                                <h5>Artists of Sri Lanka</h5>
+                                <p>6.1k members</p>
+                            </div>
+                        </div>
+                        <div class="group">
+                            <div class="group-icon">
+                                <i class="uil uil-plane"></i>
+                            </div>
+                            <div class="group-info">
+                                <h5>Travel Sri Lanka</h5>
+                                <p>9.2k members</p>
+                            </div>
+                        </div>
+                        <div class="group">
+                            <div class="group-icon">
+                                <i class="uil uil-dumbbell"></i>
+                            </div>
+                            <div class="group-info">
+                                <h5>Fitness & Health LK</h5>
+                                <p>6.8k members</p>
+                            </div>
+                        </div>
+                        <div class="group">
+                            <div class="group-icon">
+                                <i class="uil uil-processor"></i>
+                            </div>
+                            <div class="group-info">
+                                <h5>Tech Community SL</h5>
+                                <p>11.5k members</p>
+                            </div>
+                        </div>
+                        <div class="group">
+                            <div class="group-icon">
+                                <i class="uil uil-basketball"></i>
+                            </div>
+                            <div class="group-info">
+                                <h5>Sports Sri Lanka</h5>
+                                <p>8.4k members</p>
+                            </div>
+                        </div>
+                        <div class="group">
+                            <div class="group-icon">
+                                <i class="uil uil-shopping-bag"></i>
+                            </div>
+                            <div class="group-info">
+                                <h5>Entrepreneurs LK</h5>
+                                <p>5.9k members</p>
+                            </div>
+                        </div>
+                        <div class="group">
+                            <div class="group-icon">
+                                <i class="uil uil-flower"></i>
+                            </div>
+                            <div class="group-info">
+                                <h5>Gardening Sri Lanka</h5>
+                                <p>4.3k members</p>
+                            </div>
+                        </div>
                     </div>
-                    <button class="btn btn-secondary">See All Groups</button>
+                    <button class="btn btn-secondary">Explore All Groups</button>
                 </div>
             </div>
 
