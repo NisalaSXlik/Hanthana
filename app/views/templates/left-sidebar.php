@@ -42,7 +42,7 @@
 
                 <div class="joined-groups">
                     <div class="joined-groups-header">
-                        <h4>Groups You've Joined</h4>
+                        <h4>Groups</h4>
                         <button class="btn-add-group" title="Create Group">
                             <i class="uil uil-plus"></i>
                         </button>
@@ -77,6 +77,59 @@
                         </div>
                     </div>
                     <button class="btn btn-secondary">See All Groups</button>
+                </div>
+            </div>
+
+            <!-- Create Group Modal -->
+            <div id="createGroupModal" class="modal-overlay">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h3>Create New Group</h3>
+                        <button class="modal-close" id="closeGroupModal">
+                            <i class="uil uil-times"></i>
+                        </button>
+                    </div>
+                    <form id="createGroupForm" class="modal-body">
+                        <div class="form-group">
+                            <label for="groupName">Group Name <span class="required">*</span></label>
+                            <input type="text" id="groupName" name="name" required maxlength="255" placeholder="Enter group name">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="groupTag">Group Tag (Optional)</label>
+                            <input type="text" id="groupTag" name="tag" maxlength="50" placeholder="@unique-tag">
+                            <small>Must be unique (e.g., @colombo-foodies)</small>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="groupDescription">Description</label>
+                            <textarea id="groupDescription" name="description" rows="3" placeholder="Describe what your group is about..."></textarea>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="groupFocus">Focus/Category</label>
+                            <input type="text" id="groupFocus" name="focus" maxlength="100" placeholder="e.g., Photography, Food, Travel">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="groupPrivacy">Privacy <span class="required">*</span></label>
+                            <select id="groupPrivacy" name="privacy_status" required>
+                                <option value="public">Public - Anyone can see and join</option>
+                                <option value="private">Private - Anyone can see, must request to join</option>
+                                <option value="secret">Secret - Only members can see</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="groupRules">Group Rules (Optional)</label>
+                            <textarea id="groupRules" name="rules" rows="3" placeholder="Set guidelines for members..."></textarea>
+                        </div>
+
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" id="cancelGroupBtn">Cancel</button>
+                            <button type="submit" class="btn btn-primary">Create Group</button>
+                        </div>
+                    </form>
                 </div>
             </div>
         </body>
