@@ -4,10 +4,6 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
-if (!isset($_SESSION['user_id'])) {
-    $_SESSION['user_id'] = 1;  // For testing purposes only (mimics PostsController)
-}
-
 // Fetch posts from DB if not provided by a controller
 if (!isset($posts)) {
     require_once __DIR__ . '/../models/PostModel.php';
@@ -101,7 +97,8 @@ $currentUserId = $_SESSION['user_id'] ?? null;
                                     if (stripos($rawPostImg, 'http://') === 0 || stripos($rawPostImg, 'https://') === 0) {
                                         $postImgUrl = $rawPostImg;
                                     } else {
-                                        $postImgUrl = '../../public/uploads/' . basename($rawPostImg);  // Match PostModel
+                                        // Map any non-absolute (including root-relative) path to our posts folder using filename only
+                                        $postImgUrl = '../../public/images/posts/' . basename($rawPostImg);
                                     }
                                 ?>
                                 <div class="photo">

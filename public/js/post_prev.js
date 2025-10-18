@@ -1,6 +1,11 @@
+
 // post sharing 
 
+console.log('post.js loaded!');
+
 document.addEventListener('DOMContentLoaded', function() {
+    console.log('DOMContentLoaded fired in post.js');
+    
     // Post creation modal functionality
     const postModal = document.getElementById('postModal');
     const createBtn = document.querySelector('.btn-primary'); // Your create button
@@ -16,7 +21,6 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Show modal when Create button is clicked
     createBtn.addEventListener('click', function() {
-        resetForm(); 
         postModal.style.display = 'flex';
         document.body.style.overflow = 'hidden';
     });
@@ -29,17 +33,18 @@ document.addEventListener('DOMContentLoaded', function() {
     
     closeModalBtn.addEventListener('click', closeModal);
     cancelBtn.addEventListener('click', closeModal);
-
-    let postType = 'general';
-    let selectedFile = null;  // Add this: Variable to hold the selected file
-
+    
     // Post type switching
     postTypeBtns.forEach(btn => {
         btn.addEventListener('click', function() {
             postTypeBtns.forEach(b => b.classList.remove('active'));
             this.classList.add('active');
-            postType = this.dataset.type;
-            eventDetails.style.display = postType === 'event' ? 'block' : 'none';
+            
+            if (this.dataset.type === 'event') {
+                eventDetails.style.display = 'block';
+            } else {
+                eventDetails.style.display = 'none';
+            }
         });
     });
     
@@ -48,29 +53,26 @@ document.addEventListener('DOMContentLoaded', function() {
         postImageInput.click();
     });
     
-    // Image upload handling (click)
     postImageInput.addEventListener('change', function(e) {
         if (e.target.files && e.target.files[0]) {
-            selectedFile = e.target.files[0];  // Store the file
-            // Create image preview if it doesn't exist
-            let preview = imageUpload.querySelector('.image-preview');
-            if (!preview) {
-                preview = document.createElement('img');
-                preview.className = 'image-preview';
-                imageUpload.innerHTML = '';
-                imageUpload.appendChild(preview);
-            }
-            
             const reader = new FileReader();
             
             reader.onload = function(event) {
+                // Create image preview if it doesn't exist
+                let preview = imageUpload.querySelector('.image-preview');
+                if (!preview) {
+                    preview = document.createElement('img');
+                    preview.className = 'image-preview';
+                    imageUpload.innerHTML = '';
+                    imageUpload.appendChild(preview);
+                }
+                
                 preview.src = event.target.result;
                 preview.style.display = 'block';
             };
             
             reader.readAsDataURL(e.target.files[0]);
         }
-        // updateShareButton();  // Commented out: Remove call to update button state
     });
     
     // Tag validation
@@ -78,101 +80,39 @@ document.addEventListener('DOMContentLoaded', function() {
         const tags = this.value.split(',').map(tag => tag.trim()).filter(tag => tag.length > 0);
         tagCount.textContent = `${tags.length}/5 tags`;
         
-        // updateShareButton();  // Commented out: Remove call to update button state
+        // Enable share button only if there are at least 5 tags and an image is selected
+        const hasImage = postImageInput.files && postImageInput.files.length > 0;
+        shareBtn.disabled = !(tags.length >= 5 && hasImage);
     });
     
     // Share button functionality
     shareBtn.addEventListener('click', function() {
-        console.log('Share button clicked!');  // Added: Confirm button triggers
-        
-        clearFormErrors();
-
-        // Validation on click
-        const caption = document.getElementById('postCaption').value.trim();
-        const tagsInput = document.getElementById('postTags').value.trim();
-        const tagArray = tagsInput.split(',').map(tag => tag.trim()).filter(tag => tag.length > 0);
-        const hasImage = selectedFile !== null;
-        
-        let errors = [];
-        if (!caption) errors.push({ field: 'caption', message: 'Caption is required.' });
-        if (tagArray.length < 5) errors.push({ field: 'tags', message: 'At least 5 tags are required.' });
-        if (postType === 'event') {
-            const eventTitle = document.getElementById('eventTitle').value.trim();
-            const eventDate = document.getElementById('eventDate').value.trim();
-            const eventLocation = document.getElementById('eventLocation').value.trim();
-            if (!eventTitle) errors.push({ field: 'eventTitle', message: 'Event title is required.' });
-            if (!eventDate) errors.push({ field: 'eventDate', message: 'Event date is required.' });
-            if (!eventLocation) errors.push({ field: 'eventLocation', message: 'Event location is required.' });
-        }
-
-        if (errors.length > 0) {
-            showFormErrors(errors);
-            return;  // Stop here, don't send request
-        }
-
         // Get all form values
-        const formData = new FormData();
-        formData.append('caption', document.getElementById('postCaption').value || '');
-        formData.append('tags', document.getElementById('postTags').value || '');
-        formData.append('postType', postType);  // 'general' or 'event'
+        const postType = document.querySelector('.post-type-btn.active').dataset.type;
+        const caption = document.getElementById('postCaption').value;
+        const tags = document.getElementById('postTags').value.split(',').map(tag => tag.trim()).filter(tag => tag.length > 0);
+        const imageFile = postImageInput.files[0];
+        
+        let eventData = null;
         if (postType === 'event') {
-            formData.append('eventTitle', document.getElementById('eventTitle').value || '');
-            formData.append('eventDate', document.getElementById('eventDate').value || '');
-            formData.append('eventLocation', document.getElementById('eventLocation').value || '');
+            eventData = {
+                title: document.getElementById('eventTitle').value,
+                date: document.getElementById('eventDate').value,
+                location: document.getElementById('eventLocation').value
+            };
         }
-        if (selectedFile) {  
-            formData.append('image', selectedFile);
-        }
-
-        fetch('/Hanthane/api/posts/create', {
-            method: 'POST',
-            body: formData,
-            // headers: { 'Authorization': `Bearer ${getAuthToken()}` } // Commented out: If authenticated
-        })
-        .then(response => {
-            console.log('Response status:', response.status);
-            return response.text();  // Get as text first to debug
-        })
-        .then(text => {
-            console.log('Raw response text:', text);  // Add this: Log the raw response
-            try {
-                const data = JSON.parse(text);
-                if (data.success) {
-                    showToast('Post shared successfully!', 'success');
-                    closeModal();
-                    resetForm();
-                } else {
-                    showToast('Error: ' + (data.message || 'Unknown error'), 'error');
-                }
-            } catch (e) {
-                console.error('JSON parse error:', e);
-                showToast('Server error: Check console', 'error');
-            }
-        })
-        .catch(err => {
-            console.error('Fetch Error:', err);
-            showToast('Failed to send post', 'error');
-        });
+        
+        // Here you would normally send this data to your backend
+        // For this example, we'll just show a success message
+        showToast('Post shared successfully!', 'success');
+        
+        // Close the modal and reset form
+        closeModal();
+        resetForm();
+        
+        // In a real app, you would add the new post to the feed here
     });
     
-    // Add functions for inline errors
-    function showFormErrors(errors) {
-        errors.forEach(error => {
-            const fieldElement = document.getElementById(error.field === 'caption' ? 'postCaption' : error.field === 'tags' ? 'postTags' : error.field);
-            if (fieldElement) {
-                const errorDiv = document.createElement('div');
-                errorDiv.className = 'form-error';
-                errorDiv.textContent = error.message;
-                fieldElement.parentNode.insertBefore(errorDiv, fieldElement.nextSibling);
-            }
-        });
-    }
-
-    function clearFormErrors() {
-        const errorElements = document.querySelectorAll('.form-error');
-        errorElements.forEach(el => el.remove());
-    }
-
     function resetForm() {
         document.getElementById('postCaption').value = '';
         document.getElementById('postTags').value = '';
@@ -186,42 +126,39 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('eventDate').value = '';
         document.getElementById('eventLocation').value = '';
         document.querySelector('.post-type-btn[data-type="general"]').click();
-        selectedFile = null;  // Reset the file variable
-        // updateShareButton();  // Commented out: Remove call to update button state
+        shareBtn.disabled = true;
     }
-    
-    // Unified Toast Notification System
-    function showToast(message, type = 'success') {
-        // Create or find toast container
-        let toastContainer = document.getElementById('toastContainer');
-        if (!toastContainer) {
-            toastContainer = document.createElement('div');
-            toastContainer.id = 'toastContainer';
-            toastContainer.className = 'toast-container';
-            document.body.appendChild(toastContainer);
-        }
+// Unified Toast Notification System
+function showToast(message, type = 'success') {
+    // Create or find toast container
+    let toastContainer = document.getElementById('toastContainer');
+    if (!toastContainer) {
+        toastContainer = document.createElement('div');
+        toastContainer.id = 'toastContainer';
+        toastContainer.className = 'toast-container';
+        document.body.appendChild(toastContainer);
+    }
 
-        // Create toast element
-        const toast = document.createElement('div');
-        toast.className = `toast ${type}`;
-        
-        // Add appropriate icon
-        const icons = {
-            success: 'uil-check-circle',
-            error: 'uil-times-circle',
-            info: 'uil-info-circle'
-        };
-        toast.innerHTML = `<i class="uil ${icons[type] || icons.success}"></i> ${message}`;
-        
-        toastContainer.appendChild(toast);
-        
-        // Auto-remove after delay
-        setTimeout(() => {
-            toast.classList.add('fade-out');
-            setTimeout(() => toast.remove(), 300);
-        }, 3000);
-    }
+    // Create toast element
+    const toast = document.createElement('div');
+    toast.className = `toast ${type}`;
     
+    // Add appropriate icon
+    const icons = {
+        success: 'uil-check-circle',
+        error: 'uil-times-circle',
+        info: 'uil-info-circle'
+    };
+    toast.innerHTML = `<i class="uil ${icons[type] || icons.success}"></i> ${message}`;
+    
+    toastContainer.appendChild(toast);
+    
+    // Auto-remove after delay
+    setTimeout(() => {
+        toast.classList.add('fade-out');
+        setTimeout(() => toast.remove(), 300);
+    }, 3000);
+}
     // Drag and drop for image upload
     imageUpload.addEventListener('dragover', function(e) {
         e.preventDefault();
@@ -237,34 +174,11 @@ document.addEventListener('DOMContentLoaded', function() {
         this.style.backgroundColor = '#fafafa';
         
         if (e.dataTransfer.files.length) {
-            selectedFile = e.dataTransfer.files[0];  // Store the file here
-            // Trigger preview manually
-            const reader = new FileReader();
-            reader.onload = function(event) {
-                let preview = imageUpload.querySelector('.image-preview');
-                if (!preview) {
-                    preview = document.createElement('img');
-                    preview.className = 'image-preview';
-                    imageUpload.innerHTML = '';
-                    imageUpload.appendChild(preview);
-                }
-                preview.src = event.target.result;
-                preview.style.display = 'block';
-            };
-            reader.readAsDataURL(selectedFile);
-            // updateShareButton();  // Commented out: Remove call to update button state
+            postImageInput.files = e.dataTransfer.files;
+            const event = new Event('change');
+            postImageInput.dispatchEvent(event);
         }
     });
-    
-    // Commented out: Remove the entire updateShareButton function
-    /*
-    function updateShareButton() {
-        const tags = postTagsInput.value.split(',').map(tag => tag.trim()).filter(tag => tag.length > 0);
-        const hasImage = selectedFile !== null;  // Check the variable
-        shareBtn.disabled = !(tags.length >= 5 && hasImage);
-        console.log('Share button state:', shareBtn.disabled);
-    }
-    */
     // ---------------------------------------------
     // Per-post Edit/Delete menu + Edit modal logic
     // ---------------------------------------------
@@ -312,7 +226,7 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     // Edit click
-    document.addEventListener('click', async (e) => {  // Add async
+    document.addEventListener('click', (e) => {
         const btn = e.target.closest('.menu-item.edit-post');
         if (!btn) return;
         const postId = btn.dataset.postId;
@@ -329,7 +243,6 @@ document.addEventListener('DOMContentLoaded', function() {
             editModal.style.display = 'flex';
             document.body.style.overflow = 'hidden';
         }
-        // Remove the broken fetch here—move to editSave
     });
 
     // Delete click
@@ -340,23 +253,22 @@ document.addEventListener('DOMContentLoaded', function() {
         const confirmDel = confirm('Delete this post? This cannot be undone.');
         if (!confirmDel) return;
         try {
-            const formData = new FormData();
-            formData.append('post_id', postId);
-            const res = await fetch('/Hanthane/api/posts/delete', {  // Correct URL
+            const res = await fetch('../../app/controllers/PostController.php', {
                 method: 'POST',
-                body: formData
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: `action=delete_post&post_id=${encodeURIComponent(postId)}`
             });
             const data = await res.json();
             if (data.success) {
                 const feedEl = document.querySelector(`.feed[data-post-id="${postId}"]`);
                 if (feedEl) feedEl.remove();
-                showToast('Post deleted', 'success');
+                if (typeof showToast === 'function') showToast('Post deleted', 'success');
             } else {
-                showToast(data.message || 'Delete failed', 'error');
+                if (typeof showToast === 'function') showToast(data.message || 'Delete failed', 'error');
             }
         } catch (err) {
             console.error(err);
-            showToast('Server error', 'error');
+            if (typeof showToast === 'function') showToast('Server error', 'error');
         }
     });
 
@@ -380,17 +292,14 @@ document.addEventListener('DOMContentLoaded', function() {
             const content = (editTextarea?.value || '').trim();
             if (!editingPostId || !content) return;
             try {
-                const formData = new FormData();
-                formData.append('post_id', editingPostId);
-                formData.append('content', content);
-                const res = await fetch('/Hanthane/api/posts/update', {  // Correct URL
+                const res = await fetch('../../app/controllers/PostController.php', {
                     method: 'POST',
-                    body: formData
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: `action=update_post&post_id=${encodeURIComponent(editingPostId)}&content=${encodeURIComponent(content)}`
                 });
                 const data = await res.json();
                 if (data.success) {
-                    // Update UI
-                    const feedEl = document.querySelector(`.feed[data-post-id="${editingPostId}"]`);
+                    const feedEl = document.querySelector(`.feed[data-post-id=\"${editingPostId}\"]`);
                     if (feedEl) {
                         feedEl.setAttribute('data-post-content', content);
                         const captionP = feedEl.querySelector('.caption p');
@@ -399,14 +308,14 @@ document.addEventListener('DOMContentLoaded', function() {
                             captionP.innerHTML = `<b>${username}</b> ${escapeHtml(content)}`;
                         }
                     }
-                    showToast('Post updated', 'success');
+                    if (typeof showToast === 'function') showToast('Post updated', 'success');
                     closeEditModal();
                 } else {
-                    showToast(data.message || 'Update failed', 'error');
+                    if (typeof showToast === 'function') showToast(data.message || 'Update failed', 'error');
                 }
             } catch (err) {
                 console.error(err);
-                showToast('Server error', 'error');
+                if (typeof showToast === 'function') showToast('Server error', 'error');
             }
         });
     }
