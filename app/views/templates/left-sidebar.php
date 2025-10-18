@@ -41,7 +41,12 @@
                 </div>
 
                 <div class="joined-groups">
-                    <h4>Groups You've Joined</h4>
+                    <div class="joined-groups-header">
+                        <h4>Groups You've Joined</h4>
+                        <button class="btn-add-group" title="Create Group">
+                            <i class="uil uil-plus"></i>
+                        </button>
+                    </div>
                     <div class="group-list">
                         <div class="group">
                             <div class="group-icon">
@@ -73,8 +78,6 @@
                     </div>
                     <button class="btn btn-secondary">See All Groups</button>
                 </div>
-
-                <button class="btn btn-primary">Create Post</button>
             </div>
         </body>
     </html>

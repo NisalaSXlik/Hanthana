@@ -366,11 +366,40 @@ main .container {
     margin: 1rem 0;
 }
 
+.joined-groups-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1rem;
+}
 
 .joined-groups h4 {
-    margin-bottom: 1rem;
+    margin: 0;
     font-size: 1rem;
     color: var(--color-dark);
+}
+
+.btn-add-group {
+    background: var(--color-primary);
+    color: var(--color-white);
+    border: none;
+    border-radius: 50%;
+    width: 2rem;
+    height: 2rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.btn-add-group:hover {
+    background: var(--color-secondary);
+    transform: scale(1.1);
+}
+
+.btn-add-group i {
+    font-size: 1.2rem;
 }
 
 .popular-groups{
