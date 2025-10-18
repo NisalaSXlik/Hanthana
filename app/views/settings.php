@@ -22,194 +22,47 @@ if (!isset($_SESSION['user_id'])) {
     <link rel="stylesheet" href="../../public/css/mediaquery.css">
     <link rel="stylesheet" href="../../public/css/calender.css">
     <link rel="stylesheet" href="../../public/css/notificationpopup.css">
+    <link rel="stylesheet" href="../../public/css/post.css">
+    <link rel="stylesheet" href="https://unicons.iconscout.com/release/v4.0.8/css/line.css">
     
     <!-- Settings specific CSS -->
     <link rel="stylesheet" href="../../public/css/settings.css">
 </head>
 <body>
     <!-- Navbar -->
-    <nav>
-        <div class="container">
-            <div class="nav-left">
-                <a href="#" class="logo">SocialApp</a>
-            </div>
-            
-            <div class="nav-center">
-                <div class="search-bar">
-                    <i class="fas fa-search"></i>
-                    <input type="search" placeholder="Search for creators, inspirations, and projects">
-                </div>
-            </div>
-            
-            <div class="nav-right">
-                <div class="notification">
-                    <i class="fas fa-bell"></i>
-                    <span class="notification-count">3</span>
-                    <div class="notifications-popup">
-                        <div>
-                            <div class="profile-picture">
-                                <img src="https://ui-avatars.com/api/?name=John+Doe&background=0ea5e9&color=fff" alt="User">
-                            </div>
-                            <div class="notification-body">
-                                <b>John Doe</b> liked your post
-                                <small>10 MINUTES AGO</small>
-                            </div>
-                        </div>
-                        <div>
-                            <div class="profile-picture">
-                                <img src="https://ui-avatars.com/api/?name=Jane+Smith&background=10b981&color=fff" alt="User">
-                            </div>
-                            <div class="notification-body">
-                                <b>Jane Smith</b> commented on your photo
-                                <small>1 HOUR AGO</small>
-                            </div>
-                        </div>
-                        <div>
-                            <div class="profile-picture">
-                                <img src="https://ui-avatars.com/api/?name=Mike+Johnson&background=ef4444&color=fff" alt="User">
-                            </div>
-                            <div class="notification-body">
-                                <b>Mike Johnson</b> shared your story
-                                <small>3 HOURS AGO</small>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="calendar-icon">
-                    <i class="fas fa-calendar-alt"></i>
-                    <div class="calendar-popup">
-                        <div class="calender">
-                            <div class="month">
-                                <i class="fas fa-angle-left prev"></i>
-                                <div class="date">December 2023</div>
-                                <i class="fas fa-angle-right next"></i>
-                            </div>
-                            <div class="weekdays">
-                                <div>Sun</div>
-                                <div>Mon</div>
-                                <div>Tue</div>
-                                <div>Wed</div>
-                                <div>Thu</div>
-                                <div>Fri</div>
-                                <div>Sat</div>
-                            </div>
-                            <div class="days">
-                                <!-- Calendar days would be populated by JavaScript -->
-                            </div>
-                            <div class="goto-today">
-                                <div class="goto">
-                                    <input type="text" placeholder="mm/yyyy" class="date-input">
-                                    <button class="goto-btn">Go</button>
-                                </div>
-                                <button class="today-btn">Today</button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="profile-picture" id="profileDropdownTrigger">
-                    <img src="https://ui-avatars.com/api/?name=Lithmal+Perera&background=0ea5e9&color=fff" alt="Profile">
-                </div>
-                
-                <div class="profile-dropdown" id="profileDropdown">
-                    <a href="profile.php">
-                        <i class="fas fa-user"></i>
-                        <span>Profile</span>
-                    </a>
-                    <a href="settings.php">
-                        <i class="fas fa-cog"></i>
-                        <span>Settings</span>
-                    </a>
-                    <a href="#">
-                        <i class="fas fa-question-circle"></i>
-                        <span>Help & Support</span>
-                    </a>
-                    <div class="dropdown-divider"></div>
-                    <a href="logout.php" class="logout">
-                        <i class="fas fa-sign-out-alt"></i>
-                        <span>Logout</span>
-                    </a>
-                </div>
-            </div>
-        </div>
-    </nav>
+    <?php include __DIR__ . '/templates/navbar.php'; ?>
 
     <!-- Main Content -->
     <main>
         <div class="container">
             <!-- Left Sidebar -->
             <div class="left">
-                <div class="profile">
-                    <div class="profile-picture">
-                        <img src="https://ui-avatars.com/api/?name=Lithmal+Perera&background=0ea5e9&color=fff" alt="Profile">
-                    </div>
-                    <div class="handle">
-                        <h4>Lithmal Perera</h4>
-                        <p>@lithmal</p>
-                    </div>
-                </div>
+                <?php include __DIR__ . '/templates/left-sidebar.php'; ?>
                 
-                <!-- Settings Navigation -->
-                <div class="side-bar">
-                    <div class="settings-nav">
-                        <a href="#personal-info" class="menu-item active" data-section="personal-info">
-                            <i class="fas fa-user-circle"></i>
-                            <h3>Personal Information</h3>
-                        </a>
-                        <a href="#change-password" class="menu-item" data-section="change-password">
-                            <i class="fas fa-lock"></i>
-                            <h3>Change Password</h3>
-                        </a>
-                        <a href="#privacy" class="menu-item" data-section="privacy">
-                            <i class="fas fa-shield-alt"></i>
-                            <h3>Privacy Settings</h3>
-                        </a>
-                        <a href="#preferences" class="menu-item" data-section="preferences">
-                            <i class="fas fa-sliders-h"></i>
-                            <h3>Preferences</h3>
-                        </a>
-                    </div>
-                </div>
                 
-                <!-- Groups Section -->
-                <div class="joined-groups">
-                    <h4>Groups You've Joined</h4>
-                    <div class="group-list">
-                        <div class="group">
-                            <div class="group-icon">
-                                <i class="fas fa-utensils"></i>
-                            </div>
-                            <div class="group-info">
-                                <h5>Colombo Foodies</h5>
-                                <p>12.5K members</p>
-                            </div>
-                        </div>
-                        <div class="group">
-                            <div class="group-icon">
-                                <i class="fas fa-camera"></i>
-                            </div>
-                            <div class="group-info">
-                                <h5>SL Photography Club</h5>
-                                <p>8.2K members</p>
-                            </div>
-                        </div>
-                        <div class="group">
-                            <div class="group-icon">
-                                <i class="fas fa-hiking"></i>
-                            </div>
-                            <div class="group-info">
-                                <h5>Hiking Sri Lanka</h5>
-                                <p>5.7K members</p>
-                            </div>
-                        </div>
-                    </div>
-                    <button class="btn btn-secondary">See All Groups</button>
-                </div>
             </div>
             
-            <!-- Middle Section - Settings Content -->
+<!-- Middle Section - Settings Navigation and Content -->
             <div class="middle">
+                <!-- Settings Navigation -->
+                <div class="settings-nav-container">
+                    <div class="settings-nav">
+                        <a href="#personal-info-section" class="menu-item active" data-section="personal-info-section" title="Personal Info">
+                            <i class="fas fa-user-circle"></i>
+                        </a>
+                        <a href="#change-password-section" class="menu-item" data-section="change-password-section" title="Change Password">
+                            <i class="fas fa-lock"></i>
+                        </a>
+                        <a href="#privacy-section" class="menu-item" data-section="privacy-section" title="Privacy Settings">
+                            <i class="fas fa-shield-alt"></i>
+                        </a>
+                        <a href="#preferences-section" class="menu-item" data-section="preferences-section" title="Preferences">
+                            <i class="fas fa-sliders-h"></i>
+                        </a>
+                    </div>
+                </div>
+                
+                <!-- Settings Content -->
                 <div class="settings-container">
                     <div class="settings-header">
                         <h1>Settings</h1>
@@ -270,21 +123,36 @@ if (!isset($_SESSION['user_id'])) {
                                 <div class="setting-item">
                                     <div class="setting-label">
                                         <h4>Current Password</h4>
-                                        <input type="password" class="setting-input" placeholder="Enter your current password">
+                                        <div class="password-input-container">
+                                            <input type="password" class="setting-input" placeholder="Enter your current password">
+                                            <button type="button" class="password-toggle">
+                                                <i class="fas fa-eye"></i>
+                                            </button>
+                                        </div>
                                     </div>
                                 </div>
                                 
                                 <div class="setting-item">
                                     <div class="setting-label">
                                         <h4>New Password</h4>
-                                        <input type="password" class="setting-input" placeholder="Enter new password">
+                                        <div class="password-input-container">
+                                            <input type="password" class="setting-input" placeholder="Enter new password">
+                                            <button type="button" class="password-toggle">
+                                                <i class="fas fa-eye"></i>
+                                            </button>
+                                        </div>
                                     </div>
                                 </div>
                                 
                                 <div class="setting-item">
                                     <div class="setting-label">
                                         <h4>Confirm New Password</h4>
-                                        <input type="password" class="setting-input" placeholder="Confirm new password">
+                                        <div class="password-input-container">
+                                            <input type="password" class="setting-input" placeholder="Confirm new password">
+                                            <button type="button" class="password-toggle">
+                                                <i class="fas fa-eye"></i>
+                                            </button>
+                                        </div>
                                     </div>
                                 </div>
                                 
@@ -415,146 +283,152 @@ if (!isset($_SESSION['user_id'])) {
                        <!-- Right Sidebar -->
             <div class="right">
                 <!-- Messages -->
-                <div class="messages-card">
-                    <h4>Messages</h4>
+                <div class="messages">
+                    <div class="heading">
+                        <h4>Messages</h4>
+                        <i class="uil uil-edit"></i>
+                    </div>
                     <div class="search-bar">
-                        <i class="fas fa-search"></i>
+                        <i class="uil uil-search"></i>
                         <input type="search" placeholder="Search messages">
                     </div>
                     <div class="message-list">
-                        <div class="message-item">
+                        <div class="message">
                             <div class="profile-picture">
-                                <img src="https://ui-avatars.com/api/?name=Minthaka+J&background=0ea5e9&color=fff" alt="Minthaka J">
+                                    <img src="../../public/images/2.jpg">
+                                <div class="active"></div>
                             </div>
-                            <div class="message-info">
+                            <div class="message-body">
                                 <h5>Minthaka J.</h5>
                                 <p>Are we still meeting tomorrow?</p>
                             </div>
                         </div>
-                        <div class="message-item">
+                        <div class="message">
                             <div class="profile-picture">
-                                <img src="https://ui-avatars.com/api/?name=Lahiru+F&background=10b981&color=fff" alt="Lahiru F">
+                                    <img src="../../public/images/6.jpg">
                             </div>
-                            <div class="message-info">
+                            <div class="message-body">
                                 <h5>Lahiru F.</h5>
                                 <p>Sent you the event details</p>
                             </div>
                         </div>
                     </div>
                 </div>
-                
-                <!-- Friend Requests -->
+
                 <div class="friend-requests">
-                    <h4>Friend Requests (5)</h4>
-                    <div class="request-list">
-                        <div class="request-item">
-                            <div class="request-profile">
-                                <div class="profile-picture">
-                                    <img src="https://ui-avatars.com/api/?name=Emma+Watson&background=10b981&color=fff" alt="Emma Watson">
-                                </div>
-                                <div class="request-info">
-                                    <h5>Emma Watson</h5>
-                                    <p>8 mutual friends</p>
-                                </div>
-                            </div>
-                            <div class="request-actions">
-                                <button class="btn btn-primary btn-sm">Accept</button>
-                                <button class="btn btn-secondary btn-sm">Decline</button>
-                            </div>
-                        </div>
-                        
-                        <div class="request-item">
-                            <div class="request-profile">
-                                <div class="profile-picture">
-                                    <img src="https://ui-avatars.com/api/?name=Minthaka&background=0ea5e9&color=fff" alt="Minthaka">
-                                </div>
-                                <div class="request-info">
-                                    <h5>Minthaka</h5>
-                                    <p>28 mutual friends</p>
-                                </div>
-                            </div>
-                            <div class="request-actions">
-                                <button class="btn btn-primary btn-sm">Accept</button>
-                                <button class="btn btn-secondary btn-sm">Decline</button>
-                            </div>
-                        </div>
-                        
-                        <div class="request-item">
-                            <div class="request-profile">
-                                <div class="profile-picture">
-                                    <img src="https://ui-avatars.com/api/?name=Lahiru&background=ef4444&color=fff" alt="Lahiru">
-                                </div>
-                                <div class="request-info">
-                                    <h5>Lahiru</h5>
-                                    <p>85 mutual friends</p>
-                                </div>
-                            </div>
-                            <div class="request-actions">
-                                <button class="btn btn-primary btn-sm">Accept</button>
-                                <button class="btn btn-secondary btn-sm">Decline</button>
-                            </div>
-                        </div>
-                        
-                        <!-- Tharusha without buttons as shown in image -->
-                        <div class="request-item">
-                            <div class="request-profile">
-                                <div class="profile-picture">
-                                    <img src="https://ui-avatars.com/api/?name=Tharusha&background=64748b&color=fff" alt="Tharusha">
-                                </div>
-                                <div class="request-info">
-                                    <h5>Tharusha</h5>
-                                    <p>82 mutual friends</p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <button class="btn btn-secondary">See All Requests</button>
+        <h4>Friend Requests <span class="badge">(5)</span></h4>
+        <div class="request">
+            <div class="info">
+                <div class="profile-picture">
+                        <img src="../../public/images/4.jpg">
                 </div>
-                
-                <!-- Popular Groups -->
-                <div class="popular-groups">
-                    <h4>Popular Groups</h4>
-                    <div class="group-list">
-                        <div class="group">
-                            <div class="group-icon">
-                                <i class="fas fa-music"></i>
-                            </div>
-                            <div class="group-info">
-                                <h5>Music Lovers</h5>
-                                <p>2105 members</p>
-                            </div>
-                        </div>
-                        <div class="group">
-                            <div class="group-icon">
-                                <i class="fas fa-camera"></i>
-                            </div>
-                            <div class="group-info">
-                                <h5>Photography</h5>
-                                <p>1823 members</p>
-                            </div>
-                        </div>
-                        <div class="group">
-                            <div class="group-icon">
-                                <i class="fas fa-gamepad"></i>
-                            </div>
-                            <div class="group-info">
-                                <h5>Gaming</h5>
-                                <p>3150 members</p>
-                            </div>
-                        </div>
-                    </div>
-                    <button class="btn btn-secondary">Explore More</button>
+                <div>
+                    <h5>Emma Watson</h5>
+                    <p>8 mutual friends</p>
                 </div>
             </div>
-    </main>
+            <div class="action">
+                <button class="btn btn-primary accept-btn">Accept</button>
+                <button class="btn decline-btn">Decline</button>
+            </div>
+        </div>
+        <div class="request">
+            <div class="info">
+                <div class="profile-picture">
+                        <img src="../../public/images/2.jpg">
+                </div>
+                <div>
+                    <h5>Minthaka</h5>
+                    <p>28 mutual friends</p>
+                </div>
+            </div>
+            <div class="action">
+                <button class="btn btn-primary accept-btn">Accept</button>
+                <button class="btn decline-btn">Decline</button>
+            </div>
+        </div>
+        <div class="request">
+            <div class="info">
+                <div class="profile-picture">
+                        <img src="../../public/images/5.jpg">
+                </div>
+                <div>
+                    <h5>Lahiru</h5>
+                    <p>85 mutual friends</p>
+                </div>
+            </div>
+            <div class="action">
+                <button class="btn btn-primary accept-btn">Accept</button>
+                <button class="btn decline-btn">Decline</button>
+            </div>
+        </div>
+        <div class="request">
+            <div class="info">
+                <div class="profile-picture">
+                        <img src="../../public/images/1.jpg">
+                </div>
+                <div>
+                    <h5>Tharusha</h5>
+                    <p>82 mutual friends</p>
+                </div>
+            </div>
+            <div class="action">
+                <button class="btn btn-primary accept-btn">Accept</button>
+                <button class="btn decline-btn">Decline</button>
+            </div>
+        </div>
+        <div class="request">
+            <div class="info">
+                <div class="profile-picture">
+                        <img src="../../public/images/5.jpg">
+                </div>
+                <div>
+                    <h5>Nisal</h5>
+                    <p>85 mutual friends</p>
+                </div>
+            </div>
+            <div class="action">
+                <button class="btn btn-primary accept-btn">Accept</button>
+                <button class="btn decline-btn">Decline</button>
+            </div>
+        </div>
+    </div>
+    <div class="toast-container" id="toastContainer"></div>
+            </div>
+        </div>
+
+</main>
 
     <!-- Include existing JavaScript files -->
     <script src="../../public/js/navbar.js"></script>
     <script src="../../public/js/calender.js"></script>
     <script src="../../public/js/notificationpopup.js"></script>
     <script src="../../public/js/general.js"></script>
+    <script src="../../public/js/post.js"></script>
+    <script src="../../public/js/friends.js"></script>
     
     <!-- Settings specific JavaScript -->
     <script src="../../public/js/settings.js"></script>
+    <script>
+document.addEventListener('DOMContentLoaded', function() {
+  const navLinks = document.querySelectorAll('.settings-nav .menu-item');
+  const sections = document.querySelectorAll('.settings-section');
+
+  navLinks.forEach(link => {
+    link.addEventListener('click', function(e) {
+      e.preventDefault();
+      // Remove active from all links
+      navLinks.forEach(l => l.classList.remove('active'));
+      this.classList.add('active');
+      // Hide all sections
+      sections.forEach(sec => sec.classList.remove('active'));
+      // Show the selected section
+      const target = this.getAttribute('href');
+      const section = document.querySelector(target);
+      if (section) section.classList.add('active');
+    });
+  });
+});
+</script>
 </body>
 </html>

@@ -50,8 +50,8 @@
                 </div>
             </div>
             
-            <div class="search-section">
-                <div class="search-bar">
+            <div class="chat-search-section">
+                <div class="chat-search-bar">
                     <i class="uil uil-search"></i>
                     <input type="text" placeholder="Search users...">
                 </div>

@@ -1,0 +1,8 @@
+<?php
+// config.php - Put your actual credentials here
+define('DB_HOST', 'localhost');
+define('DB_NAME', 'Hanthana');
+define('DB_USER', 'root');
+define('DB_PASS', 'Sin90=1');  // Your actual MySQL password
+define('DB_CHARSET', 'utf8mb4');
+?>
