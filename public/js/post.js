@@ -124,7 +124,7 @@ document.addEventListener('DOMContentLoaded', function() {
             formData.append('image', selectedFile);
         }
 
-        fetch('/Hanthane/api/posts/create', {
+        fetch(BASE_PATH + '/index.php?controller=Posts&action=create', {
             method: 'POST',
             body: formData,
             // headers: { 'Authorization': `Bearer ${getAuthToken()}` } // Commented out: If authenticated
@@ -342,7 +342,7 @@ document.addEventListener('DOMContentLoaded', function() {
         try {
             const formData = new FormData();
             formData.append('post_id', postId);
-            const res = await fetch('/Hanthane/api/posts/delete', {  // Correct URL
+            const res = await fetch(BASE_PATH + '/index.php?controller=Posts&action=delete', {  // Correct URL
                 method: 'POST',
                 body: formData
             });
@@ -383,7 +383,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 const formData = new FormData();
                 formData.append('post_id', editingPostId);
                 formData.append('content', content);
-                const res = await fetch('/Hanthane/api/posts/update', {  // Correct URL
+                const res = await fetch(BASE_PATH + '/index.php?controller=Posts&action=update', {  // Correct URL
                     method: 'POST',
                     body: formData
                 });

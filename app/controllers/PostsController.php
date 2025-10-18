@@ -66,7 +66,7 @@ class PostsController {
             if (!is_dir($uploadDir)) mkdir($uploadDir, 0755, true);
             $imageName = uniqid() . '_' . basename($_FILES['image']['name']);
             $serverPath = $uploadDir . $imageName;  // Server path for file move
-            $webPath = '/Hanthane/public/uploads/' . $imageName;  // Web path for DB
+            $webPath = BASE_PATH . '/public/uploads/' . $imageName;  // Web path for DB
             $imageSize = $_FILES['image']['size'];
 
             if (!move_uploaded_file($_FILES['image']['tmp_name'], $serverPath)) {  // Use server path

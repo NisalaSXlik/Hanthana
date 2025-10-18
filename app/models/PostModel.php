@@ -45,10 +45,10 @@ class PostModel {
         // Adjust paths for DB: Map images to uploads, avatars to avatars folder
         foreach ($posts as &$post) {
             if (!empty($post['image_url'])) {
-                $post['image_url'] = '/Hanthane/public/uploads/' . basename($post['image_url']);  // Drag from uploads
+                $post['image_url'] = BASE_PATH . '/public/uploads/' . basename($post['image_url']);  // Drag from uploads
             }
             if (!empty($post['profile_picture'])) {
-                $post['profile_picture'] = '/Hanthane/public/images/avatars/' . basename($post['profile_picture']);  // Drag from avatars
+                $post['profile_picture'] = BASE_PATH . '/public/images/avatars/' . basename($post['profile_picture']);  // Drag from avatars
             }
         }
         return $posts;
@@ -88,10 +88,10 @@ class PostModel {
         if ($row) {
             // Adjust paths
             if (!empty($row['image_url'])) {
-                $row['image_url'] = '/Hanthane/public/uploads/' . basename($row['image_url']);
+                $row['image_url'] = BASE_PATH . '/public/uploads/' . basename($row['image_url']);
             }
             if (!empty($row['profile_picture'])) {
-                $row['profile_picture'] = '/Hanthane/public/images/avatars/' . basename($row['profile_picture']);
+                $row['profile_picture'] = BASE_PATH . '/public/images/avatars/' . basename($row['profile_picture']);
             }
         }
         return $row ?: null;
