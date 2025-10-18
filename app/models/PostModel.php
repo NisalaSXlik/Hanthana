@@ -73,6 +73,7 @@ class PostModel {
                 p.post_id,
                 p.content,
                 p.created_at,
+                p.author_id,
                 u.user_id,
                 u.username,
                 u.first_name,
@@ -98,5 +99,23 @@ class PostModel {
         $stmt->execute([$postId]);
         $row = $stmt->fetch(PDO::FETCH_ASSOC);
         return $row ?: null;
+    }
+
+    /**
+     * Update post content for the given post if owned by the author.
+     */
+    public function updatePostContent(int $postId, int $authorId, string $content): bool {
+        $sql = "UPDATE Post SET content = ?, is_edited = TRUE, edited_at = CURRENT_TIMESTAMP WHERE post_id = ? AND author_id = ?";
+        $stmt = $this->pdo->prepare($sql);
+        return $stmt->execute([$content, $postId, $authorId]);
+    }
+
+    /**
+     * Delete a post if owned by the author. Cascades will remove media/comments.
+     */
+    public function deletePost(int $postId, int $authorId): bool {
+        $sql = "DELETE FROM Post WHERE post_id = ? AND author_id = ?";
+        $stmt = $this->pdo->prepare($sql);
+        return $stmt->execute([$postId, $authorId]);
     }
 }

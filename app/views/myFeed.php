@@ -1,9 +1,16 @@
 <?php
+// Ensure session for ownership/UI logic
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+
 // Fetch posts from DB if not provided by a controller
 if (!isset($posts)) {
     require_once __DIR__ . '/../models/PostModel.php';
     $posts = (new PostModel())->getFeedPosts();
 }
+
+$currentUserId = $_SESSION['user_id'] ?? null;
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -16,8 +23,8 @@ if (!isset($posts)) {
     <link rel="stylesheet" href="../../public/css/navbar.css"> 
     <link rel="stylesheet" href="../../public/css/mediaquery.css">
     <link rel="stylesheet" href="../../public/css/calender.css">
-    <link rel="stylesheet" href="../../public/css/post.css">
     <link rel="stylesheet" href="../../public/css/notificationpopup.css">
+    <link rel="stylesheet" href="../../public/css/post.css">
     <link rel="stylesheet" href="https://unicons.iconscout.com/release/v4.0.8/css/line.css">
 </head>
 <body>
@@ -53,7 +60,7 @@ if (!isset($posts)) {
                                     $displayName = $fullName !== '' ? $fullName : 'Unknown';
                                 }
                             ?>
-                            <div class="feed" data-post-id="<?php echo (int)$post['post_id']; ?>">
+                            <div class="feed" data-post-id="<?php echo (int)$post['post_id']; ?>" data-post-content="<?php echo htmlspecialchars($post['content'] ?? '', ENT_QUOTES); ?>">
                                 <div class="head">
                                     <div class="user">
                                         <div class="profile-picture">
@@ -64,7 +71,24 @@ if (!isset($posts)) {
                                             <small><?php echo htmlspecialchars($post['created_at'] ?? ''); ?></small>
                                         </div>
                                     </div>
-                                    <i class="uil uil-ellipsis-h"></i>
+                                    <?php 
+                                    $isOwner = isset($currentUserId) && (int)$currentUserId === (int)($post['author_id'] ?? $post['user_id'] ?? 0);
+                                    ?>
+                                    <?php if ($isOwner): ?>
+                                        <div class="post-menu">
+                                            <button class="menu-trigger" aria-label="Post menu"><i class="uil uil-ellipsis-h"></i></button>
+                                            <div class="menu">
+                                                <button class="menu-item edit-post" data-post-id="<?php echo (int)$post['post_id']; ?>">
+                                                    <i class="uil uil-edit"></i> Edit
+                                                </button>
+                                                <button class="menu-item delete-post" data-post-id="<?php echo (int)$post['post_id']; ?>">
+                                                    <i class="uil uil-trash-alt"></i> Delete
+                                                </button>
+                                            </div>
+                                        </div>
+                                    <?php else: ?>
+                                        <i class="uil uil-ellipsis-h"></i>
+                                    <?php endif; ?>
                                 </div>
 
                                 <?php if (!empty($post['image_url'])): ?>
@@ -262,6 +286,26 @@ if (!isset($posts)) {
         </div>
     </div>
     <?php include __DIR__ . '/templates/chat-clean.php'; ?>
+
+    <!-- Edit Post Modal -->
+    <div id="editPostModal" class="post-modal" role="dialog" aria-modal="true" aria-labelledby="editPostTitle" style="display:none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="editPostTitle">Edit Post</h3>
+                <button class="close-modal edit-close" aria-label="Close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="editPostContent">Content</label>
+                    <textarea id="editPostContent" rows="5" placeholder="Update your post..."></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary cancel-edit">Cancel</button>
+                <button class="btn btn-primary save-edit" disabled>Save</button>
+            </div>
+        </div>
+    </div>
 
     <script src="../../public/js/calender.js"></script>
     <script src="../../public/js/feed.js"></script>

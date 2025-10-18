@@ -35,6 +35,20 @@
     justify-content: space-between;
     align-items: center;
     margin-bottom: 1rem;
+    position: relative;
+}
+
+.feed .head > i {
+    font-size: 1.3rem;
+    cursor: pointer;
+    color: var(--color-dark);
+    padding: 0.5rem;
+    border-radius: 50%;
+    transition: background 0.2s;
+}
+
+.feed .head > i:hover {
+    background: var(--color-light);
 }
 
 .feed .user {
@@ -73,24 +87,46 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 0.8rem;
+    padding: 0.5rem 0;
+    margin: 0.5rem 0;
 }
 
 .feed .interaction-buttons {
     display: flex;
     gap: 1rem;
+    align-items: center;
 }
 
 .feed .interaction-buttons i,
 .feed .bookmark i {
-    font-size: 1.3rem;
+    font-size: 1.4rem;
     cursor: pointer;
-    transition: all 0.3s ease;
+    color: var(--color-dark);
+    transition: color 0.2s;
+    text-decoration: none !important;
 }
 
 .feed .interaction-buttons i:hover,
 .feed .bookmark i:hover {
     color: var(--color-primary);
+    text-decoration: none !important;
+}
+
+/* Remove any underline effects from icons */
+.uil,
+.uil-comment,
+.uil-heart,
+.uil-share-alt,
+.uil-bookmark {
+    text-decoration: none !important;
+}
+
+.uil:hover,
+.uil-comment:hover,
+.uil-heart:hover,
+.uil-share-alt:hover,
+.uil-bookmark:hover {
+    text-decoration: none !important;
 }
 
 .feed .liked-by {
@@ -136,10 +172,32 @@
     font-weight: 600;
 }
 
-.feed .comments {
+/* View all comments styling */
+.feed .comments,
+.feed .load-comments-btn {
     font-size: 0.85rem;
     color: var(--color-gray);
     cursor: pointer;
+    margin: 0.5rem 0;
+    display: inline-block;
+    text-decoration: none !important;
+}
+
+.feed .comments:hover,
+.feed .load-comments-btn:hover {
+    color: var(--color-primary);
+    text-decoration: none !important;
+}
+
+/* Remove link underline effects */
+.feed a.comments,
+.feed a.load-comments-btn {
+    text-decoration: none !important;
+}
+
+.feed a.comments:hover,
+.feed a.load-comments-btn:hover {
+    text-decoration: none !important;
 }
 
 /* Right Sidebar */

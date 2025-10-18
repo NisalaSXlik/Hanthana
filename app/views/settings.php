@@ -398,6 +398,7 @@ if (!isset($_SESSION['user_id'])) {
         </div>
 
 </main>
+    <?php include __DIR__ . '/templates/chat-clean.php'; ?>
 
     <!-- Include existing JavaScript files -->
     <script src="../../public/js/navbar.js"></script>
@@ -409,26 +410,5 @@ if (!isset($_SESSION['user_id'])) {
     
     <!-- Settings specific JavaScript -->
     <script src="../../public/js/settings.js"></script>
-    <script>
-document.addEventListener('DOMContentLoaded', function() {
-  const navLinks = document.querySelectorAll('.settings-nav .menu-item');
-  const sections = document.querySelectorAll('.settings-section');
-
-  navLinks.forEach(link => {
-    link.addEventListener('click', function(e) {
-      e.preventDefault();
-      // Remove active from all links
-      navLinks.forEach(l => l.classList.remove('active'));
-      this.classList.add('active');
-      // Hide all sections
-      sections.forEach(sec => sec.classList.remove('active'));
-      // Show the selected section
-      const target = this.getAttribute('href');
-      const section = document.querySelector(target);
-      if (section) section.classList.add('active');
-    });
-  });
-});
-</script>
 </body>
 </html>

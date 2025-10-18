@@ -207,7 +207,7 @@
     <script src="../../public/js/calender.js"></script>
     <script src="../../public/js/notificationpopup.js"></script>
     <script src="../../public/js/discover.js"></script>
-    <script src="../../public/js/genral.js"></script>
+    <script src="../../public/js/general.js"></script>
     <script src="../../public/js/feed.js"></script>
     <script src="../../public/js/post.js"></script>
 </body>

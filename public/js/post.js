@@ -1,7 +1,11 @@
 
 // post sharing 
 
+console.log('post.js loaded!');
+
 document.addEventListener('DOMContentLoaded', function() {
+    console.log('DOMContentLoaded fired in post.js');
+    
     // Post creation modal functionality
     const postModal = document.getElementById('postModal');
     const createBtn = document.querySelector('.btn-primary'); // Your create button
@@ -175,4 +179,150 @@ function showToast(message, type = 'success') {
             postImageInput.dispatchEvent(event);
         }
     });
+    // ---------------------------------------------
+    // Per-post Edit/Delete menu + Edit modal logic
+    // ---------------------------------------------
+    const editModal = document.getElementById('editPostModal');
+    const editTextarea = document.getElementById('editPostContent');
+    const editClose = editModal ? editModal.querySelector('.edit-close') : null;
+    const editCancel = editModal ? editModal.querySelector('.cancel-edit') : null;
+    const editSave = editModal ? editModal.querySelector('.save-edit') : null;
+    let editingPostId = null;
+
+    // Toggle dropdown menu
+    document.addEventListener('click', (e) => {
+        console.log('Click detected on:', e.target);
+        console.log('Target classes:', e.target.className);
+        
+        // Check if clicking on the button or icon inside
+        const trigger = e.target.closest('.menu-trigger');
+        console.log('Trigger element found:', trigger);
+        
+        if (trigger && trigger.closest('.post-menu')) {
+            e.preventDefault();
+            e.stopPropagation();
+            const menu = trigger.closest('.post-menu');
+            console.log('Post menu element:', menu);
+            const alreadyOpen = menu.classList.contains('open');
+            console.log('Already open:', alreadyOpen);
+            
+            // Close any other open menus
+            document.querySelectorAll('.post-menu.open').forEach(m => {
+                console.log('Closing menu:', m);
+                m.classList.remove('open');
+            });
+            
+            if (!alreadyOpen) {
+                menu.classList.add('open');
+                console.log('Menu opened, classes:', menu.className);
+            }
+            return;
+        }
+
+        // Close menus when clicking outside
+        if (!e.target.closest('.post-menu')) {
+            document.querySelectorAll('.post-menu.open').forEach(m => m.classList.remove('open'));
+        }
+    });
+
+    // Edit click
+    document.addEventListener('click', (e) => {
+        const btn = e.target.closest('.menu-item.edit-post');
+        if (!btn) return;
+        const postId = btn.dataset.postId;
+        const feedEl = document.querySelector(`.feed[data-post-id="${postId}"]`);
+        if (!feedEl) return;
+
+        const content = feedEl.getAttribute('data-post-content') || '';
+        editingPostId = postId;
+        if (editTextarea) {
+            editTextarea.value = content;
+            editSave.disabled = content.trim().length === 0;
+        }
+        if (editModal) {
+            editModal.style.display = 'flex';
+            document.body.style.overflow = 'hidden';
+        }
+    });
+
+    // Delete click
+    document.addEventListener('click', async (e) => {
+        const btn = e.target.closest('.menu-item.delete-post');
+        if (!btn) return;
+        const postId = btn.dataset.postId;
+        const confirmDel = confirm('Delete this post? This cannot be undone.');
+        if (!confirmDel) return;
+        try {
+            const res = await fetch('../../app/controllers/PostController.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: `action=delete_post&post_id=${encodeURIComponent(postId)}`
+            });
+            const data = await res.json();
+            if (data.success) {
+                const feedEl = document.querySelector(`.feed[data-post-id="${postId}"]`);
+                if (feedEl) feedEl.remove();
+                if (typeof showToast === 'function') showToast('Post deleted', 'success');
+            } else {
+                if (typeof showToast === 'function') showToast(data.message || 'Delete failed', 'error');
+            }
+        } catch (err) {
+            console.error(err);
+            if (typeof showToast === 'function') showToast('Server error', 'error');
+        }
+    });
+
+    // Edit modal interactions
+    if (editTextarea) {
+        editTextarea.addEventListener('input', () => {
+            editSave.disabled = editTextarea.value.trim().length === 0;
+        });
+    }
+    const closeEditModal = () => {
+        if (!editModal) return;
+        editModal.style.display = 'none';
+        document.body.style.overflow = 'auto';
+        editingPostId = null;
+    };
+    if (editClose) editClose.addEventListener('click', closeEditModal);
+    if (editCancel) editCancel.addEventListener('click', closeEditModal);
+
+    if (editSave) {
+        editSave.addEventListener('click', async () => {
+            const content = (editTextarea?.value || '').trim();
+            if (!editingPostId || !content) return;
+            try {
+                const res = await fetch('../../app/controllers/PostController.php', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: `action=update_post&post_id=${encodeURIComponent(editingPostId)}&content=${encodeURIComponent(content)}`
+                });
+                const data = await res.json();
+                if (data.success) {
+                    const feedEl = document.querySelector(`.feed[data-post-id=\"${editingPostId}\"]`);
+                    if (feedEl) {
+                        feedEl.setAttribute('data-post-content', content);
+                        const captionP = feedEl.querySelector('.caption p');
+                        if (captionP) {
+                            const username = captionP.querySelector('b')?.textContent || '';
+                            captionP.innerHTML = `<b>${username}</b> ${escapeHtml(content)}`;
+                        }
+                    }
+                    if (typeof showToast === 'function') showToast('Post updated', 'success');
+                    closeEditModal();
+                } else {
+                    if (typeof showToast === 'function') showToast(data.message || 'Update failed', 'error');
+                }
+            } catch (err) {
+                console.error(err);
+                if (typeof showToast === 'function') showToast('Server error', 'error');
+            }
+        });
+    }
+
+    function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
 });
