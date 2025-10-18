@@ -398,6 +398,119 @@ main .container {
     transform: scale(1.1);
 }
 
+/* Create Group Modal - namespaced to avoid conflicts with Create Post modal styles */
+#createGroupModal.create-group-modal.modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(5px);
+    z-index: 10000;
+    justify-content: center;
+    align-items: center;
+}
+
+#createGroupModal.create-group-modal.modal-overlay.active {
+    display: flex;
+}
+
+#createGroupModal.create-group-modal .modal-content {
+    background: var(--color-white);
+    border-radius: 1rem;
+    width: 92%;
+    max-width: 650px;
+    max-height: 85vh;
+    overflow-y: auto;
+    box-shadow: 0 1rem 3rem rgba(0, 0, 0, 0.4);
+    text-align: left; /* ensure left alignment even if other pages set center */
+}
+
+#createGroupModal.create-group-modal .modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.25rem 1.5rem;
+    border-bottom: 1px solid var(--color-light);
+}
+
+#createGroupModal.create-group-modal .modal-close {
+    background: transparent;
+    border: none;
+    font-size: 1.5rem;
+    color: var(--color-gray);
+    cursor: pointer;
+    width: 2.5rem;
+    height: 2.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: all 0.2s;
+}
+
+#createGroupModal.create-group-modal .modal-close:hover { background: var(--color-light); }
+
+#createGroupModal.create-group-modal .modal-body {
+    padding: 1.5rem;
+    max-height: calc(85vh - 140px);
+    overflow-y: auto;
+}
+
+/* Explicit left alignment for all form content within the group modal */
+#createGroupModal.create-group-modal .modal-body,
+#createGroupModal.create-group-modal .form-group,
+#createGroupModal.create-group-modal .form-group label,
+#createGroupModal.create-group-modal .form-group small,
+#createGroupModal.create-group-modal input,
+#createGroupModal.create-group-modal textarea,
+#createGroupModal.create-group-modal select {
+    text-align: left;
+}
+
+#createGroupModal.create-group-modal .form-group { margin-bottom: 1.1rem; }
+
+#createGroupModal.create-group-modal .form-group label {
+    display: block;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+}
+
+#createGroupModal.create-group-modal .form-group .required { color: var(--color-danger); }
+
+#createGroupModal.create-group-modal input[type="text"],
+#createGroupModal.create-group-modal textarea,
+#createGroupModal.create-group-modal select {
+    width: 100%;
+    padding: 0.875rem 1rem;
+    border: 1.5px solid var(--color-light);
+    border-radius: 0.75rem;
+    font-size: 0.95rem;
+    background: var(--color-white);
+    color: var(--color-dark);
+}
+
+#createGroupModal.create-group-modal input:focus,
+#createGroupModal.create-group-modal textarea:focus,
+#createGroupModal.create-group-modal select:focus {
+    outline: none;
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.1);
+}
+
+#createGroupModal.create-group-modal .modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.75rem;
+    padding: 1.25rem 1.5rem;
+    border-top: 1px solid var(--color-light);
+}
+
+#createGroupModal.create-group-modal .btn { padding: 0.75rem 1.5rem; border-radius: 0.75rem; font-weight: 600; border: none; }
+#createGroupModal.create-group-modal .btn-primary { background: var(--color-primary); color: var(--color-white); }
+#createGroupModal.create-group-modal .btn-primary:hover { background: #0284c7; }
+#createGroupModal.create-group-modal .btn-secondary { background: var(--color-light); color: var(--color-dark); }
+#createGroupModal.create-group-modal .btn-secondary:hover { background: var(--color-gray); color: var(--color-white); }
+
 .btn-add-group i {
     font-size: 1.2rem;
 }
