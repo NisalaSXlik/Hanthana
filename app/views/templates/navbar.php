@@ -41,6 +41,7 @@
                             </div>
                         </div>
                     </div>
+</div>
                     <!-- Post Creation Modal -->
 <div class="post-modal" id="postModal">
     <div class="modal-content">
@@ -92,11 +93,11 @@
         </div>
         <div class="modal-footer">
             <button class="btn btn-secondary cancel-btn">Cancel</button>
-            <button class="btn btn-primary share-btn" disabled>Share</button>
+            <button class="btn btn-primary share-btn">Share</button>
         </div>
     </div>
 </div>
-                </div>
+                
                 <div class="notification">
                     <i class="uil uil-bell">
                         <small class="notification-count">9+</small>
