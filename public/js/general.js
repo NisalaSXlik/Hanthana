@@ -93,10 +93,13 @@ document.addEventListener('DOMContentLoaded', function() {
         // Handle form submission
         createGroupForm.addEventListener('submit', async (e) => {
             e.preventDefault();
-            
+            const errorMsgDiv = document.getElementById('groupErrorMsg');
+            if (errorMsgDiv) {
+                errorMsgDiv.style.display = 'none';
+                errorMsgDiv.textContent = '';
+            }
             const formData = new FormData(createGroupForm);
             const groupData = Object.fromEntries(formData.entries());
-
             try {
                 const response = await fetch('../../app/controllers/GroupController.php', {
                     method: 'POST',
@@ -108,22 +111,33 @@ document.addEventListener('DOMContentLoaded', function() {
                         ...groupData
                     })
                 });
-
                 const result = await response.json();
-
                 if (result.success) {
+                    if (errorMsgDiv) {
+                        errorMsgDiv.style.display = 'none';
+                        errorMsgDiv.textContent = '';
+                    }
                     showToast('Group created successfully!', 'success');
                     closeModal();
-                    // Optional: Refresh the group list or redirect
                     setTimeout(() => {
                         window.location.reload();
                     }, 1500);
                 } else {
-                    showToast(result.message || 'Failed to create group', 'error');
+                    if (errorMsgDiv) {
+                        errorMsgDiv.textContent = result.message || 'Failed to create group';
+                        errorMsgDiv.style.display = 'block';
+                    } else {
+                        showToast(result.message || 'Failed to create group', 'error');
+                    }
                 }
             } catch (error) {
                 console.error('Error creating group:', error);
-                showToast('An error occurred. Please try again.', 'error');
+                if (errorMsgDiv) {
+                    errorMsgDiv.textContent = 'An error occurred. Please try again.';
+                    errorMsgDiv.style.display = 'block';
+                } else {
+                    showToast('An error occurred. Please try again.', 'error');
+                }
             }
         });
     }

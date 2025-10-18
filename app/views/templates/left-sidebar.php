@@ -40,6 +40,13 @@
                     </a>
                 </div>
 
+                <?php
+                require_once __DIR__ . '/../../models/GroupModel.php';
+                $groupModel = new GroupModel();
+                $userId = $_SESSION['user_id'] ?? null;
+                $createdGroups = $userId ? $groupModel->getGroupsCreatedBy($userId) : [];
+                $joinedGroups = $userId ? $groupModel->getGroupsJoinedBy($userId) : [];
+                ?>
                 <div class="joined-groups">
                     <div class="joined-groups-header">
                         <h4>Groups</h4>
@@ -48,33 +55,43 @@
                         </button>
                     </div>
                     <div class="group-list">
-                        <div class="group">
-                            <div class="group-icon">
-                                <i class="uil uil-users-alt"></i>
+                        <?php if (!empty($createdGroups)) : ?>
+                            <div class="sidebar-subsection">
+                                <strong style="font-size:13px;">Created by you</strong>
+                                <?php foreach ($createdGroups as $group): ?>
+                                    <div class="group">
+                                        <div class="group-icon">
+                                            <i class="uil uil-users-alt"></i>
+                                        </div>
+                                        <div class="group-info">
+                                            <h5><a href="../views/groupprofileview.php?group_id=<?php echo $group['group_id']; ?>"><?php echo htmlspecialchars($group['name']); ?></a></h5>
+                                            <p><?php echo htmlspecialchars($group['member_count'] ?? ''); ?> members</p>
+                                        </div>
+                                    </div>
+                                <?php endforeach; ?>
                             </div>
-                            <div class="group-info">
-                                <h5>Colombo Foodies</h5>
-                                <p>12.5k members</p>
+                        <?php endif; ?>
+                        <?php if (!empty($joinedGroups)) : ?>
+                            <div class="sidebar-subsection">
+                                <strong style="font-size:13px;">Joined Groups</strong>
+                                <?php foreach ($joinedGroups as $group): ?>
+                                    <?php if ($group['created_by'] != $userId): // Avoid duplicate ?>
+                                    <div class="group">
+                                        <div class="group-icon">
+                                            <i class="uil uil-users-alt"></i>
+                                        </div>
+                                        <div class="group-info">
+                                            <h5><a href="../views/groupprofileview.php?group_id=<?php echo $group['group_id']; ?>"><?php echo htmlspecialchars($group['name']); ?></a></h5>
+                                            <p><?php echo htmlspecialchars($group['member_count'] ?? ''); ?> members</p>
+                                        </div>
+                                    </div>
+                                    <?php endif; ?>
+                                <?php endforeach; ?>
                             </div>
-                        </div>
-                        <div class="group">
-                            <div class="group-icon">
-                                <i class="uil uil-camera"></i>
-                            </div>
-                            <div class="group-info">
-                                <h5>SL Photography Club</h5>
-                                <p>8.2k members</p>
-                            </div>
-                        </div>
-                        <div class="group">
-                            <div class="group-icon">
-                                <i class="uil uil-mountains"></i>
-                            </div>
-                            <div class="group-info">
-                                <h5>Hiking Sri Lanka</h5>
-                                <p>5.7k members</p>
-                            </div>
-                        </div>
+                        <?php endif; ?>
+                        <?php if (empty($createdGroups) && empty($joinedGroups)) : ?>
+                            <p style="padding:10px 0 0 10px;">You haven't joined or created any groups yet.</p>
+                        <?php endif; ?>
                     </div>
                     <button class="btn btn-secondary">See All Groups</button>
                 </div>
@@ -90,6 +107,7 @@
                         </button>
                     </div>
                     <form id="createGroupForm" class="modal-body">
+                        <div id="groupErrorMsg" style="display:none;color:#d32f2f;font-weight:bold;margin-bottom:10px;"></div>
                         <div class="form-group">
                             <label for="groupName">Group Name <span class="required">*</span></label>
                             <input type="text" id="groupName" name="name" required maxlength="255" placeholder="Enter group name">

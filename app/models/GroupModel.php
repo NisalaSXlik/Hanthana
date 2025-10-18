@@ -2,6 +2,24 @@
 require_once __DIR__ . '/../core/Database.php';
 
 class GroupModel {
+    // Get groups created by the user
+    public function getGroupsCreatedBy($userId) {
+        $stmt = $this->pdo->prepare("SELECT * FROM GroupsTable WHERE created_by = ? AND is_active = TRUE ORDER BY created_at DESC");
+        $stmt->execute([$userId]);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    // Get groups joined by the user (including those created by the user)
+    public function getGroupsJoinedBy($userId) {
+        $stmt = $this->pdo->prepare("
+            SELECT g.* FROM GroupsTable g
+            INNER JOIN GroupMember m ON g.group_id = m.group_id
+            WHERE m.user_id = ? AND g.is_active = TRUE
+            ORDER BY m.joined_at DESC
+        ");
+        $stmt->execute([$userId]);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
     private PDO $pdo;
 
     public function __construct() {
@@ -104,9 +122,13 @@ class GroupModel {
 
         $params[] = $groupId;
         $sql = "UPDATE GroupsTable SET " . implode(', ', $fields) . " WHERE group_id = ?";
-        
-        $stmt = $this->pdo->prepare($sql);
-        return $stmt->execute($params);
+        try {
+            $stmt = $this->pdo->prepare($sql);
+            return $stmt->execute($params);
+        } catch (PDOException $e) {
+            error_log('SQL error in updateGroup: ' . $e->getMessage());
+            return false;
+        }
     }
 
     /**

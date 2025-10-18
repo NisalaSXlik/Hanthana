@@ -1,3 +1,89 @@
+/* Edit Group Modal image upload styling */
+#editGroupModal .form-group input[type="file"] {
+    display: none;
+}
+#editGroupModal .image-upload-label {
+    display: inline-block;
+    padding: 0.5rem 1rem;
+    background: var(--color-primary);
+    color: #fff;
+    border-radius: 0.5rem;
+    cursor: pointer;
+    margin-bottom: 0.5rem;
+    font-size: 0.95rem;
+    transition: background 0.2s;
+}
+#editGroupModal .image-upload-label:hover {
+    background: var(--color-secondary);
+}
+#editGroupModal .image-preview {
+    display: block;
+    max-width: 120px;
+    max-height: 120px;
+    border-radius: 0.5rem;
+    margin-top: 0.5rem;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+/* Make only the modal body (form) scrollable, keep header/footer fixed */
+#editGroupModal .modal-content {
+    display: flex;
+    flex-direction: column;
+    max-height: 90vh !important;
+    overflow: hidden !important;
+}
+#editGroupModal .modal-header {
+    flex: 0 0 auto;
+}
+#editGroupModal .modal-body {
+    flex: 1 1 auto;
+    overflow-y: auto;
+    min-height: 0;
+    padding-bottom: 1rem;
+}
+#editGroupModal .modal-footer {
+    flex: 0 0 auto;
+}
+/* Ensure modal overlay and modal content are scrollable and always visible */
+#editGroupModal {
+    overflow-y: auto !important;
+    max-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: 9999;
+    background: rgba(0,0,0,0.3);
+}
+#editGroupModal .modal-content {
+    max-height: 90vh !important;
+    overflow-y: auto !important;
+    width: 100%;
+    max-width: 500px;
+    background: #fff;
+    border-radius: 1rem;
+    box-shadow: 0 2px 16px rgba(0,0,0,0.15);
+    margin: 2rem auto;
+}
+/* Make Edit Group modal body scrollable if content overflows */
+#editGroupModal .modal-content {
+    max-height: 90vh;
+    overflow-y: auto;
+}
+/* Sidebar group links styling */
+.group-info a {
+    color: inherit;
+    text-decoration: none;
+}
+.group-info a:visited {
+    color: inherit;
+}
+.group-info a:hover {
+    text-decoration: underline;
+}
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
 
 :root {
