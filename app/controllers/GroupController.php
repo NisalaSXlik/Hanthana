@@ -56,7 +56,16 @@ class GroupController {
                 return;
             }
             $group = $this->groupModel->getById($groupId);
-            if (!$group || $group['created_by'] != $userId) {
+            if (!$group) {
+                error_log('DEBUG: Group not found for ID ' . $groupId);
+                echo json_encode(['success' => false, 'message' => 'Group not found.']);
+                return;
+            }
+
+            $isCreator = isset($group['created_by']) && (int)$group['created_by'] === $userId;
+            $isAdmin = $this->groupModel->isGroupAdmin($groupId, $userId);
+
+            if (!$isCreator && !$isAdmin) {
                 error_log('DEBUG: Permission denied for user ' . $userId . ' on group ' . $groupId);
                 echo json_encode(['success' => false, 'message' => 'Permission denied.']);
                 return;

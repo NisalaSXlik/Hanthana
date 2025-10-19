@@ -38,27 +38,25 @@ $currentUserId = $_SESSION['user_id'] ?? null;
                     <?php if (!empty($posts)): ?>
                         <?php foreach ($posts as $post): ?>
                             <?php
-                                $rawAvatar = trim($post['profile_picture'] ?? '');
-                                if ($rawAvatar === '' || $rawAvatar === null) {
-                                    $avatarUrl = '../../public/images/avatars/default.png';
-                                } else {
-                                    if (stripos($rawAvatar, 'http://') === 0 || stripos($rawAvatar, 'https://') === 0) {
-                                        $avatarUrl = $rawAvatar;
-                                    } elseif ($rawAvatar[0] === '/') {
-                                        // Root-relative path provided; keep as-is
-                                        $avatarUrl = $rawAvatar;
-                                    } else {
-                                        // Filename only; map to avatars folder relative to this view
-                                        $avatarUrl = '../../public/images/avatars/' . $rawAvatar;
-                                    }
-                                }
+                            // Simplified profile picture logic (matches navbar approach)
+                            $rawAvatar = trim($post['profile_picture'] ?? '');
+                            if (!empty($rawAvatar) && !filter_var($rawAvatar, FILTER_VALIDATE_URL)) {
+                                // If it's a filename, prepend the avatars path
+                                $avatarUrl = '../../public/images/avatars/' . basename($rawAvatar);
+                            } elseif (empty($rawAvatar)) {
+                                // Fallback to default if no avatar
+                                $avatarUrl = '../../public/images/avatars/default.png';
+                            } else {
+                                // If it's a full URL, use as-is
+                                $avatarUrl = $rawAvatar;
+                            }
 
-                                // Prefer username at the top. If absent, fall back to full name, then to 'Unknown'.
-                                $fullName = trim(($post['first_name'] ?? '') . ' ' . ($post['last_name'] ?? ''));
-                                $displayName = $post['username'] ?? '';
-                                if ($displayName === '' || $displayName === null) {
-                                    $displayName = $fullName !== '' ? $fullName : 'Unknown';
-                                }
+                            // Prefer username at the top. If absent, fall back to full name, then to 'Unknown'.
+                            $fullName = trim(($post['first_name'] ?? '') . ' ' . ($post['last_name'] ?? ''));
+                            $displayName = $post['username'] ?? '';
+                            if ($displayName === '' || $displayName === null) {
+                                $displayName = $fullName !== '' ? $fullName : 'Unknown';
+                            }
                             ?>
                             <div class="feed" data-post-id="<?php echo (int)$post['post_id']; ?>" data-post-content="<?php echo htmlspecialchars($post['content'] ?? '', ENT_QUOTES); ?>">
                                 <div class="head">
@@ -97,8 +95,7 @@ $currentUserId = $_SESSION['user_id'] ?? null;
                                     if (stripos($rawPostImg, 'http://') === 0 || stripos($rawPostImg, 'https://') === 0) {
                                         $postImgUrl = $rawPostImg;
                                     } else {
-                                        // Map any non-absolute (including root-relative) path to our posts folder using filename only
-                                        $postImgUrl = '../../public/images/posts/' . basename($rawPostImg);
+                                        $postImgUrl = '../../public/uploads/' . basename($rawPostImg);  // Match PostModel
                                     }
                                 ?>
                                 <div class="photo">
@@ -139,7 +136,16 @@ $currentUserId = $_SESSION['user_id'] ?? null;
                                     
                                     <div class="add-comment-form">
                                         <div class="comment-input-container">
-                                            <img src="../../public/images/profile-1.jpg" alt="Your Avatar" class="current-user-avatar">
+                                            <?php
+                                            // Dynamic avatar for current user (matches navbar logic)
+                                            $currentUserAvatar = $_SESSION['profile_picture'] ?? '';
+                                            if (!empty($currentUserAvatar) && !filter_var($currentUserAvatar, FILTER_VALIDATE_URL)) {
+                                                $currentUserAvatar = '../../public/images/avatars/' . basename($currentUserAvatar);
+                                            } elseif (empty($currentUserAvatar)) {
+                                                $currentUserAvatar = '../../public/images/avatars/default.png';
+                                            }
+                                            ?>
+                                            <img src="<?php echo htmlspecialchars($currentUserAvatar); ?>" alt="Your Avatar" class="current-user-avatar">
                                             <div class="comment-input-wrapper">
                                                 <textarea class="comment-input" placeholder="Write a comment..." data-post-id="<?php echo (int)$post['post_id']; ?>"></textarea>
                                                 <button class="comment-submit-btn" data-post-id="<?php echo (int)$post['post_id']; ?>">Post Comment</button>
@@ -307,6 +313,8 @@ $currentUserId = $_SESSION['user_id'] ?? null;
         </div>
     </div>
 
+    <!-- Add this script to expose BASE_PATH to JS -->
+    <script> const BASE_PATH = '<?php echo BASE_PATH; ?>'; </script>
     <script src="../../public/js/calender.js"></script>
     <script src="../../public/js/feed.js"></script>
     <script src="../../public/js/friends.js"></script>

@@ -90,6 +90,23 @@ class GroupModel {
     }
 
     /**
+     * Determine if the user has admin-level permissions in the group.
+     */
+    public function isGroupAdmin(int $groupId, int $userId): bool {
+        $sql = "SELECT 1
+                FROM GroupMember
+                WHERE group_id = ?
+                  AND user_id = ?
+                  AND role IN ('admin','moderator')
+                  AND status = 'active'
+                LIMIT 1";
+
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute([$groupId, $userId]);
+        return (bool)$stmt->fetchColumn();
+    }
+
+    /**
      * Get all groups user has joined
      */
     public function getUserGroups(int $userId): array {

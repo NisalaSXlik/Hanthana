@@ -110,6 +110,14 @@ class CommentSystem {
                 }
             }
             
+            // Add helper function to process avatar URLs (matches PHP logic)
+            processAvatar(rawAvatar) {
+                if (!rawAvatar) return '../../public/images/avatars/default.png';
+                if (rawAvatar.match(/^https?:\/\//)) return rawAvatar; // Full URL
+                return '../../public/images/avatars/' + rawAvatar; // Filename
+            }
+            
+            // Update displayComments to map data (no deep processing needed)
             displayComments(container, comments) {
                 if (comments.length === 0) {
                     container.innerHTML = '<div class="no-comments">No comments yet. Be the first to comment!</div>';
@@ -118,17 +126,39 @@ class CommentSystem {
                 
                 let html = '';
                 comments.forEach(comment => {
+                    comment.author = comment.username || 'Unknown';
+                    comment.avatar = this.processAvatar(comment.profile_picture);
                     html += this.renderComment(comment);
                 });
                 container.innerHTML = html;
             }
             
+            // Update renderComment to render main comment + direct replies (no deeper nesting)
             renderComment(comment, level = 0) {
                 const timeAgo = this.getTimeAgo(comment.created_at);
                 const hasReplies = comment.replies && comment.replies.length > 0;
                 
+                // Process replies (only direct ones)
+                let repliesHtml = '';
+                if (hasReplies) {
+                    repliesHtml = comment.replies.map(reply => {
+                        reply.author = reply.username || 'Unknown';
+                        reply.avatar = this.processAvatar(reply.profile_picture);
+                        return `
+                        <div class="comment reply" data-comment-id="${reply.comment_id}" style="margin-left: 40px;">
+                            <div class="comment-header-info">
+                                <img src="${reply.avatar}" alt="${reply.author}" class="comment-avatar">
+                                <span class="comment-author">${reply.author}</span>
+                                <span class="comment-time">${this.getTimeAgo(reply.created_at)}</span>
+                            </div>
+                            <div class="comment-text">${this.escapeHtml(reply.content)}</div>
+                            <!-- No reply button for replies to prevent deeper nesting -->
+                        </div>`;
+                    }).join('');
+                }
+                
                 return `
-                <div class="comment" data-comment-id="${comment.id}" style="margin-left: ${level * 20}px;">
+                <div class="comment" data-comment-id="${comment.comment_id}">
                     <div class="comment-header-info">
                         <img src="${comment.avatar}" alt="${comment.author}" class="comment-avatar">
                         <span class="comment-author">${comment.author}</span>
@@ -136,30 +166,22 @@ class CommentSystem {
                     </div>
                     <div class="comment-text">${this.escapeHtml(comment.content)}</div>
                     <div class="comment-actions">
-                        <button class="comment-action like-btn">
-                            <i class="far fa-heart"></i>
-                            <span>${comment.likes || 0}</span>
-                        </button>
-                        <button class="comment-action reply-btn" data-comment-id="${comment.id}">
+                        <button class="comment-action reply-btn" data-comment-id="${comment.comment_id}">
                             <i class="fas fa-reply"></i>
                             <span>Reply</span>
                         </button>
                     </div>
                     
-                    <div class="reply-form" id="reply-form-${comment.id}">
+                    <div class="reply-form" id="reply-form-${comment.comment_id}">
                         <div class="reply-input-container">
-                            <input type="text" class="reply-input" placeholder="Write a reply..." data-comment-id="${comment.id}">
-                            <button class="reply-submit-btn" data-comment-id="${comment.id}">
+                            <input type="text" class="reply-input" placeholder="Write a reply..." data-comment-id="${comment.comment_id}">
+                            <button class="reply-submit-btn" data-comment-id="${comment.comment_id}">
                                 <i class="fas fa-paper-plane"></i>
                             </button>
                         </div>
                     </div>
                     
-                    ${hasReplies ? `
-                        <div class="comment-replies">
-                            ${comment.replies.map(reply => this.renderComment(reply, level + 1)).join('')}
-                        </div>
-                    ` : ''}
+                    ${repliesHtml ? `<div class="comment-replies">${repliesHtml}</div>` : ''}
                 </div>`;
             }
             
@@ -205,17 +227,26 @@ class CommentSystem {
                 btn.disabled = true;
                 
                 try {
-                    // Mock success
-                    setTimeout(() => {
+                    const response = await fetch('../../app/controllers/CommentController.php', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+                        body: `action=add_comment&post_id=${this.getPostIdFromComment(commentId)}&content=${encodeURIComponent(content)}&parent_comment_id=${encodeURIComponent(commentId)}`
+                    });
+                    const data = await response.json();
+                    if (data.success) {
                         input.value = '';
-                        btn.disabled = false;
                         this.toggleReplyForm(commentId, false);
+                        // Reload comments to show new reply
+                        const postId = this.getPostIdFromComment(commentId);
+                        this.loadComments(postId);
                         this.showNotification('Reply added successfully!', 'success');
-                    }, 500);
-                    
+                    } else {
+                        this.showNotification(data.message || 'Failed to add reply', 'error');
+                    }
                 } catch (error) {
                     console.error('Error submitting reply:', error);
                     this.showNotification('Error adding reply', 'error');
+                } finally {
                     btn.disabled = false;
                 }
             }
@@ -243,35 +274,9 @@ class CommentSystem {
                 return div.innerHTML;
             }
             
-            getMockComments() {
-                return [
-                    {
-                        id: 1,
-                        author: 'Minthaka J.',
-                        avatar: '../../public/images/2.jpg',
-                        content: 'Wow, this looks amazing! Which beach is this?',
-                        likes: 12,
-                        created_at: new Date(),
-                        replies: [
-                            {
-                                id: 2,
-                                author: 'Nisal Gamage',
-                                avatar: '../../public/images/profile-1.jpg',
-                                content: 'This is Mirissa Beach! Definitely worth visiting.',
-                                likes: 5,
-                                created_at: new Date()
-                            }
-                        ]
-                    },
-                    {
-                        id: 3,
-                        author: 'Lahiru F.',
-                        avatar: '../../public/images/6.jpg',
-                        content: 'Beautiful capture! The colors are stunning 🌅',
-                        likes: 8,
-                        created_at: new Date()
-                    }
-                ];
+            getPostIdFromComment(commentId) {
+                // Implement logic to find post ID, e.g., from DOM or cache
+                return document.querySelector('.comment-section').dataset.postId; // Assuming it's set
             }
             
             showNotification(message, type = 'info') {

@@ -126,14 +126,14 @@ CREATE TABLE Post (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     event_title VARCHAR(255),
     event_date DATE NULL,
-    event_time TIME NULL,--no need 
+    event_time TIME NULL,
     event_location VARCHAR(255) NULL,
     is_group_post BOOLEAN DEFAULT FALSE,
     group_id INT NULL,
     author_id INT NOT NULL,
     upvote_count INT DEFAULT 0,
     downvote_count INT DEFAULT 0,
-    view_count INT DEFAULT 0,--no need
+    view_count INT DEFAULT 0,
     comment_count INT DEFAULT 0,
     share_count INT DEFAULT 0,
     is_edited BOOLEAN DEFAULT FALSE,
@@ -578,14 +578,14 @@ CREATE TABLE Post (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     event_title VARCHAR(255),
     event_date DATE NULL,
-    event_time TIME NULL,--no need 
+    event_time TIME NULL,
     event_location VARCHAR(255) NULL,
     is_group_post BOOLEAN DEFAULT FALSE,
     group_id INT NULL,
     author_id INT NOT NULL,
     upvote_count INT DEFAULT 0,
     downvote_count INT DEFAULT 0,
-    view_count INT DEFAULT 0,--no need
+    view_count INT DEFAULT 0,
     comment_count INT DEFAULT 0,
     share_count INT DEFAULT 0,
     is_edited BOOLEAN DEFAULT FALSE,
