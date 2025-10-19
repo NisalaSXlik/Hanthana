@@ -1,327 +1,414 @@
+<?php
+// Simple session check example
+session_start();
+if (!isset($_SESSION['user_id'])) {
+    // In a real app, you would redirect to login
+    // header('Location: login.php');
+    // exit();
+}
+?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Settings - Hanthana Events</title>
-    <link rel="stylesheet" href="public/css/style.css">
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <title>Settings - Social Platform</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Include existing CSS files -->
+    <link rel="stylesheet" href="../../public/css/general.css">
+    <link rel="stylesheet" href="../../public/css/navbar.css"> 
+    <link rel="stylesheet" href="../../public/css/mediaquery.css">
+    <link rel="stylesheet" href="../../public/css/calender.css">
+    <link rel="stylesheet" href="../../public/css/notificationpopup.css">
+    <link rel="stylesheet" href="../../public/css/post.css">
+    <link rel="stylesheet" href="https://unicons.iconscout.com/release/v4.0.8/css/line.css">
+    
+    <!-- Settings specific CSS -->
+    <link rel="stylesheet" href="../../public/css/settings.css">
 </head>
 <body>
-    <!-- Navigation Bar -->
-    <nav>
-        <div class="container">
-            <div class="nav-left">
-                <div class="logo">
-                    <a href="event.html">Hanthana</a>
-                </div>
-            </div>
-            
-            <div class="nav-center">
-                <div class="search-bar">
-                    <i class="fas fa-search"></i>
-                    <input type="search" placeholder="Search settings...">
-                </div>
-            </div>
-            
-            <div class="nav-right">
-                <div class="calendar-icon" onclick="toggleCalendarPopup()">
-                    <i class="fas fa-calendar-alt" style="font-size: 1.2rem; color: var(--color-primary); cursor: pointer;"></i>
-                    <div class="calendar-popup" id="calendarPopup">
-                        <div class="calendar-popup-header">
-                            <span>Events for <span id="selectedDate"></span></span>
-                            <button class="close-popup" onclick="closeCalendarPopup()">
-                                <i class="fas fa-times"></i>
-                            </button>
-                        </div>
-                        <div class="calendar-popup-body" id="calendarEvents">
-                            <div class="calendar-event-item">
-                                <h5>AI in Healthcare Symposium</h5>
-                                <p>March 15, 2024 • 2:00 PM</p>
-                            </div>
-                            <div class="calendar-event-item">
-                                <h5>Data Science Workshop</h5>
-                                <p>March 20, 2024 • 2:00 PM</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="notification" onclick="toggleNotificationsPopup()">
-                    <i class="fas fa-bell" style="font-size: 1.2rem; color: var(--color-primary);"></i>
-                    <div class="notification-count">3</div>
-                    <div class="notifications-popup" id="notificationsPopup">
-                        <div>
-                            <div class="profile-picture">
-                                <img src="/placeholder.svg?height=40&width=40&text=Admin" alt="Admin">
-                            </div>
-                            <div class="notification-body">
-                                <b>Event Approved</b> Your AI Healthcare Symposium has been approved.
-                                <small>2 minutes ago</small>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="profile-picture" onclick="toggleProfileDropdown()">
-                    <img src="/placeholder.svg?height=40&width=40&text=JD" alt="Profile">
-                    <div class="profile-dropdown" id="profileDropdown">
-                        <a href="profile.html"><i class="fas fa-user"></i> My Profile</a>
-                        <a href="settings.html"><i class="fas fa-cog"></i> Settings</a>
-                        <div class="dropdown-divider"></div>
-                        <a href="login.html" class="logout"><i class="fas fa-sign-out-alt"></i> Logout</a>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </nav>
+    <!-- Navbar -->
+    <?php include __DIR__ . '/templates/navbar.php'; ?>
 
     <!-- Main Content -->
-    <main class="settings-container">
-        <div class="settings-header">
-            <h1>Settings</h1>
-            <p>Manage your account preferences, privacy, and security.</p>
-        </div>
-
-        <div class="settings-nav">
-            <button class="settings-nav-btn active" data-tab="general">
-                <i class="fas fa-cog"></i> General
-            </button>
-            <button class="settings-nav-btn" data-tab="notifications">
-                <i class="fas fa-bell"></i> Notifications
-            </button>
-            <button class="settings-nav-btn" data-tab="privacy">
-                <i class="fas fa-lock"></i> Privacy
-            </button>
-            <button class="settings-nav-btn" data-tab="security">
-                <i class="fas fa-shield-alt"></i> Security
-            </button>
-            <button class="settings-nav-btn" data-tab="data">
-                <i class="fas fa-database"></i> Data & Export
-            </button>
-        </div>
-
-        <div class="settings-content">
-            <!-- General Settings Tab -->
-            <div class="settings-tab active" id="generalTab">
-                <div class="settings-section">
-                    <h3>Profile Information</h3>
-                    <form class="settings-form">
-                        <div class="form-group">
-                            <label for="fullName">Full Name</label>
-                            <input type="text" id="fullName" value="John Doe">
-                        </div>
-                        <div class="form-group">
-                            <label for="emailAddress">Email Address</label>
-                            <input type="email" id="emailAddress" value="john.doe@university.edu" disabled>
-                            <small>Email cannot be changed.</small>
-                        </div>
-                        <div class="form-group">
-                            <label for="studentId">Student ID</label>
-                            <input type="text" id="studentId" value="U1234567">
-                        </div>
-                        <div class="form-group">
-                            <label for="department">Department/Faculty</label>
-                            <input type="text" id="department" value="Computer Science">
-                        </div>
-                        <div class="form-group">
-                            <label for="bio">Bio</label>
-                            <textarea id="bio" rows="4" placeholder="Tell us about yourself...">Passionate CS student interested in AI, data science, and web development.</textarea>
-                        </div>
-                        <button type="submit" class="btn btn-primary">Save Changes</button>
-                    </form>
-                </div>
-
-                <div class="settings-section">
-                    <h3>Preferences</h3>
-                    <form class="settings-form">
-                        <div class="form-group">
-                            <label for="timezone">Timezone</label>
-                            <select id="timezone">
-                                <option value="GMT+5:30">GMT+5:30 (Colombo)</option>
-                                <option value="GMT+0:00">GMT+0:00 (London)</option>
-                                <option value="GMT-5:00">GMT-5:00 (New York)</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label for="language">Language</label>
-                            <select id="language">
-                                <option value="en">English</option>
-                                <option value="si">Sinhala</option>
-                                <option value="ta">Tamil</option>
-                            </select>
-                        </div>
-                        <button type="submit" class="btn btn-primary">Update Preferences</button>
-                    </form>
-                </div>
+    <main>
+        <div class="container">
+            <!-- Left Sidebar -->
+            <div class="left">
+                <?php include __DIR__ . '/templates/left-sidebar.php'; ?>
+                
+                
             </div>
-
-            <!-- Notifications Settings Tab -->
-            <div class="settings-tab" id="notificationsTab">
-                <div class="settings-section">
-                    <h3>Email Notifications</h3>
-                    <div class="toggle-group">
-                        <label class="toggle-option">
-                            <input type="checkbox" checked>
-                            <span class="toggle-slider"></span>
-                            <span>Event Reminders <small>Receive reminders for upcoming events you're interested in or going to.</small></span>
-                        </label>
-                        <label class="toggle-option">
-                            <input type="checkbox" checked>
-                            <span class="toggle-slider"></span>
-                            <span>New Event Alerts <small>Get notified about new events matching your interests.</small></span>
-                        </label>
-                        <label class="toggle-option">
-                            <input type="checkbox">
-                            <span class="toggle-slider"></span>
-                            <span>Organizer Updates <small>Receive important announcements from event organizers.</small></span>
-                        </label>
-                        <label class="toggle-option">
-                            <input type="checkbox" checked>
-                            <span class="toggle-slider"></span>
-                            <span>Approval Status <small>Updates on the approval status of your submitted events.</small></span>
-                        </label>
+            
+<!-- Middle Section - Settings Navigation and Content -->
+            <div class="middle">
+                <!-- Settings Navigation -->
+                <div class="settings-nav-container">
+                    <div class="settings-nav">
+                        <a href="#personal-info-section" class="menu-item active" data-section="personal-info-section" title="Personal Info">
+                            <i class="fas fa-user-circle"></i>
+                        </a>
+                        <a href="#change-password-section" class="menu-item" data-section="change-password-section" title="Change Password">
+                            <i class="fas fa-lock"></i>
+                        </a>
+                        <a href="#privacy-section" class="menu-item" data-section="privacy-section" title="Privacy Settings">
+                            <i class="fas fa-shield-alt"></i>
+                        </a>
+                        <a href="#preferences-section" class="menu-item" data-section="preferences-section" title="Preferences">
+                            <i class="fas fa-sliders-h"></i>
+                        </a>
                     </div>
                 </div>
-
-                <div class="settings-section">
-                    <h3>In-App Notifications</h3>
-                    <div class="toggle-group">
-                        <label class="toggle-option">
-                            <input type="checkbox" checked>
-                            <span class="toggle-slider"></span>
-                            <span>Activity Feed <small>Notifications for comments, likes, and shares on your events.</small></span>
-                        </label>
-                        <label class="toggle-option">
-                            <input type="checkbox" checked>
-                            <span class="toggle-slider"></span>
-                            <span>Direct Messages <small>Receive alerts for new direct messages.</small></span>
-                        </label>
+                
+                <!-- Settings Content -->
+                <div class="settings-container">
+                    <div class="settings-header">
+                        <h1>Settings</h1>
+                        <p>Manage your account settings and preferences</p>
                     </div>
-                </div>
-            </div>
-
-            <!-- Privacy Settings Tab -->
-            <div class="settings-tab" id="privacyTab">
-                <div class="settings-section">
-                    <h3>Profile Visibility</h3>
-                    <div class="form-group">
-                        <label for="profileVisibility">Who can see your profile?</label>
-                        <select id="profileVisibility">
-                            <option value="public">Everyone</option>
-                            <option value="friends">Friends Only</option>
-                            <option value="private">Only Me</option>
-                        </select>
-                    </div>
-                </div>
-
-                <div class="settings-section">
-                    <h3>Event Participation Visibility</h3>
-                    <div class="form-group">
-                        <label for="participationVisibility">Who can see events you're attending?</label>
-                        <select id="participationVisibility">
-                            <option value="public">Everyone</option>
-                            <option value="friends">Friends Only</option>
-                            <option value="private">Only Me</option>
-                        </select>
-                    </div>
-                </div>
-
-                <div class="settings-section">
-                    <h3>Data Sharing</h3>
-                    <div class="toggle-group">
-                        <label class="toggle-option">
-                            <input type="checkbox">
-                            <span class="toggle-slider"></span>
-                            <span>Share anonymized data for research <small>Help improve university services by sharing anonymized usage data.</small></span>
-                        </label>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Security Settings Tab -->
-            <div class="settings-tab" id="securityTab">
-                <div class="settings-section">
-                    <h3>Password</h3>
-                    <form class="settings-form">
-                        <div class="form-group">
-                            <label for="currentPassword">Current Password</label>
-                            <input type="password" id="currentPassword">
-                        </div>
-                        <div class="form-group">
-                            <label for="newPassword">New Password</label>
-                            <input type="password" id="newPassword">
-                        </div>
-                        <div class="form-group">
-                            <label for="confirmPassword">Confirm New Password</label>
-                            <input type="password" id="confirmPassword">
-                        </div>
-                        <button type="submit" class="btn btn-primary">Change Password</button>
-                    </form>
-                </div>
-
-                <div class="settings-section">
-                    <h3>Two-Factor Authentication (2FA)</h3>
-                    <div class="security-status">
-                        <div class="status-indicator disabled">
-                            <i class="fas fa-times-circle"></i>
-                            <span>2FA is Disabled</span>
-                        </div>
-                        <button class="btn btn-primary" onclick="enableTwoFactor()">Enable 2FA</button>
-                    </div>
-                    <p class="text-sm text-gray-600 mt-2">Add an extra layer of security to your account by enabling two-factor authentication.</p>
-                </div>
-
-                <div class="settings-section">
-                    <h3>Login Sessions</h3>
-                    <div class="login-sessions">
-                        <div class="session-item current">
-                            <div class="session-info">
-                                <h4>Current Session</h4>
-                                <p>Browser: Chrome on Windows</p>
-                                <p>Location: Kandy, Sri Lanka</p>
-                                <small>Last Active: Just now</small>
+                    
+                    <div class="settings-content">
+                        <!-- Personal Information Section -->
+                        <div class="settings-section active" id="personal-info-section">
+                            <h2>Personal Information</h2>
+                            <div class="settings-card">
+                                <div class="setting-item">
+                                    <div class="setting-label">
+                                        <h4>Name</h4>
+                                        <p>Lithmal Perera</p>
+                                    </div>
+                                    <button class="btn btn-primary">Change</button>
+                                </div>
+                                
+                                <div class="setting-item">
+                                    <div class="setting-label">
+                                        <h4>Email</h4>
+                                        <p>lithmal@example.com</p>
+                                    </div>
+                                    <button class="btn btn-primary">Change</button>
+                                </div>
+                                
+                                <div class="setting-item">
+                                    <div class="setting-label">
+                                        <h4>Phone Number</h4>
+                                        <p>+94 77 123 4567</p>
+                                    </div>
+                                    <button class="btn btn-primary">Change</button>
+                                </div>
+                                
+                                <div class="setting-item">
+                                    <div class="setting-label">
+                                        <h4>Date of Birth</h4>
+                                        <p>January 15, 1990</p>
+                                    </div>
+                                    <button class="btn btn-primary">Change</button>
+                                </div>
+                                
+                                <div class="setting-item">
+                                    <div class="setting-label">
+                                        <h4>Location</h4>
+                                        <p>Colombo, Sri Lanka</p>
+                                    </div>
+                                    <button class="btn btn-primary">Change</button>
+                                </div>
                             </div>
-                            <span class="session-badge current">Active</span>
                         </div>
-                        <div class="session-item">
-                            <div class="session-info">
-                                <h4>Previous Session</h4>
-                                <p>Browser: Firefox on macOS</p>
-                                <p>Location: Colombo, Sri Lanka</p>
-                                <small>Last Active: March 1, 2024, 10:00 AM</small>
+                        
+                        <!-- Change Password Section -->
+                        <div class="settings-section" id="change-password-section">
+                            <h2>Change Password</h2>
+                            <div class="settings-card">
+                                <div class="setting-item">
+                                    <div class="setting-label">
+                                        <h4>Current Password</h4>
+                                        <div class="password-input-container">
+                                            <input type="password" class="setting-input" placeholder="Enter your current password">
+                                            <button type="button" class="password-toggle">
+                                                <i class="fas fa-eye"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="setting-item">
+                                    <div class="setting-label">
+                                        <h4>New Password</h4>
+                                        <div class="password-input-container">
+                                            <input type="password" class="setting-input" placeholder="Enter new password">
+                                            <button type="button" class="password-toggle">
+                                                <i class="fas fa-eye"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="setting-item">
+                                    <div class="setting-label">
+                                        <h4>Confirm New Password</h4>
+                                        <div class="password-input-container">
+                                            <input type="password" class="setting-input" placeholder="Confirm new password">
+                                            <button type="button" class="password-toggle">
+                                                <i class="fas fa-eye"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <button class="btn btn-primary" style="margin-top: 1rem;">Update Password</button>
                             </div>
-                            <button class="btn btn-secondary btn-sm">Revoke</button>
+                        </div>
+                        
+                        <!-- Privacy Settings Section -->
+                        <div class="settings-section" id="privacy-section">
+                            <h2>Privacy Settings</h2>
+                            <div class="settings-card">
+                                <div class="setting-item">
+                                    <div class="setting-label">
+                                        <h4>Profile Visibility</h4>
+                                        <p>Who can see your profile</p>
+                                    </div>
+                                    <select class="setting-select">
+                                        <option>Public</option>
+                                        <option>Friends Only</option>
+                                        <option>Private</option>
+                                    </select>
+                                </div>
+                                
+                                <div class="setting-item">
+                                    <div class="setting-label">
+                                        <h4>Activity Status</h4>
+                                        <p>Show when you're active</p>
+                                    </div>
+                                    <div class="toggle-switch">
+                                        <input type="checkbox" id="activity-toggle" class="toggle-input" checked>
+                                        <label for="activity-toggle" class="toggle-label"></label>
+                                    </div>
+                                </div>
+                                
+                                <div class="setting-item">
+                                    <div class="setting-label">
+                                        <h4>Data Sharing</h4>
+                                        <p>Allow data for personalization</p>
+                                    </div>
+                                    <div class="toggle-switch">
+                                        <input type="checkbox" id="data-sharing-toggle" class="toggle-input">
+                                        <label for="data-sharing-toggle" class="toggle-label"></label>
+                                    </div>
+                                </div>
+                                
+                                <div class="setting-item">
+                                    <div class="setting-label">
+                                        <h4>Search Visibility</h4>
+                                        <p>Allow search engines to link to your profile</p>
+                                    </div>
+                                    <div class="toggle-switch">
+                                        <input type="checkbox" id="search-toggle" class="toggle-input" checked>
+                                        <label for="search-toggle" class="toggle-label"></label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Preferences Section -->
+                        <div class="settings-section" id="preferences-section">
+                            <h2>Preferences</h2>
+                            <div class="settings-card">
+                                <div class="setting-item">
+                                    <div class="setting-label">
+                                        <h4>Theme</h4>
+                                        <p>Choose your preferred theme</p>
+                                    </div>
+                                    <select class="setting-select" id="theme-select">
+                                        <option value="light">Light Mode</option>
+                                        <option value="dark">Dark Mode</option>
+                                        <option value="auto">Auto (System)</option>
+                                    </select>
+                                </div>
+                                
+                                <div class="setting-item">
+                                    <div class="setting-label">
+                                        <h4>Language</h4>
+                                        <p>Select your preferred language</p>
+                                    </div>
+                                    <select class="setting-select">
+                                        <option>English</option>
+                                        <option>Sinhala</option>
+                                        <option>Tamil</option>
+                                    </select>
+                                </div>
+                                
+                                <div class="setting-item">
+                                    <div class="setting-label">
+                                        <h4>Timezone</h4>
+                                        <p>Set your local timezone</p>
+                                    </div>
+                                    <select class="setting-select">
+                                        <option>Asia/Colombo (UTC+5:30)</option>
+                                        <option>UTC-8:00 Pacific Time</option>
+                                        <option>UTC-5:00 Eastern Time</option>
+                                        <option>UTC+0:00 GMT</option>
+                                        <option>UTC+1:00 Central European Time</option>
+                                    </select>
+                                </div>
+                                
+                                <div class="setting-item">
+                                    <div class="setting-label">
+                                        <h4>Email Notifications</h4>
+                                        <p>Receive email updates</p>
+                                    </div>
+                                    <div class="toggle-switch">
+                                        <input type="checkbox" id="email-toggle" class="toggle-input" checked>
+                                        <label for="email-toggle" class="toggle-label"></label>
+                                    </div>
+                                </div>
+                                
+                                <div class="setting-item">
+                                    <div class="setting-label">
+                                        <h4>Push Notifications</h4>
+                                        <p>Receive push notifications</p>
+                                    </div>
+                                    <div class="toggle-switch">
+                                        <input type="checkbox" id="push-toggle" class="toggle-input" checked>
+                                        <label for="push-toggle" class="toggle-label"></label>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
-                    <button class="btn btn-danger btn-sm">Revoke All Other Sessions</button>
                 </div>
             </div>
-
-            <!-- Data & Export Settings Tab -->
-            <div class="settings-tab" id="dataTab">
-                <div class="settings-section">
-                    <h3>Export Data</h3>
-                    <p class="text-sm text-gray-600 mb-4">Download a copy of your account data, including profile information, event history, and preferences.</p>
-                    <div class="data-actions">
-                        <button class="btn btn-primary" onclick="downloadData()">
-                            <i class="fas fa-download"></i> Download My Data
-                        </button>
+            
+                       <!-- Right Sidebar -->
+            <div class="right">
+                <!-- Messages -->
+                <div class="messages">
+                    <div class="heading">
+                        <h4>Messages</h4>
+                        <i class="uil uil-edit"></i>
+                    </div>
+                    <div class="search-bar">
+                        <i class="uil uil-search"></i>
+                        <input type="search" placeholder="Search messages">
+                    </div>
+                    <div class="message-list">
+                        <div class="message">
+                            <div class="profile-picture">
+                                    <img src="../../public/images/2.jpg">
+                                <div class="active"></div>
+                            </div>
+                            <div class="message-body">
+                                <h5>Minthaka J.</h5>
+                                <p>Are we still meeting tomorrow?</p>
+                            </div>
+                        </div>
+                        <div class="message">
+                            <div class="profile-picture">
+                                    <img src="../../public/images/6.jpg">
+                            </div>
+                            <div class="message-body">
+                                <h5>Lahiru F.</h5>
+                                <p>Sent you the event details</p>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
-                <div class="settings-section">
-                    <h3>Account Deletion</h3>
-                    <p class="text-sm text-gray-600 mb-4">Permanently delete your Hanthana Events account and all associated data. This action cannot be undone.</p>
-                    <div class="data-actions">
-                        <button class="btn btn-danger" onclick="requestDataDeletion()">
-                            <i class="fas fa-trash-alt"></i> Request Account Deletion
-                        </button>
-                    </div>
+                <div class="friend-requests">
+        <h4>Friend Requests <span class="badge">(5)</span></h4>
+        <div class="request">
+            <div class="info">
+                <div class="profile-picture">
+                        <img src="../../public/images/4.jpg">
                 </div>
+                <div>
+                    <h5>Emma Watson</h5>
+                    <p>8 mutual friends</p>
+                </div>
+            </div>
+            <div class="action">
+                <button class="btn btn-primary accept-btn">Accept</button>
+                <button class="btn decline-btn">Decline</button>
             </div>
         </div>
-    </main>
+        <div class="request">
+            <div class="info">
+                <div class="profile-picture">
+                        <img src="../../public/images/2.jpg">
+                </div>
+                <div>
+                    <h5>Minthaka</h5>
+                    <p>28 mutual friends</p>
+                </div>
+            </div>
+            <div class="action">
+                <button class="btn btn-primary accept-btn">Accept</button>
+                <button class="btn decline-btn">Decline</button>
+            </div>
+        </div>
+        <div class="request">
+            <div class="info">
+                <div class="profile-picture">
+                        <img src="../../public/images/5.jpg">
+                </div>
+                <div>
+                    <h5>Lahiru</h5>
+                    <p>85 mutual friends</p>
+                </div>
+            </div>
+            <div class="action">
+                <button class="btn btn-primary accept-btn">Accept</button>
+                <button class="btn decline-btn">Decline</button>
+            </div>
+        </div>
+        <div class="request">
+            <div class="info">
+                <div class="profile-picture">
+                        <img src="../../public/images/1.jpg">
+                </div>
+                <div>
+                    <h5>Tharusha</h5>
+                    <p>82 mutual friends</p>
+                </div>
+            </div>
+            <div class="action">
+                <button class="btn btn-primary accept-btn">Accept</button>
+                <button class="btn decline-btn">Decline</button>
+            </div>
+        </div>
+        <div class="request">
+            <div class="info">
+                <div class="profile-picture">
+                        <img src="../../public/images/5.jpg">
+                </div>
+                <div>
+                    <h5>Nisal</h5>
+                    <p>85 mutual friends</p>
+                </div>
+            </div>
+            <div class="action">
+                <button class="btn btn-primary accept-btn">Accept</button>
+                <button class="btn decline-btn">Decline</button>
+            </div>
+        </div>
+    </div>
+    <div class="toast-container" id="toastContainer"></div>
+            </div>
+        </div>
 
-    <script src="public/js/script.js"></script>
+</main>
+    <?php include __DIR__ . '/templates/chat-clean.php'; ?>
+
+    <!-- Include existing JavaScript files -->
+    <script src="../../public/js/navbar.js"></script>
+    <script src="../../public/js/calender.js"></script>
+    <script src="../../public/js/notificationpopup.js"></script>
+    <script src="../../public/js/general.js"></script>
+    <script src="../../public/js/post.js"></script>
+    <script src="../../public/js/friends.js"></script>
+    
+    <!-- Settings specific JavaScript -->
+    <script src="../../public/js/settings.js"></script>
 </body>
 </html>

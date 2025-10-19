@@ -50,8 +50,8 @@
                 </div>
             </div>
             
-            <div class="search-section">
-                <div class="search-bar">
+            <div class="chat-search-section">
+                <div class="chat-search-bar">
                     <i class="uil uil-search"></i>
                     <input type="text" placeholder="Search users...">
                 </div>
@@ -530,8 +530,8 @@
         </div>
     </div>
 
-    <link rel="stylesheet" href="public/css/general.css">
-    <link rel="stylesheet" href="public/css/chat-new.css">
-    <script src="public/js/chat-new.js"></script>
+    <link rel="stylesheet" href="../../public/css/general.css">
+    <link rel="stylesheet" href="../../public/css/chat-new.css">
+    <script src="../../public/js/chat-new.js"></script>
 </body>
 </html>
