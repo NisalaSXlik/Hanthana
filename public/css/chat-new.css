@@ -297,12 +297,13 @@
         }
 
         /* Search Section */
-        .search-section {
+        /* Chat Search Section - scoped to chat only */
+        .chat-search-section {
             padding: 1rem;
             border-bottom: 1px solid var(--color-light);
         }
 
-        .search-bar {
+        .chat-search-bar {
             display: flex;
             align-items: center;
             background: var(--color-light);
@@ -311,13 +312,13 @@
             width: 100%;
         }
 
-        .search-bar i {
+        .chat-search-bar i {
             color: var(--color-gray);
             margin-right: 0.5rem;
             font-size: 1rem;
         }
 
-        .search-bar input {
+        .chat-search-bar input {
             border: none;
             background: transparent;
             width: 100%;
@@ -326,7 +327,7 @@
             outline: none;
         }
 
-        .search-bar input::placeholder {
+        .chat-search-bar input::placeholder {
             color: var(--color-gray);
         }
 

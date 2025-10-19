@@ -13,7 +13,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $result = $authController->login($identifier, $password);
     
     if ($result['success']) {
-        header('Location: myfeed.php');
+        header("Location: ../controllers/FeedController.php"); 
         exit;
     } else {
         $error = $result['errors'][0] ?? 'Login failed';
