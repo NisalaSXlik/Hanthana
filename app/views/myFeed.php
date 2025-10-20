@@ -59,62 +59,64 @@
                             </div>
                         </div>
                     </div>
-                    <!-- Post Creation Modal -->
-<div class="post-modal" id="postModal">
-    <div class="modal-content">
-        <div class="modal-header">
-            <h3>Create New Post</h3>
-            <button class="close-modal">&times;</button>
-        </div>
-        <div class="modal-body">
-            <div class="post-type-selector">
-                <button class="post-type-btn active" data-type="general">General Post</button>
-                <button class="post-type-btn" data-type="event">Event Post</button>
-            </div>
-            
-            <div class="post-content">
-                <div class="image-upload">
-                    <i class="uil uil-image-upload"></i>
-                    <p>Drag photos and videos here or click to browse</p>
-                    <input type="file" id="postImage" accept="image/*" style="display: none;">
                 </div>
-                
-                <div class="post-details">
-                    <div class="form-group">
-                        <label for="postCaption">Caption</label>
-                        <textarea id="postCaption" placeholder="Write a caption..."></textarea>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="postTags">Tags (minimum 5, separated by commas)</label>
-                        <input type="text" id="postTags" placeholder="e.g., travel, srilanka, beach, vacation, sunset">
-                        <small class="tag-count">0/5 tags</small>
-                    </div>
-                    
-                    <div class="event-details" id="eventDetails" style="display: none;">
-                        <div class="form-group">
-                            <label for="eventTitle">Event Title</label>
-                            <input type="text" id="eventTitle" placeholder="Event name">
+
+                <!-- Post Creation Modal -->
+                <div class="post-modal" id="postModal">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h3>Create New Post</h3>
+                            <button class="close-modal">&times;</button>
                         </div>
-                        <div class="form-group">
-                            <label for="eventDate">Date & Time</label>
-                            <input type="datetime-local" id="eventDate">
+                        <div class="modal-body">
+                            <div class="post-type-selector">
+                                <button class="post-type-btn active" data-type="general">General Post</button>
+                                <button class="post-type-btn" data-type="event">Event Post</button>
+                            </div>
+                            
+                            <div class="post-content">
+                                <div class="image-upload">
+                                    <i class="uil uil-image-upload"></i>
+                                    <p>Drag photos and videos here or click to browse</p>
+                                    <input type="file" id="postImage" accept="image/*" style="display: none;">
+                                </div>
+                                
+                                <div class="post-details">
+                                    <div class="form-group">
+                                        <label for="postCaption">Caption</label>
+                                        <textarea id="postCaption" placeholder="Write a caption..."></textarea>
+                                    </div>
+                                    
+                                    <div class="form-group">
+                                        <label for="postTags">Tags (minimum 5, separated by commas)</label>
+                                        <input type="text" id="postTags" placeholder="e.g., travel, srilanka, beach, vacation, sunset">
+                                        <small class="tag-count">0/5 tags</small>
+                                    </div>
+                                    
+                                    <div class="event-details" id="eventDetails" style="display: none;">
+                                        <div class="form-group">
+                                            <label for="eventTitle">Event Title</label>
+                                            <input type="text" id="eventTitle" placeholder="Event name">
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="eventDate">Date & Time</label>
+                                            <input type="datetime-local" id="eventDate">
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="eventLocation">Location</label>
+                                            <input type="text" id="eventLocation" placeholder="Where is the event?">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
-                        <div class="form-group">
-                            <label for="eventLocation">Location</label>
-                            <input type="text" id="eventLocation" placeholder="Where is the event?">
+                        <div class="modal-footer">
+                            <button class="btn btn-secondary cancel-btn">Cancel</button>
+                            <button class="btn btn-primary share-btn" disabled>Share</button>
                         </div>
                     </div>
                 </div>
-            </div>
-        </div>
-        <div class="modal-footer">
-            <button class="btn btn-secondary cancel-btn">Cancel</button>
-            <button class="btn btn-primary share-btn" disabled>Share</button>
-        </div>
-    </div>
-</div>
-                </div>
+
                 <div class="notification">
                     <i class="uil uil-bell">
                         <small class="notification-count">9+</small>
