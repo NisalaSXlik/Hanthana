@@ -4,15 +4,15 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Hanthana</title>
-    <link rel="stylesheet" href="public/css/myfeed.css">
-    <link rel="stylesheet" href="public/css/general.css">
-    <link rel="stylesheet" href="public/css/myFeed.css">
-    <link rel="stylesheet" href="public/css/navbar.css"> 
-    <link rel="stylesheet" href="public/css/mediaquery.css">
-    <link rel="stylesheet" href="public/css/calender.css">
-    <link rel="stylesheet" href="public/css/post.css">
-    <link rel="stylesheet" href="public/css/myfeed.css">
-    <link rel="stylesheet" href="public/css/notificationpopup.css">
+    <link rel="stylesheet" href="../../public/css/myfeed.css">
+    <link rel="stylesheet" href="../../public/css/general.css">
+    <link rel="stylesheet" href="../../public/css/myFeed.css">
+    <link rel="stylesheet" href="../../public/css/navbar.css"> 
+    <link rel="stylesheet" href="../../public/css/mediaquery.css">
+    <link rel="stylesheet" href="../../public/css/calender.css">
+    <link rel="stylesheet" href="../../public/css/post.css">
+    <link rel="stylesheet" href="../../public/css/myfeed.css">
+    <link rel="stylesheet" href="../../public/css/notificationpopup.css">
     <link rel="stylesheet" href="https://unicons.iconscout.com/release/v4.0.8/css/line.css">
 </head>
 <body>
@@ -445,13 +445,13 @@
 
     <?php include __DIR__ . '/templates/chat-clean.php'; ?>
 
-    <script src="public/js/calender.js"></script>
-    <script src="public/js/feed.js"></script>
-    <script src="public/js/friends.js"></script>
-    <script src="public/js/genral.js"></script>
-    <script src="public/js/notificationpopup.js"></script>
-    <script src="public/js/navbar.js"></script>
-    <script src="public/js/post.js"></script>
+    <script src="../../public/js/calender.js"></script>
+    <script src="../../public/js/feed.js"></script>
+    <script src="../../public/js/friends.js"></script>
+    <script src="../../public/js/genral.js"></script>
+    <script src="../../public/js/notificationpopup.js"></script>
+    <script src="../../public/js/navbar.js"></script>
+    <script src="../../public/js/post.js"></script>
     
 </body>
 </html>
