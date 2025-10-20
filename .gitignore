@@ -1,0 +1,103 @@
+# ----------------------------------------
+# OS-SPECIFIC FILES
+# ----------------------------------------
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# Linux
+.Trash-*
+.nfs*
+
+# ----------------------------------------
+# IDE / EDITOR FILES
+# ----------------------------------------
+
+# VS Code
+.vscode/
+.history/
+
+# JetBrains IDEs (PhpStorm, WebStorm, etc.)
+.idea/
+
+# Sublime Text
+*.sublime-project
+*.sublime-workspace
+
+# ----------------------------------------
+# ENVIRONMENT / CONFIG FILES
+# ----------------------------------------
+
+# Local environment files
+.env
+.env.local
+.env.*.local
+
+# Local server config (XAMPP, MAMP, WAMP)
+*.ini
+*.conf
+*.bak
+*.sql
+*.sqlite
+*.db
+*.dbstore
+
+# ----------------------------------------
+# DEPENDENCIES & BUILD FILES
+# ----------------------------------------
+
+# Node modules (if used)
+node_modules/
+
+# Composer dependencies (if PHP uses it)
+vendor/
+
+# Temporary build/output folders
+dist/
+build/
+tmp/
+temp/
+.cache/
+coverage/
+
+# ----------------------------------------
+# LOGS / TEMP / BACKUPS
+# ----------------------------------------
+
+*.log
+*.tmp
+*.swp
+*.bak
+*.old
+
+# ----------------------------------------
+# UPLOADS & USER FILES
+# ----------------------------------------
+
+uploads/
+user_uploads/
+backup/
+storage/
+sessions/
+
+# ----------------------------------------
+# SYSTEM / DEPLOYMENT
+# ----------------------------------------
+
+# GitHub Pages cache
+.cache/
+*.lock
+*.pid
+
+# FTP / deployment tools
+*.ftpconfig
+.ssh/
+.deploy/
