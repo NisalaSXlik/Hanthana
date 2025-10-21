@@ -1,78 +1,8 @@
 <?php
-// Simple session check example
-session_start();
-if (!isset($_SESSION['user_id'])) {
-    // In a real app, you would redirect to login
-    // header('Location: login.php');
-    // exit();
-}
-?>
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Settings - Social Platform</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    
-    <!-- Include existing CSS files -->
-    <link rel="stylesheet" href="../../public/css/general.css">
-    <link rel="stylesheet" href="../../public/css/navbar.css"> 
-    <link rel="stylesheet" href="../../public/css/mediaquery.css">
-    <link rel="stylesheet" href="../../public/css/calender.css">
-    <link rel="stylesheet" href="../../public/css/notificationpopup.css">
-    <link rel="stylesheet" href="../../public/css/post.css">
-    <link rel="stylesheet" href="https://unicons.iconscout.com/release/v4.0.8/css/line.css">
-    
-    <!-- Settings specific CSS -->
-    <link rel="stylesheet" href="../../public/css/settings.css">
-</head>
-<body>
-    <!-- Navbar -->
-    <?php include __DIR__ . '/templates/navbar.php'; ?>
-
-    <!-- Main Content -->
-    <main>
-        <div class="container">
-            <!-- Left Sidebar -->
-            <div class="left">
-                <?php include __DIR__ . '/templates/left-sidebar.php'; ?>
-                
-                
-            </div>
-            
-<!-- Middle Section - Settings Navigation and Content -->
-            <div class="middle">
-                <!-- Settings Navigation -->
-                <div class="settings-nav-container">
-                    <div class="settings-nav">
-                        <a href="#personal-info-section" class="menu-item active" data-section="personal-info-section" title="Personal Info">
-                            <i class="fas fa-user-circle"></i>
-                        </a>
-                        <a href="#change-password-section" class="menu-item" data-section="change-password-section" title="Change Password">
-                            <i class="fas fa-lock"></i>
-                        </a>
-                        <a href="#privacy-section" class="menu-item" data-section="privacy-section" title="Privacy Settings">
-                            <i class="fas fa-shield-alt"></i>
-                        </a>
-                        <a href="#preferences-section" class="menu-item" data-section="preferences-section" title="Preferences">
-                            <i class="fas fa-sliders-h"></i>
-                        </a>
-                    </div>
-                </div>
-                
-                <!-- Settings Content -->
-                <div class="settings-container">
-                    <div class="settings-header">
-                        <h1>Settings</h1>
-                        <p>Manage your account settings and preferences</p>
-                    </div>
-                    
-                    <div class="settings-content">
-                        <!-- Personal Information Section -->
-                        <div class="settings-section active" id="personal-info-section">
-                            <h2>Personal Information</h2>
+                <?php
+                    $friendRequests = $friendRequests ?? [];
+                    include __DIR__ . '/templates/friend-requests.php';
+                ?>
                             <div class="settings-card">
                                 <div class="setting-item">
                                     <div class="setting-label">
