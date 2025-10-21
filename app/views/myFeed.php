@@ -21,13 +21,13 @@ if (!isset($posts)) {
 	<meta charset="UTF-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
 	<title>Hanthana</title>
-	<link rel="stylesheet" href="../../public/css/myfeed.css">
-	<link rel="stylesheet" href="../../public/css/general.css">
-	<link rel="stylesheet" href="../../public/css/navbar.css">
-	<link rel="stylesheet" href="../../public/css/mediaquery.css">
-	<link rel="stylesheet" href="../../public/css/calender.css">
-	<link rel="stylesheet" href="../../public/css/post.css">
-	<link rel="stylesheet" href="../../public/css/notificationpopup.css">
+	<link rel="stylesheet" href="<?php echo rtrim(BASE_PATH, '/'); ?>/public/css/myfeed.css">
+	<link rel="stylesheet" href="<?php echo rtrim(BASE_PATH, '/'); ?>/public/css/general.css">
+	<link rel="stylesheet" href="<?php echo rtrim(BASE_PATH, '/'); ?>/public/css/navbar.css">
+	<link rel="stylesheet" href="<?php echo rtrim(BASE_PATH, '/'); ?>/public/css/mediaquery.css">
+	<link rel="stylesheet" href="<?php echo rtrim(BASE_PATH, '/'); ?>/public/css/calender.css">
+	<link rel="stylesheet" href="<?php echo rtrim(BASE_PATH, '/'); ?>/public/css/post.css">
+	<link rel="stylesheet" href="<?php echo rtrim(BASE_PATH, '/'); ?>/public/css/notificationpopup.css">
 	<link rel="stylesheet" href="https://unicons.iconscout.com/release/v4.0.8/css/line.css">
 </head>
 <body>
@@ -168,7 +168,7 @@ if (!isset($posts)) {
 					<div class="message-list">
 						<div class="message">
 							<div class="profile-picture">
-								<img src="../../public/images/2.jpg" alt="Minthaka">
+								<img src="<?php echo rtrim(BASE_PATH, '/'); ?>/public/images/2.jpg" alt="Minthaka">
 								<div class="active"></div>
 							</div>
 							<div class="message-body">
@@ -178,7 +178,7 @@ if (!isset($posts)) {
 						</div>
 						<div class="message">
 							<div class="profile-picture">
-								<img src="../../public/images/6.jpg" alt="Lahiru">
+								<img src="<?php echo rtrim(BASE_PATH, '/'); ?>/public/images/6.jpg" alt="Lahiru">
 							</div>
 							<div class="message-body">
 								<h5>Lahiru F.</h5>
@@ -232,14 +232,14 @@ if (!isset($posts)) {
 	</div>
 
 	<script>const BASE_PATH = '<?php echo BASE_PATH; ?>';</script>
-	<script src="../../public/js/calender.js"></script>
-	<script src="../../public/js/feed.js"></script>
-	<script src="../../public/js/friends.js"></script>
-	<script src="../../public/js/general.js"></script>
-	<script src="../../public/js/notificationpopup.js"></script>
-	<script src="../../public/js/navbar.js"></script>
-	<script src="../../public/js/post.js"></script>
-	<script src="../../public/js/comment.js"></script>
+	<script src="<?php echo rtrim(BASE_PATH, '/'); ?>/public/js/calender.js"></script>
+	<script src="<?php echo rtrim(BASE_PATH, '/'); ?>/public/js/feed.js"></script>
+	<script src="<?php echo rtrim(BASE_PATH, '/'); ?>/public/js/friends.js"></script>
+	<script src="<?php echo rtrim(BASE_PATH, '/'); ?>/public/js/general.js"></script>
+	<script src="<?php echo rtrim(BASE_PATH, '/'); ?>/public/js/notificationpopup.js"></script>
+	<script src="<?php echo rtrim(BASE_PATH, '/'); ?>/public/js/navbar.js"></script>
+	<script src="<?php echo rtrim(BASE_PATH, '/'); ?>/public/js/post.js"></script>
+	<script src="<?php echo rtrim(BASE_PATH, '/'); ?>/public/js/comment.js"></script>
 
 </body>
 </html>
