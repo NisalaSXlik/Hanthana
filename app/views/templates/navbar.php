@@ -188,7 +188,7 @@ $profileAvatarUrl = resolveAssetPath($avatarPath, 'images/avatars/defaultProfile
                     <a href="#"><i class="uil uil-cog"></i> Settings</a>
                     <a href="#"><i class="uil uil-signout"></i> notifications</a>
                     <div class="dropdown-divider"></div>
-                    <a href="../controllers/LogoutController.php" class="logout"><i class="uil uil-signout"></i> Logout</a>
+                    <a href="<?php echo rtrim(BASE_PATH, '/'); ?>/index.php?controller=Logout&action=index" class="logout"><i class="uil uil-signout"></i> Logout</a>
                 </div>
             </div>
         </div>

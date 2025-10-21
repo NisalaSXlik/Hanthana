@@ -100,22 +100,22 @@ if (!function_exists('menuActiveClass')) {
                     </div>
                 </a>
                 <div class="side-bar">
-                    <a href="<?php echo rtrim(BASE_PATH, '/'); ?>/index.php?controller=Home&action=index" class="menu-item<?php echo menuActiveClass('feed', $resolvedMenuKey); ?>" data-target="feed">
+                    <button type="button" class="menu-item<?php echo menuActiveClass('feed', $resolvedMenuKey); ?>" data-target="feed" data-url="<?php echo rtrim(BASE_PATH, '/'); ?>/index.php?controller=Home&action=index" onclick="window.location.href=this.getAttribute('data-url')">
                         <i class="uil uil-home"></i>
                         <h3>My Feed</h3>
-                    </a>
-                    <a href="<?php echo rtrim(BASE_PATH, '/'); ?>/index.php?controller=Discover&action=index" class="menu-item<?php echo menuActiveClass('discover', $resolvedMenuKey); ?>" data-target="discover">
+                    </button>
+                    <button type="button" class="menu-item<?php echo menuActiveClass('discover', $resolvedMenuKey); ?>" data-target="discover" data-url="<?php echo rtrim(BASE_PATH, '/'); ?>/index.php?controller=Discover&action=index" onclick="window.location.href=this.getAttribute('data-url')">
                         <i class="uil uil-compass"></i>
                         <h3>Discover</h3>
-                    </a>
-                    <a href="<?php echo rtrim(BASE_PATH, '/'); ?>/index.php?controller=Events&action=index" class="menu-item<?php echo menuActiveClass('events', $resolvedMenuKey); ?>" data-target="events">
+                    </button>
+                    <button type="button" class="menu-item<?php echo menuActiveClass('events', $resolvedMenuKey); ?>" data-target="events" data-url="<?php echo rtrim(BASE_PATH, '/'); ?>/index.php?controller=Events&action=index" onclick="window.location.href=this.getAttribute('data-url')">
                         <i class="uil uil-calendar-alt"></i>
                         <h3>Events</h3>
-                    </a>
-                    <a href="<?php echo rtrim(BASE_PATH, '/'); ?>/index.php?controller=Popular&action=index" class="menu-item<?php echo menuActiveClass('popular', $resolvedMenuKey); ?>" data-target="popular">
+                    </button>
+                    <button type="button" class="menu-item<?php echo menuActiveClass('popular', $resolvedMenuKey); ?>" data-target="popular" data-url="<?php echo rtrim(BASE_PATH, '/'); ?>/index.php?controller=Popular&action=index" onclick="window.location.href=this.getAttribute('data-url')">
                         <i class="uil uil-fire"></i>
                         <h3>Popular</h3>
-                    </a>
+                    </button>
                 </div>
 
                 <?php

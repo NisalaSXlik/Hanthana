@@ -29,7 +29,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <body>
     <div class="auth-container">
         <div class="auth-card signup-card">
-            <form method="POST" action="" class="auth-form" data-form="signup">
+            <form method="POST" action="" class="auth-form" id="signup-form" data-form="signup">
                 <div class="auth-header">
                     <div class="logo">Hanthana</div>
                     <div class="tagline">Connect with your community</div>

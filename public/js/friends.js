@@ -92,18 +92,30 @@ function setupFriendRequestList() {
                 body: `friendship_id=${encodeURIComponent(friendshipId)}`,
             });
         } catch (error) {
-            throw new Error('Network error. Please try again.');
+            console.error('Network error:', error);
+            throw new Error('Network error. Please check your connection and try again.');
         }
 
+        // Get response text first for debugging
+        const responseText = await response.text();
+        
         let data;
         try {
-            data = await response.json();
+            data = JSON.parse(responseText);
         } catch (error) {
-            throw new Error('Unexpected server response.');
+            console.error('JSON parse error. Response text:', responseText);
+            throw new Error('Server returned an invalid response. Please try again.');
         }
 
-        if (!response.ok || !data || !data.success) {
+        if (!response.ok) {
+            const message = data && data.message ? data.message : `Server error (${response.status}). Please try again.`;
+            console.error('Server error:', response.status, data);
+            throw new Error(message);
+        }
+
+        if (!data || !data.success) {
             const message = data && data.message ? data.message : 'Unable to process the request.';
+            console.error('Request failed:', data);
             throw new Error(message);
         }
 
