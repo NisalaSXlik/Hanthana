@@ -1,3 +1,79 @@
+<?php
+// Start session if not already started
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+
+// Ensure BASE_PATH is available for asset URLs
+require_once __DIR__ . '/../../../config/config.php';
+
+if (!function_exists('resolveAssetPath')) {
+    function resolveAssetPath(?string $raw, string $defaultRelative): string {
+        $base = rtrim(BASE_PATH, '/');
+        $raw = trim((string)$raw);
+        $default = $base . '/public/' . ltrim($defaultRelative, '/');
+
+        if ($raw === '') {
+            return $default;
+        }
+
+        if (filter_var($raw, FILTER_VALIDATE_URL)) {
+            return $raw;
+        }
+
+        $normalized = ltrim(str_replace('\\', '/', $raw), '/');
+
+        if (strpos($normalized, 'public/') === 0) {
+            return $base . '/' . $normalized;
+        }
+
+        if (strpos($normalized, 'images/') === 0 || strpos($normalized, 'uploads/') === 0) {
+            return $base . '/public/' . $normalized;
+        }
+
+        return $default;
+    }
+}
+
+$sidebarAvatarPath = $_SESSION['profile_picture'] ?? '';
+$sidebarAvatarUrl = resolveAssetPath($sidebarAvatarPath, 'images/avatars/defaultProfilePic.png');
+
+$explicitSidebarKey = isset($activeSidebar) && is_string($activeSidebar) ? strtolower($activeSidebar) : null;
+
+$currentController = strtolower($_GET['controller'] ?? '');
+if ($currentController === '') {
+    $scriptName = strtolower(pathinfo($_SERVER['SCRIPT_NAME'] ?? '', PATHINFO_FILENAME));
+    if ($scriptName === 'index' || $scriptName === '' || $scriptName === 'myfeed') {
+        $currentController = 'home';
+    } else {
+        $currentController = $scriptName;
+    }
+}
+
+$menuActiveMap = [
+    'feed' => ['home', 'feed'],
+    'discover' => ['discover'],
+    'events' => ['events'],
+    'popular' => ['popular']
+];
+
+$resolvedMenuKey = $explicitSidebarKey;
+if ($resolvedMenuKey === null) {
+    foreach ($menuActiveMap as $key => $controllers) {
+        if (in_array($currentController, $controllers, true)) {
+            $resolvedMenuKey = $key;
+            break;
+        }
+    }
+}
+
+if (!function_exists('menuActiveClass')) {
+    function menuActiveClass(string $key, ?string $resolvedKey): string {
+        return ($resolvedKey !== null && $key === $resolvedKey) ? ' active' : '';
+    }
+}
+?>
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -11,32 +87,34 @@
 </head>
 <body>
 <div class="left">
-                <div class="profile">
-                    <div class="profile-picture">
-                            <img src="../../public/images/4.jpg">
+                <!-- User Profile Button -->
+                <a href="<?php echo rtrim(BASE_PATH, '/'); ?>/index.php?controller=Profile&action=index<?php echo isset($_SESSION['user_id']) ? '&user_id=' . (int)$_SESSION['user_id'] : ''; ?>" class="profile-button">
+                    <div class="profile">
+                        <div class="profile-picture">
+                            <img src="<?php echo htmlspecialchars($sidebarAvatarUrl); ?>" alt="Your profile picture">
+                        </div>
+                        <div class="handle">
+                            <h4><?php echo htmlspecialchars(($_SESSION['first_name'] ?? '') . ' ' . ($_SESSION['last_name'] ?? '')); ?></h4>
+                            <p>@<?php echo htmlspecialchars($_SESSION['username'] ?? 'username'); ?></p>
+                        </div>
                     </div>
-                    <div class="handle">
-                        <h4>Lithmal Perera</h4>
-                        <p>@lithmal</p>
-                    </div>
-                </div>
-
+                </a>
                 <div class="side-bar">
-                    <a class="menu-item active" data-target="feed">
+                    <a href="<?php echo rtrim(BASE_PATH, '/'); ?>/index.php?controller=Home&action=index" class="menu-item<?php echo menuActiveClass('feed', $resolvedMenuKey); ?>" data-target="feed">
                         <i class="uil uil-home"></i>
                         <h3>My Feed</h3>
                     </a>
-                    <a href="discover.php" class="menu-item" data-target="discover">
+                    <a href="<?php echo rtrim(BASE_PATH, '/'); ?>/index.php?controller=Discover&action=index" class="menu-item<?php echo menuActiveClass('discover', $resolvedMenuKey); ?>" data-target="discover">
                         <i class="uil uil-compass"></i>
                         <h3>Discover</h3>
                     </a>
-                    <a class="menu-item" data-target="events">
+                    <a href="<?php echo rtrim(BASE_PATH, '/'); ?>/index.php?controller=Events&action=index" class="menu-item<?php echo menuActiveClass('events', $resolvedMenuKey); ?>" data-target="events">
                         <i class="uil uil-calendar-alt"></i>
                         <h3>Events</h3>
                     </a>
-                    <a class="menu-item" data-target="groups">
-                        <i class="uil uil-users-alt"></i>
-                        <h3>popular</h3>
+                    <a href="<?php echo rtrim(BASE_PATH, '/'); ?>/index.php?controller=Popular&action=index" class="menu-item<?php echo menuActiveClass('popular', $resolvedMenuKey); ?>" data-target="popular">
+                        <i class="uil uil-fire"></i>
+                        <h3>Popular</h3>
                     </a>
                 </div>
 
@@ -46,6 +124,12 @@
                 $userId = $_SESSION['user_id'] ?? null;
                 $createdGroups = $userId ? $groupModel->getGroupsCreatedBy($userId) : [];
                 $joinedGroups = $userId ? $groupModel->getGroupsJoinedBy($userId) : [];
+                $currentGroupId = isset($_GET['group_id']) ? (int)$_GET['group_id'] : null;
+                
+                // Debug logging
+                error_log("LEFT SIDEBAR - Current group_id from GET: " . ($currentGroupId ?? 'NULL'));
+                error_log("LEFT SIDEBAR - Created groups count: " . count($createdGroups));
+                error_log("LEFT SIDEBAR - Joined groups count: " . count($joinedGroups));
                 ?>
                 <div class="joined-groups">
                     <div class="joined-groups-header">
@@ -58,14 +142,33 @@
                         <?php if (!empty($createdGroups)) : ?>
                             <div class="sidebar-subsection">
                                 <strong style="font-size:13px;">Created by you</strong>
-                                <?php foreach ($createdGroups as $group): ?>
-                                    <div class="group">
+                                <?php foreach ($createdGroups as $sidebarGroup): ?>
+                                    <?php
+                                    $rawDisplay = trim($sidebarGroup['display_picture'] ?? '');
+                                    $displayUrl = '';
+                                    if ($rawDisplay !== '') {
+                                        if (filter_var($rawDisplay, FILTER_VALIDATE_URL)) {
+                                            $displayUrl = $rawDisplay;
+                                        } elseif (strpos($rawDisplay, '/') === 0) {
+                                            $displayUrl = $rawDisplay;
+                                        } elseif (strpos($rawDisplay, 'public/') === 0) {
+                                            $displayUrl = rtrim(BASE_PATH, '/') . '/' . ltrim($rawDisplay, '/');
+                                        } else {
+                                            $displayUrl = rtrim(BASE_PATH, '/') . '/public/images/groupDp/' . basename($rawDisplay);
+                                        }
+                                    }
+                                    ?>
+                                    <div class="group <?php echo ($currentGroupId === $sidebarGroup['group_id']) ? 'active' : ''; ?>" data-group-id="<?php echo $sidebarGroup['group_id']; ?>" onclick="window.location.href='<?php echo rtrim(BASE_PATH, '/'); ?>/index.php?controller=Group&action=index&group_id=<?php echo $sidebarGroup['group_id']; ?>'">
                                         <div class="group-icon">
-                                            <i class="uil uil-users-alt"></i>
+                                            <?php if ($displayUrl !== ''): ?>
+                                                <img src="<?php echo htmlspecialchars($displayUrl); ?>" alt="<?php echo htmlspecialchars($sidebarGroup['name']); ?>" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">
+                                            <?php else: ?>
+                                                <i class="uil uil-users-alt"></i>
+                                            <?php endif; ?>
                                         </div>
                                         <div class="group-info">
-                                            <h5><a href="../views/groupprofileview.php?group_id=<?php echo $group['group_id']; ?>"><?php echo htmlspecialchars($group['name']); ?></a></h5>
-                                            <p><?php echo htmlspecialchars($group['member_count'] ?? ''); ?> members</p>
+                                            <h5><?php echo htmlspecialchars($sidebarGroup['name']); ?></h5>
+                                            <p><?php echo htmlspecialchars($sidebarGroup['member_count'] ?? '0'); ?> members</p>
                                         </div>
                                     </div>
                                 <?php endforeach; ?>
@@ -74,18 +177,46 @@
                         <?php if (!empty($joinedGroups)) : ?>
                             <div class="sidebar-subsection">
                                 <strong style="font-size:13px;">Joined Groups</strong>
-                                <?php foreach ($joinedGroups as $group): ?>
-                                    <?php if ($group['created_by'] != $userId): // Avoid duplicate ?>
-                                    <div class="group">
+                                <?php foreach ($joinedGroups as $sidebarGroup): ?>
+                                    <?php 
+                                    // Skip if already shown in created groups
+                                    $isCreated = false;
+                                    foreach ($createdGroups as $cg) {
+                                        if ($cg['group_id'] == $sidebarGroup['group_id']) {
+                                            $isCreated = true;
+                                            break;
+                                        }
+                                    }
+                                    if ($isCreated) continue;
+                                    ?>
+                                    <?php
+                                    $rawDisplay = trim($sidebarGroup['display_picture'] ?? '');
+                                    $displayUrl = '';
+                                    if ($rawDisplay !== '') {
+                                        if (filter_var($rawDisplay, FILTER_VALIDATE_URL)) {
+                                            $displayUrl = $rawDisplay;
+                                        } elseif (strpos($rawDisplay, '/') === 0) {
+                                            $displayUrl = $rawDisplay;
+                                        } elseif (strpos($rawDisplay, 'public/') === 0) {
+                                            $displayUrl = rtrim(BASE_PATH, '/') . '/' . ltrim($rawDisplay, '/');
+                                        } else {
+                                            $displayUrl = rtrim(BASE_PATH, '/') . '/public/images/groupDp/' . basename($rawDisplay);
+                                        }
+                                    }
+                                    ?>
+                                    <div class="group <?php echo ($currentGroupId === $sidebarGroup['group_id']) ? 'active' : ''; ?>" data-group-id="<?php echo $sidebarGroup['group_id']; ?>" onclick="window.location.href='<?php echo rtrim(BASE_PATH, '/'); ?>/index.php?controller=Group&action=index&group_id=<?php echo $sidebarGroup['group_id']; ?>'">
                                         <div class="group-icon">
-                                            <i class="uil uil-users-alt"></i>
+                                            <?php if ($displayUrl !== ''): ?>
+                                                <img src="<?php echo htmlspecialchars($displayUrl); ?>" alt="<?php echo htmlspecialchars($sidebarGroup['name']); ?>" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">
+                                            <?php else: ?>
+                                                <i class="uil uil-users-alt"></i>
+                                            <?php endif; ?>
                                         </div>
                                         <div class="group-info">
-                                            <h5><a href="../views/groupprofileview.php?group_id=<?php echo $group['group_id']; ?>"><?php echo htmlspecialchars($group['name']); ?></a></h5>
-                                            <p><?php echo htmlspecialchars($group['member_count'] ?? ''); ?> members</p>
+                                            <h5><?php echo htmlspecialchars($sidebarGroup['name']); ?></h5>
+                                            <p><?php echo htmlspecialchars($sidebarGroup['member_count'] ?? '0'); ?> members</p>
                                         </div>
                                     </div>
-                                    <?php endif; ?>
                                 <?php endforeach; ?>
                             </div>
                         <?php endif; ?>
@@ -93,7 +224,7 @@
                             <p style="padding:10px 0 0 10px;">You haven't joined or created any groups yet.</p>
                         <?php endif; ?>
                     </div>
-                    <button class="btn btn-secondary">See All Groups</button>
+                    <button class="btn btn-secondary" id="seeAllGroupsBtn">See All Groups</button>
                 </div>
             </div>
 

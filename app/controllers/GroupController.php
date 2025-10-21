@@ -1,5 +1,5 @@
 <?php
-session_start();
+// Don't start session here - let the view handle it
 require_once __DIR__ . '/../core/Database.php';
 require_once __DIR__ . '/../models/GroupModel.php';
 
@@ -7,6 +7,9 @@ class GroupController {
     private $groupModel;
 
     public function __construct() {
+        if (session_status() === PHP_SESSION_NONE) {
+            session_start();
+        }
         $this->groupModel = new GroupModel();
     }
 
@@ -22,21 +25,30 @@ class GroupController {
             exit;
         }
 
-        // Support both JSON and multipart/form-data
-        $action = null;
-        if (isset($_POST['action'])) {
-            $action = $_POST['action'];
+        // Support both JSON and multipart/form-data, check for sub_action
+        $subAction = null;
+        if (isset($_POST['sub_action'])) {
+            $subAction = $_POST['sub_action'];
         } else {
             $input = json_decode(file_get_contents('php://input'), true);
-            $action = $input['action'] ?? '';
+            $subAction = $input['sub_action'] ?? '';
         }
 
-        switch ($action) {
+        switch ($subAction) {
             case 'create':
                 $this->createGroup(isset($input) ? $input : $_POST);
                 break;
             case 'edit':
                 $this->editGroup();
+                break;
+            case 'delete':
+                $this->deleteGroup();
+                break;
+            case 'join':
+                $this->joinGroup();
+                break;
+            case 'leave':
+                $this->leaveGroup();
                 break;
             default:
                 echo json_encode(['success' => false, 'message' => 'Invalid action']);
@@ -206,6 +218,101 @@ class GroupController {
         } catch (Exception $e) {
             error_log('Create group error: ' . $e->getMessage());
             echo json_encode(['success' => false, 'message' => $e->getMessage()]);
+        }
+    }
+
+    private function deleteGroup() {
+        try {
+            $groupId = $_POST['group_id'] ?? null;
+            $userId = $_SESSION['user_id'];
+
+            if (!$groupId) {
+                echo json_encode(['success' => false, 'message' => 'Group ID required']);
+                return;
+            }
+
+            // Check if user is creator
+            $group = $this->groupModel->getById($groupId);
+            if (!$group || $group['created_by'] != $userId) {
+                echo json_encode(['success' => false, 'message' => 'Unauthorized']);
+                return;
+            }
+
+            if ($this->groupModel->deleteGroup($groupId)) {
+                echo json_encode(['success' => true, 'message' => 'Group deleted successfully']);
+            } else {
+                echo json_encode(['success' => false, 'message' => 'Failed to delete group']);
+            }
+        } catch (Exception $e) {
+            echo json_encode(['success' => false, 'message' => 'Error: ' . $e->getMessage()]);
+        }
+    }
+
+    private function joinGroup() {
+        try {
+            $groupId = $_POST['group_id'] ?? null;
+            $userId = $_SESSION['user_id'];
+
+            if (!$groupId) {
+                echo json_encode(['success' => false, 'message' => 'Group ID required']);
+                return;
+            }
+
+            // Check if already joined
+            $joinedGroups = $this->groupModel->getGroupsJoinedBy($userId);
+            foreach ($joinedGroups as $g) {
+                if ($g['group_id'] == $groupId) {
+                    echo json_encode(['success' => false, 'message' => 'Already joined']);
+                    return;
+                }
+            }
+
+            // Add member
+            if ($this->groupModel->addMember($groupId, $userId)) {
+                echo json_encode(['success' => true, 'message' => 'Joined group successfully']);
+            } else {
+                echo json_encode(['success' => false, 'message' => 'Failed to join group']);
+            }
+        } catch (Exception $e) {
+            echo json_encode(['success' => false, 'message' => 'Error: ' . $e->getMessage()]);
+        }
+    }
+
+    private function leaveGroup() {
+        try {
+            $groupId = isset($_POST['group_id']) ? (int)$_POST['group_id'] : 0;
+            $userId = (int)$_SESSION['user_id'];
+
+            if (!$groupId) {
+                echo json_encode(['success' => false, 'message' => 'Group ID required']);
+                return;
+            }
+
+            $group = $this->groupModel->getById($groupId);
+            if (!$group) {
+                echo json_encode(['success' => false, 'message' => 'Group not found']);
+                return;
+            }
+
+            // Prevent creator from leaving their own group
+            if ((int)$group['created_by'] === $userId) {
+                echo json_encode(['success' => false, 'message' => 'Group creators cannot leave their own group.']);
+                return;
+            }
+
+            // Ensure membership exists
+            if (!$this->groupModel->isMember($groupId, $userId)) {
+                echo json_encode(['success' => false, 'message' => 'You are not a member of this group.']);
+                return;
+            }
+
+            if ($this->groupModel->removeMember($groupId, $userId)) {
+                echo json_encode(['success' => true, 'message' => 'You left the group successfully.']);
+            } else {
+                echo json_encode(['success' => false, 'message' => 'Failed to leave the group.']);
+            }
+        } catch (Exception $e) {
+            echo json_encode(['success' => false, 'message' => 'Error: ' . $e->getMessage()]);
         }
     }
 }

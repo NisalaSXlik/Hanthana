@@ -23,7 +23,7 @@ class User {
             ':password_hash' => password_hash($data['password'], PASSWORD_DEFAULT),
             ':username' => $data['username'],
             ':bio' => $data['bio'] ?? null,
-            ':profile_picture' => $data['profile_picture'] ?? null,
+            ':profile_picture' => $data['profile_picture'] ?? 'defaultProfilePic.png',
             ':cover_photo' => $data['cover_photo'] ?? null,
             ':university' => $data['university'] ?? null,
             ':date_of_birth' => $data['date_of_birth'] ?? null,
@@ -211,6 +211,23 @@ class User {
         $sql = "UPDATE {$this->table} SET friends_count = friends_count - 1 WHERE user_id = :user_id";
         $stmt = $this->db->getConnection()->prepare($sql);
         return $stmt->execute([':user_id' => $user_id]);
+    }
+
+    public function searchUsers(string $term, int $limit = 10): array {
+        $sql = "SELECT user_id, username, first_name, last_name, profile_picture
+                FROM {$this->table}
+                WHERE is_active = TRUE
+                  AND (username LIKE :query OR first_name LIKE :query OR last_name LIKE :query)
+                ORDER BY username ASC
+                LIMIT :limit";
+
+        $stmt = $this->db->getConnection()->prepare($sql);
+        $like = '%' . $term . '%';
+        $stmt->bindValue(':query', $like, PDO::PARAM_STR);
+        $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
+        $stmt->execute();
+
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 }
 ?>

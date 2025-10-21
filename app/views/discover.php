@@ -20,7 +20,7 @@
     
     <main>
         <div class="container">
-            <?php include __DIR__ . '/templates/left-sidebar.php'; ?>
+            <?php $activeSidebar = 'discover'; include __DIR__ . '/templates/left-sidebar.php'; ?>
             <div class="middle">
                 <div class="middle-feed">
                     <div class="discover-header">
