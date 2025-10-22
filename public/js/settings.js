@@ -197,6 +197,27 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 
+
+document.addEventListener('DOMContentLoaded', function() {
+  const navLinks = document.querySelectorAll('.settings-nav .menu-item');
+  const sections = document.querySelectorAll('.settings-section');
+
+  navLinks.forEach(link => {
+    link.addEventListener('click', function(e) {
+      e.preventDefault();
+      // Remove active from all links
+      navLinks.forEach(l => l.classList.remove('active'));
+      this.classList.add('active');
+      // Hide all sections
+      sections.forEach(sec => sec.classList.remove('active'));
+      // Show the selected section
+      const target = this.getAttribute('href');
+      const section = document.querySelector(target);
+      if (section) section.classList.add('active');
+    });
+  });
+});
+
 // Dark theme styles
 const darkThemeStyles = `
     <style>
