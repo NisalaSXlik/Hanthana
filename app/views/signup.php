@@ -3,13 +3,14 @@ require_once __DIR__ . '/../controllers/AuthController.php';
 
 $authController = new AuthController();
 $errors = [];
-$success = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $result = $authController->register($_POST);
     
     if ($result['success']) {
-        $success = "Registration successful!";
+        // Redirect to login page immediately
+        header('Location: login.php');
+        exit;
     } else {
         $errors = $result['errors'];
     }
@@ -34,14 +35,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <div class="tagline">Connect with your community</div>
                 </div>
 
-                <!-- Success Message -->
-                <?php if ($success): ?>
-                    <div class="success-message" style="color: green; padding: 10px; text-align: center; margin-bottom: 15px;">
-                        ✅ <?php echo htmlspecialchars($success); ?>
-                    </div>
-                <?php endif; ?>
-
-                <!-- Error Messages -->
+                <!-- Error Messages Only (success redirects) -->
                 <?php if (!empty($errors)): ?>
                     <div class="error-messages" style="color: red; padding: 10px; margin-bottom: 15px;">
                         <?php foreach ($errors as $error): ?>
