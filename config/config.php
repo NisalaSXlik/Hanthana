@@ -6,7 +6,7 @@ error_reporting(E_ALL);
 
 // Database configuration
 define('DB_HOST', 'localhost');
-define('DB_NAME', 'Hanthananew');
+define('DB_NAME', 'Hanthana');
 define('DB_USER', 'root');
 define('DB_PASS', '');
 define('DB_CHARSET', 'utf8mb4');
