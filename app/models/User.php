@@ -23,7 +23,7 @@ class User {
             ':password_hash' => password_hash($data['password'], PASSWORD_DEFAULT),
             ':username' => $data['username'],
             ':bio' => $data['bio'] ?? null,
-            ':profile_picture' => $data['profile_picture'] ?? null,
+            ':profile_picture' => $data['profile_picture'] ?? 'defaultProfilePic.png',
             ':cover_photo' => $data['cover_photo'] ?? null,
             ':university' => $data['university'] ?? null,
             ':date_of_birth' => $data['date_of_birth'] ?? null,

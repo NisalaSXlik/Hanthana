@@ -43,7 +43,7 @@ class AuthController {
         return ['success' => false, 'errors' => $errors];
     }
     
-    // Handle user login
+    // Handle user login - FIXED: Added last_name to session
     public function login($identifier, $password) {
         $errors = $this->validateLogin($identifier, $password);
         
@@ -59,11 +59,12 @@ class AuthController {
         }
         
         if ($user && password_verify($password, $user['password_hash'])) {
-            // Set session data
+            // Set session data - ADDED LAST_NAME
             $_SESSION['user_id'] = $user['user_id'];
             $_SESSION['username'] = $user['username'];
             $_SESSION['email'] = $user['email'];
             $_SESSION['first_name'] = $user['first_name'];
+            $_SESSION['last_name'] = $user['last_name'];  // ← ADDED THIS LINE
             $_SESSION['phone_number'] = $user['phone_number'];
             $_SESSION['profile_picture'] = $user['profile_picture'];
             
@@ -113,7 +114,7 @@ class AuthController {
         return null;
     }
     
-    // Update user profile
+    // Update user profile - FIXED: Added last_name to session update
     public function updateProfile($user_id, $data) {
         $errors = $this->validateProfileUpdate($user_id, $data);
         
@@ -139,6 +140,7 @@ class AuthController {
                 $_SESSION['username'] = $profileData['username'];
                 $_SESSION['email'] = $profileData['email'];
                 $_SESSION['first_name'] = $profileData['first_name'];
+                $_SESSION['last_name'] = $profileData['last_name'];  // ← ADDED THIS LINE
                 $_SESSION['phone_number'] = $profileData['phone_number'];
             }
             

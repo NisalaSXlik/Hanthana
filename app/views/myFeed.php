@@ -20,13 +20,11 @@ $currentUserId = $_SESSION['user_id'] ?? null;
     <title>Hanthana</title>
     <link rel="stylesheet" href="../../public/css/myfeed.css">
     <link rel="stylesheet" href="../../public/css/general.css">
-    <link rel="stylesheet" href="../../public/css/myFeed.css">
     <link rel="stylesheet" href="../../public/css/navbar.css"> 
     <link rel="stylesheet" href="../../public/css/mediaquery.css">
     <link rel="stylesheet" href="../../public/css/calender.css">
-    <link rel="stylesheet" href="../../public/css/post.css">
-    <link rel="stylesheet" href="../../public/css/myfeed.css">
     <link rel="stylesheet" href="../../public/css/notificationpopup.css">
+    <link rel="stylesheet" href="../../public/css/post.css">
     <link rel="stylesheet" href="https://unicons.iconscout.com/release/v4.0.8/css/line.css">
 </head>
 <body>
