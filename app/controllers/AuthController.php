@@ -214,8 +214,17 @@ class AuthController {
         }
         
         // Password validation
-        if (!empty($data['password']) && strlen($data['password']) < 6) {
-            $errors[] = "Password must be at least 6 characters.";
+        if (!empty($data['password'])) {
+            if (strlen($data['password']) < 6) {
+                $errors[] = "Password must be at least 6 characters.";
+            }
+            
+            // Check if passwords match
+            if (!empty($data['confirmPassword']) && $data['password'] !== $data['confirmPassword']) {
+                $errors[] = "Passwords do not match.";
+            } elseif (empty($data['confirmPassword'])) {
+                $errors[] = "Please confirm your password.";
+            }
         }
         
         return $errors;

@@ -1,103 +1,48 @@
-# ----------------------------------------
-# OS-SPECIFIC FILES
-# ----------------------------------------
-
-# macOS
+# Platform-specific files
 .DS_Store
-.AppleDouble
-.LSOverride
-
-# Windows
-Thumbs.db
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
 ehthumbs.db
-Desktop.ini
-$RECYCLE.BIN/
+Thumbs.db
+desktop.ini
+*.swp
+*.swo
+*~
 
-# Linux
-.Trash-*
-.nfs*
+# Uploads folder (user-generated content)
+public/uploads/
 
-# ----------------------------------------
-# IDE / EDITOR FILES
-# ----------------------------------------
+# Logs and temporary files
+*.log
+tmp/
+temp/
 
-# VS Code
+# IDE and editor files
 .vscode/
-.history/
-
-# JetBrains IDEs (PhpStorm, WebStorm, etc.)
 .idea/
-
-# Sublime Text
 *.sublime-project
 *.sublime-workspace
 
-# ----------------------------------------
-# ENVIRONMENT / CONFIG FILES
-# ----------------------------------------
-
-# Local environment files
-.env
-.env.local
-.env.*.local
-
-# Local server config (XAMPP, MAMP, WAMP)
-*.ini
-*.conf
-*.bak
-*.sql
-*.sqlite
-*.db
-*.dbstore
-
-# ----------------------------------------
-# DEPENDENCIES & BUILD FILES
-# ----------------------------------------
-
-# Node modules (if used)
+# Node.js (if applicable)
 node_modules/
+npm-debug.log*
 
-# Composer dependencies (if PHP uses it)
+# PHP Composer
 vendor/
 
-# Temporary build/output folders
-dist/
-build/
-tmp/
-temp/
-.cache/
-coverage/
+# Environment files
+.env
+.env.local
+.env.production
 
-# ----------------------------------------
-# LOGS / TEMP / BACKUPS
-# ----------------------------------------
-
-*.log
-*.tmp
-*.swp
-*.bak
-*.old
-
-# ----------------------------------------
-# UPLOADS & USER FILES
-# ----------------------------------------
-
-uploads/
-user_uploads/
-backup/
-storage/
-sessions/
-
-# ----------------------------------------
-# SYSTEM / DEPLOYMENT
-# ----------------------------------------
-
-# GitHub Pages cache
-.cache/
-*.lock
-*.pid
-
-# FTP / deployment tools
-*.ftpconfig
-.ssh/
-.deploy/
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+desktop.ini
