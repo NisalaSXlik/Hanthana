@@ -1,19 +1,10 @@
-<?php
-// Simple session check example
-session_start();
-if (!isset($_SESSION['user_id'])) {
-    // In a real app, you would redirect to login
-    // header('Location: login.php');
-    // exit();
-}
-?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Settings - Social Platform</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <title>Settings - Hanthana Events</title>
+    <link rel="stylesheet" href="public/css/style.css">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     
     <!-- Include existing CSS files -->

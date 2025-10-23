@@ -77,7 +77,7 @@ class AuthController {
         return ['success' => false, 'errors' => ['Invalid email/phone or password.']];
     }
     
-    // Handle user logout
+    // Handle user logout - FIXED VERSION
     public function logout() {
         // Ensure session is started
         $this->startSession();
@@ -96,6 +96,7 @@ class AuthController {
         
         // Finally, destroy the session
         session_destroy();
+        
         return ['success' => true, 'message' => 'Logged out successfully.'];
     }
     
