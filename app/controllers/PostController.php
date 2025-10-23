@@ -6,8 +6,43 @@ require_once __DIR__ . '/../core/Database.php';
 
 header('Content-Type: application/json');
 
+// Handle GET requests for ajax_action
+if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['ajax_action'])) {
+    $action = $_GET['ajax_action'];
+    $postModel = new PostModel();
+    $userId = $_SESSION['user_id'] ?? 0;
+
+    try {
+        switch ($action) {
+            case 'getPost':
+                $postId = (int)($_GET['post_id'] ?? 0);
+                if ($postId <= 0) {
+                    echo json_encode(['success' => false, 'message' => 'Missing post id']);
+                    exit;
+                }
+                $post = $postModel->getById($postId, $userId);
+                if ($post) {
+                    echo json_encode(['success' => true, 'post' => $post]);
+                } else {
+                    echo json_encode(['success' => false, 'message' => 'Post not found']);
+                }
+                exit;
+
+            default:
+                echo json_encode(['success' => false, 'message' => 'Unknown action']);
+                exit;
+        }
+    } catch (Throwable $e) {
+        error_log('PostController GET error: ' . $e->getMessage());
+        echo json_encode(['success' => false, 'message' => 'Server error']);
+        exit;
+    }
+}
+
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     echo json_encode(['success' => false, 'message' => 'Invalid request']);
+    exit;
+}
     exit;
 }
 

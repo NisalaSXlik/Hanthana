@@ -1,3 +1,9 @@
+<?php
+if (!defined('BASE_PATH')) {
+    require_once __DIR__ . '/../../../config/config.php';
+}
+$publicBase = rtrim(BASE_PATH, '/') . '/public/';
+?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -530,8 +536,8 @@
         </div>
     </div>
 
-    <link rel="stylesheet" href="../../public/css/general.css">
-    <link rel="stylesheet" href="../../public/css/chat-new.css">
-    <script src="../../public/js/chat-new.js"></script>
+    <link rel="stylesheet" href="<?php echo htmlspecialchars($publicBase . 'css/general.css'); ?>">
+    <link rel="stylesheet" href="<?php echo htmlspecialchars($publicBase . 'css/chat-new.css'); ?>">
+    <script src="<?php echo htmlspecialchars($publicBase . 'js/chat-new.js'); ?>"></script>
 </body>
 </html>
