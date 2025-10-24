@@ -1,6 +1,7 @@
 // general.js - Handles general functionality used across the site
 document.addEventListener('DOMContentLoaded', function() {
-    // Generate random likes and comments for existing posts
+    // Remove random counts demo
+    /*
     document.querySelectorAll('.feed').forEach((feed, index) => {
         const likeCount = feed.querySelector('.liked-by p');
         const commentCount = feed.querySelector('.comments');
@@ -15,20 +16,43 @@ document.addEventListener('DOMContentLoaded', function() {
             commentCount.textContent = `View all ${randomComments} comments`;
         }
     });
+    */
     
-    // Interactive like buttons
-    document.querySelectorAll('.uil-heart').forEach(heart => {
-        heart.addEventListener('click', function() {
-            if (!isUserLoggedIn()) {
-                showLoginModal();
-                return;
-            }
+    // Interactive like buttons (real voting for arrows)
+    document.querySelectorAll('.uil-arrow-up, .uil-arrow-down').forEach(arrow => {
+        arrow.addEventListener('click', async function() {
+            // Remove undefined isUserLoggedIn check
+            const postId = this.closest('.feed').dataset.postId;
+            const voteType = this.dataset.voteType;  // 'upvote' or 'downvote'
             
-            this.classList.toggle('liked');
-            if (this.classList.contains('liked')) {
-                this.style.color = 'var(--color-danger)';
-            } else {
-                this.style.color = '';
+            try {
+                const response = await fetch(BASE_PATH + '/index.php?controller=Vote&action=vote', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+                    body: `post_id=${postId}&vote_type=${voteType}`
+                });
+                const data = await response.json();
+                if (data.success) {
+                    // Reset both arrows for this post
+                    const upArrow = this.closest('.interaction-buttons').querySelector('.uil-arrow-up');
+                    const downArrow = this.closest('.interaction-buttons').querySelector('.uil-arrow-down');
+                    upArrow.classList.remove('liked');
+                    downArrow.classList.remove('liked');
+                    upArrow.style.color = '';
+                    downArrow.style.color = '';
+                    
+                    // Apply to the clicked one if added/updated
+                    if (data.action === 'added' || data.action === 'updated') {
+                        this.classList.add('liked');
+                        this.style.color = 'var(--color-danger)';  // Red
+                    }
+                    // If removed, stay neutral
+                } else {
+                    showToast(data.message || 'Vote failed', 'error');
+                }
+            } catch (error) {
+                console.error('Vote error:', error);
+                showToast('Vote failed', 'error');
             }
         });
     });
@@ -70,7 +94,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
     if (addGroupBtn && createGroupModal) {
         // Open modal
-        addGroupBtn.addEventListener('click', () => {
+        addGroupBtn.addEventListener('click', (e) => {
+            e.preventDefault();  // Prevent any navigation
             createGroupModal.classList.add('active');
             document.body.style.overflow = 'hidden';
         });
@@ -101,15 +126,10 @@ document.addEventListener('DOMContentLoaded', function() {
             const formData = new FormData(createGroupForm);
             const groupData = Object.fromEntries(formData.entries());
             try {
-                const response = await fetch('../../app/controllers/GroupController.php', {
+                const response = await fetch(BASE_PATH + 'index.php?controller=Group&action=handleAjax', {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        action: 'create',
-                        ...groupData
-                    })
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ sub_action: 'create', ...groupData })
                 });
                 const result = await response.json();
                 if (result.success) {

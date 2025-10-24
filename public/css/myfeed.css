@@ -112,6 +112,17 @@
     text-decoration: none !important;
 }
 
+.feed .interaction-buttons i.liked {
+    color: var(--color-danger);  /* Red */
+}
+
+.feed .interaction-buttons small {
+    font-size: 0.7rem; /* Smaller than default for subtlety */
+    margin-left: 0.2rem; /* Small gap from icon */
+    color: var(--color-gray); /* Match gray theme */
+    vertical-align: middle; /* Align with icon */
+}
+
 /* Remove any underline effects from icons */
 .uil,
 .uil-comment,
