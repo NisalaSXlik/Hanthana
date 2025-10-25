@@ -1,4 +1,5 @@
-        // Chat functionality
+// Chat functionality
+
         let activeUsers = ['andrew', 'sarah', 'emma']; // Users currently active
         let currentActiveUser = null;
         let isMaximized = false;
@@ -1514,13 +1515,18 @@
 
         // Main initialization function to ensure all components are properly set up
         document.addEventListener('DOMContentLoaded', function() {
-            console.log('Chat system initializing...');
-            
-            // Ensure media sections exist on page load
-            createMediaSections();
-            
-            // Initialize message synchronization
-            syncMessagesAcrossViews();
-            
-            console.log('Chat system initialization complete');
+            // Optimize: Only initialize if chat elements exist
+            if (document.querySelector('.chat-container')) {
+                // Run heavy initialization here
+                
+                // Ensure media sections exist on page load
+                createMediaSections();
+                
+                // Initialize message synchronization
+                syncMessagesAcrossViews();
+                
+                console.log('Chat system initialization complete');
+            } else {
+                console.log('Chat not present, skipping init');
+            }
         });

@@ -12,28 +12,21 @@
             --card-border-radius: 16px;
         }
 
-        * {
+        .chat-clean-template {
+            background-color: #f8fafc;
+            color: var(--color-dark);
+            padding: 20px;
             margin: 0;
             padding: 0;
             box-sizing: border-box;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        }
-
-        body {
-            background-color: #f8fafc;
-            color: var(--color-dark);
-            padding: 20px;
-            min-height: 100vh;
+            z-index: 10;
+            position: absolute;
         }
 
         /* Remove body padding when chat is maximized */
         body.chat-maximized {
             padding: 0;
-        }
-
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
         }
 
         /* Utility Classes */
