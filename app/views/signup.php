@@ -1,38 +1,98 @@
+<?php
+require_once __DIR__ . '/../controllers/AuthController.php';
+
+$authController = new AuthController();
+$errors = [];
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $result = $authController->register($_POST);
+    
+    if ($result['success']) {
+        // Redirect to login page immediately
+        header('Location: login.php');
+        exit;
+    } else {
+        $errors = $result['errors'];
+    }
+}
+?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sign Up | Hanthana</title>
-    <link rel="stylesheet" href="../../public/css/general.css">
-    <link rel="stylesheet" href="../../public/css/login.css">
+    <link rel="stylesheet" href="./css/general.css">
+    <link rel="stylesheet" href="./css/login.css">
     <link rel="stylesheet" href="https://unicons.iconscout.com/release/v4.0.8/css/line.css">
 </head>
 <body>
-    <div class="auth-container" style="max-width: 400px; margin: 40px auto; background: #fff; border-radius: 20px; box-shadow: 0 8px 32px rgba(60,60,120,0.08); padding: 40px 32px;">
-        <form id="signup-form" class="auth-form" data-form="signup" style="display: flex; flex-direction: column; gap: 18px;">
-            <h2 style="text-align:center; color:#2196f3; font-size:2.2rem; font-weight:700; margin-bottom:0;">Hanthana</h2>
-            <p style="text-align:center; color:#4a5568; margin-bottom:10px;">Create your account</p>
-            <div class="form-group-l" style="position:relative;">
-                <i class="uil uil-envelope" style="position:absolute; left:16px; top:50%; transform:translateY(-50%); color:#2196f3;"></i>
-                <input type="email" name="email" placeholder="Email" required style="width:100%; padding:12px 12px 12px 44px; border-radius:10px; border:1px solid #e2e8f0; font-size:1rem;">
-            </div>
-            <div class="form-group-l" style="position:relative;">
-                <i class="uil uil-phone" style="position:absolute; left:16px; top:50%; transform:translateY(-50%); color:#2196f3;"></i>
-                <input type="tel" name="phone" placeholder="Phone Number" pattern="[0-9]{10}" required style="width:100%; padding:12px 12px 12px 44px; border-radius:10px; border:1px solid #e2e8f0; font-size:1rem;">
-            </div>
-            <div class="form-group-l" style="position:relative;">
-                <i class="uil uil-lock" style="position:absolute; left:16px; top:50%; transform:translateY(-50%); color:#2196f3;"></i>
-                <input type="password" name="password" placeholder="Password" required style="width:100%; padding:12px 12px 12px 44px; border-radius:10px; border:1px solid #e2e8f0; font-size:1rem;">
-            </div>
-            <div class="form-group-l" style="position:relative;">
-                <i class="uil uil-lock" style="position:absolute; left:16px; top:50%; transform:translateY(-50%); color:#2196f3;"></i>
-                <input type="password" name="confirmPassword" placeholder="Confirm Password" required style="width:100%; padding:12px 12px 12px 44px; border-radius:10px; border:1px solid #e2e8f0; font-size:1rem;">
-            </div>
-            <button type="submit" class="btn btn-primary btn-block" style="background:#2196f3; color:#fff; border:none; border-radius:12px; font-size:1.1rem; padding:12px 0; margin-top:10px; cursor:pointer;">Sign Up</button>
-            <p style="text-align:center; margin-top:10px; color:#4a5568;">Already have an account? <a href="login.php" style="color:#2196f3; font-weight:500; text-decoration:none;">Login</a></p>
-        </form>
+    <div class="auth-container">
+        <div class="auth-card signup-card">
+            <form method="POST" action="/?controller=Signup&action=index" class="auth-form" id="signup-form" data-form="signup">
+                <div class="auth-header">
+                    <div class="logo">Hanthana</div>
+                    <div class="tagline">Connect with your community</div>
+                </div>
+
+                <!-- Error Messages Only (success redirects) -->
+                <?php if (isset($_SESSION['signup_errors'])): ?>
+                    <div class="error-messages" style="color: red; padding: 10px; margin-bottom: 15px;">
+                        <?php foreach ($_SESSION['signup_errors'] as $error): ?>
+                            <div>❌ <?php echo htmlspecialchars($error); ?></div>
+                        <?php endforeach; ?>
+                        <?php unset($_SESSION['signup_errors']); ?>
+                    </div>
+                <?php endif; ?>
+
+                <div class="signup-name-row">
+                    <div class="form-group-l signup-form-group">
+                        <i class="uil uil-user"></i>
+                        <input type="text" name="first_name" placeholder="First Name" required 
+                               value="<?php echo isset($_POST['first_name']) ? htmlspecialchars($_POST['first_name']) : ''; ?>">
+                    </div>
+                    <div class="form-group-l signup-form-group">
+                        <i class="uil uil-user"></i>
+                        <input type="text" name="last_name" placeholder="Last Name" required
+                               value="<?php echo isset($_POST['last_name']) ? htmlspecialchars($_POST['last_name']) : ''; ?>">
+                    </div>
+                </div>
+                
+                <div class="form-group-l signup-form-group">
+                    <i class="uil uil-user"></i>
+                    <input type="text" name="username" placeholder="Username" required
+                           value="<?php echo isset($_POST['username']) ? htmlspecialchars($_POST['username']) : ''; ?>">
+                </div>
+                
+                <div class="form-group-l signup-form-group">
+                    <i class="uil uil-envelope"></i>
+                    <input type="email" name="email" placeholder="Email" required
+                           value="<?php echo isset($_POST['email']) ? htmlspecialchars($_POST['email']) : ''; ?>">
+                </div>
+                
+                <div class="form-group-l signup-form-group">
+                    <i class="uil uil-phone"></i>
+                    <input type="tel" name="phone" placeholder="Phone Number" pattern="[0-9]{10}" required
+                           value="<?php echo isset($_POST['phone']) ? htmlspecialchars($_POST['phone']) : ''; ?>">
+                </div>
+                
+                <div class="form-group-l signup-form-group">
+                    <i class="uil uil-lock"></i>
+                    <input type="password" name="password" placeholder="Password" required>
+                </div>
+                
+                <div class="form-group-l signup-form-group">
+                    <i class="uil uil-lock"></i>
+                    <input type="password" name="confirmPassword" placeholder="Confirm Password" required>
+                </div>
+                
+                <button type="submit" class="btn btn-primary btn-block">Sign Up</button>
+                
+                <p class="auth-footer">Already have an account? <a href="login.php">Login</a></p>
+            </form>
+        </div>
     </div>
-    <script src="../../public/js/signup.js"></script>
+
+    <script src="./js/signup.js"></script>
 </body>
 </html>
