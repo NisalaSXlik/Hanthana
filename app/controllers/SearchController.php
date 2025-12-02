@@ -1,53 +1,23 @@
 <?php
 require_once __DIR__ . '/../../config/config.php';
-require_once __DIR__ . '/../models/User.php';
+require_once __DIR__ . '/../models/UserModel.php';
 require_once __DIR__ . '/../models/GroupModel.php';
+require_once __DIR__ . '/../helpers/MediaHelper.php';
 
 class SearchController
 {
-    private User $userModel;
+    private UserModel $userModel;
     private GroupModel $groupModel;
 
     public function __construct()
     {
-        if (session_status() === PHP_SESSION_NONE) {
-            session_start();
-        }
-
-        $this->userModel = new User();
+        $this->userModel = new UserModel();
         $this->groupModel = new GroupModel();
-    }
-
-    private function formatAssetPath(?string $rawPath, string $defaultRelative): string
-    {
-        $rawPath = trim((string)$rawPath);
-        $base = rtrim(BASE_PATH, '/');
-        $default = $base . '/public/' . ltrim($defaultRelative, '/');
-
-        if ($rawPath === '') {
-            return $default;
-        }
-
-        if (filter_var($rawPath, FILTER_VALIDATE_URL)) {
-            return $rawPath;
-        }
-
-        $normalized = ltrim(str_replace('\\', '/', $rawPath), '/');
-
-        if (strpos($normalized, 'public/') === 0) {
-            return $base . '/' . $normalized;
-        }
-
-        if (strpos($normalized, 'images/') === 0 || strpos($normalized, 'uploads/') === 0) {
-            return $base . '/public/' . $normalized;
-        }
-
-        return $base . '/' . $normalized;
     }
 
     private function formatUserResult(array $user): array
     {
-        $avatar = $this->formatAssetPath($user['profile_picture'] ?? '', 'images/avatars/defaultProfilePic.png');
+        $avatar = MediaHelper::resolveMediaPath($user['profile_picture'] ?? '', 'uploads/user_dp/default_user_dp.jpg');
         $fullName = trim(($user['first_name'] ?? '') . ' ' . ($user['last_name'] ?? ''));
         if ($fullName === '') {
             $fullName = $user['username'];
@@ -64,7 +34,7 @@ class SearchController
 
     private function formatGroupResult(array $group): array
     {
-        $avatar = $this->formatAssetPath($group['display_picture'] ?? '', 'images/avatars/defaultProfilePic.png');
+        $avatar = MediaHelper::resolveMediaPath($group['display_picture'] ?? '', 'uploads/group_dp/default_group_dp.jpg');
         $memberCount = (int)($group['member_count'] ?? 0);
         $privacy = $group['privacy_status'] ?? 'public';
         $isMember = !empty($group['is_member']);

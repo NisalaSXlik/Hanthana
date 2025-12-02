@@ -1,11 +1,11 @@
 <?php
-require_once __DIR__ . '/../models/User.php';
+require_once __DIR__ . '/../models/UserModel.php';
 
 class AuthController {
     private $userModel;
     
     public function __construct() {
-        $this->userModel = new User();
+        $this->userModel = new UserModel();
         $this->startSession();
     }
     
@@ -34,6 +34,17 @@ class AuthController {
             ];
             
             if ($this->userModel->create($userData)) {
+                // Auto-login: set session
+                $user = $this->userModel->findByEmail($userData['email']);
+                $_SESSION['user_id'] = $user['user_id'];
+                $_SESSION['username'] = $user['username'];
+                $_SESSION['email'] = $user['email'];
+                $_SESSION['first_name'] = $user['first_name'];
+                $_SESSION['last_name'] = $user['last_name'];  // ← ADDED THIS LINE
+                $_SESSION['phone_number'] = $user['phone_number'];
+                $_SESSION['profile_picture'] = $user['profile_picture'];
+                $_SESSION['role'] = $user['role'] ?? 'user';
+                
                 return ['success' => true, 'message' => 'Registration successful!'];
             } else {
                 return ['success' => false, 'errors' => ['Registration failed. Please try again.']];
@@ -59,6 +70,27 @@ class AuthController {
         }
         
         if ($user && password_verify($password, $user['password_hash'])) {
+            if (!empty($user['banned_until'])) {
+                try {
+                    $banUntil = new DateTime($user['banned_until']);
+                } catch (Exception $e) {
+                    $banUntil = null;
+                }
+
+                if ($banUntil && $banUntil > new DateTime()) {
+                    $formatted = $banUntil->format('M d, Y H:i');
+                    $reason = $user['ban_reason'] ?? 'policy violation';
+                    return [
+                        'success' => false,
+                        'errors' => ["Account banned until {$formatted}. Reason: {$reason}."]
+                    ];
+                }
+
+                if ($banUntil && $banUntil <= new DateTime()) {
+                    $this->userModel->clearBan($user['user_id']);
+                }
+            }
+
             // Set session data - ADDED LAST_NAME
             $_SESSION['user_id'] = $user['user_id'];
             $_SESSION['username'] = $user['username'];
@@ -67,6 +99,7 @@ class AuthController {
             $_SESSION['last_name'] = $user['last_name'];  // ← ADDED THIS LINE
             $_SESSION['phone_number'] = $user['phone_number'];
             $_SESSION['profile_picture'] = $user['profile_picture'];
+            $_SESSION['role'] = $user['role'] ?? 'user';
             
             // Update last login
             $this->userModel->updateLastLogin($user['user_id']);

@@ -1,134 +1,6 @@
 <?php
 require_once __DIR__ . '/../../config/config.php';
-
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
-
-if (!isset($_SESSION['user_id'])) {
-    header('Location: login.php');
-    exit();
-}
-
-require_once __DIR__ . '/../models/User.php';
-require_once __DIR__ . '/../models/PostModel.php';
-require_once __DIR__ . '/../models/FriendModel.php';
-
-$viewerId = (int)($_SESSION['user_id'] ?? 0);
-$profileUserId = isset($_GET['user_id']) ? (int)$_GET['user_id'] : $viewerId;
-
-$userModel = new User();
-$profileUser = $userModel->findById($profileUserId);
-
-if (!$profileUser) {
-    header('Location: myFeed.php?error=user_not_found');
-    exit();
-}
-
-$isOwner = $viewerId === $profileUserId;
-
-$postModel = new PostModel();
-$friendModel = new FriendModel();
-$feedPosts = $postModel->getFeedPosts($viewerId);
-$userPosts = array_values(array_filter($feedPosts, function ($post) use ($profileUserId) {
-    return isset($post['user_id']) && (int)$post['user_id'] === $profileUserId;
-}));
-
-$photoPosts = array_values(array_filter($userPosts, function ($post) {
-    return !empty($post['image_url']);
-}));
-
-$publicBase = rtrim(BASE_PATH, '/') . '/public/';
-
-if (!function_exists('resolveMediaPath')) {
-    function resolveMediaPath(?string $raw, string $default, string $subDir): string {
-        $raw = trim((string)$raw);
-        if ($raw === '') {
-            return $default;
-        }
-        if (filter_var($raw, FILTER_VALIDATE_URL)) {
-            return $raw;
-        }
-
-        $normalized = ltrim(str_replace('\\', '/', $raw), '/');
-        $base = rtrim(BASE_PATH, '/');
-
-        if (strpos($normalized, 'public/') === 0) {
-            return $base . '/' . $normalized;
-        }
-
-        if (strpos($normalized, 'images/') === 0 || strpos($normalized, 'uploads/') === 0) {
-            return $base . '/public/' . $normalized;
-        }
-
-        return $base . '/public/' . trim($subDir, '/') . '/' . basename($normalized);
-    }
-}
-
-$profilePicture = resolveMediaPath($profileUser['profile_picture'] ?? '', $publicBase . 'images/avatars/defaultProfilePic.png', 'images/avatars');
-$coverPhoto = resolveMediaPath($profileUser['cover_photo'] ?? '', $publicBase . 'images/default_cover.jpg', 'images/userCover');
-
-$displayName = trim(($profileUser['first_name'] ?? '') . ' ' . ($profileUser['last_name'] ?? ''));
-$displayHandle = !empty($profileUser['username']) ? '@' . $profileUser['username'] : '';
-$postCount = count($userPosts);
-$friendsCount = (int)($profileUser['friends_count'] ?? 0);
-$bio = $profileUser['bio'] ?? 'No bio provided yet.';
-$location = $profileUser['location'] ?? 'Location not set';
-$university = $profileUser['university'] ?? 'University not set';
-$joinedAt = !empty($profileUser['created_at']) ? date('F Y', strtotime($profileUser['created_at'])) : 'Unknown';
-$email = $profileUser['email'] ?? null;
-$phone = $profileUser['phone_number'] ?? null;
-$dob = !empty($profileUser['date_of_birth']) ? date('F j, Y', strtotime($profileUser['date_of_birth'])) : null;
-$dobValue = !empty($profileUser['date_of_birth']) ? date('Y-m-d', strtotime($profileUser['date_of_birth'])) : '';
-$interestTags = !empty($profileUser['interests']) ? array_map('trim', explode(',', $profileUser['interests'])) : [];
-$friendListLimit = 50;
-$friendList = $friendModel->getAcceptedFriends($profileUserId, $friendListLimit);
-$friendListCount = $friendsCount;
-$hasMoreFriends = $friendsCount > count($friendList);
-
-$friendButtonState = 'none';
-$friendButtonLabel = 'Add Friend';
-$friendButtonIcon = 'uil uil-user-plus';
-$friendButtonDisabled = false;
-$friendButtonVariant = 'btn-primary';
-
-if (!$isOwner) {
-    $friendship = $friendModel->getFriendship($viewerId, $profileUserId);
-
-    if ($friendship) {
-        switch ($friendship['status']) {
-            case 'pending':
-                if ((int)$friendship['user_id'] === $viewerId) {
-                    $friendButtonState = 'pending_outgoing';
-                    $friendButtonLabel = 'Request Sent';
-                    $friendButtonIcon = 'uil uil-clock';
-                    $friendButtonDisabled = true;
-                    $friendButtonVariant = 'btn-secondary';
-                } else {
-                    $friendButtonState = 'incoming_pending';
-                    $friendButtonLabel = 'Request Pending';
-                    $friendButtonIcon = 'uil uil-user-plus';
-                    $friendButtonDisabled = true;
-                    $friendButtonVariant = 'btn-secondary';
-                }
-                break;
-            case 'accepted':
-                $friendButtonState = 'friends';
-                $friendButtonLabel = 'Friends';
-                $friendButtonIcon = 'uil uil-user-check';
-                $friendButtonDisabled = false;
-                $friendButtonVariant = 'btn-secondary';
-                break;
-            case 'blocked':
-                $friendButtonState = 'blocked';
-                $friendButtonLabel = 'Unavailable';
-                $friendButtonIcon = 'uil uil-ban';
-                $friendButtonDisabled = true;
-                $friendButtonVariant = 'btn-secondary';
-                break;
-        }
-    }
-}
+require_once __DIR__ . '/../helpers/MediaHelper.php';
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -136,16 +8,18 @@ if (!$isOwner) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?php echo htmlspecialchars($displayName !== '' ? $displayName : $displayHandle); ?> - Profile</title>
-    <link rel="stylesheet" href="<?php echo htmlspecialchars($publicBase . 'css/general.css'); ?>">
-    <link rel="stylesheet" href="<?php echo htmlspecialchars($publicBase . 'css/groupprofileview.css'); ?>">
-    <link rel="stylesheet" href="<?php echo htmlspecialchars($publicBase . 'css/navbar.css'); ?>">
-    <link rel="stylesheet" href="<?php echo htmlspecialchars($publicBase . 'css/mediaquery.css'); ?>">
-    <link rel="stylesheet" href="<?php echo htmlspecialchars($publicBase . 'css/calender.css'); ?>">
-    <link rel="stylesheet" href="<?php echo htmlspecialchars($publicBase . 'css/post.css'); ?>">
-    <link rel="stylesheet" href="<?php echo htmlspecialchars($publicBase . 'css/myfeed.css'); ?>">
-    <link rel="stylesheet" href="<?php echo htmlspecialchars($publicBase . 'css/notificationpopup.css'); ?>">
-    <link rel="stylesheet" href="<?php echo htmlspecialchars($publicBase . 'css/userprofileview.css'); ?>">
-    <link rel="stylesheet" href="https://unicons.iconscout.com/release/v4.0.8/css/line.css">
+    <link rel="stylesheet" href="./css/general.css">
+    <link rel="stylesheet" href="./css/groupprofileview.css">
+    <link rel="stylesheet" href="./css/navbar.css">
+    <link rel="stylesheet" href="./css/mediaquery.css">
+    <link rel="stylesheet" href="./css/calender.css">
+    <link rel="stylesheet" href="./css/post.css">
+    <link rel="stylesheet" href="./css/myfeed.css">
+    <link rel="stylesheet" href="./css/notificationpopup.css">
+    <link rel="stylesheet" href="./css/events-page.css">
+    <link rel="stylesheet" href="./css/userprofileview.css">
+    <link rel="stylesheet" href="./css/report.css">
+    <link rel="stylesheet" href="https://unicons.iconscout.com/release/v4.0.0/css/line.css">
 </head>
 <body>
     <?php include __DIR__ . '/templates/navbar.php'; ?>
@@ -157,7 +31,7 @@ if (!$isOwner) {
             <div class="middle">
                 <div class="profile-header">
                     <div class="profile-cover">
-                        <img src="<?php echo htmlspecialchars($coverPhoto); ?>" alt="Profile Cover" id="profileCoverImage">
+                        <img src="<?php echo htmlspecialchars(MediaHelper::resolveMediaPath($profileUser['cover_photo'] ?? '', 'uploads/user_cover/default_user_cover.jpg')); ?>" alt="Profile Cover" id="profileCoverImage">
                         <?php if ($isOwner): ?>
                         <button type="button" class="btn btn-primary edit-cover-btn" id="triggerEditCover">
                             <i class="uil uil-camera"></i> Edit Cover
@@ -167,7 +41,7 @@ if (!$isOwner) {
                     <div class="profile-info">
                         <div class="profile-dp-container">
                             <div class="profile-dp">
-                                <img src="<?php echo htmlspecialchars($profilePicture); ?>" alt="Profile Picture" id="profileAvatarImage">
+                                <img src="<?php echo htmlspecialchars(MediaHelper::resolveMediaPath($profileUser['profile_picture'] ?? '', 'uploads/user_dp/default_user_dp.jpg')); ?>" alt="Profile Picture" id="profileAvatarImage">
                                 <?php if ($isOwner): ?>
                                 <button type="button" class="edit-dp-btn" id="triggerEditAvatar">
                                     <i class="uil uil-camera"></i>
@@ -182,15 +56,13 @@ if (!$isOwner) {
                             <?php endif; ?>
                             <div class="profile-stats">
                                 <button type="button" class="stat stat-link" data-tab-target="posts" aria-label="View posts section">
-                                    <strong><?php echo $postCount; ?></strong>
+                                    <strong><?php echo $totalPostsCount; ?></strong>
                                     <span>Posts</span>
                                 </button>
-                                <div class="stat friend-stat">
-                                    <button type="button" class="friend-count-trigger" data-friend-count-trigger>
-                                        <strong data-friend-count="<?php echo $friendsCount; ?>"><?php echo $friendsCount; ?></strong>
-                                        <span>Friends</span>
-                                    </button>
-                                </div>
+                                <button type="button" class="stat stat-link" data-friend-count-trigger>
+                                    <strong data-friend-count="<?php echo $friendsCount; ?>"><?php echo $friendsCount; ?></strong>
+                                    <span>Friends</span>
+                                </button>
                                 <button type="button" class="stat stat-link" data-tab-target="photos" aria-label="View photos section">
                                     <strong><?php echo count($photoPosts); ?></strong>
                                     <span>Photos</span>
@@ -217,14 +89,41 @@ if (!$isOwner) {
                                         <span><?php echo htmlspecialchars($friendButtonLabel); ?></span>
                                     </button>
                                     <button class="btn btn-secondary" type="button"><i class="uil uil-message"></i> Message</button>
+                                    <button
+                                        type="button"
+                                        class="btn report-trigger"
+                                        data-report-type="user"
+                                        data-target-id="<?php echo (int)$profileUserId; ?>"
+                                        data-target-label="<?php echo htmlspecialchars('user ' . ($displayName !== '' ? $displayName : $displayHandle), ENT_QUOTES); ?>">
+                                        <i class="uil uil-exclamation-circle"></i>
+                                        Report User
+                                    </button>
                                 <?php endif; ?>
                             </div>
+                            
+                            <!-- Privacy Indicator -->
+                            <?php if (!$isOwner): ?>
+                            <div class="privacy-indicator" style="margin-top: 1rem; text-align: center;">
+                                <?php if ($profileVisibility === 'only_me'): ?>
+                                    <div class="privacy-badge" style="display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.5rem 1rem; background: var(--color-light); border-radius: 2rem; color: var(--color-gray);">
+                                        <i class="uil uil-lock"></i>
+                                        <span>Private Profile</span>
+                                    </div>
+                                <?php elseif ($profileVisibility === 'friends_only'): ?>
+                                    <div class="privacy-badge" style="display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.5rem 1rem; background: var(--color-light); border-radius: 2rem; color: var(--color-gray);">
+                                        <i class="uil uil-users-alt"></i>
+                                        <span>Friends Only</span>
+                                    </div>
+                                <?php endif; ?>
+                            </div>
+                            <?php endif; ?>
                         </div>
                     </div>
 
                     <div class="profile-tabs">
                         <ul>
-                            <li class="active"><a href="#" data-tab="posts">Posts</a></li>
+                            <li class="active"><a href="#" data-tab="posts">Personal Posts</a></li>
+                            <li><a href="#" data-tab="group-posts">Group Posts</a></li>
                             <li><a href="#" data-tab="about">About</a></li>
                             <li><a href="#" data-tab="photos">Photos</a></li>
                         </ul>
@@ -232,74 +131,95 @@ if (!$isOwner) {
                 </div>
 
                 <div class="group-content">
+                    <!-- Personal Posts Tab -->
                     <div class="tab-content active" id="tab-posts">
-                        <?php if (!empty($userPosts)): ?>
-                            <div class="posts-feed">
-                                <?php foreach ($userPosts as $post): ?>
-                                    <div class="feed" id="post-<?php echo (int)$post['post_id']; ?>" data-post-id="<?php echo (int)$post['post_id']; ?>">
-                                        <div class="head">
-                                            <div class="user">
-                                                <div class="profile-picture">
-                                                    <img src="<?php echo htmlspecialchars($post['profile_picture'] ?? $profilePicture); ?>" alt="<?php echo htmlspecialchars($displayName); ?>">
-                                                </div>
-                                                <div class="info">
-                                                    <h3><?php echo htmlspecialchars($displayName !== '' ? $displayName : $displayHandle); ?></h3>
-                                                    <small><?php echo htmlspecialchars($post['created_at'] ?? ''); ?></small>
-                                                </div>
-                                            </div>
-                                            <?php if ($isOwner): ?>
-                                                <div class="post-menu">
-                                                    <button class="menu-trigger" aria-label="Post menu"><i class="uil uil-ellipsis-h"></i></button>
-                                                    <div class="menu">
-                                                        <button class="menu-item edit-post" data-post-id="<?php echo (int)$post['post_id']; ?>">
-                                                            <i class="uil uil-edit"></i> Edit
-                                                        </button>
-                                                        <button class="menu-item delete-post" data-post-id="<?php echo (int)$post['post_id']; ?>">
-                                                            <i class="uil uil-trash-alt"></i> Delete
-                                                        </button>
-                                                    </div>
-                                                </div>
-                                            <?php else: ?>
-                                                <i class="uil uil-ellipsis-h"></i>
-                                            <?php endif; ?>
-                                        </div>
-
+                        <?php if ($postsArePrivate && !$isOwner): ?>
+                            <div class="private-posts-message" style="text-align: center; padding: 3rem; background: var(--color-light); border-radius: 1rem; margin: 2rem 0;">
+                                <i class="uil uil-lock" style="font-size: 3rem; color: var(--color-gray); margin-bottom: 1rem;"></i>
+                                <h3 style="color: var(--color-dark); margin-bottom: 0.5rem;">
+                                    <?php if ($postVisibility === 'only_me'): ?>
+                                        Posts are private
+                                    <?php else: ?>
+                                        Posts are for friends only
+                                    <?php endif; ?>
+                                </h3>
+                                <p style="color: var(--color-gray);">
+                                    <?php if ($postVisibility === 'only_me'): ?>
+                                        This user's posts are set to private. You cannot view their posts.
+                                    <?php else: ?>
+                                        You need to be friends with this user to view their posts.
+                                        <?php if ($canSendFriendRequest): ?>
+                                            <br><button 
+                                                type="button"
+                                                class="btn btn-primary add-friend-btn" 
+                                                data-user-id="<?php echo $profileUserId; ?>" 
+                                                data-state="none"
+                                                style="margin-top: 1rem;">
+                                                <i class="uil uil-user-plus"></i>
+                                                <span>Send Friend Request</span>
+                                            </button>
+                                        <?php endif; ?>
+                                    <?php endif; ?>
+                                </p>
+                            </div>
+                        <?php elseif (!empty($personalPosts)): ?>
+                            <div class="posts-grid" aria-hidden="false">
+                                <?php foreach ($personalPosts as $index => $post): ?>
+                                    <a href="#" class="post-grid-item" data-post-index="<?php echo $index; ?>" data-post-type="personal" title="View post">
                                         <?php if (!empty($post['image_url'])): ?>
-                                            <div class="photo">
-                                                <img src="<?php echo htmlspecialchars($post['image_url']); ?>" alt="Post image">
+                                            <img src="<?php echo htmlspecialchars($post['image_url']); ?>" alt="Post <?php echo (int)$post['post_id']; ?>">
+                                        <?php else: ?>
+                                            <div class="post-placeholder">
+                                                <i class="uil uil-file-info-alt"></i>
+                                                <span><?php echo htmlspecialchars(mb_strimwidth(strip_tags($post['content'] ?? ''), 0, 80, '...')); ?></span>
                                             </div>
                                         <?php endif; ?>
-
-                                        <?php if (!empty($post['content'])): ?>
-                                            <div class="caption">
-                                                <p><?php echo nl2br(htmlspecialchars($post['content'])); ?></p>
-                                            </div>
-                                        <?php endif; ?>
-
-                                        <div class="action-buttons">
-                                            <div class="interaction-buttons">
-                                                <?php
-                                                $upClass = ($post['user_vote'] ?? null) === 'upvote' ? 'liked' : '';
-                                                $downClass = ($post['user_vote'] ?? null) === 'downvote' ? 'liked' : '';
-                                                ?>
-                                                <i class="uil uil-arrow-up <?php echo $upClass; ?>" data-vote-type="upvote"></i>
-                                                <small><?php echo (int)($post['upvote_count'] ?? 0); ?></small>
-                                                <i class="uil uil-arrow-down <?php echo $downClass; ?>" data-vote-type="downvote"></i>
-                                                <small><?php echo (int)($post['downvote_count'] ?? 0); ?></small>
-                                                <i class="uil uil-comment"></i>
-                                            </div>
-                                            <i class="uil uil-bookmark"></i>
-                                        </div>
-                                    </div>
+                                    </a>
                                 <?php endforeach; ?>
                             </div>
-                        <?php else: ?>
+                        <?php elseif (!$postsArePrivate || $isOwner): ?>
                             <div class="feed">
-                                <div class="caption"><p>No posts yet.</p></div>
+                                <div class="caption"><p>No personal posts yet.</p></div>
                             </div>
                         <?php endif; ?>
                     </div>
 
+                    <!-- Group Posts Tab -->
+                    <div class="tab-content" id="tab-group-posts">
+                        <?php if ($postsArePrivate && !$isOwner): ?>
+                            <div class="private-posts-message" style="text-align: center; padding: 3rem; background: var(--color-light); border-radius: 1rem; margin: 2rem 0;">
+                                <i class="uil uil-lock" style="font-size: 3rem; color: var(--color-gray); margin-bottom: 1rem;"></i>
+                                <h3 style="color: var(--color-dark); margin-bottom: 0.5rem;">Group Posts are Private</h3>
+                                <p style="color: var(--color-gray)">You don't have permission to view this user's group posts.</p>
+                            </div>
+                        <?php elseif (!empty($groupPosts)): ?>
+                            <div class="posts-grid" aria-hidden="false">
+                                <?php foreach ($groupPosts as $post): ?>
+                                    <a href="<?php echo BASE_PATH; ?>index.php?controller=Group&action=view&id=<?php echo (int)$post['group_id']; ?>#post-<?php echo (int)$post['post_id']; ?>" class="post-grid-item" title="View in <?php echo htmlspecialchars($post['group_name'] ?? 'group'); ?>">
+                                        <div class="post-group-badge" title="Posted in <?php echo htmlspecialchars($post['group_name'] ?? 'Group'); ?>">
+                                            <i class="uil uil-users-alt"></i>
+                                        </div>
+                                        <?php if (!empty($post['image_url'])): ?>
+                                            <img src="<?php echo htmlspecialchars($post['image_url']); ?>" alt="Post <?php echo (int)$post['post_id']; ?>">
+                                        <?php else: ?>
+                                            <div class="post-placeholder">
+                                                <i class="uil uil-file-info-alt"></i>
+                                                <span><?php echo htmlspecialchars(mb_strimwidth(strip_tags($post['content'] ?? ''), 0, 80, '...')); ?></span>
+                                            </div>
+                                        <?php endif; ?>
+                                    </a>
+                                <?php endforeach; ?>
+                            </div>
+                        <?php else: ?>
+                            <div class="feed">
+                                <div class="caption"><p>No group posts yet.</p></div>
+                            </div>
+                        <?php endif; ?>
+                    </div>
+
+
+
+                    <!-- About Tab -->
                     <div class="tab-content" id="tab-about">
                         <div class="about-section">
                             <h3>About</h3>
@@ -336,9 +256,28 @@ if (!$isOwner) {
                         <?php endif; ?>
                     </div>
 
+                    <!-- Photos Tab -->
                     <div class="tab-content" id="tab-photos">
-                        <div class="photo-grid">
-                            <?php if (!empty($photoPosts)): ?>
+                        <?php if ($postsArePrivate && !$isOwner): ?>
+                            <div class="private-posts-message" style="text-align: center; padding: 3rem; background: var(--color-light); border-radius: 1rem; margin: 2rem 0;">
+                                <i class="uil uil-lock" style="font-size: 3rem; color: var(--color-gray); margin-bottom: 1rem;"></i>
+                                <h3 style="color: var(--color-dark); margin-bottom: 0.5rem;">
+                                    <?php if ($postVisibility === 'only_me'): ?>
+                                        Photos are private
+                                    <?php else: ?>
+                                        Photos are for friends only
+                                    <?php endif; ?>
+                                </h3>
+                                <p style="color: var(--color-gray);">
+                                    <?php if ($postVisibility === 'only_me'): ?>
+                                        This user's photos are set to private. You cannot view their photos.
+                                    <?php else: ?>
+                                        You need to be friends with this user to view their photos.
+                                    <?php endif; ?>
+                                </p>
+                            </div>
+                        <?php elseif (!empty($photoPosts)): ?>
+                            <div class="photo-grid">
                                 <?php foreach ($photoPosts as $post): ?>
                                     <div class="photo-item">
                                         <img src="<?php echo htmlspecialchars($post['image_url']); ?>" alt="Photo from post <?php echo (int)$post['post_id']; ?>">
@@ -347,10 +286,10 @@ if (!$isOwner) {
                                         <?php endif; ?>
                                     </div>
                                 <?php endforeach; ?>
-                            <?php else: ?>
-                                <p class="empty-message">No photos yet.</p>
-                            <?php endif; ?>
-                        </div>
+                            </div>
+                        <?php else: ?>
+                            <p class="empty-message">No photos yet.</p>
+                        <?php endif; ?>
                     </div>
                 </div>
             </div>
@@ -372,6 +311,51 @@ if (!$isOwner) {
                             <span>Member since <?php echo htmlspecialchars($joinedAt); ?></span>
                         </div>
                     </div>
+                </div>
+
+                <!-- Groups Summary -->
+                <div class="user-groups-summary">
+                    <div class="heading">
+                        <h4>Group Activity</h4>
+                    </div>
+                    <div class="groups-stats">
+                        <div class="stat-item">
+                            <i class="uil uil-users-alt"></i>
+                            <div>
+                                <strong><?php echo $joinedGroupsCount; ?></strong>
+                                <span>Groups Joined</span>
+                            </div>
+                        </div>
+                        <div class="stat-item">
+                            <i class="uil uil-file-alt"></i>
+                            <div>
+                                <strong><?php echo $groupPostCount; ?></strong>
+                                <span>Group Posts</span>
+                            </div>
+                        </div>
+                    </div>
+                    <?php if (!empty($userGroups)): ?>
+                        <div class="group-list">
+                            <?php foreach (array_slice($userGroups, 0, 3) as $group): ?>
+                                <a href="<?php echo BASE_PATH; ?>index.php?controller=Group&action=view&id=<?php echo (int)$group['group_id']; ?>" 
+                                   class="group-card">
+                                    <div class="group-icon">
+                                        <img src="<?php echo htmlspecialchars(MediaHelper::resolveMediaPath($group['group_photo'] ?? '', 'uploads/group_photos/default_group.jpg')); ?>" 
+                                             alt="<?php echo htmlspecialchars($group['group_name']); ?>">
+                                    </div>
+                                    <div class="group-info">
+                                        <h5><?php echo htmlspecialchars($group['group_name']); ?></h5>
+                                        <p><?php echo (int)$group['member_count']; ?> members</p>
+                                    </div>
+                                </a>
+                            <?php endforeach; ?>
+                        </div>
+                        <?php if (count($userGroups) > 3): ?>
+                            <a href="#" class="btn btn-secondary view-all-groups" data-tab-target="group-posts">
+                                View all <?php echo count($userGroups); ?> groups
+                            </a>
+                        <?php endif; ?>
+                    <?php endif; ?>
                 </div>
 
                 <div class="top-collaborators">
@@ -474,14 +458,14 @@ if (!$isOwner) {
                     <div class="media-field">
                         <label for="profilePictureInput">Profile Picture</label>
                         <div class="media-preview">
-                            <img src="<?php echo htmlspecialchars($profilePicture); ?>" alt="Profile preview" id="profilePicturePreview">
+                            <img src="<?php echo htmlspecialchars(MediaHelper::resolveMediaPath($profileUser['profile_picture'] ?? '', 'uploads/user_dp/default_user_dp.jpg')); ?>" alt="Profile preview" id="profilePicturePreview">
                         </div>
                         <input type="file" id="profilePictureInput" name="profile_picture" accept="image/*">
                     </div>
                     <div class="media-field">
                         <label for="coverPhotoInput">Cover Photo</label>
                         <div class="media-preview cover">
-                            <img src="<?php echo htmlspecialchars($coverPhoto); ?>" alt="Cover preview" id="coverPhotoPreview">
+                            <img src="<?php echo htmlspecialchars(MediaHelper::resolveMediaPath($profileUser['cover_photo'] ?? '', 'uploads/user_cover/default_user_cover.jpg')); ?>" alt="Cover preview" id="coverPhotoPreview">
                         </div>
                         <input type="file" id="coverPhotoInput" name="cover_photo" accept="image/*">
                     </div>
@@ -519,7 +503,7 @@ if (!$isOwner) {
                                 $friendName = $friend['username'] ?? 'Unknown User';
                             }
                             $friendHandle = !empty($friend['username']) ? '@' . $friend['username'] : '';
-                            $friendAvatar = resolveMediaPath($friend['profile_picture'] ?? '', $publicBase . 'images/avatars/defaultProfilePic.png', 'images/avatars');
+                            $friendAvatar = MediaHelper::resolveMediaPath($friend['profile_picture'] ?? '', 'uploads/user_dp/default_user_dp.jpg');
                             $friendProfileUrl = rtrim(BASE_PATH, '/') . '/index.php?controller=Profile&action=view&user_id=' . $friendUserId;
                         ?>
                         <li class="friends-modal__item" data-friend-user-id="<?php echo $friendUserId; ?>">
@@ -542,20 +526,98 @@ if (!$isOwner) {
     </div>
 
     <?php include __DIR__ . '/templates/chat-clean.php'; ?>
+    <?php include __DIR__ . '/templates/report-modal.php'; ?>
+
+    <!-- Instagram-Style Post Modal -->
+    <div id="postViewModal" class="post-view-modal" aria-hidden="true">
+        <div class="post-view-overlay"></div>
+        <button class="post-view-close" aria-label="Close">
+            <i class="uil uil-times"></i>
+        </button>
+        <button class="post-view-prev" aria-label="Previous post">
+            <i class="uil uil-angle-left"></i>
+        </button>
+        <button class="post-view-next" aria-label="Next post">
+            <i class="uil uil-angle-right"></i>
+        </button>
+        <div class="post-view-content">
+            <div class="post-view-image">
+                <img src="" alt="Post image" id="postViewImage">
+                <div class="post-view-text-content" id="postViewTextContent"></div>
+            </div>
+            <div class="post-view-sidebar">
+                <div class="post-view-header">
+                    <div class="user">
+                        <div class="profile-picture">
+                            <img src="" alt="Profile" id="postViewAvatar">
+                        </div>
+                        <div class="info">
+                            <h3 id="postViewUsername"></h3>
+                            <small id="postViewDate"></small>
+                        </div>
+                    </div>
+                </div>
+                <div class="post-view-caption">
+                    <p id="postViewCaption"></p>
+                </div>
+                <div class="post-view-actions">
+                    <div class="modal-interactions">
+                        <button type="button" class="modal-vote" id="postViewUpvoteBtn" data-vote-type="upvote" aria-label="Upvote">
+                            <i class="uil uil-arrow-up"></i>
+                            <span id="postViewUpvoteCount">0</span>
+                        </button>
+                        <button type="button" class="modal-vote" id="postViewDownvoteBtn" data-vote-type="downvote" aria-label="Downvote">
+                            <i class="uil uil-arrow-down"></i>
+                            <span id="postViewDownvoteCount">0</span>
+                        </button>
+                        <button type="button" class="modal-comments-toggle" id="postViewCommentToggle" aria-label="View comments">
+                            <i class="uil uil-comment-dots"></i>
+                            <span id="postViewCommentCount">0</span>
+                        </button>
+                    </div>
+                </div>
+                <div class="post-view-comments" id="postViewCommentsPanel">
+                    <div class="comments-header">
+                        <h4>Comments</h4>
+                        <span id="postViewCommentBadge">0</span>
+                    </div>
+                    <div class="comments-list" id="postViewCommentsList">
+                        <div class="comments-loading">Loading comments...</div>
+                    </div>
+                    <form id="postViewCommentForm" class="comment-form">
+                        <textarea id="postViewCommentInput" placeholder="Add a comment..." rows="2"></textarea>
+                        <button type="submit" id="postViewCommentSubmit">Post</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <script>
         const BASE_PATH = '<?php echo BASE_PATH; ?>';
         const VIEWER_USER_ID = <?php echo $viewerId; ?>;
         const PROFILE_USER_ID = <?php echo $profileUserId; ?>;
+        const POSTS_ARE_PRIVATE = <?php echo $postsArePrivate ? 'true' : 'false'; ?>;
+        const IS_OWNER = <?php echo $isOwner ? 'true' : 'false'; ?>;
+        window.PERSONAL_POSTS = <?php echo json_encode($personalPosts ?? []); ?>;
+        window.GROUP_POSTS = <?php echo json_encode($groupPosts ?? []); ?>;
     </script>
-    <script src="<?php echo htmlspecialchars($publicBase . 'js/calender.js'); ?>"></script>
-    <script src="<?php echo htmlspecialchars($publicBase . 'js/feed.js'); ?>"></script>
-    <script src="<?php echo htmlspecialchars($publicBase . 'js/friends.js'); ?>"></script>
-    <script src="<?php echo htmlspecialchars($publicBase . 'js/general.js'); ?>"></script>
-    <script src="<?php echo htmlspecialchars($publicBase . 'js/notificationpopup.js'); ?>"></script>
-    <script src="<?php echo htmlspecialchars($publicBase . 'js/navbar.js'); ?>"></script>
-    <script src="<?php echo htmlspecialchars($publicBase . 'js/post.js'); ?>"></script>
-    <script src="<?php echo htmlspecialchars($publicBase . 'js/comment.js'); ?>"></script>
-    <script src="<?php echo htmlspecialchars($publicBase . 'js/userprofileview.js'); ?>"></script>
+    <script id="profilePostPayload" type="application/json">
+        <?php echo json_encode([
+            'personal' => $personalPosts ?? [],
+            'group' => $groupPosts ?? []
+        ], JSON_UNESCAPED_SLASHES); ?>
+    </script>
+    <script src="./js/calender.js"></script>
+    <script src="./js/feed.js"></script>
+    <script src="./js/friends.js"></script>
+    <script src="./js/general.js"></script>
+    <script src="./js/notificationpopup.js"></script>
+    <script src="./js/navbar.js"></script>
+    <script src="./js/post.js"></script>
+    <script src="./js/vote.js"></script>
+    <script src="./js/comment.js"></script>
+    <script src="./js/report.js"></script>
+    <script src="./js/userprofileview.js"></script>
 </body>
 </html>

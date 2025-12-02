@@ -5,37 +5,20 @@ if (session_status() === PHP_SESSION_NONE) {
 }
 
 require_once __DIR__ . '/../../../config/config.php';
-
-if (!function_exists('resolveAssetPath')) {
-    function resolveAssetPath(?string $raw, string $defaultRelative): string {
-        $base = rtrim(BASE_PATH, '/');
-        $raw = trim((string)$raw);
-        $default = $base . '/public/' . ltrim($defaultRelative, '/');
-
-        if ($raw === '') {
-            return $default;
-        }
-
-        if (filter_var($raw, FILTER_VALIDATE_URL)) {
-            return $raw;
-        }
-
-        $normalized = ltrim(str_replace('\\', '/', $raw), '/');
-
-        if (strpos($normalized, 'public/') === 0) {
-            return $base . '/' . $normalized;
-        }
-
-        if (strpos($normalized, 'images/') === 0 || strpos($normalized, 'uploads/') === 0) {
-            return $base . '/public/' . $normalized;
-        }
-
-        return $default;
-    }
-}
+require_once __DIR__ . '/../../helpers/MediaHelper.php';
 
 $avatarPath = $_SESSION['profile_picture'] ?? '';
-$profileAvatarUrl = resolveAssetPath($avatarPath, 'images/avatars/defaultProfilePic.png');
+$profileAvatarUrl = MediaHelper::resolveMediaPath($avatarPath, 'uploads/user_dp/default_user_dp.jpg');
+$showPostModal = !isset($hidePostModal) || !$hidePostModal;
+// Load notifications for logged in user
+$notifications = [];
+$unreadCount = 0;
+if (isset($_SESSION['user_id'])) {
+    require_once __DIR__ . '/../../../app/models/NotificationsModel.php';
+    $notifModel = new NotificationsModel();
+    $notifications = $notifModel->getLatestNotifications((int)$_SESSION['user_id'], 8);
+    $unreadCount = $notifModel->countUnread((int)$_SESSION['user_id']);
+}
 ?>
 <nav>
     <div class="container">
@@ -58,7 +41,9 @@ $profileAvatarUrl = resolveAssetPath($avatarPath, 'images/avatars/defaultProfile
             </div>
         </div>
         <div class="nav-right">
-            <button class="btn btn-primary">Create</button>
+            <?php if ($showPostModal): ?>
+                <button class="btn btn-primary" id="openPostModal" data-trigger="post-modal">Create</button>
+            <?php endif; ?>
             <div class="calendar-icon">
                 <i class="uil uil-calendar-alt"></i>
                 <div class="calendar-popup" id="calendar-popup">
@@ -91,104 +76,118 @@ $profileAvatarUrl = resolveAssetPath($avatarPath, 'images/avatars/defaultProfile
                 </div>
             </div>
             
-            <!-- Post Creation Modal -->
-            <div class="post-modal" id="postModal">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h3>Create New Post</h3>
-                        <button class="close-modal">&times;</button>
-                    </div>
-                    <div class="modal-body">
-                        <div class="post-type-selector">
-                            <button class="post-type-btn active" data-type="general">General Post</button>
-                            <button class="post-type-btn" data-type="event">Event Post</button>
+            <?php if ($showPostModal): ?>
+                <!-- Post Creation Modal -->
+                <div class="post-modal" id="postModal">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h3>Create New Post</h3>
+                            <button class="close-modal">&times;</button>
                         </div>
-                        
-                        <div class="post-content">
-                            <div class="image-upload">
-                                <i class="uil uil-image-upload"></i>
-                                <p>Drag photos and videos here or click to browse</p>
-                                <input type="file" id="postImage" accept="image/*" style="display: none;">
+                        <div class="modal-body">
+                            <div class="post-type-selector">
+                                <button class="post-type-btn active" data-type="general">General Post</button>
+                                <button class="post-type-btn" data-type="event">Event Post</button>
                             </div>
                             
-                            <div class="post-details">
-                                <div class="form-group">
-                                    <label for="postCaption">Caption</label>
-                                    <textarea id="postCaption" placeholder="Write a caption..."></textarea>
+                            <div class="post-content">
+                                <div class="image-upload">
+                                    <i class="uil uil-image-upload"></i>
+                                    <p>Drag photos and videos here or click to browse</p>
+                                    <input type="file" id="postImage" accept="image/*" style="display: none;">
                                 </div>
                                 
-                                <div class="form-group">
-                                    <label for="postTags">Tags (minimum 5, separated by commas)</label>
-                                    <input type="text" id="postTags" placeholder="e.g., travel, srilanka, beach, vacation, sunset">
-                                    <small class="tag-count">0/5 tags</small>
-                                </div>
-                                
-                                <div class="event-details" id="eventDetails" style="display: none;">
+                                <div class="post-details">
                                     <div class="form-group">
-                                        <label for="eventTitle">Event Title</label>
-                                        <input type="text" id="eventTitle" placeholder="Event name">
+                                        <label for="postCaption">Caption</label>
+                                        <textarea id="postCaption" placeholder="Write a caption..."></textarea>
                                     </div>
+                                    
                                     <div class="form-group">
-                                        <label for="eventDate">Date & Time</label>
-                                        <input type="datetime-local" id="eventDate">
+                                        <label for="postTags">Tags (minimum 5, separated by commas)</label>
+                                        <input type="text" id="postTags" placeholder="e.g., travel, srilanka, beach, vacation, sunset">
+                                        <small class="tag-count">0/5 tags</small>
                                     </div>
-                                    <div class="form-group">
-                                        <label for="eventLocation">Location</label>
-                                        <input type="text" id="eventLocation" placeholder="Where is the event?">
+                                    
+                                    <div class="event-details" id="eventDetails" style="display: none;">
+                                        <div class="form-group">
+                                            <label for="eventTitle">Event Title</label>
+                                            <input type="text" id="eventTitle" placeholder="Event name">
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="eventDate">Date & Time</label>
+                                            <input type="datetime-local" id="eventDate">
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="eventLocation">Location</label>
+                                            <input type="text" id="eventLocation" placeholder="Where is the event?">
+                                        </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
-                    </div>
-                    <div class="modal-footer">
-                        <button class="btn btn-secondary cancel-btn">Cancel</button>
-                        <button class="btn btn-primary share-btn">Share</button>
+                        <div class="modal-footer">
+                            <button class="btn btn-secondary cancel-btn">Cancel</button>
+                            <button class="btn btn-primary share-btn">Share</button>
+                        </div>
                     </div>
                 </div>
-            </div>
+            <?php endif; ?>
             
             <div class="notification">
                 <i class="uil uil-bell">
-                    <small class="notification-count">9+</small>
+                    <small class="notification-count"><?php echo $unreadCount > 9 ? '9+' : ($unreadCount > 0 ? (int)$unreadCount : ''); ?></small>
                 </i>
                 <div class="notifications-popup">
-                    <div>
-                        <div class="profile-picture">
-                                <img src="../../public/images/profile-1.jpg" />
+                    <?php if (!empty($notifications)): ?>
+                        <?php foreach ($notifications as $n): ?>
+                            <?php
+                                $actionUrl = $n['action_url'] ?? '';
+                                $nid = (int)$n['notification_id'];
+                                $priority = htmlspecialchars($n['priority'] ?? 'medium');
+                                $typeLabel = ucwords(str_replace('_', ' ', $n['type'] ?? 'Update'));
+                                $triggerPic = $n['trigger_profile_picture'] ?? '';
+                                $imgUrl = MediaHelper::resolveMediaPath($triggerPic, 'uploads/user_dp/default_user_dp.jpg');
+                                $isUnread = empty($n['is_read']);
+                            ?>
+                            <div class="notification-item-wrap<?php echo $isUnread ? ' is-unread' : ''; ?>" data-notif-id="<?php echo $nid; ?>" data-priority="<?php echo $priority; ?>">
+                                <a href="#" class="notification-item" data-action-url="<?php echo htmlspecialchars($actionUrl); ?>" data-notif-id="<?php echo $nid; ?>">
+                                    <div class="notification-avatar">
+                                        <div class="profile-picture">
+                                            <img src="<?php echo htmlspecialchars($imgUrl); ?>" alt="Trigger avatar">
+                                        </div>
+                                    </div>
+                                    <div class="notification-content">
+                                        <div class="notification-meta">
+                                            <span class="notification-chip"><?php echo htmlspecialchars($typeLabel); ?></span>
+                                            <small class="notification-time"><?php echo htmlspecialchars(date('M j, H:i', strtotime($n['created_at']))); ?></small>
+                                        </div>
+                                        <p class="notification-title"><?php echo htmlspecialchars($n['title'] ?? ''); ?></p>
+                                        <p class="notification-message"><?php echo htmlspecialchars($n['message'] ?? ''); ?></p>
+                                    </div>
+                                </a>
+                                <button class="notif-dismiss" data-notif-id="<?php echo $nid; ?>" title="Dismiss notification" aria-label="Dismiss notification">&times;</button>
+                            </div>
+                        <?php endforeach; ?>
+                    <?php else: ?>
+                        <div>
+                            <div class="notification-body">
+                                No notifications
+                            </div>
                         </div>
-                        <div class="notification-body">
-                            <b>Lahiru Fernando</b> liked your photo
-                            <small class="text-muted">JUST NOW</small>
-                        </div>
-                    </div>
-                    <div>
-                        <div class="profile-picture">
-                                <img src="../../public/images/profile-10.jpg" />
-                        </div>
-                        <div class="notification-body">
-                            <b>Minthaka Jayawardena</b> commented: "Great shot!"
-                            <small class="text-muted">15 MINUTES AGO</small>
-                        </div>
-                    </div>
-                    <div>
-                        <div class="profile-picture">
-                                <img src="../../public/images/profile-11.jpg" />
-                        </div>
-                        <div class="notification-body">
-                            <b>Alex Silva</b> mentioned you in a post
-                            <small class="text-muted">1 HOUR AGO</small>
-                        </div>
-                    </div>
+                    <?php endif; ?>
                 </div>
             </div>
             <div class="profile-picture" id="profileDropdown">
                 <img src="<?php echo htmlspecialchars($profileAvatarUrl); ?>" alt="Your profile picture">
                 <div class="profile-dropdown">
-                    <a href="#"><i class="uil uil-user"></i> My Profile</a>
-                    <a href="#"><i class="uil uil-cog"></i> Settings</a>
-                    <a href="#"><i class="uil uil-signout"></i> notifications</a>
+                    <a href="<?php echo BASE_PATH; ?>index.php?controller=Profile&action=view<?php echo isset($_SESSION['user_id']) ? '&user_id=' . (int)$_SESSION['user_id'] : ''; ?>"><i class="uil uil-user"></i> My Profile</a>
+                    <?php if (($_SESSION['role'] ?? 'user') === 'admin'): ?>
+                        <a href="<?php echo BASE_PATH; ?>index.php?controller=Admin&action=index"><i class="uil uil-shield-check"></i> Admin Panel</a>
+                    <?php endif; ?>
+                    <a href="<?php echo BASE_PATH; ?>index.php?controller=Settings&action=index"><i class="uil uil-cog"></i> Settings</a>
                     <div class="dropdown-divider"></div>
-                    <a href="../controllers/LogoutController.php" class="logout"><i class="uil uil-signout"></i> Logout</a>
+                    <a href="<?php echo BASE_PATH; ?>index.php?controller=Logout&action=index" class="logout"><i class="uil uil-signout"></i> Logout</a>
                 </div>
             </div>
         </div>

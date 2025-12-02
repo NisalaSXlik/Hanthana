@@ -22,14 +22,14 @@ $incomingFriendRequests = $friendModel->getIncomingRequests($userId);
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Events - Hanthane</title>
-    <link rel="stylesheet" href="<?php echo rtrim(BASE_PATH, '/'); ?>/public/css/myfeed.css">
-    <link rel="stylesheet" href="<?php echo rtrim(BASE_PATH, '/'); ?>/public/css/general.css">
-    <link rel="stylesheet" href="<?php echo rtrim(BASE_PATH, '/'); ?>/public/css/navbar.css">
-    <link rel="stylesheet" href="<?php echo rtrim(BASE_PATH, '/'); ?>/public/css/mediaquery.css">
-    <link rel="stylesheet" href="<?php echo rtrim(BASE_PATH, '/'); ?>/public/css/calender.css">
-    <link rel="stylesheet" href="<?php echo rtrim(BASE_PATH, '/'); ?>/public/css/post.css">
-    <link rel="stylesheet" href="<?php echo rtrim(BASE_PATH, '/'); ?>/public/css/events-page.css">
-    <link rel="stylesheet" href="<?php echo rtrim(BASE_PATH, '/'); ?>/public/css/notificationpopup.css">
+    <link rel="stylesheet" href="./css/myfeed.css">
+    <link rel="stylesheet" href="./css/general.css">
+    <link rel="stylesheet" href="./css/navbar.css">
+    <link rel="stylesheet" href="./css/mediaquery.css">
+    <link rel="stylesheet" href="./css/calender.css">
+    <link rel="stylesheet" href="./css/post.css">
+    <link rel="stylesheet" href="./css/events-page.css">
+    <link rel="stylesheet" href="./css/notificationpopup.css">
     <link rel="stylesheet" href="https://unicons.iconscout.com/release/v4.0.8/css/line.css">
 </head>
 <body>
@@ -83,31 +83,16 @@ $incomingFriendRequests = $friendModel->getIncomingRequests($userId);
                 <div class="messages">
                     <div class="heading">
                         <h4>Messages</h4>
-                        <i class="uil uil-edit"></i>
+                        <i class="uil uil-edit" id="openChatWidget" style="cursor: pointer;"></i>
                     </div>
                     <div class="search-bar">
                         <i class="uil uil-search"></i>
-                        <input type="search" placeholder="Search messages">
+                        <input type="search" placeholder="Search messages" id="sidebarChatSearch">
                     </div>
-                    <div class="message-list">
-                        <div class="message">
-                            <div class="profile-picture">
-                                <img src="<?php echo rtrim(BASE_PATH, '/'); ?>/public/images/2.jpg" alt="Minthaka">
-                                <div class="active"></div>
-                            </div>
-                            <div class="message-body">
-                                <h5>Minthaka J.</h5>
-                                <p>Are we still meeting tomorrow?</p>
-                            </div>
-                        </div>
-                        <div class="message">
-                            <div class="profile-picture">
-                                <img src="<?php echo rtrim(BASE_PATH, '/'); ?>/public/images/6.jpg" alt="Lahiru">
-                            </div>
-                            <div class="message-body">
-                                <h5>Lahiru F.</h5>
-                                <p>Sent you the event details</p>
-                            </div>
+                    <div class="message-list" id="sidebarMessageList">
+                        <div class="loading-messages" style="text-align: center; padding: 1rem; color: #888;">
+                            <i class="uil uil-spinner-alt" style="animation: spin 1s linear infinite;"></i>
+                            <p style="font-size: 0.9rem; margin-top: 0.5rem;">Loading messages...</p>
                         </div>
                     </div>
                 </div>
@@ -148,28 +133,28 @@ $incomingFriendRequests = $friendModel->getIncomingRequests($userId);
             </div>
             <form id="createEventForm" class="modal-body">
                 <div class="form-group">
-                    <label for="eventTitle">Event Title <span class="required">*</span></label>
-                    <input type="text" id="eventTitle" required placeholder="Enter event title">
+                    <label for="createEventTitle">Event Title <span class="required">*</span></label>
+                    <input type="text" id="createEventTitle" required placeholder="Enter event title">
                 </div>
 
                 <div class="form-group">
-                    <label for="eventDescription">Description</label>
-                    <textarea id="eventDescription" rows="4" placeholder="Describe your event..."></textarea>
+                    <label for="createEventDescription">Description</label>
+                    <textarea id="createEventDescription" rows="4" placeholder="Describe your event..."></textarea>
                 </div>
 
                 <div class="form-group">
-                    <label for="eventDate">Date <span class="required">*</span></label>
-                    <input type="date" id="eventDate" required>
+                    <label for="createEventDate">Date <span class="required">*</span></label>
+                    <input type="date" id="createEventDate" required>
                 </div>
 
                 <div class="form-group">
-                    <label for="eventTime">Time</label>
-                    <input type="time" id="eventTime">
+                    <label for="createEventTime">Time</label>
+                    <input type="time" id="createEventTime">
                 </div>
 
                 <div class="form-group">
-                    <label for="eventLocation">Location</label>
-                    <input type="text" id="eventLocation" placeholder="Enter location">
+                    <label for="createEventLocation">Location</label>
+                    <input type="text" id="createEventLocation" placeholder="Enter location">
                 </div>
 
                 <div class="modal-footer">
@@ -184,11 +169,77 @@ $incomingFriendRequests = $friendModel->getIncomingRequests($userId);
         const BASE_PATH = '<?php echo rtrim(BASE_PATH, '/'); ?>';
         const USER_ID = <?php echo $userId; ?>;
     </script>
-    <script src="<?php echo rtrim(BASE_PATH, '/'); ?>/public/js/calender.js"></script>
-    <script src="<?php echo rtrim(BASE_PATH, '/'); ?>/public/js/general.js"></script>
-    <script src="<?php echo rtrim(BASE_PATH, '/'); ?>/public/js/friends.js"></script>
-    <script src="<?php echo rtrim(BASE_PATH, '/'); ?>/public/js/navbar.js"></script>
-    <script src="<?php echo rtrim(BASE_PATH, '/'); ?>/public/js/notificationpopup.js"></script>
-    <script src="<?php echo rtrim(BASE_PATH, '/'); ?>/public/js/events.js"></script>
+    <script src="./js/calender.js"></script>
+    <script src="./js/general.js"></script>
+    <script src="./js/friends.js"></script>
+    <script src="./js/navbar.js"></script>
+    <script src="./js/notificationpopup.js"></script>
+    <script src="./js/events.js"></script>
+    <script>
+		// Load top 3 conversations for sidebar
+		(async function loadSidebarMessages() {
+			const listContainer = document.getElementById('sidebarMessageList');
+			const searchInput = document.getElementById('sidebarChatSearch');
+			const editIcon = document.getElementById('openChatWidget');
+			
+			if (!listContainer) return;
+			
+			try {
+				const response = await fetch('<?php echo BASE_PATH; ?>index.php?controller=Chat&action=listConversations');
+				const data = await response.json();
+				const conversations = Array.isArray(data) ? data : (data.data || []);
+				
+				listContainer.innerHTML = '';
+				
+				if (!conversations.length) {
+					listContainer.innerHTML = '<div style="text-align: center; padding: 1rem; color: #888;"><p>No messages yet</p></div>';
+					return;
+				}
+				
+				// Show only top 3
+				const top3 = conversations.slice(0, 3);
+				
+				top3.forEach(conv => {
+					const messageDiv = document.createElement('div');
+					messageDiv.className = 'message';
+					messageDiv.style.cursor = 'pointer';
+					
+					const avatarPath = conv.avatar || 'uploads/user_dp/default_user_dp.jpg';
+					const fullAvatar = avatarPath.startsWith('http') ? avatarPath : '<?php echo BASE_PATH; ?>' + avatarPath;
+					
+					messageDiv.innerHTML = `
+						<div class="profile-picture">
+							<img src="${fullAvatar}" alt="${conv.display_name || 'User'}">
+							${conv.is_online ? '<div class="active"></div>' : ''}
+						</div>
+						<div class="message-body">
+							<h5>${conv.display_name || 'Unknown'}</h5>
+							<p>${conv.last_message_preview || 'No messages yet'}</p>
+						</div>
+					`;
+					
+					messageDiv.addEventListener('click', () => {
+						// Open chat widget
+						const chatIcon = document.getElementById('chatIcon');
+						if (chatIcon) chatIcon.click();
+					});
+					
+					listContainer.appendChild(messageDiv);
+				});
+				
+			} catch (error) {
+				console.error('Failed to load sidebar messages:', error);
+				listContainer.innerHTML = '<div style="text-align: center; padding: 1rem; color: #888;"><p>Failed to load messages</p></div>';
+			}
+			
+			// Edit icon opens chat widget
+			if (editIcon) {
+				editIcon.addEventListener('click', () => {
+					const chatIcon = document.getElementById('chatIcon');
+					if (chatIcon) chatIcon.click();
+				});
+			}
+		})();
+    </script>
 </body>
 </html>

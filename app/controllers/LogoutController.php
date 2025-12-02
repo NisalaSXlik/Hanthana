@@ -25,7 +25,7 @@ class LogoutController {
         }
         
         // Redirect to login page using BASE_PATH
-        header("Location: " . rtrim(BASE_PATH, '/') . "/app/views/login.php");
+        header("Location: " . BASE_PATH . "index.php?controller=Login&action=index");
         exit();
     }
 }

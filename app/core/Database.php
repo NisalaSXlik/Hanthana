@@ -1,5 +1,4 @@
 <?php
-// Add this line to load the config file
 require_once __DIR__ . '/../../config/config.php';
 
 class Database {
@@ -16,6 +15,12 @@ class Database {
                     PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC
                 ]
             );
+            
+            // Set MySQL timezone to match PHP timezone
+            if (defined('APP_TIMEZONE')) {
+                $offset = (new DateTime('now', new DateTimeZone(APP_TIMEZONE)))->format('P');
+                $this->connection->exec("SET time_zone = '$offset'");
+            }
         } catch(PDOException $e) {
             die("Database connection failed: " . $e->getMessage());
         }

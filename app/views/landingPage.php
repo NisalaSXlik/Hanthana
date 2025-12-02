@@ -4,10 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Discover | Hanthana</title>
-    <link rel="stylesheet" href="../../public/css/general.css">
-    <link rel="stylesheet" href="../../public/css/discover.css">
-    <link rel="stylesheet" href="../../public/css/navbar.css"> 
-    <link rel="stylesheet" href="../../public/css/mediaquery.css">
+    <link rel="stylesheet" href="./css/general.css">
+    <link rel="stylesheet" href="./css/discover.css">
+    <link rel="stylesheet" href="./css/navbar.css"> 
+    <link rel="stylesheet" href="./css/mediaquery.css">
     <link rel="stylesheet" href="https://unicons.iconscout.com/release/v4.0.8/css/line.css">
 </head>
 <body onload="protectedContentLoad()">
@@ -18,8 +18,8 @@
             <h3 class="modal-title">Join Hanthana to continue</h3>
             <p class="modal-text">Sign up to like, comment, save posts, and access all features.</p>
             <div class="modal-actions">
-                <a href="login.php" class="btn btn-secondary" id="loginBtn">Log In</a>
-                <a href="signup.php" class="btn btn-primary" id="signupBtn">Sign Up</a>
+                <a href="<?php echo BASE_PATH; ?>index.php?controller=Login&action=index" class="btn btn-secondary" id="loginBtn">Log In</a>
+                <a href="<?php echo BASE_PATH; ?>index.php?controller=Signup&action=index" class="btn btn-primary" id="signupBtn">Sign Up</a>
             </div>
         </div>
     </div>
@@ -66,56 +66,56 @@
                     <div class="discover-grid">
                         <!-- 9 Discover Items -->
                         <div class="discover-item">
-                            <img src="../../public/images/1.jpg">
+                            <img src="<?php echo BASE_PATH; ?>images/1.jpg">
                             <div class="item-overlay">
                                 <span><i class="uil uil-heart"></i> 1.2k</span>
                                 <span><i class="uil uil-comment"></i> 243</span>
                             </div>
                         </div>
                         <div class="discover-item">
-                            <img src="../../public/images/2.jpg">
+                            <img src="<?php echo BASE_PATH; ?>images/2.jpg">
                             <div class="item-overlay">
                                 <span><i class="uil uil-heart"></i> 890</span>
                                 <span><i class="uil uil-comment"></i> 156</span>
                             </div>
                         </div>
                         <div class="discover-item">
-                            <img src="../../public/images/3.jpg">
+                            <img src="<?php echo BASE_PATH; ?>images/3.jpg">
                             <div class="item-overlay">
                                 <span><i class="uil uil-heart"></i> 820</span>
                                 <span><i class="uil uil-comment"></i> 256</span>
                             </div>
                         </div>
                         <div class="discover-item">
-                            <img src="../../public/images/4.jpg">
+                            <img src="<?php echo BASE_PATH; ?>images/4.jpg">
                             <div class="item-overlay">
                                 <span><i class="uil uil-heart"></i> 1.3k</span>
                                 <span><i class="uil uil-comment"></i> 250</span>
                             </div>
                         </div>
                         <div class="discover-item">
-                            <img src="../../public/images/5.jpg">
+                            <img src="<?php echo BASE_PATH; ?>images/5.jpg">
                             <div class="item-overlay">
                                 <span><i class="uil uil-heart"></i> 8.9k</span>
                                 <span><i class="uil uil-comment"></i> 156</span>
                             </div>
                         </div>
                         <div class="discover-item">
-                            <img src="../../public/images/6.jpg">
+                            <img src="<?php echo BASE_PATH; ?>images/6.jpg">
                             <div class="item-overlay">
                                 <span><i class="uil uil-heart"></i> 750</span>
                                 <span><i class="uil uil-comment"></i> 56</span>
                             </div>
                         </div>
                         <div class="discover-item">
-                            <img src="../../public/images/story-1.jpg">
+                            <img src="<?php echo BASE_PATH; ?>images/story-1.jpg">
                             <div class="item-overlay">
                                 <span><i class="uil uil-heart"></i> 2.5k</span>
                                 <span><i class="uil uil-comment"></i> 216</span>
                             </div>
                         </div>
                         <div class="discover-item">
-                            <img src="../../public/images/story-3.jpg">
+                            <img src="<?php echo BASE_PATH; ?>images/story-3.jpg">
                             <div class="item-overlay">
                                 <span><i class="uil uil-heart"></i> 8.5k</span>
                                 <span><i class="uil uil-comment"></i> 256</span>
@@ -135,7 +135,7 @@
                     </div>
                     <div class="trending-list">
                         <!-- Trend 1 -->
-                        <div class="trending-item" style="background-image: linear-gradient(rgba(0,0,0,0.3), rgba(0,0,0,0.3)), url('../../public/images/1.jpg')">
+                        <div class="trending-item" style="background-image: linear-gradient(rgba(0,0,0,0.3), rgba(0,0,0,0.3)), url('<?php echo BASE_PATH; ?>images/1.jpg')">
                             <div class="trending-content">
                                 <span class="trending-rank">1</span>
                                 <div class="trending-details">
@@ -146,7 +146,7 @@
                         </div>
                         
                         <!-- Trend 2 -->
-                        <div class="trending-item" style="background-image: linear-gradient(rgba(0,0,0,0.3), rgba(0,0,0,0.3)), url('../../public/images/2.jpg')">
+                        <div class="trending-item" style="background-image: linear-gradient(rgba(0,0,0,0.3), rgba(0,0,0,0.3)), url('<?php echo BASE_PATH; ?>images/2.jpg')">
                             <div class="trending-content">
                                 <span class="trending-rank">2</span>
                                 <div class="trending-details">
@@ -157,7 +157,7 @@
                         </div>
                         
                         <!-- Trend 3 -->
-                        <div class="trending-item" style="background-image: linear-gradient(rgba(0,0,0,0.3), rgba(0,0,0,0.3)), url('../../public/images/3.jpg')">
+                        <div class="trending-item" style="background-image: linear-gradient(rgba(0,0,0,0.3), rgba(0,0,0,0.3)), url('<?php echo BASE_PATH; ?>images/3.jpg')">
                             <div class="trending-content">
                                 <span class="trending-rank">3</span>
                                 <div class="trending-details">
@@ -168,7 +168,7 @@
                         </div>
                         
                         <!-- Trend 4 -->
-                        <div class="trending-item" style="background-image: linear-gradient(rgba(0,0,0,0.3), rgba(0,0,0,0.3)), url('../../public/images/4.jpg')">
+                        <div class="trending-item" style="background-image: linear-gradient(rgba(0,0,0,0.3), rgba(0,0,0,0.3)), url('<?php echo BASE_PATH; ?>images/4.jpg')">
                             <div class="trending-content">
                                 <span class="trending-rank">4</span>
                                 <div class="trending-details">
@@ -189,7 +189,7 @@
                     <div class="creator-list">
                         <div class="creator-card">
                             <div class="creator-info">
-                                <img src="../../public/images/profile-1.jpg" class="creator-avatar">
+                                <img src="<?php echo BASE_PATH; ?>images/profile-1.jpg" class="creator-avatar">
                                 <div class="creator-details">
                                     <h5>TravelWithNisal</h5>
                                     <p class="creator-bio">Travel Photographer</p>
@@ -199,7 +199,7 @@
                         </div>
                         <div class="creator-card">
                             <div class="creator-info">
-                                <img src="../../public/images/profile-10.jpg" class="creator-avatar">
+                                <img src="<?php echo BASE_PATH; ?>images/profile-10.jpg" class="creator-avatar">
                                 <div class="creator-details">
                                     <h5>ChefAnoma</h5>
                                     <p class="creator-bio">Food Blogger</p>
@@ -209,7 +209,7 @@
                         </div>
                         <div class="creator-card">
                             <div class="creator-info">
-                                <img src="../../public/images/profile-11.jpg" class="creator-avatar">
+                                <img src="<?php echo BASE_PATH; ?>images/profile-11.jpg" class="creator-avatar">
                                 <div class="creator-details">
                                     <h5>TechSagara</h5>
                                     <p class="creator-bio">Tech Enthusiast</p>
@@ -219,7 +219,7 @@
                         </div>
                         <div class="creator-card">
                             <div class="creator-info">
-                                <img src="../../public/images/profile-13.jpg" class="creator-avatar">
+                                <img src="<?php echo BASE_PATH; ?>images/profile-13.jpg" class="creator-avatar">
                                 <div class="creator-details">
                                     <h5>ArtBySachini</h5>
                                     <p class="creator-bio">Digital Artist</p>
@@ -233,7 +233,8 @@
         </div>
     </main>
 
-    <script src="../../public/js/landingpage.js"></script>
-    <script src="../../public/js/discover.js"></script>
+    <script src="./js/all.js"></script>
+    <script src="./js/landingpage.js"></script>
+    <script src="./js/discover.js"></script>
 </body>
 </html>
