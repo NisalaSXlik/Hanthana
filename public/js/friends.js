@@ -381,7 +381,13 @@ function setupAddFriendButtons() {
         button.addEventListener('click', async () => {
             const currentState = button.dataset.state || 'none';
             const targetId = parseInt(button.dataset.userId, 10);
-            if (!targetId) return;
+            
+            console.log('Add friend button clicked', { currentState, targetId });
+            
+            if (!targetId) {
+                console.error('No target user ID found');
+                return;
+            }
 
             if (currentState === 'friends') {
                 if (!confirm('Remove this friend?')) return;
@@ -425,6 +431,8 @@ function setupAddFriendButtons() {
             button.disabled = true;
             button.classList.add('is-loading');
 
+            console.log('Sending friend request to:', targetId);
+
             fetch(`${FRIENDS_BASE_PATH}index.php?controller=Friend&action=sendRequest`, {
                 method: 'POST',
                 headers: {
@@ -433,12 +441,14 @@ function setupAddFriendButtons() {
                 body: `target_user_id=${encodeURIComponent(targetId)}`,
             })
                 .then((response) => {
+                    console.log('Response status:', response.status);
                     if (!response.ok) {
                         throw new Error('Network response was not ok');
                     }
                     return response.json();
                 })
                 .then((data) => {
+                    console.log('Friend request response:', data);
                     if (!data || !data.success) {
                         updateButtonsForUser(targetId, 'none');
                         button.disabled = false;
@@ -450,7 +460,8 @@ function setupAddFriendButtons() {
                     updateButtonsForUser(targetId, nextState);
                     notifyFriendAction(data.message || 'Friend request sent.', 'success');
                 })
-                .catch(() => {
+                .catch((error) => {
+                    console.error('Friend request error:', error);
                     updateButtonsForUser(targetId, 'none');
                     button.disabled = false;
                     notifyFriendAction('Something went wrong. Please try again later.', 'error');

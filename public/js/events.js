@@ -1,6 +1,12 @@
 // Events page functionality
 let currentFilter = 'upcoming';
 
+// Helper to construct API URL safely
+const getApiUrl = (queryString) => {
+    const basePath = (BASE_PATH === '/' ? '' : BASE_PATH).replace(/\/$/, '');
+    return `${basePath}/index.php${queryString}`;
+};
+
 document.addEventListener('DOMContentLoaded', function() {
     loadEvents(currentFilter);
     initializeEventHandlers();
@@ -23,7 +29,10 @@ function initializeEventHandlers() {
     // Create event button
     const createBtn = document.getElementById('createEventBtn');
     if (createBtn) {
-        createBtn.addEventListener('click', showCreateEventModal);
+        createBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            showCreateEventModal();
+        });
     }
     
     // Modal close buttons
@@ -52,16 +61,16 @@ async function loadEvents(filter) {
     `;
     
     try {
-        const response = await fetch(`${BASE_PATH}/index.php?controller=Events&ajax_action=getEvents&filter=${filter}`);
+        const response = await fetch(getApiUrl(`?controller=Events&ajax_action=getEvents&filter=${filter}`));
         const data = await response.json();
         
         if (data.success && data.events && data.events.length > 0) {
+            // Store events in global map
+            window.eventsMap = {};
+            data.events.forEach(e => window.eventsMap[e.post_id || e.event_id] = e);
+            
             container.innerHTML = data.events.map(event => createEventCard(event)).join('');
             
-            // Add RSVP button handlers
-            container.querySelectorAll('.btn-rsvp').forEach(btn => {
-                btn.addEventListener('click', handleRSVP);
-            });
         } else {
             container.innerHTML = `
                 <div class="empty-state" style="grid-column: 1 / -1;">
@@ -99,18 +108,25 @@ function createEventCard(event) {
         ? `<i class="uil uil-users-alt"></i> ${escapeHtml(event.group_name)}` 
         : `<i class="uil uil-user"></i> ${escapeHtml(event.first_name + ' ' + event.last_name)}`;
     
-    const interestedClass = event.user_rsvp_status === 'interested' ? 'interested' : '';
-    const goingClass = event.user_rsvp_status === 'going' ? 'going' : '';
+    // Use event_title if available, fallback to title (PostModel returns event_title)
+    const title = event.event_title || event.title || 'Untitled Event';
+    
+    const isAdded = event.is_going == 1;
+    const btnClass = isAdded ? 'btn-add-calendar added' : 'btn-add-calendar';
+    const btnContent = isAdded ? '<i class="uil uil-check"></i>' : '<i class="uil uil-calendar-alt"></i>';
     
     return `
-        <div class="event-card" data-event-id="${event.event_id}">
+        <div class="event-card" data-event-id="${event.post_id || event.event_id}">
             <div class="event-card-header">
-                <h3 class="event-card-title">${escapeHtml(event.title)}</h3>
+                <h3 class="event-card-title">${escapeHtml(title)}</h3>
                 <div class="event-date-badge">
                     <span class="day">${day}</span>
                     <span class="month">${month}</span>
                 </div>
                 <p class="event-card-group">${groupInfo}</p>
+                <button class="${btnClass}" title="${isAdded ? 'Added to Calendar' : 'Add to Calendar'}" onclick="addToCalendar(this, ${event.post_id || event.event_id})">
+                    ${btnContent}
+                </button>
             </div>
             <div class="event-card-body">
                 <div class="event-detail">
@@ -129,14 +145,6 @@ function createEventCard(event) {
                         <span><i class="uil uil-check-circle"></i> ${event.going_count || 0} going</span>
                         <span><i class="uil uil-star"></i> ${event.interested_count || 0} interested</span>
                     </div>
-                    <div class="event-rsvp-buttons">
-                        <button class="btn-rsvp ${interestedClass}" data-event-id="${event.event_id}" data-status="interested">
-                            <i class="uil uil-star"></i> Interested
-                        </button>
-                        <button class="btn-rsvp ${goingClass}" data-event-id="${event.event_id}" data-status="going">
-                            <i class="uil uil-check"></i> Going
-                        </button>
-                    </div>
                 </div>
             </div>
         </div>
@@ -144,55 +152,93 @@ function createEventCard(event) {
 }
 
 /**
- * Handle RSVP button click
+ * Add event to calendar
  */
-async function handleRSVP(e) {
-    const btn = e.currentTarget;
-    const eventId = btn.dataset.eventId;
-    const status = btn.dataset.status;
+async function addToCalendar(btn, eventId) {
+    // Find event data from the card or fetch it
+    // For simplicity, we'll grab text from the card
+    const card = btn.closest('.event-card');
+    const title = card.querySelector('.event-card-title').innerText;
+    const location = card.querySelector('.event-detail:nth-child(2) span').innerText;
+    const description = card.querySelector('.event-description').innerText;
+    // Date and time are harder to parse back from UI, ideally we pass raw data.
+    // But we don't have the raw data object here easily unless we store it.
+    // Let's try to fetch the event details or pass them in data attributes.
+    // Or better, just send the ID and let the backend handle it?
+    // The backend addToCalendar implementation I wrote expects title, date etc.
+    // I should update backend to fetch details if only ID is provided.
+    // OR, I can store raw date/time in data attributes.
     
-    if (!eventId) return;
+    // Let's assume the backend can handle it if I send just ID, 
+    // BUT I implemented it to expect data.
+    // Let's update the createEventCard to store data attributes.
     
-    // Disable all RSVP buttons for this event
-    const eventCard = btn.closest('.event-card');
-    const allBtns = eventCard.querySelectorAll('.btn-rsvp');
-    allBtns.forEach(b => b.disabled = true);
+    // Actually, I'll just update the backend to fetch the post if data is missing.
+    // But I can't easily update backend now without another tool call.
+    // Let's try to extract from UI or use a global events map.
     
+    // I'll use a global map for events data to avoid parsing HTML.
+    const event = window.eventsMap && window.eventsMap[eventId];
+    
+    if (!event) {
+        // Fallback or error
+        console.error('Event data not found');
+        return;
+    }
+
+    // Immediate feedback
+    const originalContent = btn.innerHTML;
+    btn.innerHTML = '<i class="uil uil-spinner-alt uil-spin"></i>';
+    btn.disabled = true;
+
     try {
-        const response = await fetch(`${BASE_PATH}/index.php?controller=Events`, {
+        const response = await fetch(getApiUrl('?controller=Events&ajax_action=addToCalendar'), {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                action: 'rsvpEvent',
-                event_id: eventId,
-                status: status
+                post_id: eventId,
+                title: event.event_title || event.title,
+                event_date: event.event_date,
+                event_time: event.event_time,
+                location: event.event_location || event.location,
+                description: event.content || event.description
             })
         });
         
         const data = await response.json();
-        
         if (data.success) {
-            // Update button states
-            allBtns.forEach(b => {
-                b.classList.remove('interested', 'going');
-                b.disabled = false;
-            });
-            btn.classList.add(status);
+            showNotification('Event added to your calendar!', 'success');
+            btn.classList.add('added');
+            btn.innerHTML = '<i class="uil uil-check"></i>';
+            // Keep disabled to prevent duplicate adds
             
-            showNotification(`RSVP updated: ${status}`, 'success');
-            
-            // Reload to update counts
-            setTimeout(() => loadEvents(currentFilter), 500);
+            // Update going count
+            if (data.going_count !== undefined) {
+                const card = btn.closest('.event-card');
+                const stats = card.querySelector('.event-stats');
+                if (stats) {
+                    // Assuming the first span is "going"
+                    const goingSpan = stats.querySelector('span:first-child');
+                    if (goingSpan) {
+                        goingSpan.innerHTML = `<i class="uil uil-check-circle"></i> ${data.going_count} going`;
+                    }
+                }
+            }
         } else {
-            allBtns.forEach(b => b.disabled = false);
-            showNotification(data.message || 'Failed to update RSVP', 'error');
+            showNotification('Failed to add to calendar', 'error');
+            btn.innerHTML = originalContent;
+            btn.disabled = false;
         }
     } catch (error) {
-        console.error('Error updating RSVP:', error);
-        allBtns.forEach(b => b.disabled = false);
-        showNotification('An error occurred', 'error');
+        console.error('Error adding to calendar:', error);
+        showNotification('Error adding to calendar', 'error');
+        btn.innerHTML = originalContent;
+        btn.disabled = false;
     }
 }
+
+// Make addToCalendar globally available
+window.addToCalendar = addToCalendar;
 
 /**
  * Show create event modal
@@ -202,7 +248,7 @@ function showCreateEventModal() {
     if (modal) {
         modal.style.display = 'flex';
         // Set min date to today
-        const dateInput = document.getElementById('eventDate');
+        const dateInput = document.getElementById('createEventDate');
         if (dateInput) {
             const today = new Date().toISOString().split('T')[0];
             dateInput.min = today;
@@ -227,27 +273,28 @@ function hideCreateEventModal() {
 async function handleCreateEvent(e) {
     e.preventDefault();
     
-    const formData = {
-        title: document.getElementById('eventTitle').value.trim(),
-        description: document.getElementById('eventDescription').value.trim(),
-        event_date: document.getElementById('eventDate').value,
-        event_time: document.getElementById('eventTime').value,
-        location: document.getElementById('eventLocation').value.trim()
-    };
+    const title = document.getElementById('createEventTitle').value.trim();
+    const description = document.getElementById('createEventDescription').value.trim();
+    const date = document.getElementById('createEventDate').value;
+    const time = document.getElementById('createEventTime').value;
+    const location = document.getElementById('createEventLocation').value.trim();
     
-    if (!formData.title || !formData.event_date) {
+    if (!title || !date) {
         showNotification('Please fill in required fields', 'error');
         return;
     }
     
+    const formData = new FormData();
+    formData.append('title', title);
+    formData.append('description', description);
+    formData.append('date', date);
+    formData.append('time', time);
+    formData.append('location', location);
+    
     try {
-        const response = await fetch(`${BASE_PATH}/index.php?controller=Events`, {
+        const response = await fetch(getApiUrl('?controller=Events&ajax_action=createEvent'), {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                action: 'createEvent',
-                ...formData
-            })
+            body: formData
         });
         
         const data = await response.json();
@@ -257,7 +304,7 @@ async function handleCreateEvent(e) {
             hideCreateEventModal();
             loadEvents(currentFilter);
         } else {
-            showNotification(data.message || 'Failed to create event', 'error');
+            showNotification(data.message || data.error || 'Failed to create event', 'error');
         }
     } catch (error) {
         console.error('Error creating event:', error);
@@ -290,8 +337,8 @@ function escapeHtml(text) {
  * Helper: Show notification
  */
 function showNotification(message, type = 'info') {
-    if (typeof window.showNotification === 'function') {
-        window.showNotification(message, type);
+    if (typeof window.showToast === 'function') {
+        window.showToast(message, type);
         return;
     }
     alert(message);

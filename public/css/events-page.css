@@ -149,6 +149,36 @@
     background: linear-gradient(135deg, var(--color-secondary) 0%, var(--color-primary) 100%);
 }
 
+.btn-add-calendar {
+    position: absolute;
+    bottom: 1.25rem;
+    right: 1.25rem;
+    background: rgba(255, 255, 255, 0.2);
+    color: white;
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 1.1rem;
+}
+
+.btn-add-calendar:hover {
+    background: white;
+    color: var(--color-primary);
+    transform: scale(1.1);
+}
+
+.btn-add-calendar.added {
+    background: var(--color-success);
+    border-color: var(--color-success);
+    color: white;
+}
+
 .event-date-badge {
     position: absolute;
     top: 1.25rem;
@@ -244,6 +274,7 @@
     margin: 1.25rem 0;
     line-height: 1.7;
     display: -webkit-box;
+    line-clamp: 3;
     -webkit-line-clamp: 3;
     -webkit-box-orient: vertical;
     overflow: hidden;

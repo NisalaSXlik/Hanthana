@@ -277,6 +277,10 @@ document.addEventListener('DOMContentLoaded', function() {
                         joinButton.dataset.state = 'joined';
                         joinButton.disabled = true;
                         joinButton.classList.add('is-success');
+                        // Update sidebar member count
+                        if (success && window.updateSidebarGroupMemberCount) {
+                            window.updateSidebarGroupMemberCount(groupId, 1);
+                        }
                         if (typeof showToast === 'function' && success) {
                             showToast(message || 'Joined group successfully', 'success');
                         }

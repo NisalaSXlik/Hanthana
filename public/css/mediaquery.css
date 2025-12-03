@@ -12,18 +12,19 @@
 
 /* Responsive */
 @media (max-width: 992px) {
-    main .container {
+    main .container:not(.questions-layout) {
         grid-template-columns: 25% 50% 23%;
         gap: 1%;
     }
 }
 
 @media (max-width: 768px) {
-    main .container {
+    main .container:not(.questions-layout) {
         grid-template-columns: 1fr;
     }
     
-    .left, .right {
+    body:not(.page-questions) .left,
+    body:not(.page-questions) .right {
         display: none;
     }
     

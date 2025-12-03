@@ -3,7 +3,7 @@
   max-width: 600px;
   margin: 0 auto;
   padding: 20px;
-  font-family: 'Segoe UI', sans-serif;
+  font-family: 'Inter', sans-serif;
 }
 
 .header h1 {
@@ -102,14 +102,19 @@ textarea, input[type="text"] {
     height: 100%;
     background-color: rgba(0, 0, 0, 0.7);
     backdrop-filter: blur(5px);
-    display: none;
+    display: none !important;
     justify-content: center;
     align-items: center;
     z-index: 9999;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
 }
 
 .post-modal.active {
-    display: flex;
+    display: flex !important;
+    opacity: 1;
+    pointer-events: auto;
 }
 
 .modal-content {
@@ -308,19 +313,21 @@ textarea, input[type="text"] {
 .modal-footer .btn-secondary:hover {
     background: var(--color-gray);
     color: var(--color-white);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 12px rgba(0,0,0,0.1);
 }
 
 .modal-footer .share-btn,
 .modal-footer .btn-primary {
-    background: var(--color-primary);
+    background: linear-gradient(135deg, var(--color-primary), var(--color-secondary));
     color: var(--color-white);
+    box-shadow: 0 4px 15px rgba(14, 165, 233, 0.3);
 }
 
 .modal-footer .share-btn:hover,
 .modal-footer .btn-primary:hover {
-    background: #0284c7;
-    transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(14, 165, 233, 0.3);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 12px rgba(14, 165, 233, 0.4);
 }
 
 .modal-footer .btn:disabled {

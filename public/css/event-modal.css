@@ -67,7 +67,7 @@
     padding: 0.75rem;
     border: 1px solid var(--color-light);
     border-radius: var(--card-border-radius);
-    font-family: 'Poppins', sans-serif;
+    font-family: 'Inter', sans-serif;
 }
 
 .form-group textarea {

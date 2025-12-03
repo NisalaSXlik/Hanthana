@@ -19,18 +19,62 @@ const months = [
     "July", "August", "September", "October", "November", "December"
 ];
 
-// Enhanced event data
-const eventData = {
-    "2025-07-26": ["Team Meeting @ 10am", "Project Deadline", "Birthday Party @ 7pm"],
-    "2025-07-27": ["Doctor Appointment @ 3pm", "Dinner with friends @ 8pm"],
-    "2025-07-28": ["Yoga class @ 7am", "Client call @ 2pm"],
-    "2025-07-29": ["Dentist @ 11am", "Movie night @ 7pm"],
-    "2025-07-30": ["Group Study Session", "Gym @ 6pm"],
-    "2025-07-31": ["Pay rent", "Team lunch @ 1pm"],
-    "2025-08-01": ["Weekend trip planning", "BBQ @ 6pm"],
-    "2025-08-02": ["Beach day", "Concert @ 8pm"],
-    "2025-08-03": ["Family brunch @ 11am", "Hiking trip"]
-};
+let eventData = {};
+let calendarDataLoaded = false;
+
+function normalizeDateKey(dateStr) {
+    if (!dateStr) return null;
+    const dateObj = new Date(dateStr);
+    if (Number.isNaN(dateObj.getTime())) {
+        return null;
+    }
+    return `${dateObj.getFullYear()}-${String(dateObj.getMonth() + 1).padStart(2, '0')}-${String(dateObj.getDate()).padStart(2, '0')}`;
+}
+
+function formatEventTimeLabel(timeStr) {
+    if (!timeStr) return 'All day';
+    const [hour, minute] = timeStr.split(':');
+    if (hour === undefined) return 'All day';
+    let h = parseInt(hour, 10);
+    const m = minute ? minute.substring(0, 2) : '00';
+    const suffix = h >= 12 ? 'PM' : 'AM';
+    h = h % 12 || 12;
+    return `${h}:${m} ${suffix}`;
+}
+
+async function fetchCalendarEvents() {
+    if (typeof BASE_PATH === 'undefined') {
+        return;
+    }
+    try {
+        const response = await fetch(`${BASE_PATH}index.php?controller=Calendar&action=handleAjax&sub_action=list`, {
+            credentials: 'same-origin'
+        });
+        const data = await response.json();
+        if (data.success && Array.isArray(data.events)) {
+            const hydrated = {};
+            data.events.forEach(evt => {
+                const key = normalizeDateKey(evt.event_date || evt.metadata?.event_date);
+                if (!key) return;
+                if (!hydrated[key]) {
+                    hydrated[key] = [];
+                }
+                hydrated[key].push({
+                    title: evt.title || 'Untitled Event',
+                    event_time: evt.event_time || null,
+                    location: evt.location || '',
+                    description: evt.description || '',
+                    post_id: evt.post_id || null
+                });
+            });
+            eventData = hydrated;
+            calendarDataLoaded = true;
+            initCalendar();
+        }
+    } catch (err) {
+        console.error('Failed to load calendar events', err);
+    }
+}
 
 // Initialize calendar
 function initCalendar() {
@@ -95,15 +139,17 @@ function showEventsPopup(month, day, year, dateKey) {
     const popupDate = document.getElementById('popup-date');
     const eventsContainer = document.getElementById('calendarEvents');
     
+    if (!popupDate || !eventsContainer) return;
+    
     popupDate.textContent = `${months[month]} ${day}, ${year}`;
     eventsContainer.innerHTML = '';
     
     // Clear previous classes
     eventsContainer.classList.remove('has-events', 'no-events');
     
-    const events = eventData[dateKey];
+    const events = Array.isArray(eventData[dateKey]) ? eventData[dateKey] : [];
     
-    if (events && events.length > 0) {
+    if (events.length > 0) {
         eventsContainer.classList.add('has-events');
         
         // Add close button
@@ -111,39 +157,23 @@ function showEventsPopup(month, day, year, dateKey) {
         closeBtn.className = 'close-popup';
         closeBtn.innerHTML = '<i class="uil uil-times"></i>';
         closeBtn.addEventListener('click', () => {
-            calendarPopup.style.display = 'none';
+            if (calendarPopup) {
+                calendarPopup.style.display = 'none';
+            }
         });
         eventsContainer.appendChild(closeBtn);
         
         events.forEach(event => {
             const eventElement = document.createElement('div');
             eventElement.className = 'event-item';
-            
-            // Improved time extraction - handles @, at, and proper am/pm
-            let time = '';
-            let title = event;
-            const timeMatch = event.match(/(@|at)\s(\d{1,2}(:\d{2})?\s?(am|pm)?)/i);
-            
-            if (timeMatch) {
-                // Clean up the time format
-                time = timeMatch[2].trim();
-                const ampm = timeMatch[4] || '';
-                
-                // Remove am/pm if already in the time string
-                if (time.toLowerCase().includes('am') || time.toLowerCase().includes('pm')) {
-                    time = time.replace(/am|pm/gi, '').trim();
-                }
-                
-                // Combine time with am/pm if it exists
-                time = time + (ampm ? ` ${ampm}` : '');
-                title = event.replace(timeMatch[0], '').trim();
-            }
-            
+            const title = event.title || 'Scheduled event';
+            const timeLabel = formatEventTimeLabel(event.event_time);
+            const location = event.location ? `<div class="event-location"><i class="uil uil-location-point"></i> ${event.location}</div>` : '';
             eventElement.innerHTML = `
-                ${time ? `<div class="event-time">${time}</div>` : '<div class="event-time">All day</div>'}
+                <div class="event-time">${timeLabel}</div>
                 <div class="event-title">${title}</div>
+                ${location}
             `;
-            
             eventsContainer.appendChild(eventElement);
         });
     } else {
@@ -156,11 +186,13 @@ function showEventsPopup(month, day, year, dateKey) {
         `;
     }
     
-    calendarPopup.style.display = 'block';
+    if (calendarPopup) {
+        calendarPopup.style.display = 'block';
+    }
 }
 // Close popup when clicking outside
 document.addEventListener('click', (e) => {
-    if (!e.target.closest('.day') && !e.target.closest('#calendarPopup')) {
+    if (calendarPopup && !e.target.closest('.day') && !e.target.closest('#calendarPopup')) {
         calendarPopup.style.display = 'none';
     }
 });
@@ -192,6 +224,9 @@ function gotoToday() {
 }
 
 function gotoDate() {
+    if (!dateInput) {
+        return;
+    }
     const dateArr = dateInput.value.split('/');
     
     if (dateArr.length === 2) {
@@ -211,59 +246,67 @@ next?.addEventListener('click', nextMonth);
 todayBtn?.addEventListener('click', gotoToday);
 gotoBtn?.addEventListener('click', gotoDate);
 
-// Format date input
-dateInput.addEventListener('input', (e) => {
-    dateInput.value = dateInput.value.replace(/[^0-9/]/g, '');
-    
-    if (dateInput.value.length === 2 && !dateInput.value.includes('/')) {
-        dateInput.value += '/';
-    }
-    
-    if (dateInput.value.length > 7) {
-        dateInput.value = dateInput.value.slice(0, 7);
-    }
-});
+// Format date input safely when field exists
+if (dateInput) {
+    dateInput.addEventListener('input', () => {
+        dateInput.value = dateInput.value.replace(/[^0-9/]/g, '');
+
+        if (dateInput.value.length === 2 && !dateInput.value.includes('/')) {
+            dateInput.value += '/';
+        }
+
+        if (dateInput.value.length > 7) {
+            dateInput.value = dateInput.value.slice(0, 7);
+        }
+    });
+}
 
 // Initialize the calendar
 initCalendar();
+fetchCalendarEvents();
+document.addEventListener('calendar:refresh', fetchCalendarEvents);
 
 // Notification popup toggle
 const notificationIcon = document.querySelector('.notification');
 const notificationPopup = document.querySelector('.notifications-popup');
 
-notificationIcon.addEventListener('click', (e) => {
-    e.stopPropagation();
-    notificationPopup.style.display = notificationPopup.style.display === 'block' ? 'none' : 'block';
-});
+if (notificationIcon && notificationPopup) {
+    notificationIcon.addEventListener('click', (e) => {
+        e.stopPropagation();
+        notificationPopup.style.display = notificationPopup.style.display === 'block' ? 'none' : 'block';
+    });
 
-// Close notification popup when clicking outside
-document.addEventListener('click', () => {
-    notificationPopup.style.display = 'none';
-});
+    // Close notification popup when clicking outside
+    document.addEventListener('click', () => {
+        notificationPopup.style.display = 'none';
+    });
 
-// Prevent notification popup from closing when clicking inside it
-notificationPopup.addEventListener('click', (e) => {
-    e.stopPropagation();
-});
+    // Prevent notification popup from closing when clicking inside it
+    notificationPopup.addEventListener('click', (e) => {
+        e.stopPropagation();
+    });
+}
 
 // Calendar popup toggle
 const calendarIcon = document.querySelector('.calendar-icon');
 const calendarPopupElement = document.querySelector('.calendar-popup');
 
-calendarIcon.addEventListener('click', (e) => {
-    e.stopPropagation();
-    calendarPopupElement.style.display = calendarPopupElement.style.display === 'block' ? 'none' : 'block';
-});
+if (calendarIcon && calendarPopupElement) {
+    calendarIcon.addEventListener('click', (e) => {
+        e.stopPropagation();
+        calendarPopupElement.style.display = calendarPopupElement.style.display === 'block' ? 'none' : 'block';
+    });
 
-// Close calendar popup when clicking outside
-document.addEventListener('click', () => {
-    calendarPopupElement.style.display = 'none';
-});
+    // Close calendar popup when clicking outside
+    document.addEventListener('click', () => {
+        calendarPopupElement.style.display = 'none';
+    });
 
-// Prevent calendar popup from closing when clicking inside it
-calendarPopupElement.addEventListener('click', (e) => {
-    e.stopPropagation();
-});
+    // Prevent calendar popup from closing when clicking inside it
+    calendarPopupElement.addEventListener('click', (e) => {
+        e.stopPropagation();
+    });
+}
 
 // calendar.js - Handles calendar-related functionality
 document.addEventListener('DOMContentLoaded', function() {
@@ -271,13 +314,6 @@ document.addEventListener('DOMContentLoaded', function() {
     
     if (calendarIcon) {
         calendarIcon.addEventListener('click', function(e) {
-            // Check if user is logged in
-            if (!isUserLoggedIn()) {
-                e.preventDefault();
-                showLoginModal();
-                return;
-            }
-            
             // Calendar functionality here
             console.log("Calendar clicked");
             // Implement calendar logic

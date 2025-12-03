@@ -157,6 +157,10 @@ async function handleGroupJoin(e) {
         if (data.success) {
             btn.textContent = 'Joined';
             btn.classList.add('joined');
+            // Update sidebar member count
+            if (window.updateSidebarGroupMemberCount) {
+                window.updateSidebarGroupMemberCount(groupId, 1);
+            }
             showNotification('Successfully joined the group!', 'success');
         } else {
             btn.disabled = false;
@@ -234,8 +238,21 @@ function createSimplePostCard(post) {
     
     // Truncate content if too long
     const content = post.content || 'No content';
-    const maxLength = (post.image_url || post.file_url || post.video_url) ? 200 : 300;
-    const displayContent = content.length > maxLength ? content.substring(0, maxLength) + '...' : content;
+    let displayContent = content;
+
+    // Check for structured question format (Problem, Context, etc.)
+    // If found, only show the Problem part
+    const problemMatch = content.match(/Problem:\s*([\s\S]*?)\s*(?:Context:|Attempts:|Expected Outcome:|$)/i);
+    if (problemMatch && problemMatch[1]) {
+        displayContent = problemMatch[1].trim();
+        // Add ellipsis if there's more content hidden
+        if (content.length > displayContent.length + 20) {
+             displayContent += '...'; 
+        }
+    } else {
+        const maxLength = (post.image_url || post.file_url || post.video_url) ? 200 : 300;
+        displayContent = content.length > maxLength ? content.substring(0, maxLength) + '...' : content;
+    }
     
     // Handle media - check both image_url and file_url
     let mediaHtml = '';

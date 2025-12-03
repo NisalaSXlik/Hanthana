@@ -26,6 +26,33 @@ class FriendModel
         return $result ?: null;
     }
 
+    public function getFriendshipStatus(int $userId, int $otherUserId): string
+    {
+        $friendship = $this->getFriendship($userId, $otherUserId);
+        
+        if (!$friendship) {
+            return 'none';
+        }
+
+        $status = $friendship['status'];
+        
+        if ($status === 'accepted') {
+            return 'friends';
+        }
+        
+        if ($status === 'blocked') {
+            return 'blocked';
+        }
+        
+        if ($status === 'pending') {
+            // Check who sent the request
+            $requesterIsSender = (int)$friendship['user_id'] === $userId;
+            return $requesterIsSender ? 'pending_them' : 'pending_me';
+        }
+        
+        return 'none';
+    }
+
     public function sendFriendRequest(int $requesterId, int $targetId): array
     {
         $existing = $this->getFriendship($requesterId, $targetId);
@@ -170,7 +197,7 @@ class FriendModel
                 'friend_count' => $counts[$targetId] ?? null,
                 'friend_count_other' => $counts[$requesterId] ?? null,
             ];
-    } catch (\Throwable $e) {
+        } catch (\Throwable $e) {
             if ($this->db->inTransaction()) {
                 $this->db->rollBack();
             }
@@ -231,6 +258,36 @@ class FriendModel
         $stmt->bindValue(':user', $userId, \PDO::PARAM_INT);
         $stmt->bindValue(':limit', $limit, \PDO::PARAM_INT);
         $stmt->bindValue(':offset', $offset, \PDO::PARAM_INT);
+        $stmt->execute();
+
+        return $stmt->fetchAll(\PDO::FETCH_ASSOC);
+    }
+
+    public function searchAcceptedFriends(int $userId, string $term, int $limit = 10): array
+    {
+        $sql = "SELECT
+                    CASE WHEN f.user_id = :user THEN f.friend_id ELSE f.user_id END AS friend_user_id,
+                    u.username,
+                    u.profile_picture,
+                    CONCAT(IFNULL(u.first_name, ''), ' ', IFNULL(u.last_name, '')) AS full_name
+                FROM Friends f
+                INNER JOIN Users u ON u.user_id = CASE WHEN f.user_id = :user THEN f.friend_id ELSE f.user_id END
+                WHERE f.status = 'accepted'
+                  AND (f.user_id = :user OR f.friend_id = :user)
+                  AND (
+                      u.username LIKE :term
+                      OR u.first_name LIKE :term
+                      OR u.last_name LIKE :term
+                      OR CONCAT(IFNULL(u.first_name, ''), ' ', IFNULL(u.last_name, '')) LIKE :term
+                  )
+                ORDER BY u.first_name ASC, u.last_name ASC
+                LIMIT :limit";
+
+        $stmt = $this->db->prepare($sql);
+        $like = '%' . $term . '%';
+        $stmt->bindValue(':user', $userId, \PDO::PARAM_INT);
+        $stmt->bindValue(':term', $like, \PDO::PARAM_STR);
+        $stmt->bindValue(':limit', $limit, \PDO::PARAM_INT);
         $stmt->execute();
 
         return $stmt->fetchAll(\PDO::FETCH_ASSOC);
@@ -307,4 +364,102 @@ class FriendModel
             throw $e;
         }
     }
+
+    // Additional methods needed for privacy settings
+
+    /**
+     * Check if users are friends
+     */
+    public function areFriends($userId, $friendId) {
+        $sql = "SELECT * FROM Friends 
+                WHERE ((user_id = ? AND friend_id = ?) OR (user_id = ? AND friend_id = ?)) 
+                AND status = 'accepted' 
+                LIMIT 1";
+        
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute([$userId, $friendId, $friendId, $userId]);
+        return $stmt->fetch() !== false;
+    }
+
+    /**
+     * Check if users have mutual friends
+     */
+    public function haveMutualFriends($userId1, $userId2) {
+        $sql = "SELECT COUNT(*) as mutual_count
+                FROM Friends f1
+                JOIN Friends f2 ON f1.friend_id = f2.friend_id
+                WHERE f1.user_id = ? 
+                AND f2.user_id = ?
+                AND f1.status = 'accepted'
+                AND f2.status = 'accepted'
+                AND f1.friend_id != ?
+                AND f1.friend_id != ?";
+        
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute([$userId1, $userId2, $userId1, $userId2]);
+        $result = $stmt->fetch(PDO::FETCH_ASSOC);
+        
+        return ($result['mutual_count'] ?? 0) > 0;
+    }
+
+    /**
+     * Get friend requests (compatible method for SettingsController)
+     */
+    public function getFriendRequests($userId) {
+        return $this->getIncomingRequests($userId, 10);
+    }
+
+    /**
+     * Get sent friend requests
+     */
+    public function getSentFriendRequests($userId) {
+        $sql = "SELECT f.*, u.user_id, u.username, u.first_name, u.last_name, u.profile_picture 
+                FROM Friends f 
+                JOIN Users u ON f.friend_id = u.user_id 
+                WHERE f.user_id = ? AND f.status = 'pending' 
+                ORDER BY f.created_at DESC";
+        
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute([$userId]);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    /**
+     * Remove friend (simple version)
+     */
+    public function removeFriend($userId, $friendId) {
+        $sql = "DELETE FROM Friends 
+                WHERE (user_id = ? AND friend_id = ?) OR (user_id = ? AND friend_id = ?)";
+        
+        $stmt = $this->db->prepare($sql);
+        return $stmt->execute([$userId, $friendId, $friendId, $userId]);
+    }
+
+    /**
+     * Get friends count
+     */
+    public function getFriendsCount($userId) {
+        $sql = "SELECT COUNT(*) as count FROM Friends 
+                WHERE (user_id = ? OR friend_id = ?) AND status = 'accepted'";
+        
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute([$userId, $userId]);
+        $result = $stmt->fetch(PDO::FETCH_ASSOC);
+        return $result['count'] ?? 0;
+    }
+
+    public function getStats(): array {
+        $sql = "SELECT 
+                    SUM(CASE WHEN status = 'accepted' THEN 1 ELSE 0 END) AS accepted_friendships,
+                    SUM(CASE WHEN status = 'pending' THEN 1 ELSE 0 END) AS pending_requests
+                FROM Friends";
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute();
+        $row = $stmt->fetch(PDO::FETCH_ASSOC) ?: [];
+        return [
+            'accepted_friendships' => (int)($row['accepted_friendships'] ?? 0),
+            'pending_requests' => (int)($row['pending_requests'] ?? 0)
+        ];
+    }
 }
+?>

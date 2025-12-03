@@ -3,7 +3,7 @@
 document.addEventListener('DOMContentLoaded', function() {
     // Post creation modal functionality
     const postModal = document.getElementById('postModal');
-    const createBtn = document.querySelector('.btn-primary'); // Your create button
+    const createBtn = document.getElementById('openPostModal');
     const closeModalBtn = document.querySelector('.close-modal');
     const cancelBtn = document.querySelector('.cancel-btn');
     const shareBtn = document.querySelector('.share-btn');
@@ -15,15 +15,17 @@ document.addEventListener('DOMContentLoaded', function() {
     const tagCount = document.querySelector('.tag-count');
     
     // Show modal when Create button is clicked
-    createBtn.addEventListener('click', function() {
-        resetForm(); 
-        postModal.style.display = 'flex';
-        document.body.style.overflow = 'hidden';
-    });
+    if (createBtn && postModal) {
+        createBtn.addEventListener('click', function() {
+            resetForm(); 
+            postModal.classList.add('active');
+            document.body.style.overflow = 'hidden';
+        });
+    }
     
     // Close modal
     function closeModal() {
-        postModal.style.display = 'none';
+        postModal.classList.remove('active');
         document.body.style.overflow = 'auto';
     }
     
@@ -124,7 +126,13 @@ document.addEventListener('DOMContentLoaded', function() {
             formData.append('image', selectedFile);
         }
 
-        fetch(BASE_PATH + '/index.php?controller=Posts&action=create', {
+        const urlParams = new URLSearchParams(window.location.search);
+        const groupId = urlParams.get('group_id');
+        formData.append('sub_action', 'create');
+        formData.append('is_group_post', groupId ? '1' : '0');
+        if (groupId) formData.append('group_id', groupId);
+
+        fetch(BASE_PATH + 'index.php?controller=Posts&action=handleAjax', {
             method: 'POST',
             body: formData,
             // headers: { 'Authorization': `Bearer ${getAuthToken()}` } // Commented out: If authenticated
@@ -279,28 +287,42 @@ document.addEventListener('DOMContentLoaded', function() {
     document.addEventListener('click', (e) => {
         console.log('Click detected on:', e.target);
         console.log('Target classes:', e.target.className);
+        console.log('Target tag:', e.target.tagName);
         
-        // Check if clicking on the button or icon inside
-        const trigger = e.target.closest('.menu-trigger');
-        console.log('Trigger element found:', trigger);
-        
-        if (trigger && trigger.closest('.post-menu')) {
+        // ADD THIS: Skip comment system clicks
+        if (e.target.closest('.comment-section') || 
+            e.target.closest('.load-comments-btn') ||
+            e.target.classList.contains('comment-input') ||
+            e.target.classList.contains('comment-submit-btn') ||
+            e.target.classList.contains('reply-submit-btn') ||
+            e.target.closest('.comment-action')) {
+            console.log('Skipping - comment system click');
+            return; // Let comment.js handle this
+        }
+
+        // Toggle menu when clicking the menu-trigger button or its icon
+        const menuTrigger = e.target.closest('.menu-trigger');
+        if (menuTrigger) {
+            console.log('Menu trigger clicked!');
             e.preventDefault();
             e.stopPropagation();
-            const menu = trigger.closest('.post-menu');
-            console.log('Post menu element:', menu);
-            const alreadyOpen = menu.classList.contains('open');
-            console.log('Already open:', alreadyOpen);
-            
-            // Close any other open menus
-            document.querySelectorAll('.post-menu.open').forEach(m => {
-                console.log('Closing menu:', m);
-                m.classList.remove('open');
-            });
-            
-            if (!alreadyOpen) {
-                menu.classList.add('open');
-                console.log('Menu opened, classes:', menu.className);
+            const postMenu = menuTrigger.closest('.post-menu');
+            console.log('Post menu found:', postMenu);
+            if (postMenu) {
+                const isOpen = postMenu.classList.contains('open');
+                console.log('Menu is currently open:', isOpen);
+                // Close all other menus first
+                document.querySelectorAll('.post-menu.open').forEach(m => {
+                    if (m !== postMenu) m.classList.remove('open');
+                });
+                // Toggle current menu
+                if (isOpen) {
+                    postMenu.classList.remove('open');
+                    console.log('Closed menu');
+                } else {
+                    postMenu.classList.add('open');
+                    console.log('Opened menu');
+                }
             }
             return;
         }
@@ -340,9 +362,11 @@ document.addEventListener('DOMContentLoaded', function() {
         const confirmDel = confirm('Delete this post? This cannot be undone.');
         if (!confirmDel) return;
         try {
+            // For delete
             const formData = new FormData();
+            formData.append('sub_action', 'delete');
             formData.append('post_id', postId);
-            const res = await fetch(BASE_PATH + '/index.php?controller=Posts&action=delete', {  // Correct URL
+            const res = await fetch(BASE_PATH + 'index.php?controller=Posts&action=handleAjax', {
                 method: 'POST',
                 body: formData
             });
@@ -380,10 +404,12 @@ document.addEventListener('DOMContentLoaded', function() {
             const content = (editTextarea?.value || '').trim();
             if (!editingPostId || !content) return;
             try {
+                // For update
                 const formData = new FormData();
+                formData.append('sub_action', 'update');
                 formData.append('post_id', editingPostId);
                 formData.append('content', content);
-                const res = await fetch(BASE_PATH + '/index.php?controller=Posts&action=update', {  // Correct URL
+                const res = await fetch(BASE_PATH + 'index.php?controller=Posts&action=handleAjax', {
                     method: 'POST',
                     body: formData
                 });

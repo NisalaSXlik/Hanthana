@@ -1,62 +1,5 @@
 // general.js - Handles general functionality used across the site
 document.addEventListener('DOMContentLoaded', function() {
-    // Remove random counts demo
-    /*
-    document.querySelectorAll('.feed').forEach((feed, index) => {
-        const likeCount = feed.querySelector('.liked-by p');
-        const commentCount = feed.querySelector('.comments');
-        
-        if (likeCount) {
-            const randomLikes = Math.floor(Math.random() * 100) + 50;
-            likeCount.innerHTML = likeCount.innerHTML.replace(/\d+ others/, `${randomLikes} others`);
-        }
-        
-        if (commentCount) {
-            const randomComments = Math.floor(Math.random() * 30) + 10;
-            commentCount.textContent = `View all ${randomComments} comments`;
-        }
-    });
-    */
-    
-    // Interactive like buttons (real voting for arrows)
-    document.querySelectorAll('.uil-arrow-up, .uil-arrow-down').forEach(arrow => {
-        arrow.addEventListener('click', async function() {
-            // Remove undefined isUserLoggedIn check
-            const postId = this.closest('.feed').dataset.postId;
-            const voteType = this.dataset.voteType;  // 'upvote' or 'downvote'
-            
-            try {
-                const response = await fetch(BASE_PATH + '/index.php?controller=Vote&action=vote', {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-                    body: `post_id=${postId}&vote_type=${voteType}`
-                });
-                const data = await response.json();
-                if (data.success) {
-                    // Reset both arrows for this post
-                    const upArrow = this.closest('.interaction-buttons').querySelector('.uil-arrow-up');
-                    const downArrow = this.closest('.interaction-buttons').querySelector('.uil-arrow-down');
-                    upArrow.classList.remove('liked');
-                    downArrow.classList.remove('liked');
-                    upArrow.style.color = '';
-                    downArrow.style.color = '';
-                    
-                    // Apply to the clicked one if added/updated
-                    if (data.action === 'added' || data.action === 'updated') {
-                        this.classList.add('liked');
-                        this.style.color = 'var(--color-danger)';  // Red
-                    }
-                    // If removed, stay neutral
-                } else {
-                    showToast(data.message || 'Vote failed', 'error');
-                }
-            } catch (error) {
-                console.error('Vote error:', error);
-                showToast('Vote failed', 'error');
-            }
-        });
-    });
-    
     // Toast notification system
     window.showToast = function(message, type = 'success') {
         let toastContainer = document.getElementById('toastContainer');
@@ -95,7 +38,7 @@ document.addEventListener('DOMContentLoaded', function() {
     if (addGroupBtn && createGroupModal) {
         // Open modal
         addGroupBtn.addEventListener('click', (e) => {
-            e.preventDefault();  // Prevent any navigation
+            e.preventDefault();
             createGroupModal.classList.add('active');
             document.body.style.overflow = 'hidden';
         });
@@ -104,7 +47,9 @@ document.addEventListener('DOMContentLoaded', function() {
         const closeModal = () => {
             createGroupModal.classList.remove('active');
             document.body.style.overflow = '';
-            createGroupForm.reset();
+            if (createGroupForm) {
+                createGroupForm.reset();
+            }
         };
 
         if (closeGroupModal) closeGroupModal.addEventListener('click', closeModal);
@@ -116,7 +61,8 @@ document.addEventListener('DOMContentLoaded', function() {
         });
 
         // Handle form submission
-        createGroupForm.addEventListener('submit', async (e) => {
+        if (createGroupForm) {
+            createGroupForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             const errorMsgDiv = document.getElementById('groupErrorMsg');
             if (errorMsgDiv) {
@@ -158,6 +104,49 @@ document.addEventListener('DOMContentLoaded', function() {
                 } else {
                     showToast('An error occurred. Please try again.', 'error');
                 }
+                }
+            });
+        }
+    }
+
+    // All groups overview modal
+    const seeAllGroupsBtn = document.getElementById('seeAllGroupsBtn');
+    const allGroupsModal = document.getElementById('allGroupsModal');
+    const closeAllGroupsBtn = document.getElementById('closeAllGroupsModal');
+
+    if (seeAllGroupsBtn && allGroupsModal) {
+        const toggleScroll = (lock) => {
+            document.body.style.overflow = lock ? 'hidden' : '';
+        };
+
+        const openModal = () => {
+            allGroupsModal.classList.add('active');
+            toggleScroll(true);
+        };
+
+        const closeModal = () => {
+            allGroupsModal.classList.remove('active');
+            toggleScroll(false);
+        };
+
+        seeAllGroupsBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            openModal();
+        });
+
+        if (closeAllGroupsBtn) {
+            closeAllGroupsBtn.addEventListener('click', closeModal);
+        }
+
+        allGroupsModal.addEventListener('click', (e) => {
+            if (e.target === allGroupsModal) {
+                closeModal();
+            }
+        });
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && allGroupsModal.classList.contains('active')) {
+                closeModal();
             }
         });
     }
@@ -171,3 +160,22 @@ function showLoginModal() {
         document.body.style.overflow = 'hidden';
     }
 }
+
+// Helper function to update sidebar group member count
+window.updateSidebarGroupMemberCount = function(groupId, delta = 0) {
+    const groupElement = document.querySelector(`.group[data-group-id="${groupId}"]`);
+    if (!groupElement) return;
+    
+    const memberCountElement = groupElement.querySelector('.group-member-count');
+    if (!memberCountElement) return;
+    
+    // Extract current count from text like "5 members"
+    const currentText = memberCountElement.textContent.trim();
+    const currentCount = parseInt(currentText.match(/\d+/)?.[0] || '0');
+    
+    // Calculate new count
+    const newCount = Math.max(0, currentCount + delta);
+    
+    // Update display
+    memberCountElement.textContent = `${newCount} member${newCount !== 1 ? 's' : ''}`;
+};

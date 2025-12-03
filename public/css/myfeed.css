@@ -93,7 +93,7 @@
 
 .feed .interaction-buttons {
     display: flex;
-    gap: 1rem;
+    gap: 1.25rem;
     align-items: center;
 }
 
@@ -121,6 +121,23 @@
     margin-left: 0.2rem; /* Small gap from icon */
     color: var(--color-gray); /* Match gray theme */
     vertical-align: middle; /* Align with icon */
+}
+
+.feed .interaction-item {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    line-height: 1;
+}
+
+.feed .interaction-count {
+    font-size: 0.8rem;
+    color: var(--color-gray);
+}
+
+.feed .bookmark-item {
+    display: flex;
+    align-items: center;
 }
 
 /* Remove any underline effects from icons */
