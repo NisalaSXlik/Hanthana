@@ -10,9 +10,35 @@ desktop.ini
 *.swp
 *.swo
 *~
+# Ignore everything in uploads
+public/uploads/*
+themes/
 
-# Uploads folder (user-generated content)
-public/uploads/
+# But keep these folders
+!public/uploads/user_dp/
+!public/uploads/user_cover/
+!public/uploads/group_dp/
+!public/uploads/group_cover/
+!public/uploads/channel_dp/
+
+# Ignore everything inside those folders
+public/uploads/user_dp/*
+public/uploads/user_cover/*
+public/uploads/group_dp/*
+public/uploads/group_cover/*
+public/uploads/channel_dp/*
+
+# Except default.png in each
+!public/uploads/user_dp/default.png
+!public/uploads/user_cover/default.png
+!public/uploads/group_dp/default.png
+!public/uploads/group_cover/default.png
+!public/uploads/channel_dp/default.png
+
+#.env
+.env
+.env.local
+.env.production
 
 # Logs and temporary files
 *.log
@@ -33,7 +59,6 @@ npm-debug.log*
 vendor/
 
 # Environment files
-.env
 .env.local
 .env.production
 
