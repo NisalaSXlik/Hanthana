@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Attachment Test - Hanthane Chat</title>
+    <link rel="stylesheet" href="https://unicons.iconscout.com/release/v4.0.0/css/line.css">
+    <link rel="stylesheet" href="public/css/chat-new.css">
+</head>
+<body>
+    <div style="max-width: 800px; margin: 20px auto; padding: 20px; background: #f8f9fa;">
+        <h2>Attachment Messages Test</h2>
+        
+        <!-- Test attachment messages with simple inline style -->
+        <div style="background: white; padding: 20px; border-radius: 12px; margin-bottom: 20px;">
+            <h3>Regular Message Followed by Attachment (Right-aligned)</h3>
+            
+            <!-- Regular message bubble -->
+            <div class="message own">
+                <div class="profile-photo">
+                    <img src="https://i.pravatar.cc/150?img=10" alt="You">
+                </div>
+                <div class="message-content">Check out this photo!</div>
+            </div>
+
+            <!-- Attachment appears right below without blue background -->
+            <div class="attachment-message sent">
+                <div class="attachment-content">
+                    <div class="attachment-preview image-preview">
+                        <img src="public/images/1.jpg" alt="test-image.jpg">
+                        <div class="attachment-info">
+                            <span class="file-name">beautiful-sunset.jpg</span>
+                            <span class="file-size">2.4 MB</span>
+                        </div>
+                    </div>
+                    <div class="attachment-time">3:45 PM</div>
+                </div>
+            </div>
+
+            <!-- Another attachment -->
+            <div class="attachment-message sent">
+                <div class="attachment-content">
+                    <div class="attachment-preview file-preview">
+                        <div class="file-icon">
+                            <i class="uil uil-file-alt"></i>
+                        </div>
+                        <div class="attachment-info">
+                            <span class="file-name">document.pdf</span>
+                            <span class="file-size">1.2 MB</span>
+                            <span class="file-type">PDF</span>
+                        </div>
+                        <div class="download-btn">
+                            <i class="uil uil-download-alt"></i>
+                        </div>
+                    </div>
+                    <div class="attachment-time">3:46 PM</div>
+                </div>
+            </div>
+
+            <h3 style="margin-top: 30px;">Received Attachments (Left-aligned)</h3>
+            
+            <!-- Received attachment -->
+            <div class="attachment-message received">
+                <div class="attachment-content">
+                    <div class="attachment-preview image-preview">
+                        <img src="public/images/2.jpg" alt="received-image.jpg">
+                        <div class="attachment-info">
+                            <span class="file-name">shared-photo.jpg</span>
+                            <span class="file-size">1.8 MB</span>
+                        </div>
+                    </div>
+                    <div class="attachment-time">3:47 PM</div>
+                </div>
+            </div>
+
+            <!-- Test Console Buttons -->
+            <div style="margin-top: 30px; padding: 15px; background: #f0f0f0; border-radius: 8px;">
+                <h4>Debug Media Section:</h4>
+                <button onclick="refreshAllMediaSections()" style="padding: 8px 16px; margin: 5px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer;">Refresh Media Sections</button>
+                <button onclick="console.log('Media sections:', document.getElementById('media-photos'), document.getElementById('media-videos'), document.getElementById('media-documents'))" style="padding: 8px 16px; margin: 5px; background: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer;">Check Media Elements</button>
+            </div>
+        </div>
+
+        <!-- Test media storage sections -->
+        <h2>Media Storage Sections Test</h2>
+        <div style="background: white; padding: 20px; border-radius: 12px;">
+            
+            <div class="media-section">
+                <h4>Photos</h4>
+                <div class="media-photos" id="media-photos">
+                    <div class="media-item">
+                        <img src="public/images/1.jpg" alt="photo1.jpg" title="photo1.jpg">
+                    </div>
+                    <div class="media-item">
+                        <img src="public/images/2.jpg" alt="photo2.jpg" title="photo2.jpg">
+                    </div>
+                    <div class="media-item">
+                        <img src="public/images/3.jpg" alt="photo3.jpg" title="photo3.jpg">
+                    </div>
+                </div>
+            </div>
+
+            <div class="media-section">
+                <h4>Videos</h4>
+                <div class="media-videos" id="media-videos">
+                    <div class="media-item">
+                        <video title="sample-video.mp4">
+                            <source src="#" type="video/mp4">
+                        </video>
+                    </div>
+                </div>
+            </div>
+
+            <div class="media-section">
+                <h4>Documents</h4>
+                <div class="media-documents" id="media-documents">
+                    <div class="media-item">
+                        <div class="file-item" title="document1.pdf">
+                            <i class="uil uil-file-alt"></i>
+                            <span class="file-name">important-document.pdf</span>
+                        </div>
+                    </div>
+                    <div class="media-item">
+                        <div class="file-item" title="report.docx">
+                            <i class="uil uil-file-edit-alt"></i>
+                            <span class="file-name">monthly-report.docx</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="public/js/chat-new.js"></script>
+</body>
+</html>

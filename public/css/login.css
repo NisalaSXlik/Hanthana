@@ -1,0 +1,263 @@
+/* Signup name columns: white by default, light when filled or focused */
+.signup-card  .form-group-l input {
+    background: var(--color-white);
+    transition: background 0.2s;
+}
+.signup-card .form-group-l input:valid {
+    background: var(--color-light);
+}
+.signup-card  .form-group-l input:focus {
+    background: var(--color-light);
+}
+/* Signup page specific styles */
+.signup-card {
+    max-width: 800px;
+    width: 100%;
+}
+.signup-name-row {
+    display: flex;
+    gap: 1.5rem;
+}
+.signup-form-group {
+    margin-bottom: 1rem;
+}
+.signup-card .form-group-l {
+    background: var(--color-light);
+    border-radius: var(--border-radius);
+    border: 1px solid #e2e8f0;
+    padding: 0.8rem 1.2rem;
+    position: relative;
+}
+.signup-card .form-group-l i {
+    position: absolute;
+    left: 16px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--color-primary);
+    font-size: 1.1rem;
+}
+.signup-card .form-group-l input {
+    width: 100%;
+    padding: 12px 12px 12px 44px;
+    border-radius: var(--border-radius);
+    border: none;
+    font-size: 1rem;
+    background: var(--color-light);
+}
+.signup-card .btn-block {
+    width: 100%;
+    padding: 1rem 0;
+    font-size: 1.1rem;
+    font-weight: 600;
+    border-radius: var(--border-radius);
+}
+.signup-card .auth-footer {
+    text-align: center;
+    margin-top: 10px;
+    color: var(--color-gray);
+}
+.signup-card .auth-footer a {
+    color: var(--color-primary);
+    font-weight: 600;
+    text-decoration: none;
+}
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+:root {
+    --color-dark: #1e293b;
+    --color-light: #f1f5f9;
+    --color-white: #ffffff;
+    --color-primary: #0ea5e9;
+    --color-secondary: #0369a1;
+    --color-success: #10b981;
+    --color-danger: #ef4444;
+    --color-gray: #64748b;
+    
+    --border-radius: 1rem;
+    --card-border-radius: 0.5rem;
+    --btn-padding: 0.5rem 1.5rem;
+    --card-padding: 1rem;
+}
+
+
+/* Auth Page Styles */
+body {
+    margin: 0;
+    background-color: var(--color-bg);
+    font-family: 'Inter', sans-serif;
+    color: var(--color-dark);
+}
+
+.auth-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    padding: 1rem;
+    max-height: fit-content;
+}
+
+.auth-card {
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(8px);
+    border-radius: var(--card-border-radius);
+    width: 100%;
+    max-width: 420px;
+    padding: 2.5rem;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.signup-card {
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(8px);
+    border-radius: var(--card-border-radius);
+    width: 100%;
+    max-width: 620px;
+    padding: 2.5rem;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.auth-header {
+    text-align: center;
+    margin-bottom: 2rem;
+}
+
+.auth-header .logo {
+    color: var(--color-primary);
+    font-size: 2.5rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+}
+
+.tagline {
+    color: var(--color-gray);
+    font-weight: 400;
+    margin: 0;
+    font-size: 1.1rem;
+}
+
+.auth-form {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+    margin-bottom: 1.5rem;
+}
+
+.form-group-l {
+    position: relative;
+    display: flex;
+    align-items: center;
+    border: 1px solid var(--color-light); /* This creates the box */
+    border-radius: var(--border-radius);
+    padding: 0.8rem 1.2rem;
+    transition: all 0.2s ease;
+    background:var(--color-light);
+    margin-bottom: 1rem; /* Added for better spacing */
+}
+
+/* Alternative minimal style without the box */
+.form-group-l.minimal {
+    border: none;
+    padding: 0;
+    background: transparent;
+}
+
+.form-group-l.minimal i {
+    position: absolute;
+    left: 1rem;
+    color: var(--color-gray);
+}
+
+.form-group-l.minimal input {
+    padding-left: 2.5rem;
+    border: 1px solid var(--color-light);
+    border-radius: var(--border-radius);
+    padding: 0.8rem 1rem 0.8rem 2.5rem;
+    width: 100%;
+}
+
+.form-group-l:focus-within {
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 2px rgba(14, 165, 233, 0.2);
+}
+
+.form-group-l i {
+    color: var(--color-gray);
+    margin-right: 0.75rem;
+    font-size: 1.1rem;
+}
+
+input:-webkit-autofill {
+    box-shadow: 0 0 0 100px var(--color-light) inset !important;
+    -webkit-text-fill-color: var(--color-dark) !important;
+}
+
+.form-group-l input {
+    flex: 1;
+    border: none;
+    background: transparent;
+    padding: 0.2rem 0;
+    font-size: 1rem;
+    outline: none;
+}
+
+.btn {
+    padding: var(--btn-padding);
+    border-radius: var(--border-radius);
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border: none;
+    font-size: 1rem;
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, var(--color-primary), var(--color-secondary));
+    color: var(--color-white);
+    box-shadow: 0 4px 15px rgba(14, 165, 233, 0.3);
+}
+
+.btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 12px rgba(14, 165, 233, 0.4);
+}
+
+.btn-block {
+    width: 100%;
+    padding: 1rem;
+}
+
+.auth-footer {
+    text-align: center;
+    font-size: 0.95rem;
+}
+
+.auth-footer a {
+    color: var(--color-primary);
+    text-decoration: none;
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+
+.auth-footer a:hover {
+    text-decoration: underline;
+}
+
+.forgot-password {
+    display: block;
+    margin-top: 1rem;
+    font-size: 0.9rem;
+}
+/* Auth Button Styles */
+.btn-login {
+    background: transparent;
+    color: var(--color-primary);
+    border: 1px solid var(--color-primary);
+    margin-right: 0.5rem;
+}
+
+.btn-login:hover {
+    background: rgba(14, 165, 233, 0.1);
+}
