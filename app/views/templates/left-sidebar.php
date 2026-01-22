@@ -8,7 +8,7 @@ require_once __DIR__ . '/../../../config/config.php';
 require_once __DIR__ . '/../../helpers/MediaHelper.php';
 
 $sidebarAvatarPath = $_SESSION['profile_picture'] ?? '';
-$sidebarAvatarUrl = MediaHelper::resolveMediaPath($sidebarAvatarPath, 'uploads/user_dp/default_user_dp.jpg');
+$sidebarAvatarUrl = MediaHelper::resolveMediaPath($sidebarAvatarPath, 'uploads/user_dp/default.png');
 
 $explicitSidebarKey = isset($activeSidebar) && is_string($activeSidebar) ? strtolower($activeSidebar) : null;
 
@@ -114,7 +114,7 @@ if (!function_exists('menuActiveClass')) {
                     <strong style="font-size:13px;">Created by you</strong>
                     <?php foreach ($createdGroups as $sidebarGroup): ?>
                         <?php
-                        $displayUrl = MediaHelper::resolveMediaPath($sidebarGroup['display_picture'] ?? '', 'uploads/group_dp/default_group_dp.jpg');
+                        $displayUrl = MediaHelper::resolveMediaPath($sidebarGroup['display_picture'] ?? '', 'uploads/group_dp/default.png');
                         ?>
                         <div class="group <?php echo ($currentGroupId === $sidebarGroup['group_id']) ? 'active' : ''; ?>" data-group-id="<?php echo $sidebarGroup['group_id']; ?>" onclick="window.location.href='<?php echo rtrim(BASE_PATH, '/'); ?>/index.php?controller=Group&action=index&group_id=<?php echo $sidebarGroup['group_id']; ?>'">
                             <div class="group-icon">
@@ -133,7 +133,7 @@ if (!function_exists('menuActiveClass')) {
                     <strong style="font-size:13px;">Joined Groups</strong>
                     <?php foreach ($joinedOnlyGroups as $sidebarGroup): ?>
                         <?php 
-                        $displayUrl = MediaHelper::resolveMediaPath($sidebarGroup['display_picture'] ?? '', 'uploads/group_dp/default_group_dp.jpg');
+                        $displayUrl = MediaHelper::resolveMediaPath($sidebarGroup['display_picture'] ?? '', 'uploads/group_dp/default.png');
                         ?>
                         <div class="group <?php echo ($currentGroupId === $sidebarGroup['group_id']) ? 'active' : ''; ?>" data-group-id="<?php echo $sidebarGroup['group_id']; ?>" onclick="window.location.href='<?php echo rtrim(BASE_PATH, '/'); ?>/index.php?controller=Group&action=index&group_id=<?php echo $sidebarGroup['group_id']; ?>'">
                             <div class="group-icon">
@@ -184,7 +184,7 @@ $baseGroupUrl = rtrim(BASE_PATH, '/');
                             <?php foreach ($createdGroups as $group): ?>
                                 <?php
                                     $groupUrl = $baseGroupUrl . '/index.php?controller=Group&action=index&group_id=' . (int)($group['group_id'] ?? 0);
-                                    $avatar = MediaHelper::resolveMediaPath($group['display_picture'] ?? '', 'uploads/group_dp/default_group_dp.jpg');
+                                    $avatar = MediaHelper::resolveMediaPath($group['display_picture'] ?? '', 'uploads/group_dp/default.png');
                                     $memberCount = (int)($group['member_count'] ?? 0);
                                 ?>
                                 <li class="groups-modal__item">
@@ -214,7 +214,7 @@ $baseGroupUrl = rtrim(BASE_PATH, '/');
                             <?php foreach ($joinedOnlyGroups as $group): ?>
                                 <?php
                                     $groupUrl = $baseGroupUrl . '/index.php?controller=Group&action=index&group_id=' . (int)($group['group_id'] ?? 0);
-                                    $avatar = MediaHelper::resolveMediaPath($group['display_picture'] ?? '', 'uploads/group_dp/default_group_dp.jpg');
+                                    $avatar = MediaHelper::resolveMediaPath($group['display_picture'] ?? '', 'uploads/group_dp/default.png');
                                     $memberCount = (int)($group['member_count'] ?? 0);
                                     $privacy = ucfirst($group['privacy_status'] ?? 'public');
                                 ?>

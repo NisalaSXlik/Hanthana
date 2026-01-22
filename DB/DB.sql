@@ -624,3 +624,10 @@ CREATE TABLE QuestionTopics (
     FOREIGN KEY (question_id) REFERENCES Questions(question_id) ON DELETE CASCADE,
     INDEX idx_topic (topic_name)
 );
+
+INSERT INTO `Users` (`user_id`, `first_name`, `last_name`, `email`, `phone_number`, `password_hash`, `username`, `bio`, `profile_picture`, `cover_photo`, `created_at`, `updated_at`, `university`, `last_login`, `friends_count`, `is_active`, `date_of_birth`, `location`, `role`, `banned_until`, `ban_reason`, `ban_notes`, `banned_by`) VALUES
+(1, 'Dummy', 'Admin', 'admin@hanthana.com', '0000000000', '$2y$10$Ys6K.2VyuP482eNAUDBHK.zGRJb18Cz5dlCOGUfNnPEHakO6Qlrvy', 'admin', NULL, 'uploads/user_dp/default.png', 'uploads/user_cover/default.png', '2026-01-22 20:15:29', '2026-01-22 20:16:50', NULL, '2026-01-22 20:15:54', 0, 1, NULL, NULL, 'admin', NULL, NULL, NULL, NULL),
+(2, 'Dummy', 'User1', 'user1@hanthana.com', '0000000001', '$2y$10$n0yBtBE3bEz53dEjCHGLOOaw5Sha2umqYkXoF90jEbuCfeO.8thYG', 'user1', NULL, 'uploads/user_dp/default.png', 'uploads/user_cover/default.png', '2026-01-22 20:17:41', '2026-01-22 20:18:24', NULL, '2026-01-22 20:17:59', 0, 1, NULL, NULL, 'user', NULL, NULL, NULL, NULL);
+
+ALTER TABLE `Users`
+  MODIFY `user_id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;

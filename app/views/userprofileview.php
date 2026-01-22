@@ -31,7 +31,7 @@ require_once __DIR__ . '/../helpers/MediaHelper.php';
             <div class="middle">
                 <div class="profile-header">
                     <div class="profile-cover">
-                        <img src="<?php echo htmlspecialchars(MediaHelper::resolveMediaPath($profileUser['cover_photo'] ?? '', 'uploads/user_cover/default_user_cover.jpg')); ?>" alt="Profile Cover" id="profileCoverImage">
+                        <img src="<?php echo htmlspecialchars(MediaHelper::resolveMediaPath($profileUser['cover_photo'] ?? '', 'uploads/user_cover/default.png')); ?>" alt="Profile Cover" id="profileCoverImage">
                         <?php if ($isOwner): ?>
                         <button type="button" class="btn btn-primary edit-cover-btn" id="triggerEditCover">
                             <i class="uil uil-camera"></i> Edit Cover
@@ -41,7 +41,7 @@ require_once __DIR__ . '/../helpers/MediaHelper.php';
                     <div class="profile-info">
                         <div class="profile-dp-container">
                             <div class="profile-dp">
-                                <img src="<?php echo htmlspecialchars(MediaHelper::resolveMediaPath($profileUser['profile_picture'] ?? '', 'uploads/user_dp/default_user_dp.jpg')); ?>" alt="Profile Picture" id="profileAvatarImage">
+                                <img src="<?php echo htmlspecialchars(MediaHelper::resolveMediaPath($profileUser['profile_picture'] ?? '', 'uploads/user_dp/default.png')); ?>" alt="Profile Picture" id="profileAvatarImage">
                                 <?php if ($isOwner): ?>
                                 <button type="button" class="edit-dp-btn" id="triggerEditAvatar">
                                     <i class="uil uil-camera"></i>
@@ -340,7 +340,7 @@ require_once __DIR__ . '/../helpers/MediaHelper.php';
                                 <a href="<?php echo BASE_PATH; ?>index.php?controller=Group&action=view&id=<?php echo (int)$group['group_id']; ?>" 
                                    class="group-card">
                                     <div class="group-icon">
-                                        <img src="<?php echo htmlspecialchars(MediaHelper::resolveMediaPath($group['group_photo'] ?? '', 'uploads/group_photos/default_group.jpg')); ?>" 
+                                        <img src="<?php echo htmlspecialchars(MediaHelper::resolveMediaPath($group['group_photo'] ?? '', 'uploads/group_photos/default.png')); ?>" 
                                              alt="<?php echo htmlspecialchars($group['group_name']); ?>">
                                     </div>
                                     <div class="group-info">
@@ -458,14 +458,14 @@ require_once __DIR__ . '/../helpers/MediaHelper.php';
                     <div class="media-field">
                         <label for="profilePictureInput">Profile Picture</label>
                         <div class="media-preview">
-                            <img src="<?php echo htmlspecialchars(MediaHelper::resolveMediaPath($profileUser['profile_picture'] ?? '', 'uploads/user_dp/default_user_dp.jpg')); ?>" alt="Profile preview" id="profilePicturePreview">
+                            <img src="<?php echo htmlspecialchars(MediaHelper::resolveMediaPath($profileUser['profile_picture'] ?? '', 'uploads/user_dp/default.png')); ?>" alt="Profile preview" id="profilePicturePreview">
                         </div>
                         <input type="file" id="profilePictureInput" name="profile_picture" accept="image/*">
                     </div>
                     <div class="media-field">
                         <label for="coverPhotoInput">Cover Photo</label>
                         <div class="media-preview cover">
-                            <img src="<?php echo htmlspecialchars(MediaHelper::resolveMediaPath($profileUser['cover_photo'] ?? '', 'uploads/user_cover/default_user_cover.jpg')); ?>" alt="Cover preview" id="coverPhotoPreview">
+                            <img src="<?php echo htmlspecialchars(MediaHelper::resolveMediaPath($profileUser['cover_photo'] ?? '', 'uploads/user_cover/default.png')); ?>" alt="Cover preview" id="coverPhotoPreview">
                         </div>
                         <input type="file" id="coverPhotoInput" name="cover_photo" accept="image/*">
                     </div>
@@ -503,7 +503,7 @@ require_once __DIR__ . '/../helpers/MediaHelper.php';
                                 $friendName = $friend['username'] ?? 'Unknown User';
                             }
                             $friendHandle = !empty($friend['username']) ? '@' . $friend['username'] : '';
-                            $friendAvatar = MediaHelper::resolveMediaPath($friend['profile_picture'] ?? '', 'uploads/user_dp/default_user_dp.jpg');
+                            $friendAvatar = MediaHelper::resolveMediaPath($friend['profile_picture'] ?? '', 'uploads/user_dp/default.png');
                             $friendProfileUrl = rtrim(BASE_PATH, '/') . '/index.php?controller=Profile&action=view&user_id=' . $friendUserId;
                         ?>
                         <li class="friends-modal__item" data-friend-user-id="<?php echo $friendUserId; ?>">

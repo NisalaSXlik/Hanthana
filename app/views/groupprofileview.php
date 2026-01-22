@@ -29,7 +29,7 @@ require_once __DIR__ . '/../helpers/MediaHelper.php';
             <div class="middle">
                 <div class="profile-header">
                     <div class="profile-cover">
-                        <img id="groupCoverImage" src="<?php echo htmlspecialchars(MediaHelper::resolveMediaPath($group['cover_image'] ?? '', 'uploads/group_cover/default_group_cover.jpg')); ?>" alt="Profile Cover">
+                        <img id="groupCoverImage" src="<?php echo htmlspecialchars(MediaHelper::resolveMediaPath($group['cover_image'] ?? '', 'uploads/group_cover/default.png')); ?>" alt="Profile Cover">
                         <?php if ($isCreator || $isAdmin): ?>
                         <button class="edit-cover-btn">
                             <i class="uil uil-camera"></i> Edit Cover
@@ -39,7 +39,7 @@ require_once __DIR__ . '/../helpers/MediaHelper.php';
                     <div class="profile-info">
                         <div class="profile-dp-container">
                             <div class="profile-dp">
-                                <img id="groupDpImage" src="<?php echo htmlspecialchars(MediaHelper::resolveMediaPath($group['display_picture'] ?? '', 'uploads/group_dp/default_group_dp.jpg')); ?>" alt="Profile DP">
+                                <img id="groupDpImage" src="<?php echo htmlspecialchars(MediaHelper::resolveMediaPath($group['display_picture'] ?? '', 'uploads/group_dp/default.png')); ?>" alt="Profile DP">
                                 <?php if ($isCreator || $isAdmin): ?>
                                 <button class="edit-dp-btn">
                                     <i class="uil uil-camera"></i>
@@ -152,7 +152,7 @@ require_once __DIR__ . '/../helpers/MediaHelper.php';
                     <div class="tab-content active" id="posts-content">
                         <div class="create-post">
                             <div class="post-input">
-                                <img src="<?php echo htmlspecialchars(MediaHelper::resolveMediaPath($_SESSION['profile_picture'] ?? '', 'uploads/user_dp/default_user_dp.jpg')); ?>" alt="Your Avatar">
+                                <img src="<?php echo htmlspecialchars(MediaHelper::resolveMediaPath($_SESSION['profile_picture'] ?? '', 'uploads/user_dp/default.png')); ?>" alt="Your Avatar">
                                 <input type="text" placeholder="Share something with the group..." readonly id="quickPostTrigger" style="cursor: pointer;">
                             </div>
                             <div class="post-options">
@@ -194,7 +194,7 @@ require_once __DIR__ . '/../helpers/MediaHelper.php';
                                         <div class="head">
                                             <div class="user">
                                                 <div class="profile-picture">
-                                                    <img src="<?php echo htmlspecialchars(MediaHelper::resolveMediaPath($post['profile_picture'] ?? '', 'uploads/user_dp/default_user_dp.jpg')); ?>" alt="<?php echo htmlspecialchars($post['first_name'] . ' ' . $post['last_name']); ?>">
+                                                    <img src="<?php echo htmlspecialchars(MediaHelper::resolveMediaPath($post['profile_picture'] ?? '', 'uploads/user_dp/default.png')); ?>" alt="<?php echo htmlspecialchars($post['first_name'] . ' ' . $post['last_name']); ?>">
                                                 </div>
                                                 <div class="info">
                                                     <h3><?php echo htmlspecialchars($post['first_name'] . ' ' . $post['last_name']); ?></h3>
@@ -420,7 +420,7 @@ require_once __DIR__ . '/../helpers/MediaHelper.php';
                                             <div class="add-comment-form">
                                                 <div class="comment-input-container">
                                                     <?php
-                                                    $currentUserAvatar = MediaHelper::resolveMediaPath($_SESSION['profile_picture'] ?? '', 'uploads/user_dp/default_user_dp.jpg');
+                                                    $currentUserAvatar = MediaHelper::resolveMediaPath($_SESSION['profile_picture'] ?? '', 'uploads/user_dp/default.png');
                                                     ?>
                                                     <img src="<?php echo htmlspecialchars($currentUserAvatar); ?>" alt="Your Avatar" class="current-user-avatar">
                                                     <div class="comment-input-wrapper">
@@ -665,7 +665,7 @@ require_once __DIR__ . '/../helpers/MediaHelper.php';
                                         <?php $reqUserId = (int)$req['user_id']; ?>
                                         <div class="request-item" data-user-id="<?php echo $reqUserId; ?>">
                                             <div class="requester">
-                                                <img src="<?php echo htmlspecialchars(MediaHelper::resolveMediaPath($req['profile_picture'] ?? '', 'uploads/user_dp/default_user_dp.jpg')); ?>" alt="<?php echo htmlspecialchars($req['first_name'] . ' ' . $req['last_name']); ?>">
+                                                <img src="<?php echo htmlspecialchars(MediaHelper::resolveMediaPath($req['profile_picture'] ?? '', 'uploads/user_dp/default.png')); ?>" alt="<?php echo htmlspecialchars($req['first_name'] . ' ' . $req['last_name']); ?>">
                                                 <div class="requester-info">
                                                     <strong><?php echo htmlspecialchars($req['first_name'] . ' ' . $req['last_name']); ?></strong>
                                                     <small>@<?php echo htmlspecialchars($req['username']); ?> · <?php echo htmlspecialchars(date('M j, H:i', strtotime($req['requested_at']))); ?></small>
@@ -685,7 +685,7 @@ require_once __DIR__ . '/../helpers/MediaHelper.php';
                                     <?php
                                         $memberId = isset($member['user_id']) ? (int)$member['user_id'] : (int)($member['id'] ?? 0);
                                         $profileUrl = rtrim(BASE_PATH, '/') . '/index.php?controller=Profile&action=view&user_id=' . $memberId;
-                                        $dp = MediaHelper::resolveMediaPath($member['profile_picture'] ?? '', 'uploads/user_dp/default_user_dp.jpg');
+                                        $dp = MediaHelper::resolveMediaPath($member['profile_picture'] ?? '', 'uploads/user_dp/default.png');
                                     ?>
                                     <a class="member-link" href="<?php echo htmlspecialchars($profileUrl); ?>">
                                         <div class="member-card">

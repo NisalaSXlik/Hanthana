@@ -8,7 +8,7 @@ require_once __DIR__ . '/../../../config/config.php';
 require_once __DIR__ . '/../../helpers/MediaHelper.php';
 
 $avatarPath = $_SESSION['profile_picture'] ?? '';
-$profileAvatarUrl = MediaHelper::resolveMediaPath($avatarPath, 'uploads/user_dp/default_user_dp.jpg');
+$profileAvatarUrl = MediaHelper::resolveMediaPath($avatarPath, 'uploads/user_dp/default.png');
 $showPostModal = !isset($hidePostModal) || !$hidePostModal;
 // Load notifications for logged in user
 $notifications = [];
@@ -147,7 +147,7 @@ if (isset($_SESSION['user_id'])) {
                                 $priority = htmlspecialchars($n['priority'] ?? 'medium');
                                 $typeLabel = ucwords(str_replace('_', ' ', $n['type'] ?? 'Update'));
                                 $triggerPic = $n['trigger_profile_picture'] ?? '';
-                                $imgUrl = MediaHelper::resolveMediaPath($triggerPic, 'uploads/user_dp/default_user_dp.jpg');
+                                $imgUrl = MediaHelper::resolveMediaPath($triggerPic, 'uploads/user_dp/default.png');
                                 $isUnread = empty($n['is_read']);
                             ?>
                             <div class="notification-item-wrap<?php echo $isUnread ? ' is-unread' : ''; ?>" data-notif-id="<?php echo $nid; ?>" data-priority="<?php echo $priority; ?>">
@@ -179,7 +179,7 @@ if (isset($_SESSION['user_id'])) {
                 </div>
             </div>
             <div class="profile-picture" id="profileDropdown">
-                <img src="<?php echo htmlspecialchars($profileAvatarUrl); ?>" alt="Your profile picture">
+                <img src=".<?php echo htmlspecialchars($profileAvatarUrl); ?>" alt="Your profile picture">
                 <div class="profile-dropdown">
                     <a href="<?php echo BASE_PATH; ?>index.php?controller=Profile&action=view<?php echo isset($_SESSION['user_id']) ? '&user_id=' . (int)$_SESSION['user_id'] : ''; ?>"><i class="uil uil-user"></i> My Profile</a>
                     <?php if (($_SESSION['role'] ?? 'user') === 'admin'): ?>
