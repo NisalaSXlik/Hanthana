@@ -10,9 +10,26 @@ desktop.ini
 *.swp
 *.swo
 *~
+# Ignore everything in uploads
+public/uploads/*
 
-# Uploads folder (user-generated content)
-public/uploads/
+# But keep these folders
+!public/uploads/user_dp/
+!public/uploads/user_cover/
+!public/uploads/group_dp/
+!public/uploads/group_cover/
+
+# Ignore everything inside those folders
+public/uploads/user_dp/*
+public/uploads/user_cover/*
+public/uploads/group_dp/*
+public/uploads/group_cover/*
+
+# Except default.png in each
+!public/uploads/user_dp/default.png
+!public/uploads/user_cover/default.png
+!public/uploads/group_dp/default.png
+!public/uploads/group_cover/default.png
 
 # Logs and temporary files
 *.log
