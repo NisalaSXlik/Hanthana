@@ -1,14 +1,8 @@
 <?php
-// Start session if not already started
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
-
 require_once __DIR__ . '/../../../config/config.php';
 require_once __DIR__ . '/../../helpers/MediaHelper.php';
 
-$avatarPath = $_SESSION['profile_picture'] ?? '';
-$profileAvatarUrl = MediaHelper::resolveMediaPath($avatarPath, 'uploads/user_dp/default.png');
+$currentUserAvatar = MediaHelper::resolveMediaPath($currentUser['profile_picture'], 'uploads/user_dp/default.png');
 $showPostModal = !isset($hidePostModal) || !$hidePostModal;
 // Load notifications for logged in user
 $notifications = [];
@@ -179,7 +173,7 @@ if (isset($_SESSION['user_id'])) {
                 </div>
             </div>
             <div class="profile-picture" id="profileDropdown">
-                <img src=".<?php echo htmlspecialchars($profileAvatarUrl); ?>" alt="Your profile picture">
+                <img src=".<?php echo htmlspecialchars($currentUserAvatar); ?>" alt="Your profile picture">
                 <div class="profile-dropdown">
                     <a href="<?php echo BASE_PATH; ?>index.php?controller=Profile&action=view<?php echo isset($_SESSION['user_id']) ? '&user_id=' . (int)$_SESSION['user_id'] : ''; ?>"><i class="uil uil-user"></i> My Profile</a>
                     <?php if (($_SESSION['role'] ?? 'user') === 'admin'): ?>

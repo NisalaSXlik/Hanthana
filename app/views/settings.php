@@ -11,24 +11,18 @@ if (!isset($_SESSION['user_id'])) {
     exit();
 }
 
-$userId = $_SESSION['user_id'];
+$currentUserId = $_SESSION['user_id'];
 
-// Fetch user data
 require_once __DIR__ . '/../models/UserModel.php';
 $userModel = new UserModel();
-$user = $userModel->findById($userId);
-
-if (!$user) {
-    header('Location: ' . BASE_PATH . 'index.php?controller=Login&action=index');
-    exit();
-}
+$currentUser = $userModel->findById($currentUserId);
 
 $friendRequests = $friendRequests ?? [];
 
 // Get user settings
 require_once __DIR__ . '/../models/SettingsModel.php';
 $settingsModel = new SettingsModel();
-$userSettings = $settingsModel->getUserSettings($userId);
+$userSettings = $settingsModel->getUserSettings($currentUserId);
 
 // Get friend requests for sidebar
 $friendRequests = [];
@@ -36,7 +30,7 @@ try {
     if (file_exists(__DIR__ . '/../models/FriendModel.php')) {
         require_once __DIR__ . '/../models/FriendModel.php';
         $friendModel = new FriendModel();
-        $friendRequests = $friendModel->getIncomingRequests($userId, 5);
+        $friendRequests = $friendModel->getIncomingRequests($currentUserId, 5);
     }
 } catch (Exception $e) {
     error_log("FriendModel error: " . $e->getMessage());
@@ -61,7 +55,7 @@ try {
     
     <script> 
         const BASE_PATH = '<?php echo BASE_PATH; ?>'; 
-        const USER_ID = <?php echo $userId; ?>;
+        const USER_ID = <?php echo $currentUserId; ?>;
     </script>
 </head>
 <body>
@@ -113,48 +107,48 @@ try {
                                     <div class="form-row">
                                         <div class="form-group">
                                             <label for="firstName">First Name</label>
-                                            <input type="text" id="firstName" name="first_name" value="<?php echo htmlspecialchars($user['first_name'] ?? ''); ?>" required>
+                                            <input type="text" id="firstName" name="first_name" value="<?php echo htmlspecialchars($currentUser['first_name'] ?? ''); ?>" required>
                                         </div>
                                         <div class="form-group">
                                             <label for="lastName">Last Name</label>
-                                            <input type="text" id="lastName" name="last_name" value="<?php echo htmlspecialchars($user['last_name'] ?? ''); ?>" required>
+                                            <input type="text" id="lastName" name="last_name" value="<?php echo htmlspecialchars($currentUser['last_name'] ?? ''); ?>" required>
                                         </div>
                                     </div>
 
                                     <div class="form-group">
                                         <label for="username">Username</label>
-                                        <input type="text" id="username" name="username" value="<?php echo htmlspecialchars($user['username'] ?? ''); ?>" required>
+                                        <input type="text" id="username" name="username" value="<?php echo htmlspecialchars($currentUser['username'] ?? ''); ?>" required>
                                     </div>
 
                                     <div class="form-group">
                                         <label for="email">Email</label>
-                                        <input type="email" id="email" name="email" value="<?php echo htmlspecialchars($user['email'] ?? ''); ?>" required>
+                                        <input type="email" id="email" name="email" value="<?php echo htmlspecialchars($currentUser['email'] ?? ''); ?>" required>
                                     </div>
 
                                     <div class="form-group">
                                         <label for="phone">Phone Number</label>
-                                        <input type="tel" id="phone" name="phone_number" value="<?php echo htmlspecialchars($user['phone_number'] ?? ''); ?>">
+                                        <input type="tel" id="phone" name="phone_number" value="<?php echo htmlspecialchars($currentUser['phone_number'] ?? ''); ?>">
                                     </div>
 
                                     <div class="form-group">
                                         <label for="bio">Bio</label>
-                                        <textarea id="bio" name="bio" rows="4"><?php echo htmlspecialchars($user['bio'] ?? ''); ?></textarea>
+                                        <textarea id="bio" name="bio" rows="4"><?php echo htmlspecialchars($currentUser['bio'] ?? ''); ?></textarea>
                                     </div>
 
                                     <div class="form-row">
                                         <div class="form-group">
                                             <label for="university">University</label>
-                                            <input type="text" id="university" name="university" value="<?php echo htmlspecialchars($user['university'] ?? ''); ?>">
+                                            <input type="text" id="university" name="university" value="<?php echo htmlspecialchars($currentUser['university'] ?? ''); ?>">
                                         </div>
                                         <div class="form-group">
                                             <label for="location">Location</label>
-                                            <input type="text" id="location" name="location" value="<?php echo htmlspecialchars($user['location'] ?? ''); ?>">
+                                            <input type="text" id="location" name="location" value="<?php echo htmlspecialchars($currentUser['location'] ?? ''); ?>">
                                         </div>
                                     </div>
 
                                     <div class="form-group">
                                         <label for="dateOfBirth">Date of Birth</label>
-                                        <input type="date" id="dateOfBirth" name="date_of_birth" value="<?php echo htmlspecialchars($user['date_of_birth'] ?? ''); ?>">
+                                        <input type="date" id="dateOfBirth" name="date_of_birth" value="<?php echo htmlspecialchars($currentUser['date_of_birth'] ?? ''); ?>">
                                     </div>
 
                                     <button type="submit" class="btn-primary">Save Changes</button>

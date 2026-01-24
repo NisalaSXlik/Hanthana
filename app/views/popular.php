@@ -1,20 +1,23 @@
 <?php
 require_once __DIR__ . '/../../config/config.php';
+require_once __DIR__ . '/../models/UserModel.php';
 
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
 if (!isset($_SESSION['user_id'])) {
-    header('Location: login.php');
+    header('Location: ' . BASE_PATH . 'index.php?controller=Login&action=index');
     exit();
 }
 
-$userId = $_SESSION['user_id'];
+$currentUserId = $_SESSION['user_id'];
+$userModel = new UserModel;
+$currentUser = $userModel->findById((int)$_SESSION['user_id']);
 
 require_once __DIR__ . '/../models/FriendModel.php';
 $friendModel = new FriendModel();
-$incomingFriendRequests = $friendModel->getIncomingRequests($userId);
+$incomingFriendRequests = $friendModel->getIncomingRequests($currentUserId);
 
 function timeAgo($timestamp) {
     $time = strtotime($timestamp);
@@ -48,12 +51,7 @@ function timeAgo($timestamp) {
     
     <main>
         <div class="container questions-layout">
-            <?php 
-            (function() {
-                $activeSidebar = 'popular';
-                include __DIR__ . '/templates/left-sidebar.php';
-            })();
-            ?>
+            <?php $activeSidebar = 'feed'; include __DIR__ . '/templates/left-sidebar.php'; ?>
 
             <div class="middle">
                 <div class="questions-container-full">
@@ -248,8 +246,7 @@ function timeAgo($timestamp) {
     <?php include __DIR__ . '/templates/chat-clean.php'; ?>
 
     <script>
-        const BASE_PATH = '<?php echo rtrim(BASE_PATH, '/'); ?>';
-        const USER_ID = <?php echo $userId; ?>;
+        const USER_ID = <?php echo $currentUserId; ?>;
     </script>
     <script src="./js/calender.js"></script>
     <script src="./js/general.js"></script>

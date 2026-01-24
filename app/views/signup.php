@@ -1,4 +1,5 @@
 <?php
+require_once __DIR__ . '/../../config/config.php';
 require_once __DIR__ . '/../controllers/AuthController.php';
 
 $authController = new AuthController();
@@ -8,8 +9,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $result = $authController->register($_POST);
     
     if ($result['success']) {
-        // Redirect to login page immediately
-        header('Location: login.php');
+        header('Location: ' . BASE_PATH .'index.php?controller=Login&action=index');
         exit;
     } else {
         $errors = $result['errors'];

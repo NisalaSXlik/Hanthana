@@ -23,7 +23,7 @@ require_once __DIR__ . '/../helpers/MediaHelper.php';
 
     <main>
         <div class="container">
-            <?php (function() { include __DIR__ . '/templates/left-sidebar.php'; })(); ?>
+            <?php include __DIR__ . '/templates/left-sidebar.php'; ?>
             <div class="middle">
                 <div class="manage-header">
                     <h2>Manage Requests for <?php echo htmlspecialchars($group['name']); ?></h2>

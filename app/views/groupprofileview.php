@@ -1,6 +1,20 @@
 <?php
 require_once __DIR__ . '/../../config/config.php';
 require_once __DIR__ . '/../helpers/MediaHelper.php';
+require_once __DIR__ . '/../models/UserModel.php';
+
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+
+if (!isset($_SESSION['user_id'])) {
+    header('Location: login.php');
+    exit();
+}
+
+$currentUserId = $_SESSION['user_id'];
+$userModel = new UserModel;
+$currentUser = $userModel->findById($_SESSION['user_id']);
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -24,7 +38,7 @@ require_once __DIR__ . '/../helpers/MediaHelper.php';
 
     <main>
         <div class="container">
-            <?php (function() { include __DIR__ . '/templates/left-sidebar.php'; })(); ?>
+            <?php include __DIR__ . '/templates/left-sidebar.php'; ?>
 
             <div class="middle">
                 <div class="profile-header">
@@ -152,7 +166,7 @@ require_once __DIR__ . '/../helpers/MediaHelper.php';
                     <div class="tab-content active" id="posts-content">
                         <div class="create-post">
                             <div class="post-input">
-                                <img src="<?php echo htmlspecialchars(MediaHelper::resolveMediaPath($_SESSION['profile_picture'] ?? '', 'uploads/user_dp/default.png')); ?>" alt="Your Avatar">
+                                <img src="<?php echo htmlspecialchars(MediaHelper::resolveMediaPath($currentUser['profile_picture'] ?? '', 'uploads/user_dp/default.png')); ?>" alt="Your Avatar">
                                 <input type="text" placeholder="Share something with the group..." readonly id="quickPostTrigger" style="cursor: pointer;">
                             </div>
                             <div class="post-options">

@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/../../config/config.php';
+require_once __DIR__ . '/../models/UserModel.php';
 require_once __DIR__ . '/../helpers/MediaHelper.php';
 
 // Ensure session for ownership/UI logic
@@ -7,7 +8,13 @@ if (session_status() === PHP_SESSION_NONE) {
 	session_start();
 }
 
-$currentUserId = $_SESSION['user_id'] ?? null;
+if (!isset($_SESSION['user_id'])) {
+    header('Location: ' . BASE_PATH . 'index.php?controller=Login&action=index');
+    exit();
+}
+
+$userModel = new UserModel;
+$currentUser = $userModel->findById((int)$_SESSION['user_id']);
 $friendRequests = $friendRequests ?? [];
 
 // Posts should arrive from the controller; redirect if accessed directly
@@ -46,15 +53,15 @@ if (!isset($posts)) {
 						<?php foreach ($posts as $post): ?>
 							<?php
 							// Profile picture is already resolved by PostModel
-							$avatarUrl = !empty($post['profile_picture']) 
-								? $post['profile_picture'] 
-								: BASE_PATH . 'images/avatars/defaultProfilePic.png';								$fullName = trim(($post['first_name'] ?? '') . ' ' . ($post['last_name'] ?? ''));
-								$displayName = $post['username'] ?? '';
-								if ($displayName === '' || $displayName === null) {
-									$displayName = $fullName !== '' ? $fullName : 'Unknown';
-								}
+							$avatarUrl = MediaHelper::resolveMediaPath($post['profile_picture'], 'uploads/user_dp/default.png');
+							$fullName = trim(($post['first_name'] ?? '') . ' ' . ($post['last_name'] ?? ''));
+							$displayName = $post['username'] ?? '';
+							
+							if ($displayName === '' || $displayName === null) {
+								$displayName = $fullName !== '' ? $fullName : 'Unknown';
+							}
 
-						$isOwner = isset($currentUserId) && (int)$currentUserId === (int)($post['author_id'] ?? $post['user_id'] ?? 0);
+						$isOwner = isset($_SESSION['user_id']) && (int)$_SESSION['user_id'] === (int)($post['author_id'] ?? $post['user_id'] ?? 0);
 						$postContentForAttr = htmlspecialchars($post['content'] ?? '', ENT_QUOTES);
 						$reportLabel = !empty($post['group_id']) && !empty($post['group_name'])
 							? 'post in ' . ($post['group_name'] ?? 'group')
@@ -137,8 +144,9 @@ if (!isset($posts)) {
                                                 </div>
                                             <?php endif; ?>
                                             <?php if (!empty($post['image_url'])): ?>
+												<?php $postImage = MediaHelper::resolveMediaPath($post['image_url'], ''); ?>
                                                 <div class="photo post-image">
-                                                    <img src="<?php echo htmlspecialchars($post['image_url']); ?>" alt="Post image">
+                                                    <img src="<?php echo htmlspecialchars($postImage); ?>" alt="Post image">
                                                 </div>
                                             <?php endif; ?>
                                         
@@ -152,8 +160,9 @@ if (!isset($posts)) {
                                                 <?php endif; ?>
                                             </div>
                                             <?php if (!empty($post['image_url'])): ?>
-                                                <div class="post-image">
-                                                    <img src="<?php echo htmlspecialchars($post['image_url']); ?>" alt="Post image">
+												<?php $postImage = MediaHelper::resolveMediaPath($post['image_url'], ''); ?>
+                                                <div class="photo post-image">
+                                                    <img src="<?php echo htmlspecialchars($postImage); ?>" alt="Post image">
                                                 </div>
                                             <?php endif; ?>
 
@@ -288,8 +297,9 @@ if (!isset($posts)) {
                                     </div>
                                 <?php else: ?>
                                     <?php if (!empty($post['image_url'])): ?>
-                                        <div class="photo">
-                                            <img src="<?php echo htmlspecialchars($post['image_url']); ?>" alt="Post Image" onerror="this.style.display='none'; console.log('Failed to load image: <?php echo htmlspecialchars($post['image_url']); ?>');">
+										<?php $postImage = MediaHelper::resolveMediaPath($post['image_url'], ''); ?>
+										<div class="photo post-image">
+											<img src="<?php echo htmlspecialchars($postImage); ?>" alt="Post image" onerror="this.style.display='none'; console.log('Failed to load image: <?php echo htmlspecialchars($post['image_url']); ?>');">
                                         </div>
                                     <?php endif; ?>
                                 <?php endif; ?>
@@ -359,7 +369,7 @@ if (!isset($posts)) {
 									<div class="add-comment-form">
 										<div class="comment-input-container">
 											<?php
-                                            $currentUserAvatar = MediaHelper::resolveMediaPath($_SESSION['profile_picture'] ?? '', 'uploads/user_dp/default_user_dp.jpg');
+                                            $currentUserAvatar = MediaHelper::resolveMediaPath($currentUser['profile_picture'] ?? '', 'uploads/user_dp/default.png');
                                             ?>
 											<img src="<?php echo htmlspecialchars($currentUserAvatar); ?>" alt="Your Avatar" class="current-user-avatar">
 											<div class="comment-input-wrapper">

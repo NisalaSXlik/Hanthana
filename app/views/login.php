@@ -1,5 +1,15 @@
 <?php
+require_once __DIR__ . '/../../config/config.php';
 require_once __DIR__ . '/../controllers/AuthController.php';
+
+if (session_status() === PHP_SESSION_NONE) {
+	session_start();
+}
+
+if (isset($_SESSION['user_id'])) {
+    header('Location: ' . BASE_PATH . 'index.php?controller=Feed&action=index');
+    exit();
+}
 
 $authController = new AuthController();
 $error = '';
@@ -13,7 +23,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $result = $authController->login($identifier, $password);
     
     if ($result['success']) {
-        header("Location: ../controllers/FeedController.php"); 
+        header('Location: ' . BASE_PATH . 'index.php?controller=Feed&action=index'); 
         exit;
     } else {
         $error = $result['errors'][0] ?? 'Login failed';

@@ -134,7 +134,7 @@ class PostModel {
                 $post['image_url'] = MediaHelper::resolveMediaPath($post['image_url'], 'images/default_post.png');
             }
             if (!empty($post['profile_picture'])) {
-                $post['profile_picture'] = MediaHelper::resolveMediaPath($post['profile_picture'], 'images/avatars/defaultProfilePic.png');
+                $post['profile_picture'] = MediaHelper::resolveMediaPath($post['profile_picture'], 'uploads/user_dp/default.png');
             }
             $post['metadata'] = !empty($post['metadata']) ? json_decode($post['metadata'], true) : [];
             if (!is_array($post['metadata'])) {

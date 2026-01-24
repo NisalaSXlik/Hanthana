@@ -1,14 +1,11 @@
 <?php
-// Start session if not already started
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
-
 require_once __DIR__ . '/../../../config/config.php';
 require_once __DIR__ . '/../../helpers/MediaHelper.php';
+require_once __DIR__ . '/../../models/UserModel.php';
 
-$sidebarAvatarPath = $_SESSION['profile_picture'] ?? '';
-$sidebarAvatarUrl = MediaHelper::resolveMediaPath($sidebarAvatarPath, 'uploads/user_dp/default.png');
+$userModel = new UserModel;
+$currentUser = $userModel->findById($currentUser['user_id']);
+$currentUserAvatar = MediaHelper::resolveMediaPath($currentUser['profile_picture'], 'uploads/user_dp/default.png');
 
 $explicitSidebarKey = isset($activeSidebar) && is_string($activeSidebar) ? strtolower($activeSidebar) : null;
 
@@ -61,7 +58,7 @@ if (!function_exists('menuActiveClass')) {
     <a href="<?php echo rtrim(BASE_PATH, '/'); ?>/index.php?controller=Profile&action=view<?php echo isset($_SESSION['user_id']) ? '&user_id=' . (int)$_SESSION['user_id'] : ''; ?>" class="profile-button">
         <div class="profile">
             <div class="profile-picture">
-                <img src="<?php echo htmlspecialchars($sidebarAvatarUrl); ?>" alt="Your profile picture">
+                <img src="<?php echo htmlspecialchars($currentUserAvatar); ?>" alt="Your profile picture">
             </div>
             <div class="handle">
                 <h4><?php echo htmlspecialchars(($_SESSION['first_name'] ?? '') . ' ' . ($_SESSION['last_name'] ?? '')); ?></h4>

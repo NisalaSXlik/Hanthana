@@ -1,20 +1,23 @@
 <?php
 require_once __DIR__ . '/../../config/config.php';
+require_once __DIR__ . '/../models/UserModel.php';
 
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
 if (!isset($_SESSION['user_id'])) {
-    header('Location: login.php');
+    header('Location: ' . BASE_PATH . 'index.php?controller=Login&action=index');
     exit();
 }
 
-$userId = $_SESSION['user_id'];
+$currentUserId = $_SESSION['user_id'];
+$userModel = new UserModel;
+$currentUser = $userModel->findById($_SESSION['user_id']);
 
 require_once __DIR__ . '/../models/FriendModel.php';
 $friendModel = new FriendModel();
-$incomingFriendRequests = $friendModel->getIncomingRequests($userId);
+$incomingFriendRequests = $friendModel->getIncomingRequests($currentUserId);
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -37,13 +40,7 @@ $incomingFriendRequests = $friendModel->getIncomingRequests($userId);
     
     <main>
         <div class="container">
-            <?php 
-            // Isolate include to avoid variable collisions
-            (function() {
-                $activeSidebar = 'events';
-                include __DIR__ . '/templates/left-sidebar.php';
-            })();
-            ?>
+            <?php $activeSidebar = 'events'; include __DIR__ . '/templates/left-sidebar.php'; ?>
 
             <div class="middle">
                 <!-- Events Header -->
@@ -166,8 +163,7 @@ $incomingFriendRequests = $friendModel->getIncomingRequests($userId);
     </div>
 
     <script>
-        const BASE_PATH = '<?php echo rtrim(BASE_PATH, '/'); ?>';
-        const USER_ID = <?php echo $userId; ?>;
+        const USER_ID = <?php echo $currentUserId; ?>;
     </script>
     <script src="./js/calender.js"></script>
     <script src="./js/general.js"></script>

@@ -12,6 +12,7 @@ if (!isset($_SESSION['user_id'])) {
 }
 
 require_once __DIR__ . '/../../models/UserModel.php';
+require_once __DIR__ . '/../../helpers/MediaHelper.php';
 
 $userModel = new UserModel();
 $currentUser = $userModel->findById((int)$_SESSION['user_id']);
@@ -24,7 +25,7 @@ $fullName = trim(($currentUser['first_name'] ?? '') . ' ' . ($currentUser['last_
 if ($fullName === '') {
     $fullName = $currentUser['username'];
 }
-$avatarPath = $currentUser['profile_picture'] ?? 'uploads/user_dp/default_user_dp.jpg';
+$avatarPath = $currentUser['profile_picture'] ?? 'uploads/user_dp/default.png';
 ?>
 
 <?php if (!defined('CHAT_ASSETS_REGISTERED')): ?>
@@ -54,7 +55,7 @@ $avatarPath = $currentUser['profile_picture'] ?? 'uploads/user_dp/default_user_d
             <div class="chat-header flex align-center justify-between">
                 <div class="header-info flex align-center gap-1">
                     <div class="profile-photo has-status">
-                        <img src="<?php echo htmlspecialchars($avatarPath, ENT_QUOTES, 'UTF-8'); ?>" alt="<?php echo htmlspecialchars($fullName, ENT_QUOTES, 'UTF-8'); ?>">
+                        <img src="<?php echo htmlspecialchars(MediaHelper::resolveMediaPath($avatarPath, 'uploads/user_dp/default.png'));?>" alt="<?php echo htmlspecialchars($fullName, ENT_QUOTES, 'UTF-8'); ?>">
                         <span class="status-dot status-dot--online"></span>
                     </div>
                     <div class="header-details">
