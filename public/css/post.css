@@ -3,7 +3,7 @@
   max-width: 600px;
   margin: 0 auto;
   padding: 20px;
-  font-family: 'Segoe UI', sans-serif;
+  font-family: 'Inter', sans-serif;
 }
 
 .header h1 {
@@ -93,7 +93,7 @@ textarea, input[type="text"] {
   border: none;
 }
 
-/* Post Modal Styles */
+/* Post Modal Styles - Clean & Modern */
 .post-modal {
     position: fixed;
     top: 0;
@@ -101,16 +101,37 @@ textarea, input[type="text"] {
     width: 100%;
     height: 100%;
     background-color: rgba(0, 0, 0, 0.7);
-    display: none;
+    backdrop-filter: blur(5px);
+    display: none !important;
     justify-content: center;
     align-items: center;
-    z-index: 1000;
+    z-index: 9999;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
 }
 
+.post-modal.active {
+    display: flex !important;
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.modal-content {
+    background: var(--color-white);
+    border-radius: 1rem;
+    width: 90%;
+    max-width: 900px;
+    max-height: 85vh;
+    overflow-y: auto;
+    box-shadow: 0 1rem 3rem rgba(0, 0, 0, 0.4);
+    display: flex;
+    flex-direction: column;
+}
 
 .modal-header {
-    padding: 15px 20px;
-    border-bottom: 1px solid #eee;
+    padding: 1.25rem 1.5rem;
+    border-bottom: 1px solid var(--color-light);
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -118,15 +139,29 @@ textarea, input[type="text"] {
 
 .modal-header h3 {
     margin: 0;
-    font-size: 18px;
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--color-dark);
 }
 
 .close-modal {
-    background: none;
+    background: transparent;
     border: none;
-    font-size: 24px;
+    font-size: 1.5rem;
     cursor: pointer;
-    color: #666;
+    color: var(--color-gray);
+    width: 2.5rem;
+    height: 2.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: all 0.2s;
+}
+
+.close-modal:hover {
+    background: var(--color-light);
+    color: var(--color-dark);
 }
 
 .modal-body {
@@ -138,22 +173,24 @@ textarea, input[type="text"] {
 
 .post-type-selector {
     display: flex;
-    border-bottom: 1px solid #eee;
+    border-bottom: 1px solid var(--color-light);
 }
 
 .post-type-btn {
     flex: 1;
-    padding: 12px;
+    padding: 1rem;
     background: none;
     border: none;
     cursor: pointer;
-    font-weight: 600;
-    color: #666;
+    font-weight: 500;
+    color: var(--color-gray);
+    border-bottom: 2px solid transparent;
+    transition: all 0.2s;
 }
 
 .post-type-btn.active {
-    color: #1877f2;
-    border-bottom: 2px solid #1877f2;
+    color: var(--color-primary);
+    border-bottom-color: var(--color-primary);
 }
 
 .post-content {
@@ -168,49 +205,66 @@ textarea, input[type="text"] {
     flex-direction: column;
     justify-content: center;
     align-items: center;
-    padding: 40px;
-    border-right: 1px solid #eee;
-    background: #fafafa;
+    padding: 3rem 1.5rem;
+    border: 2px dashed var(--color-light);
+    border-radius: 0.75rem;
+    background: transparent;
     cursor: pointer;
+    transition: all 0.2s;
+    margin: 1.5rem;
+}
+
+.image-upload:hover {
+    border-color: var(--color-primary);
+    background: rgba(14, 165, 233, 0.05);
 }
 
 .image-upload i {
-    font-size: 50px;
-    color: #1877f2;
-    margin-bottom: 20px;
+    font-size: 3rem;
+    color: var(--color-primary);
+    margin-bottom: 0.75rem;
 }
 
 .image-upload p {
-    color: #666;
+    color: var(--color-gray);
     margin: 0;
+    font-size: 0.95rem;
 }
 
 .post-details {
     flex: 1;
-    padding: 20px;
+    padding: 1.5rem;
     overflow-y: auto;
 }
 
 .form-group {
-    margin-bottom: 20px;
+    margin-bottom: 1.5rem;
 }
 
 .form-group label {
-    display: flex;
-    margin-bottom: 8px;
+    display: block;
+    margin-bottom: 0.5rem;
     font-weight: 600;
-    color: #333;
-    align-items: flex-start;
+    color: var(--color-dark);
 }
 
 .form-group textarea,
 .form-group input[type="text"],
 .form-group input[type="datetime-local"] {
     width: 100%;
-    padding: 10px;
-    border: 1px solid #ddd;
-    border-radius: 6px;
+    padding: 0.875rem;
+    border: 1.5px solid var(--color-light);
+    border-radius: 0.75rem;
     font-family: inherit;
+    font-size: 0.95rem;
+    transition: all 0.2s;
+}
+
+.form-group textarea:focus,
+.form-group input:focus {
+    outline: none;
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.1);
 }
 
 .form-group textarea {
@@ -219,23 +273,68 @@ textarea, input[type="text"] {
 }
 
 .tag-count {
-    color: #666;
+    color: var(--color-gray);
     display: block;
-    margin-top: 5px;
+    margin-top: 0.375rem;
+    font-size: 0.85rem;
 }
 
 .event-details {
-    margin-top: 20px;
-    padding-top: 20px;
-    border-top: 1px solid #eee;
+    margin-top: 1.5rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--color-light);
 }
 
 .modal-footer {
-    padding: 15px 20px;
-    border-top: 1px solid #eee;
+    padding: 1.25rem 1.5rem;
+    border-top: 1px solid var(--color-light);
     display: flex;
     justify-content: flex-end;
-    gap: 10px;
+    gap: 0.75rem;
+}
+
+.modal-footer .btn {
+    padding: 0.75rem 1.75rem;
+    border-radius: 0.75rem;
+    font-weight: 600;
+    cursor: pointer;
+    border: none;
+    transition: all 0.2s;
+    font-size: 0.95rem;
+}
+
+.modal-footer .cancel-btn,
+.modal-footer .btn-secondary {
+    background: var(--color-light);
+    color: var(--color-dark);
+}
+
+.modal-footer .cancel-btn:hover,
+.modal-footer .btn-secondary:hover {
+    background: var(--color-gray);
+    color: var(--color-white);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 12px rgba(0,0,0,0.1);
+}
+
+.modal-footer .share-btn,
+.modal-footer .btn-primary {
+    background: linear-gradient(135deg, var(--color-primary), var(--color-secondary));
+    color: var(--color-white);
+    box-shadow: 0 4px 15px rgba(14, 165, 233, 0.3);
+}
+
+.modal-footer .share-btn:hover,
+.modal-footer .btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 12px rgba(14, 165, 233, 0.4);
+}
+
+.modal-footer .btn:disabled {
+    background: var(--color-light);
+    color: var(--color-gray);
+    cursor: not-allowed;
+    transform: none;
 }
 
 /* Preview styles */
@@ -279,14 +378,87 @@ textarea, input[type="text"] {
     margin-left: 10px;
     display: inline-block;
 }
-.modal-content {
-    background-color: white;
-    width: 80%;
-    max-width: 800px;
-    border-radius: 12px;
+/* Scrollbar styling for modal */
+.modal-content::-webkit-scrollbar {
+    width: 8px;
+}
+
+.modal-content::-webkit-scrollbar-track {
+    background: var(--color-light);
+    border-radius: 10px;
+}
+
+.modal-content::-webkit-scrollbar-thumb {
+    background: var(--color-gray);
+    border-radius: 10px;
+}
+
+.modal-content::-webkit-scrollbar-thumb:hover {
+    background: var(--color-dark);
+}
+
+/* Post header menu (three dots) */
+.post-menu {
+    position: relative;
+    z-index: 9;
+}
+
+.post-menu .menu-trigger {
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    padding: 0.5rem;
+    border-radius: 0.5rem;
+    color: var(--color-dark);
+    font-size: 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s;
+}
+
+.post-menu .menu-trigger:hover {
+    background: var(--color-light);
+}
+
+.post-menu .menu {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    min-width: 180px;
+    background: var(--color-white);
+    border: 1px solid var(--color-light);
+    border-radius: 0.75rem;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+    display: none;
+    z-index: 100;
     overflow: hidden;
-    display: flex
-;
-    flex-direction: column;
-    max-height: 90vh;
+    margin-top: 0.25rem;
+}
+
+.post-menu.open .menu {
+    display: block;
+}
+
+.post-menu .menu-item {
+    width: 100%;
+    text-align: left;
+    padding: 0.75rem 1rem;
+    background: transparent;
+    border: none;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: var(--color-dark);
+    cursor: pointer;
+    font-size: 0.95rem;
+    transition: background 0.2s;
+}
+
+.post-menu .menu-item:hover {
+    background: var(--color-light);
+}
+
+.post-menu .menu-item i {
+    font-size: 1.1rem;
 }

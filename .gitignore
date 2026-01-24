@@ -1,0 +1,65 @@
+# Platform-specific files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+desktop.ini
+*.swp
+*.swo
+*~
+# Ignore everything in uploads
+public/uploads/*
+
+# But keep these folders
+!public/uploads/user_dp/
+!public/uploads/user_cover/
+!public/uploads/group_dp/
+!public/uploads/group_cover/
+
+# Ignore everything inside those folders
+public/uploads/user_dp/*
+public/uploads/user_cover/*
+public/uploads/group_dp/*
+public/uploads/group_cover/*
+
+# Except default.png in each
+!public/uploads/user_dp/default.png
+!public/uploads/user_cover/default.png
+!public/uploads/group_dp/default.png
+!public/uploads/group_cover/default.png
+
+# Logs and temporary files
+*.log
+tmp/
+temp/
+
+# IDE and editor files
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# Node.js (if applicable)
+node_modules/
+npm-debug.log*
+
+# PHP Composer
+vendor/
+
+# Environment files
+.env
+.env.local
+.env.production
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+desktop.ini

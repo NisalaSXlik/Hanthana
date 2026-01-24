@@ -1,9 +1,12 @@
 <?php
-// Autoload classes (simple example)
+require_once __DIR__ . '/../config/config.php';
+session_start();
+
+// Autoload classes
 spl_autoload_register(function ($class) {
     $paths = [
-        __DIR__ . '/app/controllers/' . $class . '.php',
-        __DIR__ . '/app/models/' . $class . '.php'
+        __DIR__ . '/../app/controllers/' . $class . '.php',
+        __DIR__ . '/../app/models/' . $class . '.php'
     ];
     foreach ($paths as $path) {
         if (file_exists($path)) {
@@ -13,7 +16,7 @@ spl_autoload_register(function ($class) {
     }
 });
 
-// Parse controller and action from URL, default to 'Home' and 'index'
+// Parse controller and action from query params (fallback routing)
 $controllerName = isset($_GET['controller']) ? $_GET['controller'] : 'Home';
 $actionName = isset($_GET['action']) ? $_GET['action'] : 'index';
 
@@ -27,11 +30,10 @@ if (class_exists($controllerClass)) {
         // Call action
         $controller->$actionName();
     } else {
-        // Action not found
-        echo "Action '$actionName' not found in controller '$controllerClass'.";
+        http_response_code(404);
+        echo json_encode(['error' => "Action '$actionName' not found"]);
     }
 } else {
-    // Controller not found
-    echo "Controller '$controllerClass' not found.";
+    http_response_code(404);
+    echo json_encode(['error' => "Controller '$controllerClass' not found"]);
 }
-

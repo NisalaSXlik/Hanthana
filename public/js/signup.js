@@ -3,22 +3,22 @@ document.addEventListener('DOMContentLoaded', function() {
     if (!signupForm) return;
 
     signupForm.addEventListener('submit', async function(e) {
-        e.preventDefault();
         const formData = new FormData(signupForm);
         const password = formData.get('password');
         const confirmPassword = formData.get('confirmPassword');
         const phone = formData.get('phone');
         if (!phone.match(/^\d{10}$/)) {
+            e.preventDefault();
             alert('Please enter a valid 10-digit phone number.');
             return;
         }
         if (password !== confirmPassword) {
+            e.preventDefault();
             alert('Passwords do not match!');
             return;
         }
-        // Simulate API call
-        await new Promise(resolve => setTimeout(resolve, 500));
-        alert('Registration successful! You can now log in.');
-        window.location.href = 'login.php';
+        // Validation passed — allow normal form submission to server (no need to preventDefault)
+        // If you prefer AJAX, we can re-enable fetch-based submit; for now we submit the form normally so
+        // the server-side controller receives the POST and inserts into the database.
     });
 });

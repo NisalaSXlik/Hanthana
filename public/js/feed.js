@@ -54,7 +54,14 @@ function createPostElement(post) {
             <p>Liked by <strong>${post.likes[0]?.name || 'user'}</strong> and <span>${post.likeCount} others</span></p>
         </div>
         <div class="post-caption">
-            <p><strong>${post.user.name}</strong> ${post.caption}</p>
+            <p><strong>${post.user.name}</strong> ${(() => {
+                let caption = post.caption || '';
+                const problemMatch = caption.match(/Problem:\s*([\s\S]*?)\s*(?:Context:|Attempts:|Expected Outcome:|$)/i);
+                if (problemMatch && problemMatch[1]) {
+                    return problemMatch[1].trim() + '...';
+                }
+                return caption;
+            })()}</p>
         </div>
         <div class="comments">
             <p class="view-comments">View all ${post.commentCount} comments</p>
