@@ -10,6 +10,9 @@ if (!isset($_SESSION['user_id']) || (($_SESSION['role'] ?? 'user') !== 'admin'))
     header('Location: ' . BASE_PATH . 'index.php?controller=Login&action=index');
     exit;
 }
+$currentUserId = $_SESSION['user_id'];
+$userModel = new UserModel;
+$currentUser = $userModel->findById($_SESSION['user_id']);
 
 $adminName = trim(($_SESSION['first_name'] ?? '') . ' ' . ($_SESSION['last_name'] ?? '')) ?: ($_SESSION['username'] ?? 'Admin');
 $profilePicture = MediaHelper::resolveMediaPath($_SESSION['profile_picture'] ?? '', 'uploads/user_dp/default_user_dp.jpg');
