@@ -4,9 +4,9 @@
     require_once __DIR__ . '/../models/FriendModel.php';
 
     class FeedController {
-        private $postModel;
-        private $groupModel;
-        private $friendModel;
+        private PostModel $postModel;
+        private GroupModel $groupModel;
+        private FriendModel $friendModel;
         
         public function __construct() {
             $this->postModel = new PostModel();

@@ -303,7 +303,7 @@ class GroupController {
             ];
 
             try {
-                $groupId = $this->groupModel->createGroup($groupData);
+                $groupId = $this->groupModel->createGroup($groupData, $userId);
             } catch (PDOException $e) {
                 $msg = $e->getMessage();
                 if (stripos($msg, 'Duplicate entry') !== false && stripos($msg, 'tag') !== false) {
