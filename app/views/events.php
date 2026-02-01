@@ -21,6 +21,7 @@ $incomingFriendRequests = $friendModel->getIncomingRequests($currentUserId);
 ?>
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -35,19 +36,21 @@ $incomingFriendRequests = $friendModel->getIncomingRequests($currentUserId);
     <link rel="stylesheet" href="./css/notificationpopup.css">
     <link rel="stylesheet" href="https://unicons.iconscout.com/release/v4.0.8/css/line.css">
 </head>
+
 <body>
     <?php include __DIR__ . '/templates/navbar.php'; ?>
-    
+
     <main>
         <div class="container">
-            <?php $activeSidebar = 'events'; include __DIR__ . '/templates/left-sidebar.php'; ?>
+            <?php $activeSidebar = 'events';
+            include __DIR__ . '/templates/left-sidebar.php'; ?>
 
             <div class="middle">
                 <!-- Events Header -->
                 <div class="events-header">
                     <h1><i class="uil uil-calendar-alt"></i> Events</h1>
                     <p style="color: var(--color-gray);">Discover and join exciting events in your community</p>
-                    
+
                     <div class="events-header-actions">
                         <div class="filter-tabs">
                             <button class="filter-tab active" data-filter="upcoming">
@@ -60,7 +63,7 @@ $incomingFriendRequests = $friendModel->getIncomingRequests($currentUserId);
                                 <i class="uil uil-history"></i> Past
                             </button>
                         </div>
-                        
+
                         <button class="btn-create-event" id="createEventBtn">
                             <i class="uil uil-plus"></i> Create Event
                         </button>
@@ -95,8 +98,8 @@ $incomingFriendRequests = $friendModel->getIncomingRequests($currentUserId);
                 </div>
 
                 <?php
-                    $friendRequests = $incomingFriendRequests ?? [];
-                    include __DIR__ . '/templates/friend-requests.php';
+                $friendRequests = $incomingFriendRequests ?? [];
+                include __DIR__ . '/templates/friend-requests.php';
                 ?>
 
                 <div class="toast-container" id="toastContainer"></div>
@@ -116,7 +119,7 @@ $incomingFriendRequests = $friendModel->getIncomingRequests($currentUserId);
             </div>
         </div>
     </div>
-    
+
     <?php include __DIR__ . '/templates/chat-clean.php'; ?>
 
     <!-- Create Event Modal (placeholder) -->
@@ -166,44 +169,50 @@ $incomingFriendRequests = $friendModel->getIncomingRequests($currentUserId);
         const USER_ID = <?php echo $currentUserId; ?>;
     </script>
     <script src="./js/calender.js"></script>
-    <script src="./js/general.js"></script>
+    <script src="./js/feed.js"></script>
     <script src="./js/friends.js"></script>
-    <script src="./js/navbar.js"></script>
+    <script src="./js/general.js"></script>
+    <script src="./js/vote.js"></script>
     <script src="./js/notificationpopup.js"></script>
+    <script src="./js/navbar.js"></script>
+    <script src="./js/post.js"></script>
+    <script src="./js/comment.js"></script>
+    <script src="./js/poll.js"></script>
+    <script src="./js/report.js"></script>
     <script src="./js/events.js"></script>
     <script>
-		// Load top 3 conversations for sidebar
-		(async function loadSidebarMessages() {
-			const listContainer = document.getElementById('sidebarMessageList');
-			const searchInput = document.getElementById('sidebarChatSearch');
-			const editIcon = document.getElementById('openChatWidget');
-			
-			if (!listContainer) return;
-			
-			try {
-				const response = await fetch('<?php echo BASE_PATH; ?>index.php?controller=Chat&action=listConversations');
-				const data = await response.json();
-				const conversations = Array.isArray(data) ? data : (data.data || []);
-				
-				listContainer.innerHTML = '';
-				
-				if (!conversations.length) {
-					listContainer.innerHTML = '<div style="text-align: center; padding: 1rem; color: #888;"><p>No messages yet</p></div>';
-					return;
-				}
-				
-				// Show only top 3
-				const top3 = conversations.slice(0, 3);
-				
-				top3.forEach(conv => {
-					const messageDiv = document.createElement('div');
-					messageDiv.className = 'message';
-					messageDiv.style.cursor = 'pointer';
-					
-					const avatarPath = conv.avatar || 'uploads/user_dp/default_user_dp.jpg';
-					const fullAvatar = avatarPath.startsWith('http') ? avatarPath : '<?php echo BASE_PATH; ?>' + avatarPath;
-					
-					messageDiv.innerHTML = `
+        // Load top 3 conversations for sidebar
+        (async function loadSidebarMessages() {
+            const listContainer = document.getElementById('sidebarMessageList');
+            const searchInput = document.getElementById('sidebarChatSearch');
+            const editIcon = document.getElementById('openChatWidget');
+
+            if (!listContainer) return;
+
+            try {
+                const response = await fetch('<?php echo BASE_PATH; ?>index.php?controller=Chat&action=listConversations');
+                const data = await response.json();
+                const conversations = Array.isArray(data) ? data : (data.data || []);
+
+                listContainer.innerHTML = '';
+
+                if (!conversations.length) {
+                    listContainer.innerHTML = '<div style="text-align: center; padding: 1rem; color: #888;"><p>No messages yet</p></div>';
+                    return;
+                }
+
+                // Show only top 3
+                const top3 = conversations.slice(0, 3);
+
+                top3.forEach(conv => {
+                    const messageDiv = document.createElement('div');
+                    messageDiv.className = 'message';
+                    messageDiv.style.cursor = 'pointer';
+
+                    const avatarPath = conv.avatar || 'uploads/user_dp/default_user_dp.jpg';
+                    const fullAvatar = avatarPath.startsWith('http') ? avatarPath : '<?php echo BASE_PATH; ?>' + avatarPath;
+
+                    messageDiv.innerHTML = `
 						<div class="profile-picture">
 							<img src="${fullAvatar}" alt="${conv.display_name || 'User'}">
 							${conv.is_online ? '<div class="active"></div>' : ''}
@@ -213,29 +222,30 @@ $incomingFriendRequests = $friendModel->getIncomingRequests($currentUserId);
 							<p>${conv.last_message_preview || 'No messages yet'}</p>
 						</div>
 					`;
-					
-					messageDiv.addEventListener('click', () => {
-						// Open chat widget
-						const chatIcon = document.getElementById('chatIcon');
-						if (chatIcon) chatIcon.click();
-					});
-					
-					listContainer.appendChild(messageDiv);
-				});
-				
-			} catch (error) {
-				console.error('Failed to load sidebar messages:', error);
-				listContainer.innerHTML = '<div style="text-align: center; padding: 1rem; color: #888;"><p>Failed to load messages</p></div>';
-			}
-			
-			// Edit icon opens chat widget
-			if (editIcon) {
-				editIcon.addEventListener('click', () => {
-					const chatIcon = document.getElementById('chatIcon');
-					if (chatIcon) chatIcon.click();
-				});
-			}
-		})();
+
+                    messageDiv.addEventListener('click', () => {
+                        // Open chat widget
+                        const chatIcon = document.getElementById('chatIcon');
+                        if (chatIcon) chatIcon.click();
+                    });
+
+                    listContainer.appendChild(messageDiv);
+                });
+
+            } catch (error) {
+                console.error('Failed to load sidebar messages:', error);
+                listContainer.innerHTML = '<div style="text-align: center; padding: 1rem; color: #888;"><p>Failed to load messages</p></div>';
+            }
+
+            // Edit icon opens chat widget
+            if (editIcon) {
+                editIcon.addEventListener('click', () => {
+                    const chatIcon = document.getElementById('chatIcon');
+                    if (chatIcon) chatIcon.click();
+                });
+            }
+        })();
     </script>
 </body>
+
 </html>
