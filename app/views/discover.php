@@ -1,3 +1,24 @@
+<?php
+    require_once __DIR__ . '/../../config/config.php';
+    require_once __DIR__ . '/../models/UserModel.php';
+
+    if (session_status() === PHP_SESSION_NONE) {
+        session_start();
+    }
+
+    if (!isset($_SESSION['user_id'])) {
+        header('Location: ' . BASE_PATH . 'index.php?controller=Login&action=index');
+        exit();
+    }
+
+    $currentUserId = $_SESSION['user_id'];
+    $userModel = new UserModel;
+    $currentUser = $userModel->findById($_SESSION['user_id']);
+
+    require_once __DIR__ . '/../models/FriendModel.php';
+    $friendModel = new FriendModel();
+    $incomingFriendRequests = $friendModel->getIncomingRequests($currentUserId);
+?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
