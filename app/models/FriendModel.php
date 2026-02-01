@@ -265,23 +265,33 @@ class FriendModel
 
     public function searchAcceptedFriends(int $userId, string $term, int $limit = 10): array
     {
-        $sql = "SELECT
-                    CASE WHEN f.user_id = :user THEN f.friend_id ELSE f.user_id END AS friend_user_id,
-                    u.username,
-                    u.profile_picture,
-                    CONCAT(IFNULL(u.first_name, ''), ' ', IFNULL(u.last_name, '')) AS full_name
-                FROM Friends f
-                INNER JOIN Users u ON u.user_id = CASE WHEN f.user_id = :user THEN f.friend_id ELSE f.user_id END
-                WHERE f.status = 'accepted'
-                  AND (f.user_id = :user OR f.friend_id = :user)
-                  AND (
-                      u.username LIKE :term
-                      OR u.first_name LIKE :term
-                      OR u.last_name LIKE :term
-                      OR CONCAT(IFNULL(u.first_name, ''), ' ', IFNULL(u.last_name, '')) LIKE :term
-                  )
-                ORDER BY u.first_name ASC, u.last_name ASC
-                LIMIT :limit";
+        $sql =
+           "SELECT
+                CASE WHEN f.user_id = :user
+                THEN f.friend_id
+                ELSE f.user_id END AS
+                friend_user_id,
+
+                u.username,
+                u.profile_picture,
+                CONCAT(IFNULL(u.first_name, ''), ' ', IFNULL(u.last_name, '')) AS full_name,
+                'direct' AS conversation_type
+            FROM Friends f
+            INNER JOIN Users u
+                ON u.user_id =
+                    CASE WHEN f.user_id = :user
+                    THEN f.friend_id
+                    ELSE f.user_id END
+            WHERE f.status = 'accepted'
+            AND (f.user_id = :user OR f.friend_id = :user)
+            AND (
+                    u.username LIKE :term
+                    OR u.first_name LIKE :term
+                    OR u.last_name LIKE :term
+                    OR CONCAT(IFNULL(u.first_name, ''), ' ', IFNULL(u.last_name, '')) LIKE :term
+                )
+            ORDER BY u.first_name ASC, u.last_name ASC
+            LIMIT :limit";
 
         $stmt = $this->db->prepare($sql);
         $like = '%' . $term . '%';

@@ -51,6 +51,8 @@ services:
       - db
     networks:
       - hanthane-network
+    volumes:
+      - ./themes/pma/blueberry:/var/www/html/themes/blueberry
 
 volumes:
   db_data:

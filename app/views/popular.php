@@ -51,7 +51,7 @@ function timeAgo($timestamp) {
     
     <main>
         <div class="container questions-layout">
-            <?php $activeSidebar = 'feed'; include __DIR__ . '/templates/left-sidebar.php'; ?>
+            <?php $activeSidebar = 'popular'; include __DIR__ . '/templates/left-sidebar.php'; ?>
 
             <div class="middle">
                 <div class="questions-container-full">

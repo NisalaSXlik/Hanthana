@@ -122,9 +122,11 @@ CREATE TABLE GroupJoinRequests (
 -- Channels (enhanced for group chats)
 CREATE TABLE Channel (
     channel_id INT AUTO_INCREMENT PRIMARY KEY,
+    conversation_id INT NOT NULL UNIQUE,
     group_id INT NOT NULL,
     name VARCHAR(255) NOT NULL,
     description TEXT,
+    display_picture VARCHAR(255),
     created_by INT NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,

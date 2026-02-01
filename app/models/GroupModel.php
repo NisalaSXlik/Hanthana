@@ -145,29 +145,140 @@ class GroupModel {
     /**
      * Create a new group
      */
-    public function createGroup($data) {
-        $sql = "INSERT INTO GroupsTable (name, tag, description, focus, privacy_status, rules, created_by) 
-                VALUES (?, ?, ?, ?, ?, ?, ?)";
-        $stmt = $this->db->prepare($sql);
-        $stmt->execute([
+    /*public function createGroup($data) {
+        try {
+            // GroupsTable
+            $sql = "INSERT INTO GroupsTable (name, tag, description, focus, privacy_status, rules, created_by) 
+                    VALUES (?, ?, ?, ?, ?, ?, ?)";
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute([
+                $data['name'],
+                $data['tag'] ?? null,
+                $data['description'] ?? null,
+                $data['focus'] ?? null,
+                $data['privacy_status'] ?? 'public',
+                $data['rules'] ?? null,
+                $data['created_by']
+            ]);
+            
+            $groupId = $this->db->lastInsertId();
+
+            // Conversations
+            $sql = "INSERT INTO Conversations (conversation_type, name, created_by)
+                    VALUES ('group', ?, ?)";
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute([
+                $data['name'] . " ⬥ Main",
+                $data['created_by']
+            ]);
+
+            $convoId = $this->db->lastInsertId();
+
+            // Channel
+            $sql = "INSERT INTO Channel (group_id, name, created_by, conversation_id)
+                    VALUES (?, ?, ?, ?)";
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute([
+                $groupId,
+                'Main',
+                $data['created_by'],
+                $convoId
+            ]);
+
+            // Membership
+            if ($groupId) {
+                $this->addMember($groupId, $data['created_by'], 'admin');
+            }
+
+            return $groupId;
+
+        } catch (Exception $e) {
+            error_log("Database Error: " . $e->getMessage());
+            throw $e;
+        }
+    }*/
+
+    public function createGroup($data, $userId) {
+    $connection = $this->db;
+    $connection->beginTransaction();
+    try {
+        // 1. Create Group
+        $groupstmt = $connection->prepare(
+            "INSERT INTO GroupsTable (name, tag, description, focus, privacy_status, rules, created_by) 
+             VALUES (?, ?, ?, ?, ?, ?, ?)"
+        );
+        $groupstmt->execute([
             $data['name'],
             $data['tag'] ?? null,
             $data['description'] ?? null,
             $data['focus'] ?? null,
             $data['privacy_status'] ?? 'public',
             $data['rules'] ?? null,
-            $data['created_by']
+            $userId
         ]);
-        
-        $groupId = $this->db->lastInsertId();
-        
-        // Add creator as admin member
+        $groupId = (int)$connection->lastInsertId();
+
+        // 2. Create Conversation
+        $converstaionstmt = $connection->prepare(
+            "INSERT INTO Conversations (conversation_type, name, created_by, last_message_at, last_message_text)
+             VALUES ('group', ?, ?, NOW(), ?)"
+        );
+        $welcomeText = 'Welcome to the group!';
+        $converstaionstmt->execute([
+            $data['name'] . " ⬥ Main",
+            $userId,
+            $welcomeText
+        ]);
+        $convoId = (int)$connection->lastInsertId();
+
+        // 3. Create Channel
+        $channelstmt = $connection->prepare(
+            "INSERT INTO Channel (group_id, name, created_by, conversation_id, display_picture)
+             VALUES (?, ?, ?, ?, ?)"
+        );
+        $channelstmt->execute([
+            $groupId,
+            'Main',
+            $userId,
+            $convoId,
+            'uploads/channel_dp/default.png'
+        ]);
+
+        // 4. Add Creator as Admin Participant
+        $cpstmt = $connection->prepare(
+            "INSERT INTO ConversationParticipants (conversation_id, user_id, role, is_active)
+             VALUES (?, ?, 'admin', 1)"
+        );
+        $cpstmt->execute([$convoId, $userId]);
+
+        // 5. Insert Welcome Message
+        $messagestmt = $connection->prepare(
+            "INSERT INTO Messages (conversation_id, sender_id, message_type, content)
+             VALUES (?, ?, 'system', ?)"
+        );
+        $messagestmt->execute([
+            $convoId, 
+            $userId,
+            $welcomeText
+        ]);
+
+        $connection->commit();
+
+        // Add to members table
         if ($groupId) {
-            $this->addMember($groupId, $data['created_by'], 'admin');
+            $this->addMember($groupId, $userId, 'admin');
         }
-        
+
         return $groupId;
+
+    } catch (\Throwable $e) {
+        if ($connection->inTransaction()) {
+            $connection->rollBack();
+        }
+        error_log("Group Creation Failed: " . $e->getMessage());
+        throw new RuntimeException('Unable to create group.');
     }
+}
 
     /**
      * Update group details
@@ -216,14 +327,59 @@ class GroupModel {
                 // Update existing record
                 $sql = "UPDATE GroupMember SET status = 'active', role = ?, joined_at = NOW() WHERE group_id = ? AND user_id = ?";
                 $stmt = $this->db->prepare($sql);
-                return $stmt->execute([$role, $groupId, $userId]);
+                $result = $stmt->execute([$role, $groupId, $userId]);
+                
+                // Add to Main channel conversation
+                if ($result) {
+                    $this->addMemberToMainChannel($groupId, $userId);
+                }
+                
+                return $result;
             }
         }
         
         // Add new member
         $sql = "INSERT INTO GroupMember (group_id, user_id, role, status, joined_at) VALUES (?, ?, ?, 'active', NOW())";
         $stmt = $this->db->prepare($sql);
-        $stmt->execute([$groupId, $userId, $role]);
+        $result = $stmt->execute([$groupId, $userId, $role]);
+        
+        // Add to Main channel conversation
+        if ($result) {
+            $this->addMemberToMainChannel($groupId, $userId);
+        }
+        
+        return $result;
+    }
+
+    /**
+     * Add user to Main channel conversation when they join a group
+     */
+    private function addMemberToMainChannel($groupId, $userId) {
+        // Find the Main channel's conversation
+        $sql = "SELECT c.conversation_id 
+                FROM Channel ch
+                INNER JOIN Conversations c ON ch.conversation_id = c.conversation_id
+                WHERE ch.group_id = ? AND ch.name = 'Main'
+                LIMIT 1";
+        
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute([$groupId]);
+        $conversationId = $stmt->fetchColumn();
+        
+        if ($conversationId) {
+            // Add user as participant if not already
+            $checkSql = "SELECT 1 FROM ConversationParticipants 
+                     WHERE conversation_id = ? AND user_id = ?";
+            $checkStmt = $this->db->prepare($checkSql);
+            $checkStmt->execute([$conversationId, $userId]);
+            
+            if (!$checkStmt->fetchColumn()) {
+                $insertSql = "INSERT INTO ConversationParticipants (conversation_id, user_id, role, is_active)
+                          VALUES (?, ?, 'member', TRUE)";
+                $insertStmt = $this->db->prepare($insertSql);
+                $insertStmt->execute([$conversationId, $userId]);
+            }
+        }
     }
 
     /**

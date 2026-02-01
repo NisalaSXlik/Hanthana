@@ -29,10 +29,10 @@
             conversations: null,
             messages: null,
         },
+        searchFilterTerm: '',
+        searchResults: [],
         searchTerm: '',
-        friendResults: [],
-        friendSearchTerm: '',
-        friendSearchTimeout: null,
+        searchTimeout: null,
         attachment: {
             file: null,
             name: '',
@@ -125,10 +125,17 @@
             const params = new URLSearchParams({ term });
             return request(`index.php?controller=Chat&action=searchFriends&${params.toString()}`);
         },
-        async startConversation(friendUserId) {
+        async searchChannels(term) {
+            const params = new URLSearchParams({ term });
+            return request(`index.php?controller=Chat&action=searchChannels&${params.toString()}`);
+        },
+        async startConversation(targetId, type) {
             return request('index.php?controller=Chat&action=startConversation', {
                 method: 'POST',
-                body: JSON.stringify({ friend_user_id: friendUserId }),
+                body: JSON.stringify({
+                    target_id: targetId,
+                    conversation_type: type
+                }),
             });
         },
         async fetchSharedMedia(conversationId) {
@@ -236,7 +243,7 @@
         refs.overlay.classList.remove('show');
         document.body.classList.remove('chat-open');
         setMaximized(false);
-        hideFriendResults(true);
+        hideSearchResults(true);
         clearAttachment();
         syncViewsWithState();
         stopPolling();
@@ -335,7 +342,7 @@
         state.latestMessageIds = latestIds;
         sortConversations();
         renderConversations();
-    updateUnreadBadgeTotal();
+        updateUnreadBadgeTotal();
     }
 
     function upsertConversation(conversation) {
@@ -406,7 +413,7 @@
     }
 
     function renderConversations() {
-        const filterTerm = state.searchTerm.trim().toLowerCase();
+        const filterTerm = state.searchFilterTerm.trim().toLowerCase();
         const listTarget = refs.userList;
         const listTargetMax = refs.userListMax;
         clearElement(listTarget);
@@ -655,42 +662,42 @@
         }
     }
 
-    function hideFriendResults(clear = false) {
+    function hideSearchResults(clear = false) {
         if (!refs.searchResults) {
             return;
         }
         refs.searchResults.classList.remove('show');
         if (clear) {
-            state.friendResults = [];
-            state.friendSearchTerm = '';
+            state.searchResults = [];
+            state.searchTerm = '';
             clearElement(refs.searchResults);
         }
     }
 
-    function renderFriendResults() {
+    function renderSearchResults() {
         if (!refs.searchResults) {
             return;
         }
 
         clearElement(refs.searchResults);
-        if (!state.friendResults.length) {
-            const placeholder = buildEmptyState('No friends match your search');
+        if (!state.searchResults.length) {
+            const placeholder = buildEmptyState('No friends or channels match your search');
             refs.searchResults.appendChild(placeholder);
         } else {
-            state.friendResults.forEach((friend) => {
+            state.searchResults.forEach((target) => {
                 const item = document.createElement('div');
                 item.className = 'search-result-item';
 
                 const avatar = document.createElement('div');
                 avatar.className = 'profile-photo';
                 const img = document.createElement('img');
-                img.src = resolveAvatar(friend.profile_picture);
-                const fullName = (friend.full_name || '').trim();
-                img.alt = fullName || friend.username;
+                img.src = resolveAvatar(target.profile_picture);
+                const fullName = (target.full_name || '').trim();
+                img.alt = fullName || target.username;
                 avatar.appendChild(img);
                 
                 // Add online status dot only if friend is online
-                if (friend.is_online) {
+                if (target.is_online) {
                     const statusDot = document.createElement('span');
                     statusDot.className = 'status-dot status-dot--online';
                     avatar.appendChild(statusDot);
@@ -699,9 +706,9 @@
                 const info = document.createElement('div');
                 info.className = 'result-info';
                 const title = document.createElement('h5');
-                title.textContent = fullName || friend.username;
+                title.textContent = fullName || target.username;
                 const username = document.createElement('span');
-                username.textContent = `@${friend.username}`;
+                username.textContent = `@${target.username}`;
                 info.appendChild(title);
                 info.appendChild(username);
 
@@ -711,14 +718,14 @@
                 action.addEventListener('click', (event) => {
                     event.preventDefault();
                     event.stopPropagation();
-                    startConversationWithFriend(friend.friend_user_id);
+                    initiateChat(target.friend_user_id, target.conversation_type);
                 });
 
                 item.appendChild(avatar);
                 item.appendChild(info);
                 item.appendChild(action);
 
-                item.addEventListener('click', () => startConversationWithFriend(friend.friend_user_id));
+                item.addEventListener('click', () => initiateChat(target.friend_user_id, target.conversation_type));
 
                 refs.searchResults.appendChild(item);
             });
@@ -727,37 +734,118 @@
         refs.searchResults.classList.add('show');
     }
 
-    function performFriendSearch(term) {
+    /*function performFriendSearch(term) {
         if (!refs.primarySearchInput || !refs.searchResults) {
             return;
         }
 
         const trimmed = term.trim();
-        state.friendSearchTerm = trimmed;
+        state.searchTerm = trimmed;
 
-        if (state.friendSearchTimeout) {
-            clearTimeout(state.friendSearchTimeout);
-            state.friendSearchTimeout = null;
+        if (state.searchTimeout) {
+            clearTimeout(state.searchTimeout);
+            state.searchTimeout = null;
         }
 
         if (trimmed.length < 2) {
-            hideFriendResults(true);
+            hideSearchResults(true);
             return;
         }
 
         const currentTerm = trimmed;
-        state.friendSearchTimeout = setTimeout(async () => {
+        state.searchTimeout = setTimeout(async () => {
             try {
                 const results = await api.searchFriends(currentTerm);
-                if (state.friendSearchTerm !== currentTerm) {
+                console.log(results)
+                if (state.searchTerm !== currentTerm) {
                     return;
                 }
-                state.friendResults = Array.isArray(results) ? results : [];
-                renderFriendResults();
+                state.searchResults = Array.isArray(results) ? results : [];
+                renderSearchResults();
             } catch (error) {
                 console.error('Friend search failed', error);
             } finally {
-                state.friendSearchTimeout = null;
+                state.searchTimeout = null;
+            }
+        }, 250);
+    }
+
+    function performChannelSearch(term) {
+        console.log('entered channel search')
+        if (!refs.primarySearchInput || !refs.searchResults) {
+            return;
+        }
+
+        const trimmed = term.trim();
+        state.searchTerm = trimmed;
+
+        if (state.searchTimeout) {
+            clearTimeout(state.searchTimeout);
+            state.searchTimeout = null;
+        }
+
+        if (trimmed.length < 2) {
+            hideSearchResults(true);
+            return;
+        }
+
+        const currentTerm = trimmed;
+        state.searchTimeout = setTimeout(async () => {
+            try {
+                const results = await api.searchChannels(currentTerm);
+                console.log(results)
+                if (state.searchTerm !== currentTerm) {
+                    return;
+                }
+                state.searchResults = Array.isArray(results) ? results : [];
+                renderSearchResults();
+            } catch (error) {
+                console.error('Friend search failed', error);
+            } finally {
+                state.searchTimeout = null;
+            }
+        }, 250);
+    }*/
+
+    function performGlobalSearch(term) {
+        if (!refs.primarySearchInput || !refs.searchResults) {
+            return;
+        }
+
+        const trimmed = term.trim();
+        state.searchTerm = trimmed;
+
+        if (state.searchTimeout) {
+            clearTimeout(state.searchTimeout);
+            state.searchTimeout = null;
+        }
+
+        if (trimmed.length < 2) {
+            hideSearchResults(true);
+            return;
+        }
+
+        const currentTerm = trimmed;
+        state.searchTimeout = setTimeout(async () => {
+            try {
+                const [friendResults, channelResults] = await Promise.all([
+                    api.searchFriends(currentTerm), api.searchChannels(currentTerm)
+                ]);
+
+                if (state.searchTerm !== currentTerm) {
+                    return;
+                }
+                
+                const friends = Array.isArray(friendResults) ? friendResults : [];
+                const channels = Array.isArray(channelResults) ? channelResults : [];
+                
+                state.searchResults = [...friends, ...channels];
+                console.log(state.searchResults);
+                renderSearchResults();
+            } catch (error) {
+                console.error('Search failed', error);
+            } finally {
+                state.searchTimeout = null;
             }
         }, 250);
     }
@@ -773,7 +861,7 @@
         if (searchSection.contains(event.target)) {
             return;
         }
-        hideFriendResults();
+        hideSearchResults();
     }
 
     function openAttachmentPicker() {
@@ -912,26 +1000,32 @@
         return `${size.toFixed(unitIndex === 0 ? 0 : 1)} ${units[unitIndex]}`;
     }
 
-    async function startConversationWithFriend(friendUserId) {
-        if (!friendUserId) {
+    async function initiateChat(targetId, type) {
+        console.log(targetId, type);
+        if (!targetId) {
             return;
         }
         try {
-            const conversation = await api.startConversation(friendUserId);
+            const conversation = await api.startConversation(targetId, type);
+            console.log(conversation)
             if (!conversation) {
                 return;
             }
-            hideFriendResults(true);
+            hideSearchResults(true);
             if (refs.primarySearchInput) {
                 refs.primarySearchInput.value = '';
             }
+            state.searchFilterTerm = '';
             state.searchTerm = '';
-            state.friendSearchTerm = '';
             upsertConversation(conversation);
             selectConversation(conversation.conversation_id);
         } catch (error) {
             console.error('Unable to start conversation', error);
         }
+    }
+
+    async function startConversationInChannel() {
+        
     }
 
     function selectConversation(conversationId) {
@@ -1215,7 +1309,7 @@
         refs.attachmentInput?.addEventListener('change', handleAttachmentChange);
         if (refs.primarySearchInput) {
             refs.primarySearchInput.addEventListener('focus', () => {
-                if (state.friendResults.length) {
+                if (state.searchResults.length) {
                     refs.searchResults?.classList.add('show');
                 }
             });
@@ -1223,10 +1317,10 @@
         refs.searchInputs.forEach((input) => {
             input.addEventListener('input', (event) => {
                 const value = event.target.value;
-                state.searchTerm = value;
+                state.searchFilterTerm = value;
                 renderConversations();
                 if (input === refs.primarySearchInput) {
-                    performFriendSearch(value);
+                    performGlobalSearch(value);
                 }
             });
         });

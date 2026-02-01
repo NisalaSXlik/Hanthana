@@ -1,14 +1,17 @@
 <?php
 require_once __DIR__ . '/../models/MessageModel.php';
 require_once __DIR__ . '/../models/FriendModel.php';
+require_once __DIR__ . '/../models/ChannelModel.php';
 
 class ChatController {
     private MessageModel $messageModel;
     private FriendModel $friendModel;
+    private ChannelModel $channelModel;
 
     public function __construct() {
         $this->messageModel = new MessageModel();
         $this->friendModel = new FriendModel();
+        $this->channelModel = new ChannelModel();
     }
 
     public function listConversations(): void {
@@ -129,33 +132,61 @@ class ChatController {
         $this->jsonResponse(['data' => $results]);
     }
 
+    public function searchChannels(): void {
+        $userId = $this->requireAuth();
+        $this->enforceMethod('GET');
+
+        $rawTerm = filter_input(INPUT_GET, 'term', FILTER_UNSAFE_RAW);
+        $term = trim((string)$rawTerm);
+        if (strlen($term) < 2) {
+            $this->jsonResponse(['data' => []]);
+        }
+
+        $limit = filter_input(INPUT_GET, 'limit', FILTER_VALIDATE_INT) ?: 8;
+        $results = $this->channelModel->searchJoinedGroupChannels($userId, $term, min($limit, 20));
+        $this->jsonResponse(['data' => $results]);
+    }
+
     public function startConversation(): void {
         $userId = $this->requireAuth();
         $this->enforceMethod('POST');
 
         $payload = $this->getJsonBody();
-        $friendUserId = isset($payload['friend_user_id']) ? (int)$payload['friend_user_id'] : 0;
+        $targetId = isset($payload['target_id']) ? (int)$payload['target_id'] : 0;
+        $type = $payload['conversation_type'] ?? null;
 
-        if ($friendUserId <= 0) {
-            $this->errorResponse('friend_user_id is required', 422);
+        if ($targetId <= 0) {
+            $this->errorResponse('target Id is required', 422);
         }
 
-        if ($friendUserId === $userId) {
-            $this->errorResponse('You cannot start a conversation with yourself', 422);
-        }
+        if ($type === 'direct') {
+            if ($targetId === $userId) {
+                $this->errorResponse('You cannot start a conversation with yourself', 422);
+            }
 
-        $friendship = $this->friendModel->getFriendship($userId, $friendUserId);
-        if (!$friendship || $friendship['status'] !== 'accepted') {
-            $this->errorResponse('You can only message confirmed friends', 403);
-        }
+            $friendship = $this->friendModel->getFriendship($userId, $targetId);
+            if (!$friendship || $friendship['status'] !== 'accepted') {
+                $this->errorResponse('You can only message confirmed friends', 403);
+            }
 
-        try {
-            $conversation = $this->messageModel->ensureDirectConversation($userId, $friendUserId);
-        } catch (RuntimeException $e) {
-            $this->errorResponse($e->getMessage(), 400);
-        }
+            try {
+                $conversation = $this->messageModel->ensureDirectConversation($userId, $targetId);
+            } catch (RuntimeException $e) {
+                $this->errorResponse($e->getMessage(), 400);
+            }
 
-        $this->jsonResponse(['data' => $conversation], 201);
+            $this->jsonResponse(['data' => $conversation], 201);
+        } elseif ($type === 'group') {
+            // For group conversations, targetId is the channel_id
+            try {
+                $conversation = $this->messageModel->ensureGroupConversation($userId, $targetId);
+                $this->jsonResponse(['data' => $conversation], 201);
+            } catch (RuntimeException $e) {
+                $this->errorResponse($e->getMessage(), 403);
+            }
+        } else {
+            $this->errorResponse('Invalid conversation type', 422);
+        }
     }
 
     public function fetchSharedMedia(): void {
