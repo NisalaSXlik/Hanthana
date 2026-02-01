@@ -450,7 +450,7 @@ class MessageModel {
     }
 
     private function formatConversation(array $row, int $userId): array {
-        $displayName = $row['conversation_name'] ?? null;
+        $displayName = null;
         $displayPicture = null;
         $isOnline = false;
 
@@ -462,9 +462,9 @@ class MessageModel {
                 $isOnline = $peer['is_online'] ?? false;
             }
         } elseif ($row['conversation_type'] === 'group') {
+            $displayName = trim($row['conversation_name']);
             $channel = $this->getGroupChannel($row['conversation_id']);
             if ($channel) {
-                $displayName = trim($channel['name']);
                 $displayPicture = $channel['display_picture'] ?? null;
                 // Groups don't have online status
             }
