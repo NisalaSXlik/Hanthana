@@ -401,7 +401,6 @@ try {
                 <div class="toast-container" id="toastContainer"></div>
             </div>
         </div>
-    </main>
 
     <div class="calendar-popup" id="calendarPopup">
         <div class="calendar-popup-header">

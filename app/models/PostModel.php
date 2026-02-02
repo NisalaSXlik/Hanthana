@@ -351,7 +351,6 @@ class PostModel {
      */
     public function getTrendingPosts(int $limit = 10, int $userId = 0): array {
         $userVoteSql = $userId ? ", (SELECT vote_type FROM Vote WHERE post_id = p.post_id AND user_id = " . (int)$userId . " LIMIT 1) AS user_vote" : ", NULL AS user_vote";
-
         $sql = "
             SELECT
                 p.post_id,

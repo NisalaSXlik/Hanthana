@@ -223,7 +223,7 @@
         </div>
     </main>
 
-    <?php include __DIR__ . '/templates/chat-clean.php'; ?>
+    <?php include __DIR__ . '../templates/chat-clean.php'; ?>
 
     <script>const BASE_PATH = '<?php echo BASE_PATH; ?>';</script>
     <script src="./js/all.js"></script>

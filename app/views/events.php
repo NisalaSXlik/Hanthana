@@ -50,7 +50,6 @@ $incomingFriendRequests = $friendModel->getIncomingRequests($currentUserId);
                 <div class="events-header">
                     <h1><i class="uil uil-calendar-alt"></i> Events</h1>
                     <p style="color: var(--color-gray);">Discover and join exciting events in your community</p>
-
                     <div class="events-header-actions">
                         <div class="filter-tabs">
                             <button class="filter-tab active" data-filter="upcoming">
@@ -63,7 +62,6 @@ $incomingFriendRequests = $friendModel->getIncomingRequests($currentUserId);
                                 <i class="uil uil-history"></i> Past
                             </button>
                         </div>
-
                         <button class="btn-create-event" id="createEventBtn">
                             <i class="uil uil-plus"></i> Create Event
                         </button>
@@ -119,7 +117,6 @@ $incomingFriendRequests = $friendModel->getIncomingRequests($currentUserId);
             </div>
         </div>
     </div>
-
     <?php include __DIR__ . '/templates/chat-clean.php'; ?>
 
     <!-- Create Event Modal (placeholder) -->

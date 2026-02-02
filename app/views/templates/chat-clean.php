@@ -81,7 +81,6 @@ $avatarPath = $currentUser['profile_picture'] ?? 'uploads/user_dp/default.png';
                     </button>
                 </div>
             </div>
-
             <div class="chat-search-section">
                 <div class="chat-search-bar">
                     <i class="uil uil-search"></i>
