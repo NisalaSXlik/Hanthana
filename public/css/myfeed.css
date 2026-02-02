@@ -49,20 +49,6 @@
 
 .feed .head > i:hover {
     background: var(--color-light);
-    position: relative;
-}
-
-.feed .head > i {
-    font-size: 1.3rem;
-    cursor: pointer;
-    color: var(--color-dark);
-    padding: 0.5rem;
-    border-radius: 50%;
-    transition: background 0.2s;
-}
-
-.feed .head > i:hover {
-    background: var(--color-light);
 }
 
 .feed .user {
@@ -103,8 +89,6 @@
     align-items: center;
     padding: 0.5rem 0;
     margin: 0.5rem 0;
-    padding: 0.5rem 0;
-    margin: 0.5rem 0;
 }
 
 .feed .interaction-buttons {
@@ -116,11 +100,7 @@
 .feed .interaction-buttons i,
 .feed .bookmark i {
     font-size: 1.4rem;
-    font-size: 1.4rem;
     cursor: pointer;
-    color: var(--color-dark);
-    transition: color 0.2s;
-    text-decoration: none !important;
     color: var(--color-dark);
     transition: color 0.2s;
     text-decoration: none !important;
@@ -223,32 +203,9 @@
 /* View all comments styling */
 .feed .comments,
 .feed .load-comments-btn {
-/* View all comments styling */
-.feed .comments,
-.feed .load-comments-btn {
     font-size: 0.85rem;
     color: var(--color-gray);
     cursor: pointer;
-    margin: 0.5rem 0;
-    display: inline-block;
-    text-decoration: none !important;
-}
-
-.feed .comments:hover,
-.feed .load-comments-btn:hover {
-    color: var(--color-primary);
-    text-decoration: none !important;
-}
-
-/* Remove link underline effects */
-.feed a.comments,
-.feed a.load-comments-btn {
-    text-decoration: none !important;
-}
-
-.feed a.comments:hover,
-.feed a.load-comments-btn:hover {
-    text-decoration: none !important;
     margin: 0.5rem 0;
     display: inline-block;
     text-decoration: none !important;
