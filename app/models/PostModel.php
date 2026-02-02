@@ -21,6 +21,7 @@ class PostModel {
         } catch (PDOException $e) {
             return false;
         }
+        return $posts;
     }
 
     private function tableExists(string $table): bool {
