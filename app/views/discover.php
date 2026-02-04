@@ -9,9 +9,9 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
-if (!isset($_SESSION['user_id'])) {
+if (!isset($_SESSION['user_id']))  {
     header('Location: ' . BASE_PATH . 'index.php?controller=Login&action=index');
-    exit();
+    exit(); 
 }
 
 $currentUserId = $_SESSION['user_id'];
