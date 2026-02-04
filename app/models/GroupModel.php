@@ -540,17 +540,42 @@ class GroupModel {
     }
 
     /**
-     * Get popular groups
+     * Get popular groups ranked by recent joins and total member count
      */
-    public function getPopularGroups($limit = 5) {
-        $sql = "SELECT g.*, 
-                   COUNT(gm.user_id) as member_count
+    public function getPopularGroups($limit = 5, $userId = 0) {
+        $userMembershipSql = $userId ? ", EXISTS(SELECT 1 FROM GroupMember WHERE group_id = g.group_id AND user_id = {$userId} AND status = 'active') AS is_member" : ", 0 AS is_member";
+        
+        $sql = "SELECT 
+                    g.group_id,
+                    g.name,
+                    g.description,
+                    g.privacy_status,
+                    g.display_picture,
+                    g.cover_image,
+                    g.tag,
+                    COALESCE(members.member_count, 0) AS member_count,
+                    COALESCE(recent_joins.joins_last_7, 0) AS recent_joins,
+                    (COALESCE(recent_joins.joins_last_7, 0) * 3 + COALESCE(members.member_count, 0) * 0.5) AS engagement_score
+                    {$userMembershipSql}
                 FROM GroupsTable g
-                LEFT JOIN GroupMember gm ON g.group_id = gm.group_id AND gm.status = 'active'
-                WHERE COALESCE(g.is_active, 1) = 1
-                GROUP BY g.group_id
-                ORDER BY member_count DESC, g.created_at DESC
+                LEFT JOIN (
+                    SELECT group_id, COUNT(*) AS member_count
+                    FROM GroupMember
+                    WHERE status = 'active'
+                    GROUP BY group_id
+                ) members ON members.group_id = g.group_id
+                LEFT JOIN (
+                    SELECT group_id, COUNT(*) AS joins_last_7
+                    FROM GroupMember
+                    WHERE status = 'active' 
+                        AND joined_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)
+                    GROUP BY group_id
+                ) recent_joins ON recent_joins.group_id = g.group_id
+                WHERE LOWER(TRIM(COALESCE(g.privacy_status, 'public'))) = 'public'
+                    AND COALESCE(g.is_active, 1) = 1
+                ORDER BY engagement_score DESC, member_count DESC, g.created_at DESC
                 LIMIT ?";
+        
         $stmt = $this->db->prepare($sql);
         $stmt->bindValue(1, $limit, PDO::PARAM_INT);
         $stmt->execute();
@@ -732,17 +757,32 @@ class GroupModel {
         return $stmt->rowCount() > 0;
     }
 
-    public function getTrendingGroups($limit = 5): array {
+
+    /**
+     * Get popular groups ranked by engagement (recent joins, posts, comments, member count)
+     */
+    public function getTrendingGroups($limit = 5, $userId = 0) {
+        $userMembershipSql = $userId ? ", EXISTS(SELECT 1 FROM GroupMember WHERE group_id = g.group_id AND user_id = {$userId} AND status = 'active') AS is_member" : ", 0 AS is_member";
+        
         $sql = "SELECT 
                     g.group_id,
                     g.name,
+                    g.description,
                     g.privacy_status,
+                    g.display_picture,
+                    g.cover_image,
+                    g.tag,
                     COALESCE(members.member_count, 0) AS member_count,
-                    COALESCE(posts_recent.posts_last_7, 0) AS posts_last_7,
-                    COALESCE(comments_recent.comments_last_7, 0) AS comments_last_7,
-                    COALESCE(posts_total.total_posts, 0) AS total_posts,
-                    COALESCE(comments_total.total_comments, 0) AS total_comments,
-                    (COALESCE(posts_recent.posts_last_7, 0) * 2 + COALESCE(comments_recent.comments_last_7, 0) + COALESCE(members.member_count, 0) * 0.1) AS engagement_score
+                    COALESCE(recent_joins.joins_last_7, 0) AS recent_joins,
+                    COALESCE(recent_posts.posts_last_7, 0) AS recent_posts,
+                    COALESCE(recent_comments.comments_last_7, 0) AS recent_comments,
+                    (
+                        COALESCE(recent_joins.joins_last_7, 0) * 3 +
+                        COALESCE(recent_posts.posts_last_7, 0) * 2 +
+                        COALESCE(recent_comments.comments_last_7, 0) +
+                        COALESCE(members.member_count, 0) * 0.1
+                    ) AS engagement_score
+                    {$userMembershipSql}
                 FROM GroupsTable g
                 LEFT JOIN (
                     SELECT group_id, COUNT(*) AS member_count
@@ -751,41 +791,36 @@ class GroupModel {
                     GROUP BY group_id
                 ) members ON members.group_id = g.group_id
                 LEFT JOIN (
+                    SELECT group_id, COUNT(*) AS joins_last_7
+                    FROM GroupMember
+                    WHERE status = 'active' 
+                        AND joined_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)
+                    GROUP BY group_id
+                ) recent_joins ON recent_joins.group_id = g.group_id
+                LEFT JOIN (
                     SELECT group_id, COUNT(*) AS posts_last_7
                     FROM Post
-                    WHERE created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)
-                    AND group_id IS NOT NULL
+                    WHERE is_group_post = 1
+                        AND created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)
                     GROUP BY group_id
-                ) posts_recent ON posts_recent.group_id = g.group_id
-                LEFT JOIN (
-                    SELECT group_id, COUNT(*) AS total_posts
-                    FROM Post
-                    WHERE group_id IS NOT NULL
-                    GROUP BY group_id
-                ) posts_total ON posts_total.group_id = g.group_id
+                ) recent_posts ON recent_posts.group_id = g.group_id
                 LEFT JOIN (
                     SELECT p.group_id, COUNT(*) AS comments_last_7
                     FROM Comment c
                     JOIN Post p ON p.post_id = c.post_id
-                    WHERE c.created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)
-                    AND p.group_id IS NOT NULL
+                    WHERE p.is_group_post = 1
+                        AND c.created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)
                     GROUP BY p.group_id
-                ) comments_recent ON comments_recent.group_id = g.group_id
-                LEFT JOIN (
-                    SELECT p.group_id, COUNT(*) AS total_comments
-                    FROM Comment c
-                    JOIN Post p ON p.post_id = c.post_id
-                    WHERE p.group_id IS NOT NULL
-                    GROUP BY p.group_id
-                ) comments_total ON comments_total.group_id = g.group_id
-                WHERE COALESCE(g.is_active, 1) = 1
+                ) recent_comments ON recent_comments.group_id = g.group_id
+                WHERE LOWER(TRIM(COALESCE(g.privacy_status, 'public'))) = 'public'
+                    AND COALESCE(g.is_active, 1) = 1
                 ORDER BY engagement_score DESC, member_count DESC, g.created_at DESC
-                LIMIT :limit";
-
+                LIMIT ?";
+        
         $stmt = $this->db->prepare($sql);
-        $stmt->bindValue(':limit', (int)$limit, PDO::PARAM_INT);
+        $stmt->bindValue(1, $limit, PDO::PARAM_INT);
         $stmt->execute();
-        return $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
     public function getRecentGroups($limit = 5) {

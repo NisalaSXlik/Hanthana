@@ -93,28 +93,48 @@ function loadDiscoverContent() {
         })
         .catch(err => console.error("Error loading discover content:", err));
 }
-
+// have in navbar js
 // Enhanced JavaScript with better event handling
-const profileDropdown = document.getElementById('profileDropdown');
-const dropdownMenu = profileDropdown.querySelector('.profile-dropdown');
-
-// Toggle dropdown
-profileDropdown.addEventListener('click', function(e) {
-    e.stopPropagation();
-    dropdownMenu.classList.toggle('show');
-});
-
-// Close when clicking outside
-document.addEventListener('click', function() {
-    dropdownMenu.classList.remove('show');
-});
-
-// Close when pressing ESC
-document.addEventListener('keydown', function(e) {
-    if (e.key === 'Escape') {
-        dropdownMenu.classList.remove('show');
+/*document.addEventListener('DOMContentLoaded', function() {
+    const profileDropdown = document.getElementById('profileDropdown');
+    
+    if (!profileDropdown) {
+        console.log('Profile dropdown not found');
+        return;
     }
-});
+    
+    const dropdownMenu = Array.from(profileDropdown.children).find(child => 
+        child.classList.contains('profile-dropdown')
+    );
+    
+    if (!dropdownMenu) {
+        console.log('Dropdown menu not found');
+        return;
+    }
+
+    // Toggle dropdown
+    profileDropdown.addEventListener('click', function(e) {
+        e.stopPropagation();
+        e.preventDefault();
+        dropdownMenu.classList.toggle('show');
+    });
+
+    // Close when clicking outside (with delay to avoid immediate close)
+    setTimeout(() => {
+        document.addEventListener('click', function(e) {
+            if (!profileDropdown.contains(e.target)) {
+                dropdownMenu.classList.remove('show');
+            }
+        });
+    }, 100);
+
+    // Close when pressing ESC
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            dropdownMenu.classList.remove('show');
+        }
+    });
+});*/
 
 // Add this to your myFeed.js
 document.addEventListener('DOMContentLoaded', function() {
@@ -357,14 +377,20 @@ function showToast(message, type = 'success') {
 });
 
 
-// Handle login/signup button clicks
-document.querySelector('.btn-login').addEventListener('click', () => {
-    window.location.href = 'login.html';
-});
+// Handle login/signup button clicks (only if they exist)
+const btnLogin = document.querySelector('.btn-login');
+if (btnLogin) {
+    btnLogin.addEventListener('click', () => {
+        window.location.href = 'login.html';
+    });
+}
 
-document.querySelector('.btn-primary').addEventListener('click', () => {
-    window.location.href = 'register.html';
-});
+const btnPrimary = document.querySelector('.btn-primary');
+if (btnPrimary) {
+    btnPrimary.addEventListener('click', () => {
+        window.location.href = 'register.html';
+    });
+}
 
 function protectedContentLoad() {
     console.log("HEllo");

@@ -438,6 +438,9 @@ class PostModel {
         }
     }
 
+    
+    
+
     public function getPostById(int $postId): ?array {
         $sql = "
             SELECT
@@ -493,6 +496,57 @@ class PostModel {
         } catch (PDOException $e) {
             error_log('getPostById error: ' . $e->getMessage());
             return null;
+        }
+    }
+    /**
+     * Get trending hashtags from posts (last 7 days)
+     * Extracts hashtags from post content and ranks by frequency
+     * @param int $limit Number of hashtags to return (default 10)
+     * @return array Array of trending hashtags with rank, hashtag name, and count
+     */
+    public function getTrendingHashtags(int $limit = 10): array {
+        try {
+            // Fetch all posts from last 7 days
+            $sql = "SELECT content FROM Post 
+                    WHERE created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)
+                    AND content IS NOT NULL";
+            $stmt = $this->db->getConnection()->prepare($sql);
+            $stmt->execute();
+            $posts = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            // Extract and count hashtags
+            $hashtags = [];
+            foreach ($posts as $post) {
+                // Match all #hashtag patterns (letters, numbers, underscores)
+                if (preg_match_all('/#([a-zA-Z0-9_]+)/', $post['content'], $matches)) {
+                    foreach ($matches[1] as $tag) {
+                        $tag = strtolower($tag);
+                        if (!isset($hashtags[$tag])) {
+                            $hashtags[$tag] = 0;
+                        }
+                        $hashtags[$tag]++;
+                    }
+                }
+            }
+
+            // Sort by frequency (descending)
+            arsort($hashtags);
+            
+            // Format output with rank
+            $trending = [];
+            $rank = 1;
+            foreach (array_slice($hashtags, 0, $limit, true) as $tag => $count) {
+                $trending[] = [
+                    'rank' => $rank++,
+                    'hashtag' => '#' . $tag,
+                    'count' => $count
+                ];
+            }
+
+            return $trending;
+        } catch (PDOException $e) {
+            error_log('getTrendingHashtags error: ' . $e->getMessage());
+            return [];
         }
     }
 

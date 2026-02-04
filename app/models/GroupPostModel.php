@@ -571,4 +571,115 @@ class GroupPostModel {
         $stmt->execute([$userId]);
         return (int)$stmt->fetchColumn();
     }
+
+    /**
+     * Get popular public group posts with dynamic comment and vote counts
+     * Uses same aggregation logic as PostModel::getTrendingPosts()
+     * 
+     * @param int $limit Number of posts to return
+     * @param int $userId Current user ID for personalized vote tracking
+     * @param int $days Look back period (default 14 days)
+     * @return array Array of popular group posts with engagement metrics
+     */
+    public function getPopularPublicGroupPosts(int $limit = 10, int $userId = 0, int $days = 14): array {
+        $userVoteSql = $userId ? ", (SELECT vote_type FROM Vote WHERE post_id = p.post_id AND user_id = " . (int)$userId . " LIMIT 1) AS user_vote" : ", NULL AS user_vote";
+        
+        $groupColumns = $this->selectGroupPostColumns();
+        
+        $sql = "
+            SELECT
+                p.post_id,
+                p.content,
+                p.created_at,
+                COALESCE(vt_total.upvotes, 0) AS upvote_count,
+                COALESCE(vt_total.downvotes, 0) AS downvote_count,
+                COALESCE(ct_total.comment_count, 0) AS comment_count,
+                {$groupColumns}
+                p.event_title,
+                p.event_date,
+                p.event_time,
+                p.event_location,
+                p.group_id,
+                g.group_name,
+                u.user_id,
+                u.username,
+                u.first_name,
+                u.last_name,
+                u.profile_picture,
+                pm.file_url AS image_url,
+                (COALESCE(vt_recent.upvotes, 0) * 2 + COALESCE(ct_recent.comment_count, 0)) AS engagement_score
+                {$userVoteSql}
+            FROM Post p
+            JOIN Users u ON u.user_id = p.author_id
+            JOIN GroupsTable g ON g.group_id = p.group_id
+            LEFT JOIN (
+                SELECT 
+                    post_id,
+                    SUM(CASE WHEN vote_type = 'upvote' THEN 1 ELSE 0 END) AS upvotes,
+                    SUM(CASE WHEN vote_type = 'downvote' THEN 1 ELSE 0 END) AS downvotes
+                FROM Vote
+                GROUP BY post_id
+            ) vt_total ON vt_total.post_id = p.post_id
+            LEFT JOIN (
+                SELECT 
+                    post_id,
+                    SUM(CASE WHEN vote_type = 'upvote' THEN 1 ELSE 0 END) AS upvotes,
+                    SUM(CASE WHEN vote_type = 'downvote' THEN 1 ELSE 0 END) AS downvotes
+                FROM Vote
+                WHERE created_at >= DATE_SUB(NOW(), INTERVAL {$days} DAY)
+                GROUP BY post_id
+            ) vt_recent ON vt_recent.post_id = p.post_id
+            LEFT JOIN (
+                SELECT post_id, COUNT(*) AS comment_count
+                FROM Comment
+                GROUP BY post_id
+            ) ct_total ON ct_total.post_id = p.post_id
+            LEFT JOIN (
+                SELECT post_id, COUNT(*) AS comment_count
+                FROM Comment
+                WHERE created_at >= DATE_SUB(NOW(), INTERVAL {$days} DAY)
+                GROUP BY post_id
+            ) ct_recent ON ct_recent.post_id = p.post_id
+            LEFT JOIN (
+                SELECT pm1.post_id, pm1.file_url
+                FROM PostMedia pm1
+                INNER JOIN (
+                    SELECT post_id, MIN(postmedia_id) AS first_media_id
+                    FROM PostMedia
+                    WHERE file_type = 'image'
+                    GROUP BY post_id
+                ) x ON x.first_media_id = pm1.postmedia_id
+            ) pm ON pm.post_id = p.post_id
+            WHERE p.is_group_post = 1
+                AND p.group_id IS NOT NULL
+                AND LOWER(TRIM(COALESCE(g.privacy_status, 'public'))) = 'public'
+                AND COALESCE(g.is_active, 1) = 1
+                AND pm.file_url IS NOT NULL
+                AND p.created_at >= DATE_SUB(NOW(), INTERVAL {$days} DAY)
+            ORDER BY engagement_score DESC, p.created_at DESC
+            LIMIT :result_limit
+        ";
+
+        try {
+            $stmt = $this->db->getConnection()->prepare($sql);
+            $stmt->bindValue(':result_limit', $limit, PDO::PARAM_INT);
+            $stmt->execute();
+            $posts = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            foreach ($posts as &$post) {
+                if (!empty($post['image_url'])) {
+                    $post['image_url'] = MediaHelper::resolveMediaPath($post['image_url'], 'images/default_post.png');
+                }
+                if (!empty($post['profile_picture'])) {
+                    $post['profile_picture'] = MediaHelper::resolveMediaPath($post['profile_picture'], 'images/avatars/defaultProfilePic.png');
+                }
+                $post['user_vote'] = $post['user_vote'] ?? null;
+            }
+
+            return $posts;
+        } catch (PDOException $e) {
+            error_log('getPopularPublicGroupPosts error: ' . $e->getMessage());
+            return [];
+        }
+    }
 }
