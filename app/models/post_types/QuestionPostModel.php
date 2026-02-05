@@ -8,15 +8,16 @@ class QuestionPostModel extends BaseGroupPostModel {
     }
 
     public function create(int $userId, int $groupId, array $data): ?int {
-        $content = trim($data['content'] ?? '');
+        $form = $data['request'] ?? [];
+        $content = trim($data['content'] ?? ($form['problem_statement'] ?? ''));
         if ($content === '') {
             return null;
         }
 
-        $form = $data['request'] ?? [];
         $metadata = [
-            'category' => $form['question_category'] ?? 'general',
-            'tags' => $form['tags'] ?? ''
+            'title' => trim((string)($form['title'] ?? '')),
+            'category' => $form['question_category'] ?? ($form['category'] ?? 'General'),
+            'topics' => $form['topics'] ?? ($form['tags'] ?? '')
         ];
 
         return $this->persistPost([
