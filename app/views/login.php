@@ -1,5 +1,15 @@
 <?php
+require_once __DIR__ . '/../../config/config.php';
 require_once __DIR__ . '/../controllers/AuthController.php';
+
+if (session_status() === PHP_SESSION_NONE) {
+	session_start();
+}
+
+if (isset($_SESSION['user_id'])) {
+    header('Location: ' . BASE_PATH . 'index.php?controller=AcedemicDashboard&action=index');
+    exit();
+}
 
 $authController = new AuthController();
 $error = '';
@@ -13,7 +23,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $result = $authController->login($identifier, $password);
     
     if ($result['success']) {
-        header("Location: ../controllers/FeedController.php"); 
+        header('Location: ' . BASE_PATH . 'index.php?controller=AcedemicDashboard&action=index');
         exit;
     } else {
         $error = $result['errors'][0] ?? 'Login failed';
@@ -34,7 +44,9 @@ if (isset($_GET['registered']) && $_GET['registered'] === 'true') {
     <title>Login to Hanthana</title>
     <link rel="stylesheet" href="./css/general.css">
     <link rel="stylesheet" href="./css/login.css">
+    <link rel="stylesheet" href="./css/forms.css">
     <link rel="stylesheet" href="./css/notificationpopup.css">
+    <link rel="stylesheet" href="./css/notification-center.css">
     <link rel="stylesheet" href="https://unicons.iconscout.com/release/v4.0.8/css/line.css">
 </head>
 <body>
@@ -47,26 +59,26 @@ if (isset($_GET['registered']) && $_GET['registered'] === 'true') {
 
             <!-- Success Message -->
             <?php if ($success): ?>
-                <div class="success-message" style="color: green; padding: 10px; text-align: center; margin-bottom: 15px; background: #d4ffd4; border-radius: 5px;">
+                <div class="auth-alert auth-alert-success">
                     ✅ <?php echo htmlspecialchars($success); ?>
                 </div>
             <?php endif; ?>
 
             <!-- Error Message -->
             <?php if ($error): ?>
-                <div class="error-message" style="color: red; padding: 10px; text-align: center; margin-bottom: 15px; background: #ffd4d4; border-radius: 5px;">
+                <div class="auth-alert auth-alert-error">
                     ❌ <?php echo htmlspecialchars($error); ?>
                 </div>
             <?php endif; ?>
             
             <!-- Login Form -->
-            <form class="auth-form" method="post" action="">
-                <div class="form-group-l">
+            <form class="auth-form hf-form" method="post" action="">
+                <div class="form-group-l hf-icon-field">
                     <i class="uil uil-envelope"></i>
                     <input type="text" name="identifier" placeholder="Email or Phone Number" required
                            value="<?php echo isset($_POST['identifier']) ? htmlspecialchars($_POST['identifier']) : ''; ?>">
                 </div>
-                <div class="form-group-l">
+                <div class="form-group-l hf-icon-field">
                     <i class="uil uil-lock"></i>
                     <input type="password" name="password" placeholder="Password" required>
                 </div>
@@ -75,7 +87,7 @@ if (isset($_GET['registered']) && $_GET['registered'] === 'true') {
 
             <div class="auth-footer">
                 <p>Don't have an account? <a href="<?php echo BASE_PATH; ?>index.php?controller=Signup&action=index">Register</a></p>
-                <a href="#" class="forgot-password">Forgot password?</a>
+                <a href="<?php echo BASE_PATH; ?>index.php?controller=Auth&action=forgotPassword" class="forgot-password">Forgot password?</a>
             </div>
         </div>
     </div>

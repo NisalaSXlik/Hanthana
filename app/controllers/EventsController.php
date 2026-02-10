@@ -32,6 +32,10 @@ class EventsController {
             case 'addToCalendar':
                 $this->addToCalendar();
                 break;
+            case 'getMostGoingEvents':
+                header('Content-Type: application/json');
+                echo json_encode(['success' => true, 'events' => $this->getMostGoingEvents()]);
+                exit;   
             default:
                 echo json_encode(['success' => false, 'error' => 'Invalid action']);
                 break;
@@ -40,51 +44,95 @@ class EventsController {
     }
 
     private function getEvents() {
-        $filter = $_GET['filter'] ?? 'upcoming';
-        $userId = $_SESSION['user_id'] ?? 0;
-        
-        // Reuse getFeedPosts but filter for events in PHP for now, 
-        // or ideally add a specific method in PostModel.
-        // Since PostModel::getFeedPosts returns mixed posts, we can filter them.
-        // But for 'upcoming' and 'past', we might need a custom query.
-        // Let's use a custom query here or add one to PostModel.
-        // For simplicity/speed, I'll add a method to PostModel or just query here if I had DB access.
-        // I'll use PostModel::getFeedPosts and filter, but that might not get ALL events.
-        // Actually, getFeedPosts gets friends' posts. Events page might show public events too?
-        // The user prompt implies "Discover and join exciting events".
-        
-        // Let's try to use getFeedPosts for now, as it handles permissions.
-        // We explicitly pass false to include events, as FeedController passes true to exclude them.
-        $posts = $this->postModel->getFeedPosts($userId, false);
-        
-        $events = array_filter($posts, function($post) {
-            // Check both standard post_type and group_post_type
-            $type = !empty($post['group_id']) ? ($post['group_post_type'] ?? 'discussion') : ($post['post_type'] ?? 'text');
-            return $type === 'event';
-        });
+        $filter = $_GET['filter'] ?? 'recent';
+        $userId = (int)($_SESSION['user_id'] ?? 0);
 
-        // Apply filter
+        if ($userId <= 0) {
+            echo json_encode(['success' => false, 'error' => 'Unauthorized']);
+            return;
+        }
+
+        $posts = $this->postModel->getFeedPosts($userId, false);
+
+        $events = array_values(array_filter($posts, function($post) {
+            $type = !empty($post['group_id'])
+                ? ($post['group_post_type'] ?? 'discussion')
+                : ($post['post_type'] ?? 'text');
+            return $type === 'event';
+        }));
+
+        $toEventTimestamp = function(array $event): int {
+            $eventDate = trim((string)($event['event_date'] ?? ''));
+            if ($eventDate === '') return 0;
+
+            // event_date may already include time in some rows
+            if (preg_match('/\d{1,2}:\d{2}/', $eventDate)) {
+                $ts = strtotime($eventDate);
+                return $ts !== false ? $ts : 0;
+            }
+
+            $eventTime = trim((string)($event['event_time'] ?? ''));
+            $dateTime = $eventDate . ' ' . ($eventTime !== '' ? $eventTime : '00:00:00');
+            $ts = strtotime($dateTime);
+            return $ts !== false ? $ts : 0;
+        };
+
+        $toCreatedTimestamp = function(array $row): int {
+            $ts = strtotime((string)($row['created_at'] ?? ''));
+            return $ts !== false ? $ts : 0;
+        };
+
         $filteredEvents = [];
-        $now = date('Y-m-d H:i:s');
-        
-        foreach ($events as $event) {
-            $eventDateTime = ($event['event_date'] ?? '') . ' ' . ($event['event_time'] ?? '00:00:00');
-            
-            if ($filter === 'upcoming') {
-                if ($eventDateTime >= $now) {
-                    $filteredEvents[] = $event;
-                }
-            } elseif ($filter === 'past') {
-                if ($eventDateTime < $now) {
-                    $filteredEvents[] = $event;
-                }
-            } elseif ($filter === 'my_events') {
-                // Events I created or joined (RSVP). 
-                // For now, just events I created.
-                if ($event['author_id'] == $userId) {
+
+        if ($filter === 'my_events') {
+            foreach ($events as $event) {
+                $authorId = (int)($event['author_id'] ?? $event['user_id'] ?? 0);
+                if ($authorId === $userId) {
                     $filteredEvents[] = $event;
                 }
             }
+
+            usort($filteredEvents, function($a, $b) use ($toCreatedTimestamp) {
+                return $toCreatedTimestamp($b) <=> $toCreatedTimestamp($a); // newest created first
+            });
+
+        } elseif ($filter === 'added_to_calendar') {
+            $reminders = $this->calendarModel->listReminders($userId);
+
+            // Keep latest reminder timestamp per post_id
+            $reminderByPost = [];
+            foreach ($reminders as $reminder) {
+                $postId = (int)($reminder['post_id'] ?? 0);
+                if ($postId <= 0) continue;
+
+                $addedAtRaw = $reminder['updated_at'] ?? $reminder['created_at'] ?? null;
+                $addedAtTs = $addedAtRaw ? strtotime($addedAtRaw) : 0;
+                if ($addedAtTs === false) $addedAtTs = 0;
+
+                if (!isset($reminderByPost[$postId]) || $addedAtTs > $reminderByPost[$postId]) {
+                    $reminderByPost[$postId] = $addedAtTs;
+                }
+            }
+
+            foreach ($events as $event) {
+                $postId = (int)($event['post_id'] ?? $event['event_id'] ?? 0);
+                if ($postId > 0 && isset($reminderByPost[$postId])) {
+                    $event['reminder_added_at_ts'] = $reminderByPost[$postId];
+                    $filteredEvents[] = $event;
+                }
+            }
+
+            usort($filteredEvents, function($a, $b) {
+                return (int)($b['reminder_added_at_ts'] ?? 0) <=> (int)($a['reminder_added_at_ts'] ?? 0); // most recently added first
+            });
+
+        } else { // default: recent (also supports legacy upcoming filter)
+            $filteredEvents = $events;
+
+            // Keep recent by post creation time (newest first)
+            usort($filteredEvents, function($a, $b) use ($toCreatedTimestamp) {
+                return $toCreatedTimestamp($b) <=> $toCreatedTimestamp($a);
+            });
         }
 
         echo json_encode(['success' => true, 'events' => array_values($filteredEvents)]);
@@ -102,6 +150,28 @@ class EventsController {
             return;
         }
 
+        $imagePath = null;
+        $imageName = null;
+        $imageSize = null;
+
+        if (isset($_FILES['image']) && $_FILES['image']['error'] === UPLOAD_ERR_OK) {
+            $uploadDir = __DIR__ . '/../../public/uploads/post_media/';
+            if (!is_dir($uploadDir)) {
+                mkdir($uploadDir, 0755, true);
+            }
+
+            $imageName = uniqid() . '_' . basename($_FILES['image']['name']);
+            $destinationPath = $uploadDir . $imageName;
+
+            if (!move_uploaded_file($_FILES['image']['tmp_name'], $destinationPath)) {
+                echo json_encode(['success' => false, 'error' => 'Image upload failed']);
+                return;
+            }
+
+            $imagePath = 'uploads/post_media/' . $imageName;
+            $imageSize = $_FILES['image']['size'] ?? null;
+        }
+
         $data = [
             'content' => $_POST['description'] ?? '',
             'post_type' => 'event',
@@ -111,7 +181,10 @@ class EventsController {
             'event_time' => $_POST['time'] ?? null,
             'event_location' => $_POST['location'] ?? '',
             'author_id' => $userId,
-            'is_group_post' => 0
+            'is_group_post' => 0,
+            'image_path' => $imagePath,
+            'image_name' => $imageName,
+            'image_size' => $imageSize
         ];
 
         $result = $this->postModel->createPost($data);
@@ -168,6 +241,35 @@ class EventsController {
         $goingCount = $this->calendarModel->getGoingCount($postId);
 
         echo json_encode(['success' => $success, 'going_count' => $goingCount]);
+    }
+
+    public function getMostGoingEvents() {
+        $userId = $_SESSION['user_id'] ?? 0;
+        $posts = $this->postModel->getFeedPosts($userId, false);
+
+        $events = array_filter($posts, function($post) {
+            $type = !empty($post['group_id']) ? ($post['group_post_type'] ?? 'discussion') : ($post['post_type'] ?? 'text');
+            return $type === 'event';
+        });
+
+        $filteredEvents = [];
+        $now = date('Y-m-d H:i:s');
+
+        foreach ($events as $event) {
+            $eventDateTime = trim(($event['event_date'] ?? '') . ' ' . ($event['event_time'] ?? '00:00:00'));
+            if ($eventDateTime >= $now) {
+                $postId = (int)($event['post_id'] ?? $event['id'] ?? 0);
+                if ($postId <= 0) continue;
+
+                $event['post_id'] = $postId;
+                $event['going_count'] = $this->calendarModel->getGoingCount($postId);
+                $event['is_going'] = $this->calendarModel->getReminderForPost($userId, $postId) ? 1 : 0;
+                $filteredEvents[] = $event;
+            }
+        }
+
+        usort($filteredEvents, fn($a, $b) => ($b['going_count'] ?? 0) <=> ($a['going_count'] ?? 0));
+        return array_slice($filteredEvents, 0, 5);
     }
 }
 
