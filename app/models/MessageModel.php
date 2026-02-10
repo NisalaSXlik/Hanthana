@@ -13,39 +13,51 @@ class MessageModel {
     }
 
     public function getUserConversations(int $userId): array {
-        $sql = "
-                 SELECT c.conversation_id, c.conversation_type, c.name AS conversation_name,
-                     c.last_message_at, c.last_message_text,
-                     lm.message_id AS last_message_id,
-                     lm.message_type AS last_message_type,
-                     lm.content AS last_message_content,
-                     lm.created_at AS message_created_at,
-                     sender.user_id AS sender_id,
-                     sender.first_name AS sender_first_name,
-                     sender.last_name AS sender_last_name,
-                     sender.profile_picture AS sender_avatar,
-                     COALESCE(unread_counts.unread_count, 0) AS unread_count
+        $sql =
+           "SELECT
+                c.conversation_id, c.conversation_type, c.name AS conversation_name,
+                c.last_message_at, c.last_message_text,
+                
+                lm.message_id AS last_message_id,
+                lm.message_type AS last_message_type,
+                lm.content AS last_message_content,
+                lm.created_at AS message_created_at,
+                
+                sender.user_id AS sender_id,
+                sender.first_name AS sender_first_name,
+                sender.last_name AS sender_last_name,
+                sender.profile_picture AS sender_avatar,
+                
+                COALESCE(unread_counts.unread_count, 0) AS unread_count
             FROM Conversations c
             INNER JOIN ConversationParticipants cp
-                ON cp.conversation_id = c.conversation_id AND cp.user_id = :userId AND cp.is_active = TRUE
+                ON cp.conversation_id = c.conversation_id
+                AND cp.user_id = :userId
+                AND cp.is_active = TRUE
             LEFT JOIN Messages lm
                 ON lm.message_id = (
                     SELECT m2.message_id
                     FROM Messages m2
-                    WHERE m2.conversation_id = c.conversation_id AND m2.is_deleted = FALSE
+                    WHERE
+                        m2.conversation_id = c.conversation_id
+                        AND m2.is_deleted = FALSE
                     ORDER BY m2.created_at DESC
                     LIMIT 1
                 )
-            LEFT JOIN Users sender ON sender.user_id = lm.sender_id
+            LEFT JOIN Users sender
+                ON sender.user_id = lm.sender_id
             LEFT JOIN (
-                SELECT m.conversation_id,
-                       COUNT(*) AS unread_count
+                SELECT
+                    m.conversation_id,
+                    COUNT(*) AS unread_count
                 FROM Messages m
                 LEFT JOIN MessageReadStatus mrs
-                    ON mrs.message_id = m.message_id AND mrs.user_id = :userId
-                WHERE m.is_deleted = FALSE
-                  AND m.sender_id <> :userId
-                  AND mrs.message_id IS NULL
+                    ON mrs.message_id = m.message_id
+                    AND mrs.user_id = :userId
+                WHERE
+                    m.is_deleted = FALSE
+                    AND m.sender_id <> :userId
+                    AND mrs.message_id IS NULL
                 GROUP BY m.conversation_id
             ) AS unread_counts
                 ON unread_counts.conversation_id = c.conversation_id
@@ -65,22 +77,25 @@ class MessageModel {
     }
 
     public function getConversationById(int $conversationId, int $userId): ?array {
-        $sql = "
-                 SELECT c.conversation_id, c.conversation_type, c.name AS conversation_name,
-                     c.last_message_at, c.last_message_text,
-                     lm.message_id AS last_message_id,
-                     lm.message_type AS last_message_type,
-                     lm.content AS last_message_content,
-                   lm.created_at AS message_created_at,
-                   sender.user_id AS sender_id,
-                   sender.first_name AS sender_first_name,
-                   sender.last_name AS sender_last_name,
-                   sender.profile_picture AS sender_avatar
+        $sql =
+           "SELECT
+                c.conversation_id, c.conversation_type, c.name AS conversation_name,
+                c.last_message_at, c.last_message_text,
+                
+                lm.message_id AS last_message_id,
+                lm.message_type AS last_message_type,
+                lm.content AS last_message_content,
+                lm.created_at AS message_created_at,
+                
+                sender.user_id AS sender_id,
+                sender.first_name AS sender_first_name,
+                sender.last_name AS sender_last_name,
+                sender.profile_picture AS sender_avatar
             FROM Conversations c
             INNER JOIN ConversationParticipants cp
                 ON cp.conversation_id = c.conversation_id
-               AND cp.user_id = :userId
-               AND cp.is_active = TRUE
+                AND cp.user_id = :userId
+                AND cp.is_active = TRUE
             LEFT JOIN Messages lm
                 ON lm.message_id = (
                     SELECT m2.message_id
@@ -153,6 +168,132 @@ class MessageModel {
         }
 
         return $conversation;
+    }
+
+    public function ensureGroupConversation($userId, $channelId) {
+        $accessSql = "SELECT
+                ch.conversation_id,
+                ch.group_id
+            FROM Channel ch
+            INNER JOIN GroupMember gm
+                ON gm.group_id = ch.group_id
+                AND gm.user_id = :userId
+                AND gm.status = 'active'
+            WHERE ch.channel_id = :channelId
+            LIMIT 1";
+
+        $accessStmt = $this->conn()->prepare($accessSql);
+        $accessStmt->bindValue(':channelId', $channelId, PDO::PARAM_INT);
+        $accessStmt->bindValue(':userId', $userId, PDO::PARAM_INT);
+        $accessStmt->execute();
+        $access = $accessStmt->fetch(PDO::FETCH_ASSOC);
+
+        if (!$access) {
+            throw new RuntimeException('You are not a member of this group.');
+        }
+
+        $conversationId = (int)($access['conversation_id'] ?? 0);
+        if ($conversationId > 0) {
+            $this->ensureParticipant($conversationId, $userId);
+            $conversation = $this->getConversationById($conversationId, $userId);
+            if ($conversation) {
+                return $conversation;
+            }
+        }
+
+        return $this->createGroupConversation($userId, $channelId);
+    }
+
+    // Add this new method to create group conversations
+    private function createGroupConversation(int $userId, int $channelId): array {
+        $existingConversationSql = "SELECT conversation_id FROM Channel WHERE channel_id = :channelId LIMIT 1";
+        $existingConversationStmt = $this->conn()->prepare($existingConversationSql);
+        $existingConversationStmt->execute([':channelId' => $channelId]);
+        $existingConversationId = (int)($existingConversationStmt->fetchColumn() ?: 0);
+
+        if ($existingConversationId > 0) {
+            $this->ensureParticipant($existingConversationId, $userId);
+            $existingConversation = $this->getConversationById($existingConversationId, $userId);
+            if ($existingConversation) {
+                return $existingConversation;
+            }
+        }
+
+        // First, check if user is a member of the group
+        $checkSql = "SELECT g.group_id, c.name 
+                 FROM Channel c
+                 INNER JOIN GroupsTable g ON c.group_id = g.group_id
+                 INNER JOIN GroupMember gm ON g.group_id = gm.group_id
+                 WHERE c.channel_id = :channelId 
+                 AND gm.user_id = :userId 
+                 AND gm.status = 'active'";
+        
+        $checkStmt = $this->conn()->prepare($checkSql);
+        $checkStmt->execute([':channelId' => $channelId, ':userId' => $userId]);
+        $channelData = $checkStmt->fetch(PDO::FETCH_ASSOC);
+        
+        if (!$channelData) {
+            throw new RuntimeException('You are not a member of this group.');
+        }
+
+        $connection = $this->conn();
+        $connection->beginTransaction();
+        
+        try {
+            // Create conversation
+            $stmt = $connection->prepare(
+                "INSERT INTO Conversations (conversation_type, name, created_by, created_at, last_message_at)
+                 VALUES ('group', :name, :creator, NOW(), NOW())"
+            );
+            $stmt->execute([
+                ':name' => $channelData['name'],
+                ':creator' => $userId
+            ]);
+            $conversationId = (int)$connection->lastInsertId();
+
+            // Link channel to conversation
+            $linkStmt = $connection->prepare(
+                "UPDATE Channel SET conversation_id = :conversationId WHERE channel_id = :channelId"
+            );
+            $linkStmt->execute([
+                ':conversationId' => $conversationId,
+                ':channelId' => $channelId
+            ]);
+
+            // Add all group members as conversation participants
+            $membersSql = "SELECT user_id FROM GroupMember 
+                       WHERE group_id = :groupId AND status = 'active'";
+            $membersStmt = $connection->prepare($membersSql);
+            $membersStmt->execute([':groupId' => $channelData['group_id']]);
+            $members = $membersStmt->fetchAll(PDO::FETCH_COLUMN);
+
+            $participantStmt = $connection->prepare(
+                "INSERT INTO ConversationParticipants (conversation_id, user_id, role, is_active)
+                 VALUES (:conversationId, :userId, 'member', TRUE)"
+            );
+
+            foreach ($members as $memberId) {
+                $participantStmt->execute([
+                    ':conversationId' => $conversationId,
+                    ':userId' => $memberId
+                ]);
+            }
+
+            $connection->commit();
+            
+            $conversation = $this->getConversationById($conversationId, $userId);
+            if (!$conversation) {
+                throw new RuntimeException('Conversation could not be loaded.');
+            }
+
+            return $conversation;
+            
+        } catch (\Throwable $e) {
+            if ($connection->inTransaction()) {
+                $connection->rollBack();
+            }
+            throw new RuntimeException('Unable to create group conversation: ' . $e->getMessage());
+        }
     }
 
     private function findDirectConversationId(int $userId, int $otherUserId): ?int {
@@ -309,14 +450,23 @@ class MessageModel {
     }
 
     private function formatConversation(array $row, int $userId): array {
-        $displayName = $row['conversation_name'] ?? null;
-        $avatar = null;
+        $displayName = null;
+        $displayPicture = null;
+        $isOnline = false;
 
         if ($row['conversation_type'] === 'direct') {
             $peer = $this->getDirectPeer($row['conversation_id'], $userId);
             if ($peer) {
                 $displayName = trim(($peer['first_name'] ?? '') . ' ' . ($peer['last_name'] ?? '')) ?: $peer['username'];
-                $avatar = $peer['profile_picture'];
+                $displayPicture = $peer['profile_picture'];
+                $isOnline = $peer['is_online'] ?? false;
+            }
+        } elseif ($row['conversation_type'] === 'group') {
+            $displayName = trim($row['conversation_name']);
+            $channel = $this->getGroupChannel($row['conversation_id']);
+            if ($channel) {
+                $displayPicture = $channel['display_picture'] ?? null;
+                // Groups don't have online status
             }
         }
 
@@ -347,7 +497,9 @@ class MessageModel {
             'conversation_id' => (int)$row['conversation_id'],
             'conversation_type' => $row['conversation_type'],
             'display_name' => $displayName,
-            'avatar' => $avatar,
+            'display_picture' => $displayPicture,
+            'avatar' => $displayPicture, // Add alias for compatibility
+            'is_online' => $isOnline,
             'last_message_at' => $row['last_message_at'],
             'last_message' => $lastMessage,
             'last_message_preview' => $previewText,
@@ -372,6 +524,23 @@ class MessageModel {
 
         $peer = $stmt->fetch(PDO::FETCH_ASSOC);
         return $peer ?: null;
+    }
+
+    private function getGroupChannel(int $conversationId): ?array {
+        $sql = "
+            SELECT c.channel_id, c.name, c.display_picture
+            FROM ConversationParticipants cp
+            INNER JOIN Channel c ON c.conversation_id = cp.conversation_id
+            WHERE cp.conversation_id = :conversationId
+            LIMIT 1";
+
+        $stmt = $this->conn()->prepare($sql);
+        $stmt->execute([
+            ':conversationId' => $conversationId
+        ]);
+
+        $channel = $stmt->fetch(PDO::FETCH_ASSOC);
+        return $channel ?: null;
     }
 
     private function getUnreadCount(int $conversationId, int $userId): int {
@@ -432,6 +601,112 @@ class MessageModel {
         return $this->hydrateMessage($message, $requesterId);
     }
 
+    public function getMessageForReport(int $messageId): ?array {
+        $sql = "
+            SELECT m.message_id, m.sender_id, ch.group_id
+            FROM Messages m
+            INNER JOIN Conversations c ON c.conversation_id = m.conversation_id
+            LEFT JOIN Channel ch ON ch.conversation_id = c.conversation_id
+            WHERE m.message_id = :messageId
+              AND m.is_deleted = FALSE
+            LIMIT 1";
+
+        $stmt = $this->conn()->prepare($sql);
+        $stmt->execute([':messageId' => $messageId]);
+        $message = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        return $message ?: null;
+    }
+
+    public function deleteMessage(int $messageId, int $requesterId): array {
+        if ($messageId <= 0 || $requesterId <= 0) {
+            return ['success' => false, 'status' => 422, 'message' => 'Invalid delete request'];
+        }
+
+        $lookupSql = "
+            SELECT m.message_id, m.sender_id, m.conversation_id, m.is_deleted,
+                   ch.group_id,
+                   gm.role AS group_role
+            FROM Messages m
+            LEFT JOIN Channel ch ON ch.conversation_id = m.conversation_id
+            LEFT JOIN GroupMember gm
+                ON gm.group_id = ch.group_id
+               AND gm.user_id = :requesterId
+               AND gm.status = 'active'
+            WHERE m.message_id = :messageId
+            LIMIT 1";
+
+        $stmt = $this->conn()->prepare($lookupSql);
+        $stmt->execute([
+            ':messageId' => $messageId,
+            ':requesterId' => $requesterId,
+        ]);
+        $message = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        if (!$message) {
+            return ['success' => false, 'status' => 404, 'message' => 'Message not found'];
+        }
+
+        if ((int)($message['is_deleted'] ?? 0) === 1) {
+            return ['success' => true, 'status' => 200, 'message' => 'Message already deleted'];
+        }
+
+        $isOwner = (int)($message['sender_id'] ?? 0) === $requesterId;
+        $isGroupModerator = in_array(strtolower((string)($message['group_role'] ?? '')), ['admin', 'moderator'], true);
+        if (!$isOwner && !$isGroupModerator) {
+            return ['success' => false, 'status' => 403, 'message' => 'You are not allowed to delete this message'];
+        }
+
+        $connection = $this->conn();
+        $connection->beginTransaction();
+
+        try {
+            $deleteStmt = $connection->prepare(
+                "UPDATE Messages
+                 SET is_deleted = TRUE,
+                     content = '',
+                     file_url = NULL,
+                     file_name = NULL,
+                     file_size = NULL
+                 WHERE message_id = :messageId"
+            );
+            $deleteStmt->execute([':messageId' => $messageId]);
+
+            $conversationId = (int)($message['conversation_id'] ?? 0);
+            $lastStmt = $connection->prepare(
+                "SELECT content, created_at
+                 FROM Messages
+                 WHERE conversation_id = :conversationId
+                   AND is_deleted = FALSE
+                 ORDER BY created_at DESC, message_id DESC
+                 LIMIT 1"
+            );
+            $lastStmt->execute([':conversationId' => $conversationId]);
+            $lastMessage = $lastStmt->fetch(PDO::FETCH_ASSOC) ?: null;
+
+            $updateConversationStmt = $connection->prepare(
+                "UPDATE Conversations
+                 SET last_message_text = :lastText,
+                     last_message_at = :lastAt
+                 WHERE conversation_id = :conversationId"
+            );
+            $updateConversationStmt->execute([
+                ':lastText' => $lastMessage['content'] ?? null,
+                ':lastAt' => $lastMessage['created_at'] ?? null,
+                ':conversationId' => $conversationId,
+            ]);
+
+            $connection->commit();
+            return ['success' => true, 'status' => 200, 'message' => 'Message deleted'];
+        } catch (Throwable $e) {
+            if ($connection->inTransaction()) {
+                $connection->rollBack();
+            }
+            error_log('deleteMessage failed: ' . $e->getMessage());
+            return ['success' => false, 'status' => 500, 'message' => 'Failed to delete message'];
+        }
+    }
+
     private function markMessageAsRead(int $messageId, int $userId): void {
         $sql = "
             INSERT INTO MessageReadStatus (message_id, user_id, read_at)
@@ -445,7 +720,7 @@ class MessageModel {
         ]);
     }
 
-    public function getSharedMedia(int $conversationId): array {
+    public function getSharedMedia(int $conversationId, int $viewerUserId): array {
         $sql = "
             SELECT message_id, message_type, file_url, file_name, file_size, created_at
             FROM Messages
@@ -479,9 +754,139 @@ class MessageModel {
         }
 
         return [
+            'about' => $this->getConversationAbout($conversationId, $viewerUserId),
+            'files' => $items,
             'photos' => $photos,
             'videos' => $videos,
             'documents' => $documents,
+        ];
+    }
+
+    private function getConversationAbout(int $conversationId, int $viewerUserId): array {
+        $typeSql = "
+            SELECT c.conversation_type
+            FROM Conversations c
+            INNER JOIN ConversationParticipants cp
+                ON cp.conversation_id = c.conversation_id
+                AND cp.user_id = :viewerUserId
+                AND cp.is_active = TRUE
+            WHERE c.conversation_id = :conversationId
+            LIMIT 1";
+
+        $typeStmt = $this->conn()->prepare($typeSql);
+        $typeStmt->execute([
+            ':conversationId' => $conversationId,
+            ':viewerUserId' => $viewerUserId,
+        ]);
+        $conversationType = (string)($typeStmt->fetchColumn() ?: '');
+
+        if ($conversationType === 'direct') {
+            $directSql = "
+                SELECT
+                    u.user_id,
+                    u.first_name,
+                    u.last_name,
+                    u.username,
+                    u.profile_picture,
+                    u.cover_photo,
+                    u.friends_count
+                FROM ConversationParticipants self_cp
+                INNER JOIN ConversationParticipants peer_cp
+                    ON peer_cp.conversation_id = self_cp.conversation_id
+                    AND peer_cp.user_id <> :viewerUserId
+                    AND peer_cp.is_active = TRUE
+                INNER JOIN Users u
+                    ON u.user_id = peer_cp.user_id
+                WHERE self_cp.conversation_id = :conversationId
+                  AND self_cp.user_id = :viewerUserId
+                  AND self_cp.is_active = TRUE
+                LIMIT 1";
+
+            $directStmt = $this->conn()->prepare($directSql);
+            $directStmt->execute([
+                ':conversationId' => $conversationId,
+                ':viewerUserId' => $viewerUserId,
+            ]);
+            $peer = $directStmt->fetch(PDO::FETCH_ASSOC) ?: [];
+
+            $name = trim(((string)($peer['first_name'] ?? '')) . ' ' . ((string)($peer['last_name'] ?? '')));
+            if ($name === '') {
+                $name = (string)($peer['username'] ?? 'User');
+            }
+
+            return [
+                'type' => 'direct',
+                'name' => $name,
+                'username' => (string)($peer['username'] ?? ''),
+                'avatar' => (string)($peer['profile_picture'] ?? ''),
+                'cover_image' => (string)($peer['cover_photo'] ?? ''),
+                'friend_count' => (int)($peer['friends_count'] ?? 0),
+                'profile_user_id' => isset($peer['user_id']) ? (int)$peer['user_id'] : null,
+                'group_tag' => null,
+                'member_count' => null,
+                'channel_id' => null,
+                'group_id' => null,
+                'description' => '',
+            ];
+        }
+
+        if ($conversationType === 'group') {
+            $groupSql = "
+                SELECT
+                    ch.channel_id,
+                    ch.group_id,
+                    ch.name AS channel_name,
+                    ch.description,
+                    ch.display_picture,
+                    g.tag,
+                    g.member_count,
+                    g.cover_image
+                FROM Channel ch
+                INNER JOIN GroupsTable g
+                    ON g.group_id = ch.group_id
+                INNER JOIN ConversationParticipants cp
+                    ON cp.conversation_id = ch.conversation_id
+                    AND cp.user_id = :viewerUserId
+                    AND cp.is_active = TRUE
+                WHERE ch.conversation_id = :conversationId
+                LIMIT 1";
+
+            $groupStmt = $this->conn()->prepare($groupSql);
+            $groupStmt->execute([
+                ':conversationId' => $conversationId,
+                ':viewerUserId' => $viewerUserId,
+            ]);
+            $channel = $groupStmt->fetch(PDO::FETCH_ASSOC) ?: [];
+
+            return [
+                'type' => 'group',
+                'name' => (string)($channel['channel_name'] ?? 'Channel'),
+                'username' => '',
+                'avatar' => (string)($channel['display_picture'] ?? ''),
+                'cover_image' => (string)($channel['cover_image'] ?? ''),
+                'friend_count' => null,
+                'profile_user_id' => null,
+                'group_tag' => (string)($channel['tag'] ?? ''),
+                'member_count' => isset($channel['member_count']) ? (int)$channel['member_count'] : null,
+                'channel_id' => isset($channel['channel_id']) ? (int)$channel['channel_id'] : null,
+                'group_id' => isset($channel['group_id']) ? (int)$channel['group_id'] : null,
+                'description' => (string)($channel['description'] ?? ''),
+            ];
+        }
+
+        return [
+            'type' => 'unknown',
+            'name' => 'Conversation',
+            'username' => '',
+            'avatar' => '',
+            'cover_image' => '',
+            'friend_count' => null,
+            'profile_user_id' => null,
+            'group_tag' => null,
+            'member_count' => null,
+            'channel_id' => null,
+            'group_id' => null,
+            'description' => '',
         ];
     }
 
