@@ -1,6 +1,4 @@
 <?php
-require_once __DIR__ . '/../models/CalendarReminderModel.php';
-
 class CalendarController {
     private $calendarModel;
 

@@ -1,9 +1,4 @@
 <?php
-require_once __DIR__ . '/../models/ReportModel.php';
-require_once __DIR__ . '/../models/PostModel.php';
-require_once __DIR__ . '/../models/UserModel.php';
-require_once __DIR__ . '/../models/GroupModel.php';
-
 class ReportController {
     private ReportModel $reportModel;
     private PostModel $postModel;
