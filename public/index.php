@@ -1,15 +1,21 @@
 <?php
 require_once __DIR__ . '/../config/config.php';
+require_once __DIR__ . '/../app/controllers/BaseController.php';
+require_once __DIR__ . '/../app/helpers/MediaHelper.php';
 session_start();
 
-// Autoload classes
-spl_autoload_register(function ($class) {
-    $paths = [
-        __DIR__ . '/../app/controllers/' . $class . '.php',
-        __DIR__ . '/../app/models/' . $class . '.php'
-    ];
-    foreach ($paths as $path) {
-        if (file_exists($path)) {
+spl_autoload_register(function ($class)
+{
+    $controllerPath[] =__DIR__ . '/../app/controllers/api/' . $class . '.php';
+    $controllerPath[] = __DIR__ . '/../app/controllers/web/' . $class . '.php';
+    $modelPath = __DIR__ . '/../app/models/' . $class . '.php';
+    
+    $paths = array_merge($controllerPath, [$modelPath]);
+
+    foreach ($paths as $path)
+    {
+        if (file_exists($path))
+        {
             require_once $path;
             return;
         }
@@ -17,23 +23,26 @@ spl_autoload_register(function ($class) {
 });
 
 // Parse controller and action from query params (fallback routing)
-$controllerName = isset($_GET['controller']) ? $_GET['controller'] : 'Home';
+$controllerName = isset($_GET['controller']) ? $_GET['controller'] : 'Feed';
 $actionName = isset($_GET['action']) ? $_GET['action'] : 'index';
 
-// Build controller class name
-$controllerClass = $controllerName . 'Controller';
+$controllerClass = $controllerName . 'Controller'; // Build controller class name
 
-// Check if controller exists
-if (class_exists($controllerClass)) {
+if (class_exists($controllerClass)) // Check if controller exists
+{
     $controller = new $controllerClass();
-    if (method_exists($controller, $actionName)) {
-        // Call action
-        $controller->$actionName();
-    } else {
+    if (method_exists($controller, $actionName))
+    {
+        $controller->$actionName(); // Call action
+    }
+    else
+    {
         http_response_code(404);
         echo json_encode(['error' => "Action '$actionName' not found"]);
     }
-} else {
+}
+else
+{
     http_response_code(404);
     echo json_encode(['error' => "Controller '$controllerClass' not found"]);
 }

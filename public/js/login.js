@@ -1,109 +1,41 @@
-// DOM Elements
-const authForm = document.getElementById('auth-form');
-const authSwitchLink = document.getElementById('auth-switch-link');
-const authSwitchText = document.getElementById('auth-switch-text');
+import { api } from "./utils/api.js";
 
-// Initialize with login form
-renderLoginForm();
+const loginForm = document.getElementById('login-form');
+const successMessage = document.getElementById('success-message')
+const errorMessage = document.getElementById('error-message')
 
-// Switch between forms
-authSwitchLink.addEventListener('click', (e) => {
+loginForm.addEventListener('submit', async (e) =>
+{
     e.preventDefault();
-    if (authForm.dataset.form === 'login') {
-        renderRegisterForm();
-    } else {
-        renderLoginForm();
-    }
-});
+    const formData = new FormData(loginForm);
+    const data = Object.fromEntries(formData.entries())
+    console.log(data);
 
-// Form submission
-authForm.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const formData = new FormData(authForm);
-    
-    if (authForm.dataset.form === 'login') {
-        // Handle login
-        try {
-            // Simulate API call
-            await new Promise(resolve => setTimeout(resolve, 500));
-            window.location.href = 'myFeed.html'; // Redirect to feed after login
-        } catch (error) {
-            console.error('Login error:', error);
+    try
+    {
+        const response = await api('Auth', 'login', data)
+        if (response.status === 'success')
+        {
+            errorMessage.style.display = 'none'
+            successMessage.style.display = 'block'
+            successMessage.innerHTML = `Login Successful`
+
+            setTimeout(() => {
+                window.location.href = response.redirect;
+            }, 1500)
         }
-    } else {
-        // Handle registration
-        try {
-            // Check if passwords match
-            const password = formData.get('password');
-            const confirmPassword = formData.get('confirmPassword');
-            
-            if (password !== confirmPassword) {
-                alert('Passwords do not match!');
-                return;
-            }
-            
-            // Simulate API call
-            await new Promise(resolve => setTimeout(resolve, 500));
-            
-            // After successful registration
-            renderLoginForm(); // Switch back to login form
-            // You could add a visual indicator that registration was successful
-            const emailField = authForm.querySelector('input[type="email"]');
-            if (emailField) emailField.value = formData.get('email');
-        } catch (error) {
-            console.error('Registration error:', error);
+        else if (response.status === 'error')
+        {
+            successMessage.style.display = 'none'
+            errorMessage.style.display = 'block';
+            errorMessage.innerHTML = `${response.errors.join('<br>')}`
         }
     }
+    catch (error)
+    {
+        console.error('Login error:', error);
+        successMessage.style.display = 'none'
+        errorMessage.style.display = 'block';
+        errorMessage.innerHTML = 'A system error occurred. Please try again.';
+    }
 });
-
-function renderLoginForm() {
-    authForm.dataset.form = 'login';
-    authForm.innerHTML = `
-        <div class="form-group-l">
-            <i class="uil uil-envelope"></i>
-            <input type="email" name="email" placeholder="Email" required>
-        </div>
-        <div class="form-group-l">
-            <i class="uil uil-lock"></i>
-            <input type="password" name="password" placeholder="Password" required>
-        </div>
-        <button type="submit" class="btn btn-primary btn-block">Login</button>
-    `;
-    authSwitchText.innerHTML = 'Don\'t have an account? <a href="#" id="auth-switch-link">Register</a>';
-    // Re-bind the switch link event
-    document.getElementById('auth-switch-link').addEventListener('click', (e) => {
-        e.preventDefault();
-        renderRegisterForm();
-    });
-}
-
-function renderRegisterForm() {
-    authForm.dataset.form = 'register';
-    authForm.innerHTML = `
-        <div class="form-group-l minimal">
-            <i class="uil uil-user"></i>
-            <input type="text" name="username" placeholder="Username" required>
-        </div>
-        <div class="form-group-l minimal">
-            <i class="uil uil-envelope"></i>
-            <input type="email" name="email" placeholder="Email" required>
-        </div>
-        <div class="form-group-l minimal">
-            <i class="uil uil-lock"></i>
-            <input type="password" name="password" placeholder="Password" required>
-        </div>
-        <div class="form-group-l minimal">
-            <i class="uil uil-lock-access"></i>
-            <input type="password" name="confirmPassword" placeholder="Confirm Password" required>
-        </div>
-        <button type="submit" class="btn btn-primary btn-block">Register</button>
-    `;
-    // ... rest of the function
-
-    authSwitchText.innerHTML = 'Already have an account? <a href="#" id="auth-switch-link">Login</a>';
-    // Re-bind the switch link event
-    document.getElementById('auth-switch-link').addEventListener('click', (e) => {
-        e.preventDefault();
-        renderLoginForm();
-    });
-}

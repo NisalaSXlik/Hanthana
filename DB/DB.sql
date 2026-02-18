@@ -1,11 +1,10 @@
--- Users table (enhanced with phone number)
 CREATE TABLE Users (
     user_id INT AUTO_INCREMENT PRIMARY KEY,
     first_name VARCHAR(100) NOT NULL,
     last_name VARCHAR(100) NOT NULL,
     email VARCHAR(255) UNIQUE NOT NULL,
-    phone_number VARCHAR(20) NULL, -- ADDED PHONE NUMBER
-    password_hash VARCHAR(255) NOT NULL,
+    phone_number VARCHAR(20) NULL,
+    password VARCHAR(255) NOT NULL,
     username VARCHAR(50) UNIQUE NOT NULL,
     bio TEXT,
     profile_picture VARCHAR(255),

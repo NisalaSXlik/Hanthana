@@ -1,21 +1,3 @@
-<?php
-require_once __DIR__ . '/../../config/config.php';
-require_once __DIR__ . '/../controllers/AuthController.php';
-
-$authController = new AuthController();
-$errors = [];
-
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $result = $authController->register($_POST);
-    
-    if ($result['success']) {
-        header('Location: ' . BASE_PATH .'index.php?controller=Login&action=index');
-        exit;
-    } else {
-        $errors = $result['errors'];
-    }
-}
-?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -29,51 +11,39 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <body>
     <div class="auth-container">
         <div class="auth-card signup-card">
-            <form method="POST" action="/?controller=Signup&action=index" class="auth-form" id="signup-form" data-form="signup">
+            <form class="auth-form" id="signup-form">
                 <div class="auth-header">
                     <div class="logo">Hanthana</div>
                     <div class="tagline">Connect with your community</div>
                 </div>
 
-                <!-- Error Messages Only (success redirects) -->
-                <?php if (isset($_SESSION['signup_errors'])): ?>
-                    <div class="error-messages" style="color: red; padding: 10px; margin-bottom: 15px;">
-                        <?php foreach ($_SESSION['signup_errors'] as $error): ?>
-                            <div>❌ <?php echo htmlspecialchars($error); ?></div>
-                        <?php endforeach; ?>
-                        <?php unset($_SESSION['signup_errors']); ?>
-                    </div>
-                <?php endif; ?>
+                <div class="success-message" id="success-message">edee</div>
+                <div class="error-message" id="error-message">eeff</div>
 
                 <div class="signup-name-row">
                     <div class="form-group-l signup-form-group">
                         <i class="uil uil-user"></i>
-                        <input type="text" name="first_name" placeholder="First Name" required 
-                               value="<?php echo isset($_POST['first_name']) ? htmlspecialchars($_POST['first_name']) : ''; ?>">
+                        <input type="text" name="first_name" placeholder="First Name" required>
                     </div>
                     <div class="form-group-l signup-form-group">
                         <i class="uil uil-user"></i>
-                        <input type="text" name="last_name" placeholder="Last Name" required
-                               value="<?php echo isset($_POST['last_name']) ? htmlspecialchars($_POST['last_name']) : ''; ?>">
+                        <input type="text" name="last_name" placeholder="Last Name" required>
                     </div>
                 </div>
                 
                 <div class="form-group-l signup-form-group">
                     <i class="uil uil-user"></i>
-                    <input type="text" name="username" placeholder="Username" required
-                           value="<?php echo isset($_POST['username']) ? htmlspecialchars($_POST['username']) : ''; ?>">
+                    <input type="text" name="username" placeholder="Username" required>
                 </div>
                 
                 <div class="form-group-l signup-form-group">
                     <i class="uil uil-envelope"></i>
-                    <input type="email" name="email" placeholder="Email" required
-                           value="<?php echo isset($_POST['email']) ? htmlspecialchars($_POST['email']) : ''; ?>">
+                    <input type="email" name="email" placeholder="Email" required>
                 </div>
                 
                 <div class="form-group-l signup-form-group">
                     <i class="uil uil-phone"></i>
-                    <input type="tel" name="phone" placeholder="Phone Number" pattern="[0-9]{10}" required
-                           value="<?php echo isset($_POST['phone']) ? htmlspecialchars($_POST['phone']) : ''; ?>">
+                    <input type="tel" name="phone_number" placeholder="Phone Number" required>
                 </div>
                 
                 <div class="form-group-l signup-form-group">
@@ -83,7 +53,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 
                 <div class="form-group-l signup-form-group">
                     <i class="uil uil-lock"></i>
-                    <input type="password" name="confirmPassword" placeholder="Confirm Password" required>
+                    <input type="password" name="password_confirmation" placeholder="Confirm Password" required>
                 </div>
                 
                 <button type="submit" class="btn btn-primary btn-block">Sign Up</button>
@@ -93,6 +63,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         </div>
     </div>
 
-    <script src="./js/signup.js"></script>
+    <script type="module" src="./js/signup.js"></script>
 </body>
 </html>

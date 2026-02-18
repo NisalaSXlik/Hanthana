@@ -16,7 +16,6 @@ class Database {
                 ]
             );
             
-            // Set MySQL timezone to match PHP timezone
             if (defined('APP_TIMEZONE')) {
                 $offset = (new DateTime('now', new DateTimeZone(APP_TIMEZONE)))->format('P');
                 $this->connection->exec("SET time_zone = '$offset'");

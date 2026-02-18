@@ -1,7 +1,7 @@
 <?php
 // Database configuration
 define('DB_HOST', 'db');
-define('DB_NAME', 'hanthane_db');
+define('DB_NAME', 'hanthana_db');
 define('DB_USER', 'root');
 define('DB_PASS', 'rootpassword');
 define('DB_CHARSET', 'utf8mb4');

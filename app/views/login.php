@@ -1,41 +1,3 @@
-<?php
-require_once __DIR__ . '/../../config/config.php';
-require_once __DIR__ . '/../controllers/AuthController.php';
-
-if (session_status() === PHP_SESSION_NONE) {
-	session_start();
-}
-
-if (isset($_SESSION['user_id'])) {
-    header('Location: ' . BASE_PATH . 'index.php?controller=Feed&action=index');
-    exit();
-}
-
-$authController = new AuthController();
-$error = '';
-$success = '';
-
-// Handle login form submission
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $identifier = $_POST['identifier'] ?? '';
-    $password = $_POST['password'] ?? '';
-    
-    $result = $authController->login($identifier, $password);
-    
-    if ($result['success']) {
-        header('Location: ' . BASE_PATH . 'index.php?controller=Feed&action=index'); 
-        exit;
-    } else {
-        $error = $result['errors'][0] ?? 'Login failed';
-    }
-}
-
-// Show success message if redirected from registration
-if (isset($_GET['registered']) && $_GET['registered'] === 'true') {
-    $success = "Registration successful! Please login.";
-}
-?>
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -55,26 +17,13 @@ if (isset($_GET['registered']) && $_GET['registered'] === 'true') {
                 <p class="tagline">Connect with your community</p>
             </div>
 
-            <!-- Success Message -->
-            <?php if ($success): ?>
-                <div class="success-message" style="color: green; padding: 10px; text-align: center; margin-bottom: 15px; background: #d4ffd4; border-radius: 5px;">
-                    ✅ <?php echo htmlspecialchars($success); ?>
-                </div>
-            <?php endif; ?>
-
-            <!-- Error Message -->
-            <?php if ($error): ?>
-                <div class="error-message" style="color: red; padding: 10px; text-align: center; margin-bottom: 15px; background: #ffd4d4; border-radius: 5px;">
-                    ❌ <?php echo htmlspecialchars($error); ?>
-                </div>
-            <?php endif; ?>
+            <div class="success-message" id="success-message"></div>
+            <div class="error-message" id="error-message"></div>
             
-            <!-- Login Form -->
-            <form class="auth-form" method="post" action="">
+            <form class="auth-form" id="login-form" data-form="login">
                 <div class="form-group-l">
                     <i class="uil uil-envelope"></i>
-                    <input type="text" name="identifier" placeholder="Email or Phone Number" required
-                           value="<?php echo isset($_POST['identifier']) ? htmlspecialchars($_POST['identifier']) : ''; ?>">
+                    <input type="text" name="identifier" placeholder="Email or Phone Number" required>
                 </div>
                 <div class="form-group-l">
                     <i class="uil uil-lock"></i>
@@ -90,7 +39,6 @@ if (isset($_GET['registered']) && $_GET['registered'] === 'true') {
         </div>
     </div>
 
-    <!-- Optional: Keep JS for enhanced UX (not required) -->
-    <script src="./js/login.js"></script>
+    <script type="module" src="./js/login.js"></script>
 </body>
 </html>
