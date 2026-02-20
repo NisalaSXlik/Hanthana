@@ -1,12 +1,4 @@
 <?php
-require_once __DIR__ . '/../models/UserModel.php';
-require_once __DIR__ . '/../models/PostModel.php';
-require_once __DIR__ . '/../models/GroupModel.php';
-require_once __DIR__ . '/../models/FriendModel.php';
-require_once __DIR__ . '/../models/SettingsModel.php';
-require_once __DIR__ . '/../models/ReportModel.php';
-require_once __DIR__ . '/../../config/config.php';
-
 class AdminController {
     private UserModel $userModel;
     private PostModel $postModel;

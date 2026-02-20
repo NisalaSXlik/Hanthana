@@ -1,8 +1,4 @@
 <?php
-require_once __DIR__ . '/../models/MessageModel.php';
-require_once __DIR__ . '/../models/FriendModel.php';
-require_once __DIR__ . '/../models/ChannelModel.php';
-
 class ChatController {
     private MessageModel $messageModel;
     private FriendModel $friendModel;
