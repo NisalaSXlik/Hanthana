@@ -1,21 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
-
-:root {
-    --color-dark: #1e293b;
-    --color-light: #f1f5f9;
-    --color-white: #ffffff;
-    --color-primary: #0ea5e9;
-    --color-secondary: #0369a1;
-    --color-success: #10b981;
-    --color-danger: #ef4444;
-    --color-gray: #64748b;
-    
-    --border-radius: 1rem;
-    --card-border-radius: 0.5rem;
-    --btn-padding: 0.5rem 1.5rem;
-    --card-padding: 1rem;
-}
-
+/* Uses global :root variables from general.css */
 
 /* Middle Feed */
 .middle .feeds {
@@ -27,14 +10,15 @@
 .feed {
     background: var(--color-white);
     border-radius: var(--card-border-radius);
-    padding: var(--card-padding);
+    padding: 0.9rem 1rem;
+    font-size: 0.95rem;
 }
 
 .feed .head {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 1rem;
+    margin-bottom: 0.55rem;
     position: relative;
 }
 
@@ -53,7 +37,7 @@
 
 .feed .user {
     display: flex;
-    gap: 1rem;
+    gap: 0.65rem;
     align-items: center;
 }
 
@@ -69,10 +53,11 @@
 
 .feed .photo {
     width: 100%;
-    height: 400px; /* Fixed height for all posts */
+    height: auto;
+    aspect-ratio: 5 / 4;
     overflow: hidden;
     border-radius: var(--card-border-radius);
-    margin: 0.7rem 0;
+    margin: 0 0 0.6rem;
 }
 
 .feed .photo img {
@@ -82,79 +67,181 @@
     transition: transform 0.3s ease; /* Optional: for hover effects */
 }
 
+.feed .photo.post-media-video {
+    aspect-ratio: auto;
+    height: auto;
+    background: #000;
+}
+
+.feed .photo.post-media-video video {
+    width: 100%;
+    height: auto;
+    max-height: 32rem;
+    object-fit: contain;
+    display: block;
+}
+
 
 .feed .action-buttons {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 0.5rem 0;
-    margin: 0.5rem 0;
+    gap: 0.8rem;
+    flex-wrap: nowrap;
+    padding: 0.45rem 0 0.15rem;
+    margin: 0.2rem 0 0;
 }
 
 .feed .interaction-buttons {
     display: flex;
-    gap: 1.25rem;
+    gap: 1rem;
     align-items: center;
-}
-
-.feed .interaction-buttons i,
-.feed .bookmark i {
-    font-size: 1.4rem;
-    cursor: pointer;
-    color: var(--color-dark);
-    transition: color 0.2s;
-    text-decoration: none !important;
-}
-
-.feed .interaction-buttons i:hover,
-.feed .bookmark i:hover {
-    color: var(--color-primary);
-    text-decoration: none !important;
-}
-
-.feed .interaction-buttons i.liked {
-    color: var(--color-danger);  /* Red */
-}
-
-.feed .interaction-buttons small {
-    font-size: 0.7rem; /* Smaller than default for subtlety */
-    margin-left: 0.2rem; /* Small gap from icon */
-    color: var(--color-gray); /* Match gray theme */
-    vertical-align: middle; /* Align with icon */
+    flex-wrap: nowrap;
+    min-width: 0;
 }
 
 .feed .interaction-item {
     display: flex;
     align-items: center;
-    gap: 0.35rem;
+    gap: 0.5rem;
     line-height: 1;
+    white-space: nowrap;
 }
 
 .feed .interaction-count {
-    font-size: 0.8rem;
+    font-size: 0.9rem;
     color: var(--color-gray);
 }
 
-.feed .bookmark-item {
-    display: flex;
+.feed .upvote-btn .uil-arrow-up,
+.feed .downvote-btn .uil-arrow-down {
+    width: 40px;
+    height: 40px;
+    border: 2px solid #e2e8f0;
+    background: #f8fafc;
+    border-radius: 8px;
+    cursor: pointer;
+    display: inline-flex;
     align-items: center;
+    justify-content: center;
+    font-size: 1.25rem;
+    color: var(--color-gray);
+    transition: all 0.2s ease;
 }
 
-/* Remove any underline effects from icons */
-.uil,
-.uil-comment,
-.uil-heart,
-.uil-share-alt,
-.uil-bookmark {
-    text-decoration: none !important;
+.feed .upvote-btn .uil-arrow-up:hover,
+.feed .downvote-btn .uil-arrow-down:hover {
+    border-color: var(--color-primary);
+    background: #e0f2fe;
+    color: var(--color-primary);
 }
 
-.uil:hover,
-.uil-comment:hover,
-.uil-heart:hover,
-.uil-share-alt:hover,
-.uil-bookmark:hover {
-    text-decoration: none !important;
+.feed .upvote-btn .uil-arrow-up.liked,
+.feed .downvote-btn .uil-arrow-down.liked {
+    border-color: var(--color-primary);
+    background: #e0f2fe;
+    color: var(--color-primary);
+}
+
+.feed .comments-side {
+    margin-left: auto;
+    flex-shrink: 0;
+}
+
+.feed .bookmark-item {
+    order: 2;
+    align-self: center;
+    display: inline-flex;
+    align-items: center;
+    gap: 0;
+    margin-left: 0.25rem;
+}
+
+/* Keep bookmark comfortably inside card edge despite group feed overrides */
+body .middle .feed .action-buttons .interaction-buttons {
+    width: auto;
+    flex: 0 1 auto;
+    min-width: 0;
+}
+
+body .middle .feed .action-buttons {
+    margin: 0.35rem 0 0.1rem;
+    padding: 0.35rem 0 0.2rem;
+    border-top: none;
+    border-bottom: none;
+}
+
+body .middle .feed .action-buttons .bookmark-item {
+    margin-right: 0.45rem;
+}
+
+.feed .bookmark-btn {
+    width: auto;
+    height: auto;
+    border: 0;
+    background: transparent;
+    border-radius: 0;
+    padding: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+    vertical-align: middle;
+    cursor: pointer;
+    transition: color 0.2s ease;
+}
+
+.feed .bookmark-btn i {
+    font-size: 1.25rem;
+    color: var(--color-gray);
+    display: block;
+    line-height: 1;
+}
+
+.feed .bookmark-btn:hover {
+    background: transparent;
+    border: 0;
+}
+
+.feed .bookmark-btn:hover i {
+    color: var(--color-primary);
+}
+
+.feed .bookmark-btn.bookmarked {
+    border: 0;
+    background: transparent;
+}
+
+.feed .bookmark-btn.bookmarked i,
+.feed .bookmark-btn i.bookmarked {
+    color: var(--color-primary);
+}
+
+.feed .action-buttons .interaction-item,
+.feed .action-buttons .comments-side {
+    min-width: 0;
+}
+
+.feed .comments-side .question-answer-link-btn {
+    border: 1px solid var(--gray-200);
+    background: #fff;
+    color: var(--color-gray);
+    border-radius: 8px;
+    min-height: 32px;
+    padding: 0.35rem 0.75rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    cursor: pointer;
+    font-size: 0.85rem;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.feed .comments-side .question-answer-link-btn:hover {
+    background: var(--gray-100);
+    color: var(--color-dark);
+    border-color: var(--gray-300);
 }
 
 .feed .liked-by {
@@ -192,40 +279,25 @@
     margin-bottom: 0.5rem;
 }
 
+.feed .caption.compact-caption {
+    margin-bottom: 0.35rem;
+}
+
+.feed .caption.compact-caption .post-text {
+    font-size: 1rem;
+    font-weight: 500;
+    line-height: 1.5;
+    color: var(--color-dark);
+}
+
 .feed .caption p {
-    font-size: 0.9rem;
+    font-size: 0.95rem;
+    line-height: 1.45;
+    color: var(--color-dark);
 }
 
 .feed .caption p b {
     font-weight: 600;
-}
-
-/* View all comments styling */
-.feed .comments,
-.feed .load-comments-btn {
-    font-size: 0.85rem;
-    color: var(--color-gray);
-    cursor: pointer;
-    margin: 0.5rem 0;
-    display: inline-block;
-    text-decoration: none !important;
-}
-
-.feed .comments:hover,
-.feed .load-comments-btn:hover {
-    color: var(--color-primary);
-    text-decoration: none !important;
-}
-
-/* Remove link underline effects */
-.feed a.comments,
-.feed a.load-comments-btn {
-    text-decoration: none !important;
-}
-
-.feed a.comments:hover,
-.feed a.load-comments-btn:hover {
-    text-decoration: none !important;
 }
 
 /* Right Sidebar */
@@ -233,4 +305,88 @@
     position: sticky;
     top: 6rem;
     height: fit-content;
+}
+
+.event-content {
+    background: transparent;
+    padding: 0;
+    border-radius: 0;
+    margin-top: 0;
+}
+
+.event-content-layout {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 0.8rem;
+    align-items: center;
+}
+
+.event-content-main {
+    min-width: 0;
+}
+
+.event-title {
+    font-size: 1.08rem;
+    font-weight: 700;
+    margin: 0 0 0.6rem 0;
+    line-height: 1.25;
+    color: var(--color-dark);
+}
+
+.event-details {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    margin-top: 0.65rem;
+}
+
+.event-detail {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.55rem;
+    background: transparent;
+    padding: 0;
+    border-radius: 0;
+    font-size: 0.92rem;
+    line-height: 1.4;
+}
+
+.event-detail i {
+    color: var(--color-primary);
+    font-size: 1rem;
+}
+
+.event-side-image {
+    width: 100%;
+    height: auto;
+    aspect-ratio: 5 / 4;
+    border-radius: 10px;
+    overflow: hidden;
+    align-self: stretch;
+    margin-top: 0.8rem;
+}
+
+.event-side-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+@media (max-width: 768px) {
+    .feed .action-buttons {
+        gap: 0.5rem;
+    }
+
+    .feed .interaction-buttons {
+        gap: 0.5rem;
+    }
+
+    .feed .comments-side .question-answer-link-btn {
+        padding: 0.35rem 0.55rem;
+        font-size: 0.8rem;
+    }
+
+    .event-side-image {
+        width: 100%;
+    }
 }
