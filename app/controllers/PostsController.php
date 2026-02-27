@@ -24,9 +24,40 @@ class PostsController {
             case 'create': $this->createPost($input); break;
             case 'update': $this->updatePost($input); break;
             case 'delete': $this->deletePost($input); break;
+            case 'bookmark': $this->bookmarkFromHandleAjax($input); break;
             default: echo json_encode(['success' => false, 'message' => 'Invalid action']);
         }
         exit;
+    }
+
+    public function bookmark() {
+        header('Content-Type: application/json');
+        if (!isset($_SESSION['user_id'])) {
+            echo json_encode(['success' => false, 'message' => 'Not authenticated']);
+            return;
+        }
+
+        $postId = isset($_POST['post_id']) ? (int)$_POST['post_id'] : 0;
+        $action = isset($_POST['action']) ? trim((string)$_POST['action']) : 'toggle';
+
+        if ($postId <= 0) {
+            http_response_code(400);
+            echo json_encode(['success' => false, 'message' => 'Invalid post ID']);
+            return;
+        }
+
+        $model = new PostModel();
+        $result = $model->setPostBookmark((int)$_SESSION['user_id'], $postId, $action);
+
+        if (empty($result['success'])) {
+            http_response_code(400);
+        }
+
+        echo json_encode([
+            'success' => !empty($result['success']),
+            'bookmarked' => !empty($result['bookmarked']),
+            'message' => $result['message'] ?? (!empty($result['bookmarked']) ? 'Post saved' : 'Bookmark removed')
+        ]);
     }
 
     private function createPost($data) {
@@ -48,20 +79,30 @@ class PostsController {
         $tags = trim($data['tags'] ?? '');
         $postType = $data['postType'] ?? 'general';
         $eventTitle = trim($data['eventTitle'] ?? '');
-        $eventDate = $data['eventDate'] ?? '';
+        $eventDate = trim($data['eventDate'] ?? '');
+        $eventTime = trim($data['eventTime'] ?? ''); // ✅ capture event time
         $eventLocation = trim($data['eventLocation'] ?? '');
         $groupId = null;
 
         // Get user's post visibility setting
         $settingsModel = new SettingsModel();
         $userSettings = $settingsModel->getUserSettings($authorId);
-        $postVisibility = $userSettings['post_visibility'] ?? 'friends';
+        $rawVisibility = $userSettings['post_visibility'] ?? 'friends_only';
+
+        // Mapping to DB ENUM values
+        $visibilityMap = [
+            'only_me'      => 'private',
+            'friends_only' => 'friends_only',
+            'everyone'     => 'public'
+        ];
+
+        // Final visibility for DB
+        $postVisibility = $visibilityMap[$rawVisibility] ?? 'friends_only';
 
         // Validate requisites
         $errors = [];
         if (empty($caption)) $errors[] = 'Caption required.';
-        $tagArray = array_filter(array_map('trim', explode(',', $tags)));
-        if (count($tagArray) < 5) $errors[] = 'At least 5 tags required.';
+        $tagArray = array_filter(array_map('trim', explode(',', $tags))); // optional tags
         if ($postType === 'event' && (empty($eventTitle) || empty($eventDate))) $errors[] = 'Event details required.';
 
         // Check foreign key for group_id if set
@@ -77,14 +118,28 @@ class PostsController {
             return;
         }
 
-        // Handle image upload (only if provided)
+        // Handle media upload (image/video, if provided)
         $serverPath = null;
-        $webPath = null;
         $imageName = null;
         $imageSize = null;
+        $dbPath = null;
+        $mediaType = null;
+
         if (isset($_FILES['image']) && $_FILES['image']['error'] === UPLOAD_ERR_OK) {
+            $mimeType = (string)($_FILES['image']['type'] ?? '');
+            if (strpos($mimeType, 'image/') === 0) {
+                $mediaType = 'image';
+            } elseif (strpos($mimeType, 'video/') === 0) {
+                $mediaType = 'video';
+            } else {
+                http_response_code(400);
+                echo json_encode(['success' => false, 'message' => 'Only image or video uploads are allowed.']);
+                return;
+            }
+
             $uploadDir = __DIR__ . '/../../public/uploads/post_media/';
             if (!is_dir($uploadDir)) mkdir($uploadDir, 0755, true);
+
             $imageName = uniqid() . '_' . basename($_FILES['image']['name']);
             $serverPath = $uploadDir . $imageName;
             $dbPath = 'uploads/post_media/' . $imageName;
@@ -98,30 +153,32 @@ class PostsController {
         }
 
         // Prepare data with privacy settings
-        $data = [
+        $postData = [
             'content' => $caption,
             'post_type' => ($postType === 'event') ? 'event' : 'image',
-            'visibility' => $postVisibility, // Use user's privacy setting
+            'visibility' => $postVisibility,
             'event_title' => $eventTitle ?: null,
-            'event_date' => $eventDate ? date('Y-m-d H:i:s', strtotime($eventDate)) : null,
+            'event_date' => $eventDate ?: null,                 // date only from input type="date"
+            'event_time' => $eventTime !== '' ? $eventTime : null, // ✅ store time from form
             'event_location' => $eventLocation ?: null,
             'is_group_post' => false,
             'group_id' => $groupId,
             'author_id' => $authorId,
-            'image_path' => $dbPath ?? null,
+            'image_path' => $dbPath,
             'image_name' => $imageName,
-            'image_size' => $imageSize
+            'image_size' => $imageSize,
+            'media_type' => $mediaType
         ];
 
         // Create post
-        $result = $model->createPost($data);
+        $result = $model->createPost($postData);
 
         if ($result['success']) {
             echo json_encode([
-                'success' => true, 
-                'message' => 'Post created!', 
+                'success' => true,
+                'message' => 'Post created!',
                 'post_id' => $result['post_id'],
-                'visibility' => $postVisibility // Return visibility for frontend
+                'visibility' => $postVisibility
             ]);
         } else {
             http_response_code(500);
@@ -168,5 +225,29 @@ class PostsController {
             http_response_code(403);
             echo json_encode(['success' => false, 'message' => 'Delete failed or not allowed']);
         }
+    }
+
+    private function bookmarkFromHandleAjax($data) {
+        $postId = (int)($data['post_id'] ?? 0);
+        $action = trim((string)($data['action'] ?? 'toggle'));
+
+        if ($postId <= 0) {
+            http_response_code(400);
+            echo json_encode(['success' => false, 'message' => 'Invalid post ID']);
+            return;
+        }
+
+        $model = new PostModel();
+        $result = $model->setPostBookmark((int)$_SESSION['user_id'], $postId, $action);
+
+        if (empty($result['success'])) {
+            http_response_code(400);
+        }
+
+        echo json_encode([
+            'success' => !empty($result['success']),
+            'bookmarked' => !empty($result['bookmarked']),
+            'message' => $result['message'] ?? (!empty($result['bookmarked']) ? 'Post saved' : 'Bookmark removed')
+        ]);
     }
 }
