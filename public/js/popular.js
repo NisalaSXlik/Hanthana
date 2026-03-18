@@ -45,7 +45,7 @@ async function loadPopularGroups() {
     const container = document.getElementById('popularGroupsContainer');
     
     try {
-        const response = await fetch(`${BASE_PATH}/index.php?controller=Popular&ajax_action=getPopularGroups&limit=12`);
+        const response = await fetch(`${BASE_PATH}/index.php?controller=QnA&ajax_action=getPopularGroups&limit=12`);
         const data = await response.json();
         
         if (data.success && data.groups && data.groups.length > 0) {
@@ -182,7 +182,7 @@ async function loadTrendingPosts() {
     const container = document.getElementById('trendingPostsContainer');
     
     try {
-        const response = await fetch(`${BASE_PATH}/index.php?controller=Popular&ajax_action=getTrendingPosts&limit=10`);
+        const response = await fetch(`${BASE_PATH}/index.php?controller=QnA&ajax_action=getTrendingPosts&limit=10`);
         const data = await response.json();
         
         console.log('Trending posts data:', data); // Debug log
@@ -261,22 +261,16 @@ function createSimplePostCard(post) {
     console.log('Post ID:', post.post_id, 'Image field:', imageField); // Debug log
     
     if (imageField) {
-        let imageUrl = imageField;
-        
-        // If the path doesn't start with BASE_PATH or http, construct the URL
-        if (!imageUrl.startsWith('http') && !imageUrl.includes(BASE_PATH)) {
-            const normalized = imageUrl.replace(/^\//, '');
-            if (normalized.startsWith('public/')) {
-                imageUrl = `${BASE_PATH}/${normalized}`;
-            } else if (normalized.startsWith('images/') || normalized.startsWith('uploads/')) {
-                imageUrl = `${BASE_PATH}/public/${normalized}`;
-            } else {
-                imageUrl = `${BASE_PATH}/public/uploads/${imageUrl.split('/').pop()}`;
-            }
+        let imageUrl = '';
+        if (imageField.startsWith('http')) {
+            imageUrl = imageField;
+        } else if (imageField.startsWith('images/') || imageField.startsWith('/images/') || 
+                       imageField.startsWith('uploads/') || imageField.startsWith('/uploads/')) {
+            imageUrl = `${BASE_PATH}/public/${imageField.replace(/^\//, '')}`;
+        } else {
+            imageUrl = `${BASE_PATH}/public/images/posts/${imageField}`;
         }
-        
-        console.log('Final image URL:', imageUrl); // Debug log
-        mediaHtml = `<img src="${imageUrl}" alt="Post image" onerror="this.style.display='none'; console.log('Failed to load image: ${imageUrl}')">`;
+        mediaHtml = `<div class="modal-post-image"><img src="${imageUrl}" alt="Post image" onerror="this.parentElement.style.display='none'"></div>`;
     } else if (post.video_url) {
         const videoUrl = post.video_url.startsWith('http') 
             ? post.video_url 
@@ -526,3 +520,4 @@ window.handleModalVote = async function(postId, voteType) {
         showNotification('Vote failed', 'error');
     }
 }
+
