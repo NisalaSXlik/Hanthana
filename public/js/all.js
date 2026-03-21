@@ -1,4 +1,3 @@
-
 // Generate random posts on page load
 document.addEventListener('DOMContentLoaded', function() {
     // Generate random likes and comments for existing posts
@@ -93,28 +92,48 @@ function loadDiscoverContent() {
         })
         .catch(err => console.error("Error loading discover content:", err));
 }
-
+// have in navbar js
 // Enhanced JavaScript with better event handling
-const profileDropdown = document.getElementById('profileDropdown');
-const dropdownMenu = profileDropdown.querySelector('.profile-dropdown');
-
-// Toggle dropdown
-profileDropdown.addEventListener('click', function(e) {
-    e.stopPropagation();
-    dropdownMenu.classList.toggle('show');
-});
-
-// Close when clicking outside
-document.addEventListener('click', function() {
-    dropdownMenu.classList.remove('show');
-});
-
-// Close when pressing ESC
-document.addEventListener('keydown', function(e) {
-    if (e.key === 'Escape') {
-        dropdownMenu.classList.remove('show');
+/*document.addEventListener('DOMContentLoaded', function() {
+    const profileDropdown = document.getElementById('profileDropdown');
+    
+    if (!profileDropdown) {
+        console.log('Profile dropdown not found');
+        return;
     }
-});
+    
+    const dropdownMenu = Array.from(profileDropdown.children).find(child => 
+        child.classList.contains('profile-dropdown')
+    );
+    
+    if (!dropdownMenu) {
+        console.log('Dropdown menu not found');
+        return;
+    }
+
+    // Toggle dropdown
+    profileDropdown.addEventListener('click', function(e) {
+        e.stopPropagation();
+        e.preventDefault();
+        dropdownMenu.classList.toggle('show');
+    });
+
+    // Close when clicking outside (with delay to avoid immediate close)
+    setTimeout(() => {
+        document.addEventListener('click', function(e) {
+            if (!profileDropdown.contains(e.target)) {
+                dropdownMenu.classList.remove('show');
+            }
+        });
+    }, 100);
+
+    // Close when pressing ESC
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            dropdownMenu.classList.remove('show');
+        }
+    });
+});*/
 
 // Add this to your myFeed.js
 document.addEventListener('DOMContentLoaded', function() {
@@ -253,7 +272,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Tag validation
     postTagsInput.addEventListener('input', function() {
         const tags = this.value.split(',').map(tag => tag.trim()).filter(tag => tag.length > 0);
-        tagCount.textContent = `${tags.length}/5 tags`;
+        tagCount.textContent = `${tags.length} tags`;
         
         // Enable share button only if there are at least 5 tags and an image is selected
         const hasImage = postImageInput.files && postImageInput.files.length > 0;
@@ -291,7 +310,7 @@ document.addEventListener('DOMContentLoaded', function() {
     function resetForm() {
         document.getElementById('postCaption').value = '';
         document.getElementById('postTags').value = '';
-        tagCount.textContent = '0/5 tags';
+        tagCount.textContent = '0 tags';
         postImageInput.value = '';
         document.querySelector('.image-upload').innerHTML = `
             <i class="uil uil-image-upload"></i>
@@ -357,14 +376,20 @@ function showToast(message, type = 'success') {
 });
 
 
-// Handle login/signup button clicks
-document.querySelector('.btn-login').addEventListener('click', () => {
-    window.location.href = 'login.html';
-});
+// Handle login/signup button clicks (only if they exist)
+const btnLogin = document.querySelector('.btn-login');
+if (btnLogin) {
+    btnLogin.addEventListener('click', () => {
+        window.location.href = 'login.html';
+    });
+}
 
-document.querySelector('.btn-primary').addEventListener('click', () => {
-    window.location.href = 'register.html';
-});
+const btnPrimary = document.querySelector('.btn-primary');
+if (btnPrimary) {
+    btnPrimary.addEventListener('click', () => {
+        window.location.href = 'register.html';
+    });
+}
 
 function protectedContentLoad() {
     console.log("HEllo");
