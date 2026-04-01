@@ -69,59 +69,21 @@ document.addEventListener('click', async function(e) {
                 btn.style.animation = '';
             });
 
-            pollContainer.dataset.userVote = optionIndex;
-            const voterPanel = document.getElementById(`poll-voters-${postId}`);
-            if (voterPanel && voterPanel.classList.contains('open')) {
-                loadPollVoters(postId, voterPanel);
-            }
+            applyPollStateToPost(postId, votes, Number(optionIndex));
 
-            // Animate vote count updates
-            pollContainer.querySelectorAll('.poll-option').forEach((optEl, idx) => {
-                const voteCount = Number(votes[idx] || 0);
-                const percentage = totalVotes > 0 ? Math.round((voteCount / totalVotes) * 100) : 0;
-                
-                console.log(`Option ${idx}: votes=${voteCount}, percentage=${percentage}%`);
-
-                // Update stats with smooth transition
-                const percentageEl = optEl.querySelector('.option-percentage');
-                const votesEl = optEl.querySelector('.option-votes');
-                const progressEl = optEl.querySelector('.option-progress');
-                
-                if (percentageEl) {
-                    percentageEl.style.transition = 'all 0.5s ease';
-                    percentageEl.textContent = percentage + '%';
-                    console.log('Updated percentage element:', percentageEl.textContent);
-                }
-                
-                if (votesEl) {
-                    votesEl.style.transition = 'all 0.5s ease';
-                    votesEl.textContent = voteCount + ' vote' + (voteCount === 1 ? '' : 's');
-                    console.log('Updated votes element:', votesEl.textContent);
-                }
-                
-                if (progressEl) {
-                    progressEl.style.transition = 'width 0.6s cubic-bezier(0.4, 0, 0.2, 1)';
-                    progressEl.style.width = percentage + '%';
-                }
-
-                // Mark selected option with highlight
-                if (idx == optionIndex) {
-                    optEl.classList.add('selected');
-                    const btn = optEl.querySelector('.poll-option-btn');
-                    if (btn) {
-                        btn.style.opacity = '1';
-                    }
-                } else {
-                    optEl.classList.remove('selected');
+            document.querySelectorAll(`.poll-voters-panel[data-post-id="${postId}"]`).forEach(panel => {
+                if (panel.classList.contains('open')) {
+                    loadPollVoters(postId, panel);
                 }
             });
 
-            // Update total votes with animation
-            const pollFooter = pollContainer.closest('.poll-content')?.querySelector('.poll-total-votes');
-            if (pollFooter) {
-                pollFooter.style.transition = 'all 0.3s ease';
-                pollFooter.textContent = totalVotes + ' total vote' + (totalVotes === 1 ? '' : 's');
-            }
+            window.dispatchEvent(new CustomEvent('hanthana:poll-vote-changed', {
+                detail: {
+                    postId: Number(postId),
+                    votes,
+                    selected: Number(optionIndex)
+                }
+            }));
 
             // Show success message
             if (window.showToast) {
@@ -168,6 +130,73 @@ document.addEventListener('click', async function(e) {
         }
     }
 });
+
+function applyPollStateToPost(postId, votes, selectedOptionIndex) {
+    const normalizedPostId = Number(postId);
+    if (!Number.isInteger(normalizedPostId)) {
+        return;
+    }
+
+    const normalizedVotes = Array.isArray(votes) ? votes : [];
+    const selectedIndex = Number.isInteger(Number(selectedOptionIndex)) ? Number(selectedOptionIndex) : -1;
+
+    document.querySelectorAll(`.poll-options[data-post-id="${normalizedPostId}"]`).forEach(container => {
+        applyPollStateToContainer(container, normalizedVotes, selectedIndex);
+    });
+}
+
+function applyPollStateToContainer(pollContainer, votes, selectedIndex) {
+    const totalVotes = votes.reduce((sum, val) => sum + Number(val || 0), 0);
+    pollContainer.dataset.userVote = String(selectedIndex);
+
+    pollContainer.querySelectorAll('.poll-option').forEach((optEl, idx) => {
+        const voteCount = Number(votes[idx] || 0);
+        const percentage = totalVotes > 0 ? Math.round((voteCount / totalVotes) * 100) : 0;
+
+        const percentageEl = optEl.querySelector('.option-percentage');
+        const votesEl = optEl.querySelector('.option-votes');
+        const progressEl = optEl.querySelector('.option-progress');
+
+        if (percentageEl) {
+            percentageEl.style.transition = 'all 0.5s ease';
+            percentageEl.textContent = percentage + '%';
+        }
+
+        if (votesEl) {
+            votesEl.style.transition = 'all 0.5s ease';
+            votesEl.textContent = voteCount + ' vote' + (voteCount === 1 ? '' : 's');
+        }
+
+        if (progressEl) {
+            progressEl.style.transition = 'width 0.6s cubic-bezier(0.4, 0, 0.2, 1)';
+            progressEl.style.width = percentage + '%';
+        }
+
+        if (idx === selectedIndex) {
+            optEl.classList.add('selected');
+            const btn = optEl.querySelector('.poll-option-btn');
+            if (btn) {
+                btn.style.opacity = '1';
+            }
+        } else {
+            optEl.classList.remove('selected');
+        }
+    });
+
+    const pollFooterButton = pollContainer.closest('.poll-content')?.querySelector('.poll-total-votes');
+    if (!pollFooterButton) {
+        return;
+    }
+
+    const totalVotesLabel = totalVotes + ' total vote' + (totalVotes === 1 ? '' : 's');
+    pollFooterButton.style.transition = 'all 0.3s ease';
+    const totalVotesSpan = pollFooterButton.querySelector('span');
+    if (totalVotesSpan) {
+        totalVotesSpan.textContent = totalVotesLabel;
+    } else {
+        pollFooterButton.textContent = totalVotesLabel;
+    }
+}
 
 // Add pulse animation keyframes dynamically
 if (!document.getElementById('poll-vote-animations')) {

@@ -71,10 +71,10 @@ document.addEventListener('DOMContentLoaded', function() {
         });
         
         const fieldMap = {
-            'question': 'questionFields',
+            'question': 'groupQuestionFields',
             'resource': 'resourceFields',
             'poll': 'pollFields',
-            'event': 'eventFields',
+            'event': 'groupEventFields',
             'assignment': 'assignmentFields'
         };
         
@@ -86,6 +86,18 @@ document.addEventListener('DOMContentLoaded', function() {
 
         if (fileUploadSection) {
             fileUploadSection.style.display = type === 'resource' ? 'block' : 'none';
+        }
+        
+        // Hide image upload for alerts
+        const groupImageUploadField = document.getElementById('groupImageUploadField');
+        if (groupImageUploadField) {
+            groupImageUploadField.style.display = type === 'assignment' ? 'none' : 'block';
+        }
+
+        if (type === 'assignment') {
+            if (postImageInput) postImageInput.value = '';
+            if (imagePreview) imagePreview.src = '';
+            if (imagePreviewContainer) imagePreviewContainer.style.display = 'none';
         }
     }
 
@@ -216,12 +228,14 @@ document.addEventListener('DOMContentLoaded', function() {
                 const result = JSON.parse(text);
 
                 if (result.success) {
+                    const queued = Boolean(result.queued);
+                    const successMessage = result.message || (queued ? 'Post request submitted for admin approval.' : 'Post created successfully!');
                     if (window.showToast) {
-                        window.showToast('Post created successfully!', 'success');
+                        window.showToast(successMessage, 'success');
                     } else if (typeof showToast === 'function') {
-                        showToast('Post created successfully!', 'success');
+                        showToast(successMessage, 'success');
                     } else {
-                        alert('Post created successfully!');
+                        alert(successMessage);
                     }
                     closeCreatePostModalFn();
                     
