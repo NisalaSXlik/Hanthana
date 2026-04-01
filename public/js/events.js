@@ -124,10 +124,8 @@ function createEventCard(event) {
                     <span class="month">${month}</span>
                 </div>
                 <p class="event-card-group">${groupInfo}</p>
-                <button class="${btnClass}" title="${isAdded ? 'Added to Calendar' : 'Add to Calendar'}" onclick="addToCalendar(this, ${event.post_id || event.event_id})">
-                    ${btnContent}
-                </button>
             </div>
+
             <div class="event-card-body">
                 <div class="event-detail">
                     <i class="uil uil-clock"></i>
@@ -147,6 +145,10 @@ function createEventCard(event) {
                     </div>
                 </div>
             </div>
+
+            <button class="${btnClass}" title="${isAdded ? 'Added to Calendar' : 'Add to Calendar'}" onclick="addToCalendar(this, ${event.post_id || event.event_id})">
+                ${btnContent}
+            </button>
         </div>
     `;
 }
@@ -155,83 +157,53 @@ function createEventCard(event) {
  * Add event to calendar
  */
 async function addToCalendar(btn, eventId) {
-    // Find event data from the card or fetch it
-    // For simplicity, we'll grab text from the card
-    const card = btn.closest('.event-card');
-    const title = card.querySelector('.event-card-title').innerText;
-    const location = card.querySelector('.event-detail:nth-child(2) span').innerText;
-    const description = card.querySelector('.event-description').innerText;
-    // Date and time are harder to parse back from UI, ideally we pass raw data.
-    // But we don't have the raw data object here easily unless we store it.
-    // Let's try to fetch the event details or pass them in data attributes.
-    // Or better, just send the ID and let the backend handle it?
-    // The backend addToCalendar implementation I wrote expects title, date etc.
-    // I should update backend to fetch details if only ID is provided.
-    // OR, I can store raw date/time in data attributes.
-    
-    // Let's assume the backend can handle it if I send just ID, 
-    // BUT I implemented it to expect data.
-    // Let's update the createEventCard to store data attributes.
-    
-    // Actually, I'll just update the backend to fetch the post if data is missing.
-    // But I can't easily update backend now without another tool call.
-    // Let's try to extract from UI or use a global events map.
-    
-    // I'll use a global map for events data to avoid parsing HTML.
     const event = window.eventsMap && window.eventsMap[eventId];
-    
-    if (!event) {
-        // Fallback or error
-        console.error('Event data not found');
-        return;
-    }
+    if (!event) return;
 
-    // Immediate feedback
     const originalContent = btn.innerHTML;
     btn.innerHTML = '<i class="uil uil-spinner-alt uil-spin"></i>';
     btn.disabled = true;
 
     try {
-        const response = await fetch(getApiUrl('?controller=Events&ajax_action=addToCalendar'), {
+        const response = await fetch(getApiUrl('?controller=Calendar&action=handleAjax'), {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
+                sub_action: 'toggle_event',
                 post_id: eventId,
-                title: event.event_title || event.title,
-                event_date: event.event_date,
-                event_time: event.event_time,
-                location: event.event_location || event.location,
-                description: event.content || event.description
+                group_id: event.group_id || null,
+                event_title: event.event_title || event.title || 'Untitled Event',
+                event_date: event.event_date || '',
+                event_time: event.event_time || '',
+                event_location: event.event_location || event.location || '',
+                event_description: event.content || event.description || ''
             })
         });
-        
+
         const data = await response.json();
-        if (data.success) {
-            showNotification('Event added to your calendar!', 'success');
-            btn.classList.add('added');
-            btn.innerHTML = '<i class="uil uil-check"></i>';
-            // Keep disabled to prevent duplicate adds
-            
-            // Update going count
-            if (data.going_count !== undefined) {
-                const card = btn.closest('.event-card');
-                const stats = card.querySelector('.event-stats');
-                if (stats) {
-                    // Assuming the first span is "going"
-                    const goingSpan = stats.querySelector('span:first-child');
-                    if (goingSpan) {
-                        goingSpan.innerHTML = `<i class="uil uil-check-circle"></i> ${data.going_count} going`;
-                    }
-                }
-            }
-        } else {
-            showNotification('Failed to add to calendar', 'error');
+
+        if (!data.success) {
+            showNotification(data.message || 'Failed to update event interest', 'error');
             btn.innerHTML = originalContent;
             btn.disabled = false;
+            return;
         }
+
+        const isAdded = !!data.interested;
+        btn.classList.toggle('added', isAdded);
+        btn.innerHTML = isAdded ? '<i class="uil uil-check"></i>' : '<i class="uil uil-calendar-alt"></i>';
+        btn.title = isAdded ? 'Added to Calendar' : 'Add to Calendar';
+        btn.disabled = false;
+
+        showNotification(
+            data.message || (isAdded ? 'Event added to your calendar!' : 'Removed from your calendar'),
+            isAdded ? 'success' : 'info'
+        );
+
+        document.dispatchEvent(new CustomEvent('calendar:refresh'));
     } catch (error) {
-        console.error('Error adding to calendar:', error);
-        showNotification('Error adding to calendar', 'error');
+        console.error('Error toggling calendar event:', error);
+        showNotification('Error updating calendar', 'error');
         btn.innerHTML = originalContent;
         btn.disabled = false;
     }
