@@ -1,60 +1,131 @@
 // post sharing 
 
+// Post creation modal with 3 types: general, event, question
 document.addEventListener('DOMContentLoaded', function() {
-    // Post creation modal functionality
     const postModal = document.getElementById('postModal');
     const createBtn = document.getElementById('openPostModal');
     const closeModalBtn = document.querySelector('.close-modal');
     const cancelBtn = document.querySelector('.cancel-btn');
     const shareBtn = document.querySelector('.share-btn');
     const postTypeBtns = document.querySelectorAll('.post-type-btn');
-    const eventDetails = document.getElementById('eventDetails');
+    
+    // Field containers
+    const generalFields = document.getElementById('generalFields');
+    const eventFields = document.getElementById('eventFields');
+    const questionFields = document.getElementById('questionFields');
+    
+    // General fields
     const imageUpload = document.querySelector('.image-upload');
     const postImageInput = document.getElementById('postImage');
     const postTagsInput = document.getElementById('postTags');
     const tagCount = document.querySelector('.tag-count');
     
-    // Show modal when Create button is clicked
+    // Question fields
+    const questionTemplateChips = questionFields ? questionFields.querySelectorAll('.template-chip') : [];
+    const questionTextareas = questionFields ? questionFields.querySelectorAll('textarea[name]') : [];
+    
+    let currentPostType = 'general';
+    let selectedFile = null;
+
+    // Show modal
     if (createBtn && postModal) {
         createBtn.addEventListener('click', function() {
-            resetForm(); 
+            resetForm();
             postModal.classList.add('active');
             document.body.style.overflow = 'hidden';
         });
     }
-    
+
     // Close modal
     function closeModal() {
         postModal.classList.remove('active');
         document.body.style.overflow = 'auto';
     }
-    
+
     closeModalBtn.addEventListener('click', closeModal);
     cancelBtn.addEventListener('click', closeModal);
 
-    let postType = 'general';
-    let selectedFile = null;  // Add this: Variable to hold the selected file
-
-    // Post type switching
+    // Tab switching
     postTypeBtns.forEach(btn => {
         btn.addEventListener('click', function() {
             postTypeBtns.forEach(b => b.classList.remove('active'));
             this.classList.add('active');
-            postType = this.dataset.type;
-            eventDetails.style.display = postType === 'event' ? 'block' : 'none';
+            currentPostType = this.dataset.type;
+
+            // Show/hide fields based on type
+            if (currentPostType === 'general') {
+                generalFields.style.display = 'block';
+                eventFields.style.display = 'none';
+                questionFields.style.display = 'none';
+            } else if (currentPostType === 'event') {
+                generalFields.style.display = 'none';
+                eventFields.style.display = 'block';
+                questionFields.style.display = 'none';
+            } else if (currentPostType === 'question') {
+                generalFields.style.display = 'none';
+                eventFields.style.display = 'none';
+                questionFields.style.display = 'block';
+                // Reset question template on open
+                if (questionTemplateChips.length) {
+                    applyTemplateChip(questionTemplateChips[0], true);
+                }
+            }
         });
     });
+
+    // ===== QUESTION TEMPLATE LOGIC =====
+    const questionTitleInput = document.getElementById('questionTitleInput');
     
-    // Image upload handling
+    const applyTemplateChip = (chip, forceValue = false) => {
+        if (!chip || !questionTitleInput) return;
+        questionTemplateChips.forEach(btn => btn.classList.remove('active'));
+        chip.classList.add('active');
+        const prefix = chip.dataset.templatePrefix || '';
+        questionTitleInput.setAttribute('placeholder', prefix ? `${prefix} ...` : 'Summarize your question');
+        const shouldPrefill = forceValue || !questionTitleInput.value.trim() || questionTitleInput.dataset.prefilled === 'true';
+        if (shouldPrefill && prefix) {
+            questionTitleInput.value = `${prefix} `;
+            questionTitleInput.dataset.prefilled = 'true';
+        }
+        if (!prefix) {
+            questionTitleInput.dataset.prefilled = 'false';
+        }
+    };
+
+    questionTemplateChips.forEach((chip, index) => {
+        chip.addEventListener('click', () => applyTemplateChip(chip, true));
+    });
+
+    questionTitleInput?.addEventListener('input', () => {
+        if (questionTitleInput.value.trim().length) {
+            questionTitleInput.dataset.prefilled = 'false';
+        }
+    });
+
+    // Character count for question textareas
+    const updateCharCount = (field) => {
+        if (!field) return;
+        const maxlength = parseInt(field.getAttribute('maxlength') || '0');
+        const length = field.value.trim().length;
+        const countEl = document.querySelector(`.char-count[data-for="${field.name}"]`);
+        if (countEl) {
+            countEl.textContent = maxlength ? `${length} / ${maxlength}` : `${length} chars`;
+        }
+    };
+
+    questionTextareas.forEach(textarea => {
+        updateCharCount(textarea);
+        textarea.addEventListener('input', () => updateCharCount(textarea));
+    });
+
+    // Image upload
     imageUpload.addEventListener('click', function() {
         postImageInput.click();
     });
-    
-    // Image upload handling (click)
+
     postImageInput.addEventListener('change', function(e) {
         if (e.target.files && e.target.files[0]) {
-            selectedFile = e.target.files[0];  // Store the file
-            // Create image preview if it doesn't exist
+            selectedFile = e.target.files[0];
             let preview = imageUpload.querySelector('.image-preview');
             if (!preview) {
                 preview = document.createElement('img');
@@ -62,114 +133,236 @@ document.addEventListener('DOMContentLoaded', function() {
                 imageUpload.innerHTML = '';
                 imageUpload.appendChild(preview);
             }
-            
+
             const reader = new FileReader();
-            
             reader.onload = function(event) {
                 preview.src = event.target.result;
                 preview.style.display = 'block';
             };
-            
             reader.readAsDataURL(e.target.files[0]);
         }
-        // updateShareButton();  // Commented out: Remove call to update button state
     });
-    
+
     // Tag validation
     postTagsInput.addEventListener('input', function() {
         const tags = this.value.split(',').map(tag => tag.trim()).filter(tag => tag.length > 0);
         tagCount.textContent = `${tags.length}/5 tags`;
-        
-        // updateShareButton();  // Commented out: Remove call to update button state
     });
-    
-    // Share button functionality
+
+    // Share/Submit
     shareBtn.addEventListener('click', function() {
-        console.log('Share button clicked!');  // Added: Confirm button triggers
-        
         clearFormErrors();
 
-        // Validation on click
+        if (currentPostType === 'question') {
+            submitQuestion();
+        } else if (currentPostType === 'event') {
+            submitEvent();
+        } else {
+            submitGeneral();
+        }
+    });
+
+    // Submit general post
+    function submitGeneral() {
         const caption = document.getElementById('postCaption').value.trim();
         const tagsInput = document.getElementById('postTags').value.trim();
         const tagArray = tagsInput.split(',').map(tag => tag.trim()).filter(tag => tag.length > 0);
-        const hasImage = selectedFile !== null;
-        
+
         let errors = [];
-        if (!caption) errors.push({ field: 'caption', message: 'Caption is required.' });
-        if (tagArray.length < 5) errors.push({ field: 'tags', message: 'At least 5 tags are required.' });
-        if (postType === 'event') {
-            const eventTitle = document.getElementById('eventTitle').value.trim();
-            const eventDate = document.getElementById('eventDate').value.trim();
-            const eventLocation = document.getElementById('eventLocation').value.trim();
-            if (!eventTitle) errors.push({ field: 'eventTitle', message: 'Event title is required.' });
-            if (!eventDate) errors.push({ field: 'eventDate', message: 'Event date is required.' });
-            if (!eventLocation) errors.push({ field: 'eventLocation', message: 'Event location is required.' });
-        }
+        if (!caption) errors.push({ field: 'postCaption', message: 'Caption is required.' });
+        if (tagArray.length < 5) errors.push({ field: 'postTags', message: 'At least 5 tags are required.' });
 
         if (errors.length > 0) {
             showFormErrors(errors);
-            return;  // Stop here, don't send request
+            return;
         }
 
-        // Get all form values
         const formData = new FormData();
-        formData.append('caption', document.getElementById('postCaption').value || '');
-        formData.append('tags', document.getElementById('postTags').value || '');
-        formData.append('postType', postType);  // 'general' or 'event'
-        if (postType === 'event') {
-            formData.append('eventTitle', document.getElementById('eventTitle').value || '');
-            formData.append('eventDate', document.getElementById('eventDate').value || '');
-            formData.append('eventLocation', document.getElementById('eventLocation').value || '');
-        }
-        if (selectedFile) {  
+        formData.append('caption', caption);
+        formData.append('tags', tagsInput);
+        formData.append('postType', 'general');
+
+        if (selectedFile) {
             formData.append('image', selectedFile);
         }
 
-        const urlParams = new URLSearchParams(window.location.search);
-        const groupId = urlParams.get('group_id');
+        const groupId = new URLSearchParams(window.location.search).get('group_id');
         formData.append('sub_action', 'create');
         formData.append('is_group_post', groupId ? '1' : '0');
         if (groupId) formData.append('group_id', groupId);
 
         fetch(BASE_PATH + 'index.php?controller=Posts&action=handleAjax', {
             method: 'POST',
-            body: formData,
-            // headers: { 'Authorization': `Bearer ${getAuthToken()}` } // Commented out: If authenticated
+            body: formData
         })
-        .then(response => {
-            console.log('Response status:', response.status);
-            return response.text();  // Get as text first to debug
-        })
-        .then(text => {
-            console.log('Raw response text:', text);  // Add this: Log the raw response
-            try {
-                const data = JSON.parse(text);
-                if (data.success) {
-                    showToast('Post shared successfully!', 'success');
-                    closeModal();
-                    resetForm();
-                } else {
-                    showToast('Error: ' + (data.message || 'Unknown error'), 'error');
-                }
-            } catch (e) {
-                console.error('JSON parse error:', e);
-                showToast('Server error: Check console', 'error');
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showToast('Post shared successfully!', 'success');
+                closeModal();
+                resetForm();
+                setTimeout(() => location.reload(), 1500);
+            } else {
+                showToast('Error: ' + (data.message || 'Unknown error'), 'error');
             }
         })
         .catch(err => {
-            console.error('Fetch Error:', err);
-            showToast('Failed to send post', 'error');
+            console.error('Error:', err);
+            showToast('Failed to share post', 'error');
         });
-    });
-    
-    // Add functions for inline errors
+    }
+
+    // Submit event post
+    function submitEvent() {
+        const eventTitle = document.getElementById('createEventTitle').value.trim();
+        const eventDate = document.getElementById('createEventDate').value.trim();
+        const eventLocation = document.getElementById('createEventLocation').value.trim();
+        const eventDescription = document.getElementById('createEventDescription').value.trim();
+        const eventTime = document.getElementById('createEventTime').value.trim();
+
+        let errors = [];
+        if (!eventTitle) errors.push({ field: 'createEventTitle', message: 'Event title is required.' });
+        if (!eventDate) errors.push({ field: 'createEventDate', message: 'Event date is required.' });
+
+        if (errors.length > 0) {
+            showFormErrors(errors);
+            return;
+        }
+
+        const formData = new FormData();
+        formData.append('sub_action', 'create');
+        formData.append('postType', 'event');
+        formData.append('caption', eventDescription);
+        formData.append('tags', 'event,upcoming,community,social,announcement');
+        formData.append('eventTitle', eventTitle);
+        formData.append('eventDate', eventDate);
+        formData.append('eventLocation', eventLocation);
+        formData.append('eventTime', eventTime);
+
+        const groupId = new URLSearchParams(window.location.search).get('group_id');
+        formData.append('is_group_post', groupId ? '1' : '0');
+        if (groupId) formData.append('group_id', groupId);
+
+        fetch(BASE_PATH + 'index.php?controller=Posts&action=handleAjax', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showToast('Event created successfully!', 'success');
+                closeModal();
+                resetForm();
+                setTimeout(() => location.reload(), 1500);
+            } else {
+                showToast('Error: ' + (data.message || 'Unknown error'), 'error');
+            }
+        })
+        .catch(err => {
+            console.error('Error:', err);
+            showToast('Failed to create event', 'error');
+        });
+    }
+
+    // Submit question
+    function submitQuestion() {
+        const title = document.getElementById('questionTitleInput').value.trim();
+        const problemStatement = document.getElementById('problemStatement').value.trim();
+
+        let errors = [];
+        if (!title) errors.push({ field: 'questionTitleInput', message: 'Question title is required.' });
+        if (!problemStatement) errors.push({ field: 'problemStatement', message: 'Problem description is required.' });
+
+        if (errors.length > 0) {
+            showFormErrors(errors);
+            return;
+        }
+
+        // Compose question content from sections
+        const sections = [
+            { label: 'Problem', value: problemStatement },
+            { label: 'Context', value: document.getElementById('contextDetails').value.trim() },
+            { label: 'Attempts', value: document.getElementById('attemptDetails').value.trim() },
+            { label: 'Expected Outcome', value: document.getElementById('expectedOutcome').value.trim() }
+        ];
+
+        const content = sections
+            .filter(s => s.value)
+            .map(s => `${s.label}:\n${s.value}`)
+            .join('\n\n');
+
+        const formData = new FormData();
+        formData.append('sub_action', 'createQuestion');
+        formData.append('title', title);
+        formData.append('category', document.getElementById('questionCategory').value || 'General');
+        formData.append('content', content);
+        formData.append('topics', document.getElementById('questionTopics').value.trim());
+
+        fetch(BASE_PATH + 'index.php?controller=Popular&action=handleAjax', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showToast('Question posted successfully!', 'success');
+                closeModal();
+                resetForm();
+                setTimeout(() => location.reload(), 1500);
+            } else {
+                showToast('Error: ' + (data.message || 'Unknown error'), 'error');
+            }
+        })
+        .catch(err => {
+            console.error('Error:', err);
+            showToast('Failed to post question', 'error');
+        });
+    }
+
+    function resetForm() {
+        // General
+        document.getElementById('postCaption').value = '';
+        document.getElementById('postTags').value = '';
+        tagCount.textContent = '0/5 tags';
+        postImageInput.value = '';
+        imageUpload.innerHTML = `
+            <i class="uil uil-image-upload"></i>
+            <p>Drag photos and videos here or click to browse</p>
+        `;
+
+        // Event
+        document.getElementById('createEventTitle').value = '';
+        document.getElementById('createEventDescription').value = '';
+        document.getElementById('createEventDate').value = '';
+        document.getElementById('createEventTime').value = '';
+        document.getElementById('createEventLocation').value = '';
+
+        // Question
+        document.getElementById('questionTitleInput').value = '';
+        document.getElementById('questionCategory').value = 'General';
+        document.getElementById('problemStatement').value = '';
+        document.getElementById('contextDetails').value = '';
+        document.getElementById('attemptDetails').value = '';
+        document.getElementById('expectedOutcome').value = '';
+        document.getElementById('questionTopics').value = '';
+
+        // Reset char counts
+        questionTextareas.forEach(textarea => updateCharCount(textarea));
+
+        currentPostType = 'general';
+        selectedFile = null;
+        document.querySelector('.post-type-btn[data-type="general"]').click();
+    }
+
     function showFormErrors(errors) {
         errors.forEach(error => {
-            const fieldElement = document.getElementById(error.field === 'caption' ? 'postCaption' : error.field === 'tags' ? 'postTags' : error.field);
+            const fieldElement = document.getElementById(error.field);
             if (fieldElement) {
                 const errorDiv = document.createElement('div');
                 errorDiv.className = 'form-error';
+                errorDiv.style.color = 'red';
+                errorDiv.style.fontSize = '0.85rem';
+                errorDiv.style.marginTop = '0.25rem';
                 errorDiv.textContent = error.message;
                 fieldElement.parentNode.insertBefore(errorDiv, fieldElement.nextSibling);
             }
@@ -177,30 +370,10 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function clearFormErrors() {
-        const errorElements = document.querySelectorAll('.form-error');
-        errorElements.forEach(el => el.remove());
+        document.querySelectorAll('.form-error').forEach(el => el.remove());
     }
 
-    function resetForm() {
-        document.getElementById('postCaption').value = '';
-        document.getElementById('postTags').value = '';
-        tagCount.textContent = '0/5 tags';
-        postImageInput.value = '';
-        document.querySelector('.image-upload').innerHTML = `
-            <i class="uil uil-image-upload"></i>
-            <p>Drag photos and videos here or click to browse</p>
-        `;
-        document.getElementById('eventTitle').value = '';
-        document.getElementById('eventDate').value = '';
-        document.getElementById('eventLocation').value = '';
-        document.querySelector('.post-type-btn[data-type="general"]').click();
-        selectedFile = null;  // Reset the file variable
-        // updateShareButton();  // Commented out: Remove call to update button state
-    }
-    
-    // Unified Toast Notification System
     function showToast(message, type = 'success') {
-        // Create or find toast container
         let toastContainer = document.getElementById('toastContainer');
         if (!toastContainer) {
             toastContainer = document.createElement('div');
@@ -209,46 +382,39 @@ document.addEventListener('DOMContentLoaded', function() {
             document.body.appendChild(toastContainer);
         }
 
-        // Create toast element
         const toast = document.createElement('div');
         toast.className = `toast ${type}`;
-        
-        // Add appropriate icon
         const icons = {
             success: 'uil-check-circle',
             error: 'uil-times-circle',
             info: 'uil-info-circle'
         };
         toast.innerHTML = `<i class="uil ${icons[type] || icons.success}"></i> ${message}`;
-        
         toastContainer.appendChild(toast);
-        
-        // Auto-remove after delay
+
         setTimeout(() => {
             toast.classList.add('fade-out');
             setTimeout(() => toast.remove(), 300);
         }, 3000);
     }
-    
-    // Drag and drop for image upload
-    imageUpload.addEventListener('dragover', function(e) {
+
+    // Drag and drop
+    imageUpload.addEventListener('dragover', e => {
         e.preventDefault();
-        this.style.backgroundColor = '#f0f0f0';
+        imageUpload.style.backgroundColor = '#f0f0f0';
     });
-    
-    imageUpload.addEventListener('dragleave', function() {
-        this.style.backgroundColor = '#fafafa';
+
+    imageUpload.addEventListener('dragleave', () => {
+        imageUpload.style.backgroundColor = '#fafafa';
     });
-    
-    imageUpload.addEventListener('drop', function(e) {
+
+    imageUpload.addEventListener('drop', e => {
         e.preventDefault();
-        this.style.backgroundColor = '#fafafa';
-        
+        imageUpload.style.backgroundColor = '#fafafa';
         if (e.dataTransfer.files.length) {
-            selectedFile = e.dataTransfer.files[0];  // Store the file here
-            // Trigger preview manually
+            selectedFile = e.dataTransfer.files[0];
             const reader = new FileReader();
-            reader.onload = function(event) {
+            reader.onload = event => {
                 let preview = imageUpload.querySelector('.image-preview');
                 if (!preview) {
                     preview = document.createElement('img');
@@ -260,22 +426,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 preview.style.display = 'block';
             };
             reader.readAsDataURL(selectedFile);
-            // updateShareButton();  // Commented out: Remove call to update button state
         }
     });
-    
-    // Commented out: Remove the entire updateShareButton function
-    /*
-    function updateShareButton() {
-        const tags = postTagsInput.value.split(',').map(tag => tag.trim()).filter(tag => tag.length > 0);
-        const hasImage = selectedFile !== null;  // Check the variable
-        shareBtn.disabled = !(tags.length >= 5 && hasImage);
-        console.log('Share button state:', shareBtn.disabled);
-    }
-    */
-    // ---------------------------------------------
-    // Per-post Edit/Delete menu + Edit modal logic
-    // ---------------------------------------------
+
+    // ===== Edit/Delete Menu Logic =====
     const editModal = document.getElementById('editPostModal');
     const editTextarea = document.getElementById('editPostContent');
     const editClose = editModal ? editModal.querySelector('.edit-close') : null;
@@ -285,43 +439,31 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Toggle dropdown menu
     document.addEventListener('click', (e) => {
-        console.log('Click detected on:', e.target);
-        console.log('Target classes:', e.target.className);
-        console.log('Target tag:', e.target.tagName);
-        
-        // ADD THIS: Skip comment system clicks
+        // Skip comment system clicks
         if (e.target.closest('.comment-section') || 
             e.target.closest('.load-comments-btn') ||
             e.target.classList.contains('comment-input') ||
             e.target.classList.contains('comment-submit-btn') ||
             e.target.classList.contains('reply-submit-btn') ||
             e.target.closest('.comment-action')) {
-            console.log('Skipping - comment system click');
-            return; // Let comment.js handle this
+            return;
         }
 
-        // Toggle menu when clicking the menu-trigger button or its icon
+        // Toggle menu when clicking the menu-trigger button
         const menuTrigger = e.target.closest('.menu-trigger');
         if (menuTrigger) {
-            console.log('Menu trigger clicked!');
             e.preventDefault();
             e.stopPropagation();
             const postMenu = menuTrigger.closest('.post-menu');
-            console.log('Post menu found:', postMenu);
             if (postMenu) {
                 const isOpen = postMenu.classList.contains('open');
-                console.log('Menu is currently open:', isOpen);
-                // Close all other menus first
                 document.querySelectorAll('.post-menu.open').forEach(m => {
                     if (m !== postMenu) m.classList.remove('open');
                 });
-                // Toggle current menu
                 if (isOpen) {
                     postMenu.classList.remove('open');
-                    console.log('Closed menu');
                 } else {
                     postMenu.classList.add('open');
-                    console.log('Opened menu');
                 }
             }
             return;
@@ -339,11 +481,9 @@ document.addEventListener('DOMContentLoaded', function() {
         if (!btn) return;
         const postId = btn.dataset.postId;
         const feedEl = document.querySelector(`.feed[data-post-id="${postId}"]`);
-        console.log(feedEl)
         if (!feedEl) return;
 
         const content = feedEl.getAttribute('data-post-content') || '';
-        console.log(editModal)
         editingPostId = postId;
         if (editTextarea) {
             editTextarea.value = content;
@@ -353,7 +493,6 @@ document.addEventListener('DOMContentLoaded', function() {
             editModal.classList.add('active');
             document.body.style.overflow = 'hidden';
         }
-        // Remove the broken fetch here—move to editSave
     });
 
     // Delete click
@@ -364,7 +503,6 @@ document.addEventListener('DOMContentLoaded', function() {
         const confirmDel = confirm('Delete this post? This cannot be undone.');
         if (!confirmDel) return;
         try {
-            // For delete
             const formData = new FormData();
             formData.append('sub_action', 'delete');
             formData.append('post_id', postId);
@@ -392,12 +530,14 @@ document.addEventListener('DOMContentLoaded', function() {
             editSave.disabled = editTextarea.value.trim().length === 0;
         });
     }
+
     const closeEditModal = () => {
         if (!editModal) return;
         editModal.classList.remove('active');
         document.body.style.overflow = 'auto';
         editingPostId = null;
     };
+
     if (editClose) editClose.addEventListener('click', closeEditModal);
     if (editCancel) editCancel.addEventListener('click', closeEditModal);
 
@@ -406,7 +546,6 @@ document.addEventListener('DOMContentLoaded', function() {
             const content = (editTextarea?.value || '').trim();
             if (!editingPostId || !content) return;
             try {
-                // For update
                 const formData = new FormData();
                 formData.append('sub_action', 'update');
                 formData.append('post_id', editingPostId);
@@ -417,7 +556,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 });
                 const data = await res.json();
                 if (data.success) {
-                    // Update UI
                     const feedEl = document.querySelector(`.feed[data-post-id="${editingPostId}"]`);
                     if (feedEl) {
                         feedEl.setAttribute('data-post-content', content);
@@ -445,38 +583,4 @@ document.addEventListener('DOMContentLoaded', function() {
         return div.innerHTML;
     }
 
-    // Debounce function to limit rapid calls
-    function debounce(func, wait) {
-        let timeout;
-        return function executedFunction(...args) {
-            const later = () => {
-                clearTimeout(timeout);
-                func(...args);
-            };
-            clearTimeout(timeout);
-            timeout = setTimeout(later, wait);
-        };
-    }
-
-    // Use debounced click handler
-    const debouncedClickHandler = debounce(async (e) => {
-        const btn = e.target.closest('.menu-item.edit-post');
-        if (!btn) return;
-        const postId = btn.dataset.postId;
-        const feedEl = document.querySelector(`.feed[data-post-id="${postId}"]`);
-        if (!feedEl) return;
-
-        const content = feedEl.getAttribute('data-post-content') || '';
-        editingPostId = postId;
-        if (editTextarea) {
-            editTextarea.value = content;
-            editSave.disabled = content.trim().length === 0;
-        }
-        if (editModal) {
-            editModal.style.display = 'flex';
-            document.body.style.overflow = 'hidden';
-        }
-    }, 300);  // 300ms debounce
-
-    document.addEventListener('click', debouncedClickHandler);
-});
+}); // ← CLOSING the DOMContentLoaded callback

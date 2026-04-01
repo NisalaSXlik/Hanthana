@@ -71,7 +71,7 @@ if (isset($_SESSION['user_id'])) {
             </div>
             
             <?php if ($showPostModal): ?>
-                <!-- Post Creation Modal -->
+                <!-- Post Creation Modal with 3 tabs -->
                 <div class="post-modal" id="postModal">
                     <div class="modal-content">
                         <div class="modal-header">
@@ -79,12 +79,15 @@ if (isset($_SESSION['user_id'])) {
                             <button class="close-modal">&times;</button>
                         </div>
                         <div class="modal-body">
+                            <!-- Tab buttons -->
                             <div class="post-type-selector">
                                 <button class="post-type-btn active" data-type="general">General Post</button>
                                 <button class="post-type-btn" data-type="event">Event Post</button>
+                                <button class="post-type-btn" data-type="question">Question Post</button>
                             </div>
                             
-                            <div class="post-content">
+                            <!-- ===== GENERAL POST FIELDS ===== -->
+                            <div id="generalFields" style="display: block;">
                                 <div class="image-upload">
                                     <i class="uil uil-image-upload"></i>
                                     <p>Drag photos and videos here or click to browse</p>
@@ -102,24 +105,108 @@ if (isset($_SESSION['user_id'])) {
                                         <input type="text" id="postTags" placeholder="e.g., travel, srilanka, beach, vacation, sunset">
                                         <small class="tag-count">0/5 tags</small>
                                     </div>
-                                    
-                                    <div class="event-details" id="eventDetails" style="display: none;">
-                                        <div class="form-group">
-                                            <label for="eventTitle">Event Title</label>
-                                            <input type="text" id="eventTitle" placeholder="Event name">
-                                        </div>
-                                        <div class="form-group">
-                                            <label for="eventDate">Date & Time</label>
-                                            <input type="datetime-local" id="eventDate">
-                                        </div>
-                                        <div class="form-group">
-                                            <label for="eventLocation">Location</label>
-                                            <input type="text" id="eventLocation" placeholder="Where is the event?">
-                                        </div>
+                                </div>
+                            </div>
+                            
+                            <!-- ===== EVENT POST FIELDS ===== -->
+                            <div id="eventFields" style="display: none;">
+                                <div class="form-group">
+                                    <label for="createEventTitle">Event Title <span class="required">*</span></label>
+                                    <input type="text" id="createEventTitle" placeholder="Enter event title">
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="createEventDescription">Description</label>
+                                    <textarea id="createEventDescription" rows="4" placeholder="Describe your event..."></textarea>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="createEventDate">Date <span class="required">*</span></label>
+                                    <input type="date" id="createEventDate">
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="createEventTime">Time</label>
+                                    <input type="time" id="createEventTime">
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="createEventLocation">Location</label>
+                                    <input type="text" id="createEventLocation" placeholder="Enter location">
+                                </div>
+                            </div>
+                            
+                            <!-- ===== QUESTION POST FIELDS ===== -->
+                            <div id="questionFields" style="display: none;">
+                                <section class="template-section">
+                                    <div class="template-label-row">
+                                        <label>Question style</label>
+                                        <small>Select one to pre-fill your title</small>
                                     </div>
+                                    <div class="question-type-grid" role="list">
+                                        <button type="button" class="template-chip active" data-template-prefix="How do I">How do I...</button>
+                                        <button type="button" class="template-chip" data-template-prefix="Why does">Why does...</button>
+                                        <button type="button" class="template-chip" data-template-prefix="What is">What is...</button>
+                                        <button type="button" class="template-chip" data-template-prefix="Best way to">Best way to...</button>
+                                        <button type="button" class="template-chip" data-template-prefix="Troubleshooting">Troubleshooting...</button>
+                                    </div>
+                                </section>
+
+                                <div class="form-group">
+                                    <label>Question title <span class="required">*</span></label>
+                                    <input type="text" name="title" id="questionTitleInput" placeholder="Summarize your question in one sentence">
+                                    <small>Example: "How do I create a modal popup in PHP?"</small>
+                                </div>
+
+                                <div class="form-group">
+                                    <label>Category</label>
+                                    <select name="category" id="questionCategory">
+                                        <option value="General">General</option>
+                                        <option value="Technology">Technology</option>
+                                        <option value="Science">Science</option>
+                                        <option value="Education">Education</option>
+                                        <option value="Health">Health</option>
+                                        <option value="Finance">Finance</option>
+                                        <option value="Career">Career</option>
+                                        <option value="Lifestyle">Lifestyle</option>
+                                        <option value="Travel">Travel</option>
+                                        <option value="Entertainment">Entertainment</option>
+                                        <option value="Sports">Sports</option>
+                                        <option value="Other">Other</option>
+                                    </select>
+                                </div>
+
+                                <div class="form-group">
+                                    <label>What problem are you facing? <span class="required">*</span></label>
+                                    <textarea name="problem_statement" id="problemStatement" maxlength="400" placeholder="Describe the exact issue, error messages, or blockers."></textarea>
+                                    <div class="char-count" data-for="problem_statement">0 / 400</div>
+                                </div>
+
+                                <div class="form-group">
+                                    <label>Context / environment</label>
+                                    <textarea name="context_details" id="contextDetails" maxlength="400" placeholder="Share stack, versions, constraints, or relevant background."></textarea>
+                                    <div class="char-count" data-for="context_details">0 / 400</div>
+                                </div>
+
+                                <div class="form-group">
+                                    <label>What have you tried?</label>
+                                    <textarea name="attempts" id="attemptDetails" maxlength="400" placeholder="List approaches, code snippets, or research already done."></textarea>
+                                    <div class="char-count" data-for="attempts">0 / 400</div>
+                                </div>
+
+                                <div class="form-group">
+                                    <label>Expected outcome</label>
+                                    <textarea name="expected_outcome" id="expectedOutcome" maxlength="300" placeholder="Clarify the goal or result you're aiming for."></textarea>
+                                    <div class="char-count" data-for="expected_outcome">0 / 300</div>
+                                </div>
+
+                                <div class="form-group">
+                                    <label>Topics (comma separated)</label>
+                                    <input type="text" name="topics" id="questionTopics" placeholder="e.g., php, mysql, async">
                                 </div>
                             </div>
                         </div>
+                        
                         <div class="modal-footer">
                             <button class="btn btn-secondary cancel-btn">Cancel</button>
                             <button class="btn btn-primary share-btn">Share</button>

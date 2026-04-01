@@ -1,15 +1,21 @@
 <?php
 require_once __DIR__ . '/../core/Database.php';
 require_once __DIR__ . '/../models/QuestionModel.php';
+require_once __DIR__ . '/../models/PostModel.php';
+require_once __DIR__ . '/../models/SettingsModel.php';
 
 class PopularController {
     private $questionModel;
+    private $postModel;
+    private $settingsModel;
 
     public function __construct() {
         if (session_status() === PHP_SESSION_NONE) {
             session_start();
         }
         $this->questionModel = new QuestionModel();
+        $this->postModel = new PostModel();
+        $this->settingsModel = new SettingsModel();
     }
 
     public function index() {
