@@ -32,6 +32,10 @@ class EventsController {
             case 'addToCalendar':
                 $this->addToCalendar();
                 break;
+            case 'getMostGoingEvents':
+                header('Content-Type: application/json');
+                echo json_encode(['success' => true, 'events' => $this->getMostGoingEvents()]);
+                exit;   
             default:
                 echo json_encode(['success' => false, 'error' => 'Invalid action']);
                 break;
@@ -168,6 +172,35 @@ class EventsController {
         $goingCount = $this->calendarModel->getGoingCount($postId);
 
         echo json_encode(['success' => $success, 'going_count' => $goingCount]);
+    }
+
+    public function getMostGoingEvents() {
+        $userId = $_SESSION['user_id'] ?? 0;
+        $posts = $this->postModel->getFeedPosts($userId, false);
+
+        $events = array_filter($posts, function($post) {
+            $type = !empty($post['group_id']) ? ($post['group_post_type'] ?? 'discussion') : ($post['post_type'] ?? 'text');
+            return $type === 'event';
+        });
+
+        $filteredEvents = [];
+        $now = date('Y-m-d H:i:s');
+
+        foreach ($events as $event) {
+            $eventDateTime = trim(($event['event_date'] ?? '') . ' ' . ($event['event_time'] ?? '00:00:00'));
+            if ($eventDateTime >= $now) {
+                $postId = (int)($event['post_id'] ?? $event['id'] ?? 0);
+                if ($postId <= 0) continue;
+
+                $event['post_id'] = $postId;
+                $event['going_count'] = $this->calendarModel->getGoingCount($postId);
+                $event['is_going'] = $this->calendarModel->getReminderForPost($userId, $postId) ? 1 : 0;
+                $filteredEvents[] = $event;
+            }
+        }
+
+        usort($filteredEvents, fn($a, $b) => ($b['going_count'] ?? 0) <=> ($a['going_count'] ?? 0));
+        return array_slice($filteredEvents, 0, 5);
     }
 }
 
