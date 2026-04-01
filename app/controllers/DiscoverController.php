@@ -16,9 +16,6 @@ class DiscoverController {
     }
 
 
-
-
-
     public function index() {
         if (!isset($_SESSION['user_id'])) {
             header("Location: " . BASE_PATH . "index.php?controller=Login&action=index");
@@ -29,6 +26,7 @@ class DiscoverController {
 
         // Use old working methods (don't merge)
         $allPosts = $this->postModel->getTrendingPosts(60, $userId);
+
 
         // Mark group posts
         foreach ($allPosts as &$post) {
@@ -122,6 +120,7 @@ class DiscoverController {
         $limit = 20;
 
         $posts = $this->postModel->getTrendingPosts($limit, $userId);
+
         
         echo json_encode(['success' => true, 'posts' => $posts]);
         exit();
@@ -140,8 +139,10 @@ class DiscoverController {
 
         $posts = $this->postModel->getTrendingPosts($limit, $userId);
 
+
         foreach ($posts as &$post) {
             $post['is_group_post'] = !empty($post['group_id']);
+
         }
 
         echo json_encode(['success' => true, 'posts' => $posts, 'count' => count($posts)]);
@@ -177,4 +178,6 @@ class DiscoverController {
     echo json_encode(['success' => true, 'post' => $post]);
     exit();
     }
+
+
 }

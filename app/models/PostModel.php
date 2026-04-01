@@ -356,6 +356,7 @@ class PostModel {
             SELECT
                 p.post_id,
                 p.content,
+                p.post_type,
                 p.created_at,
                 COALESCE(vt_total.upvotes, 0) AS upvote_count,
                 COALESCE(vt_total.downvotes, 0) AS downvote_count,
