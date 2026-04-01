@@ -10,6 +10,9 @@ if (!isset($_SESSION['user_id']) || (($_SESSION['role'] ?? 'user') !== 'admin'))
     header('Location: ' . BASE_PATH . 'index.php?controller=Login&action=index');
     exit;
 }
+$currentUserId = $_SESSION['user_id'];
+$userModel = new UserModel;
+$currentUser = $userModel->findById($_SESSION['user_id']);
 
 $adminName = trim(($_SESSION['first_name'] ?? '') . ' ' . ($_SESSION['last_name'] ?? '')) ?: ($_SESSION['username'] ?? 'Admin');
 $profilePicture = MediaHelper::resolveMediaPath($_SESSION['profile_picture'] ?? '', 'uploads/user_dp/default_user_dp.jpg');
@@ -50,8 +53,10 @@ $complaintTypeCounts = array_map(fn($row) => (int)($row['count'] ?? 0), $complai
     <link rel="stylesheet" href="./css/general.css">
     <link rel="stylesheet" href="./css/navbar.css">
     <link rel="stylesheet" href="./css/notificationpopup.css">
-    <link rel="stylesheet" href="./css/calender.css">
+    <link rel="stylesheet" href="./css/notification-center.css">
+    <link rel="stylesheet" href="./css/calender.css?v=20250209_zindex">
     <link rel="stylesheet" href="./css/admin.css">
+    <link rel="stylesheet" href="./css/forms.css">
     <link rel="stylesheet" href="https://unicons.iconscout.com/release/v4.0.8/css/line.css">
     <script>const BASE_PATH = '<?php echo BASE_PATH; ?>';</script>
 </head>
@@ -75,36 +80,36 @@ $complaintTypeCounts = array_map(fn($row) => (int)($row['count'] ?? 0), $complai
     </header>
 
     <section class="admin-grid">
-        <article class="admin-card">
+        <article class="admin-card admin-card--users">
             <div class="card-label">
                 <span class="icon pill users"><i class="uil uil-users-alt"></i></span>
                 <span>Users</span>
             </div>
-            <h2><?php echo $number($userStats['total_users'] ?? 0); ?></h2>
+            <h2 data-countup><?php echo $number($userStats['total_users'] ?? 0); ?></h2>
             <p class="muted">Active: <?php echo $number($userStats['active_users'] ?? 0); ?> · New (7d): <?php echo $number($userStats['new_users_last_7'] ?? 0); ?></p>
         </article>
-        <article class="admin-card">
+        <article class="admin-card admin-card--posts">
             <div class="card-label">
                 <span class="icon pill posts"><i class="uil uil-file-alt"></i></span>
                 <span>Posts</span>
             </div>
-            <h2><?php echo $number($postStats['total_posts'] ?? 0); ?></h2>
+            <h2 data-countup><?php echo $number($postStats['total_posts'] ?? 0); ?></h2>
             <p class="muted">Group: <?php echo $number($postStats['group_posts'] ?? 0); ?> · Events: <?php echo $number($postStats['event_posts'] ?? 0); ?></p>
         </article>
-        <article class="admin-card">
+        <article class="admin-card admin-card--groups">
             <div class="card-label">
                 <span class="icon pill groups"><i class="uil uil-layer-group"></i></span>
                 <span>Groups</span>
             </div>
-            <h2><?php echo $number($groupStats['total_groups'] ?? 0); ?></h2>
+            <h2 data-countup><?php echo $number($groupStats['total_groups'] ?? 0); ?></h2>
             <p class="muted">Public: <?php echo $number($groupStats['public_groups'] ?? 0); ?> · Private/Secret: <?php echo $number($groupStats['private_groups'] ?? 0); ?></p>
         </article>
-        <article class="admin-card">
+        <article class="admin-card admin-card--friends">
             <div class="card-label">
                 <span class="icon pill friends"><i class="uil uil-user-plus"></i></span>
                 <span>Friendships</span>
             </div>
-            <h2><?php echo $number($friendStats['accepted_friendships'] ?? 0); ?></h2>
+            <h2 data-countup><?php echo $number($friendStats['accepted_friendships'] ?? 0); ?></h2>
             <p class="muted">Pending requests: <?php echo $number($friendStats['pending_requests'] ?? 0); ?></p>
         </article>
     </section>
@@ -119,7 +124,7 @@ $complaintTypeCounts = array_map(fn($row) => (int)($row['count'] ?? 0), $complai
                 <span class="metric-badge"><?php echo $number($dailyActiveUsers['latest_count'] ?? 0); ?> today</span>
             </div>
             <div class="metric-highlight">
-                <h2><?php echo $number($dailyActiveUsers['latest_count'] ?? 0); ?></h2>
+                <h2 data-countup><?php echo $number($dailyActiveUsers['latest_count'] ?? 0); ?></h2>
                 <p class="muted">Users active in the last 24 hours.</p>
             </div>
             <div class="chart-wrapper">
@@ -137,7 +142,7 @@ $complaintTypeCounts = array_map(fn($row) => (int)($row['count'] ?? 0), $complai
             </div>
             <div class="metric-highlight">
                 <div>
-                    <strong data-complaint-total><?php echo $number($complaintStats['total_reports'] ?? 0); ?></strong>
+                    <strong data-complaint-total data-countup><?php echo $number($complaintStats['total_reports'] ?? 0); ?></strong>
                     <p class="muted">Total complaints logged</p>
                 </div>
                 <ul class="metric-breakdown">
@@ -148,6 +153,55 @@ $complaintTypeCounts = array_map(fn($row) => (int)($row['count'] ?? 0), $complai
             </div>
             <div class="chart-wrapper">
                 <canvas id="complaintTypeChart" height="140"></canvas>
+            </div>
+        </article>
+    </section>
+
+    <section class="admin-reports">
+        <article class="admin-panel report-generation-panel">
+            <div class="panel-header">
+                <div>
+                    <h3>Report generation</h3>
+                    <p class="muted">Download meaningful CSV reports for executive updates and operational reviews.</p>
+                </div>
+            </div>
+
+            <div class="report-generation-grid">
+                <a class="report-action-card" target="_blank" rel="noopener" href="<?php echo BASE_PATH; ?>index.php?controller=Admin&action=generateReportPdf&type=user_activity">
+                    <div class="report-action-card__content">
+                        <p class="report-action-card__eyebrow">Users</p>
+                        <h4>User activity overview</h4>
+                        <p>Total users, active trend, and recent signups.</p>
+                    </div>
+                    <span class="report-action-card__badge">PDF</span>
+                </a>
+
+                <a class="report-action-card" target="_blank" rel="noopener" href="<?php echo BASE_PATH; ?>index.php?controller=Admin&action=generateReportPdf&type=moderation">
+                    <div class="report-action-card__content">
+                        <p class="report-action-card__eyebrow">Moderation</p>
+                        <h4>Complaints and risk report</h4>
+                        <p>Pending queue, type breakdown, and complaint trends.</p>
+                    </div>
+                    <span class="report-action-card__badge">PDF</span>
+                </a>
+
+                <a class="report-action-card" target="_blank" rel="noopener" href="<?php echo BASE_PATH; ?>index.php?controller=Admin&action=generateReportPdf&type=group_health">
+                    <div class="report-action-card__content">
+                        <p class="report-action-card__eyebrow">Groups</p>
+                        <h4>Group health report</h4>
+                        <p>Active vs disabled groups, joins, and top communities.</p>
+                    </div>
+                    <span class="report-action-card__badge">PDF</span>
+                </a>
+
+                <a class="report-action-card" target="_blank" rel="noopener" href="<?php echo BASE_PATH; ?>index.php?controller=Admin&action=generateReportPdf&type=content_engagement">
+                    <div class="report-action-card__content">
+                        <p class="report-action-card__eyebrow">Content</p>
+                        <h4>Content engagement report</h4>
+                        <p>Post performance, engagement leaders, and report signals.</p>
+                    </div>
+                    <span class="report-action-card__badge">PDF</span>
+                </a>
             </div>
         </article>
     </section>
@@ -233,7 +287,7 @@ $complaintTypeCounts = array_map(fn($row) => (int)($row['count'] ?? 0), $complai
                             <h4>Recently created groups</h4>
                             <p class="muted">Newest communities that may need review.</p>
                         </div>
-                        <a class="text-link" href="<?php echo BASE_PATH; ?>index.php?controller=Group&action=discover">View all</a>
+                        <button type="button" class="text-link link-btn" data-open-groups-directory>View all</button>
                     </header>
                     <?php 
                         $groupSnapshot = $groupReviewSnapshot ?? [];
@@ -296,13 +350,17 @@ $complaintTypeCounts = array_map(fn($row) => (int)($row['count'] ?? 0), $complai
                     <?php endif; ?>
                 </section>
 
-                <section id="quick-trending-posts" class="quick-pane-template">
+                <section id="quick-trending-posts" class="quick-pane-template" data-quick-trending-pane>
                     <header class="quick-pane-header">
                         <div>
                             <h4>Trending posts</h4>
                             <p class="muted">Top content past 7 days, sorted by engagement.</p>
                         </div>
-                        <a class="text-link" href="<?php echo BASE_PATH; ?>index.php?controller=Popular&action=index">Review feed</a>
+                        <div class="quick-pane-header__actions">
+                            <button type="button" class="link-btn" data-quick-trending-refresh>Refresh</button>
+                            <button type="button" class="link-btn" data-open-complaints>Open complaints</button>
+                            <a class="text-link" href="<?php echo BASE_PATH; ?>index.php?controller=Discover&action=index">Review feed</a>
+                        </div>
                     </header>
                     <?php 
                         $moderation = $moderationSnapshot ?? [];
@@ -316,23 +374,23 @@ $complaintTypeCounts = array_map(fn($row) => (int)($row['count'] ?? 0), $complai
                     <div class="quick-stats">
                         <div class="stat-card">
                             <p class="label">Reports (7d)</p>
-                            <strong><?php echo $number($reportsRecent); ?></strong>
+                            <strong data-quick-reports-recent><?php echo $number($reportsRecent); ?></strong>
                             <div class="stat-bar danger">
-                                <span style="width: <?php echo min(100, $percentOf($reportsRecent, $reportsTotal)); ?>%"></span>
+                                <span data-quick-reports-bar style="width: <?php echo min(100, $percentOf($reportsRecent, $reportsTotal)); ?>%"></span>
                             </div>
-                            <small><?php echo $number($moderation['total_reports'] ?? 0); ?> total pending</small>
+                            <small><span data-quick-reports-total><?php echo $number($moderation['total_reports'] ?? 0); ?></span> total pending</small>
                         </div>
                         <div class="stat-card">
                             <p class="label">Report distribution</p>
                             <div class="stacked-bar">
-                                <span class="segment posts" style="width: <?php echo $percentOf($postReports, $distributionBase); ?>%"></span>
-                                <span class="segment comments" style="width: <?php echo $percentOf($commentReports, $distributionBase); ?>%"></span>
-                                <span class="segment groups" style="width: <?php echo $percentOf($groupReports, $distributionBase); ?>%"></span>
+                                <span class="segment posts" data-quick-segment-posts style="width: <?php echo $percentOf($postReports, $distributionBase); ?>%"></span>
+                                <span class="segment comments" data-quick-segment-comments style="width: <?php echo $percentOf($commentReports, $distributionBase); ?>%"></span>
+                                <span class="segment groups" data-quick-segment-groups style="width: <?php echo $percentOf($groupReports, $distributionBase); ?>%"></span>
                             </div>
                             <ul class="stacked-legend">
-                                <li><span class="dot posts"></span>Posts (<?php echo $postReports; ?>)</li>
-                                <li><span class="dot comments"></span>Comments (<?php echo $commentReports; ?>)</li>
-                                <li><span class="dot groups"></span>Groups (<?php echo $groupReports; ?>)</li>
+                                <li><span class="dot posts"></span>Posts (<span data-quick-post-reports><?php echo $postReports; ?></span>)</li>
+                                <li><span class="dot comments"></span>Comments (<span data-quick-comment-reports><?php echo $commentReports; ?></span>)</li>
+                                <li><span class="dot groups"></span>Groups (<span data-quick-group-reports><?php echo $groupReports; ?></span>)</li>
                             </ul>
                         </div>
                         <div class="stat-card compact">
@@ -344,6 +402,18 @@ $complaintTypeCounts = array_map(fn($row) => (int)($row['count'] ?? 0), $complai
                             </ul>
                         </div>
                     </div>
+
+                    <div class="quick-trending-toolbar">
+                        <input type="search" data-quick-trending-search placeholder="Search by author or post text">
+                        <select data-quick-trending-sort>
+                            <option value="engagement">Sort: Top engagement</option>
+                            <option value="newest">Sort: Newest first</option>
+                            <option value="comments">Sort: Most comments</option>
+                            <option value="upvotes">Sort: Most upvotes</option>
+                        </select>
+                        <span class="quick-trending-meta"><span data-quick-trending-count><?php echo count($trendingPosts); ?></span> posts</span>
+                    </div>
+
                     <?php if (!empty($trendingPosts)): ?>
                         <?php 
                             $maxEngagement = 1;
@@ -354,7 +424,7 @@ $complaintTypeCounts = array_map(fn($row) => (int)($row['count'] ?? 0), $complai
                                 }
                             }
                         ?>
-                        <ul class="quick-list" data-see-more-list>
+                        <ul class="quick-list quick-trending-list" data-see-more-list data-quick-trending-list>
                             <?php foreach ($trendingPosts as $post): ?>
                                 <?php
                                     $authorName = trim(($post['first_name'] ?? '') . ' ' . ($post['last_name'] ?? '')) ?: ($post['username'] ?? 'Unknown');
@@ -364,11 +434,13 @@ $complaintTypeCounts = array_map(fn($row) => (int)($row['count'] ?? 0), $complai
                                     } else {
                                         $excerpt = strlen($rawContent) > 70 ? substr($rawContent, 0, 67) . '…' : $rawContent;
                                     }
+                                    $postId = (int)$post['post_id'];
+                                    $postLabel = 'Post #' . $postId;
                                 ?>
-                                <li>
+                                <li class="quick-trending-item" data-post-id="<?php echo $postId; ?>" data-author="<?php echo htmlspecialchars(strtolower($authorName)); ?>" data-content="<?php echo htmlspecialchars(strtolower($rawContent)); ?>" data-engagement="<?php echo (int)($post['engagement_score'] ?? 0); ?>" data-upvotes="<?php echo (int)($post['upvote_count'] ?? 0); ?>" data-comments="<?php echo (int)($post['comment_count'] ?? 0); ?>" data-created-at="<?php echo htmlspecialchars($post['created_at'] ?? ''); ?>">
                                     <div>
-                                        <strong><?php echo htmlspecialchars($authorName); ?></strong>
-                                        <p class="muted"><?php echo htmlspecialchars($excerpt); ?></p>
+                                        <strong class="quick-trending-item__title"><?php echo htmlspecialchars($authorName); ?></strong>
+                                        <p class="muted quick-trending-item__excerpt"><?php echo htmlspecialchars($excerpt); ?></p>
                                         <?php
                                             $engagementScore = (int)($post['engagement_score'] ?? 0);
                                             $engagementPercent = $maxEngagement ? round(($engagementScore / $maxEngagement) * 100) : 0;
@@ -379,8 +451,9 @@ $complaintTypeCounts = array_map(fn($row) => (int)($row['count'] ?? 0), $complai
                                     </div>
                                     <div class="quick-meta">
                                         <span><?php echo (int)($post['upvote_count'] ?? 0); ?> ▲ · <?php echo (int)($post['comment_count'] ?? 0); ?> 💬</span>
-                                        <div class="quick-meta__actions">
+                                        <div class="quick-meta__actions quick-trending-actions">
                                             <button type="button" class="link-btn" data-preview-post="<?php echo (int)$post['post_id']; ?>">Preview</button>
+                                            <button type="button" class="link-btn danger" data-remove-post="<?php echo $postId; ?>" data-target-label="<?php echo htmlspecialchars($postLabel); ?>">Remove</button>
                                             <a class="quick-link" href="<?php echo BASE_PATH; ?>index.php?controller=Profile&action=view&user_id=<?php echo (int)$post['user_id']; ?>">Profile</a>
                                         </div>
                                     </div>
@@ -388,7 +461,7 @@ $complaintTypeCounts = array_map(fn($row) => (int)($row['count'] ?? 0), $complai
                             <?php endforeach; ?>
                         </ul>
                     <?php else: ?>
-                        <p class="muted">No trending posts detected this week.</p>
+                        <p class="muted" data-quick-trending-empty>No trending posts detected this week.</p>
                     <?php endif; ?>
                 </section>
 
@@ -495,7 +568,7 @@ $complaintTypeCounts = array_map(fn($row) => (int)($row['count'] ?? 0), $complai
                     <h3>Most trending posts</h3>
                     <p class="muted">High engagement across the network.</p>
                 </div>
-                <a class="text-link" href="<?php echo BASE_PATH; ?>index.php?controller=Popular&action=index">View feed</a>
+                <a class="text-link" href="<?php echo BASE_PATH; ?>index.php?controller=Discover&action=index">View feed</a>
             </div>
             <?php $topTrendingPosts = array_slice($trendingPosts ?? [], 0, 3); ?>
             <?php if (!empty($topTrendingPosts)): ?>
@@ -576,10 +649,29 @@ $complaintTypeCounts = array_map(fn($row) => (int)($row['count'] ?? 0), $complai
                         <?php foreach ($recentComplaints as $complaint): ?>
                             <?php
                                 $reportId = (int)($complaint['report_id'] ?? 0);
-                                $targetLabel = $complaint['target_label'] ?? 'General';
-                                $reportedPostId = (int)($complaint['reported_post_id'] ?? 0);
-                                $reportedGroupId = (int)($complaint['reported_group_id'] ?? 0);
+                                $targetType = strtolower((string)($complaint['target_type'] ?? ''));
+                                $targetId = (int)($complaint['target_id'] ?? 0);
+                                $groupId = (int)($complaint['group_id'] ?? 0);
                                 $reportedUserId = (int)($complaint['reported_user_id'] ?? 0);
+                                $targetLabel = trim((string)($complaint['target_label'] ?? ''));
+                                if ($targetLabel === '') {
+                                    $labelMap = [
+                                        'post' => 'Post',
+                                        'comment' => 'Comment',
+                                        'group' => 'Group',
+                                        'user' => 'User',
+                                        'question' => 'Question',
+                                        'answer' => 'Answer',
+                                        'bin' => 'File',
+                                        'bin_media' => 'File',
+                                        'channel' => 'Channel',
+                                        'message' => 'Message',
+                                    ];
+                                    $targetLabel = $targetId > 0
+                                        ? (($labelMap[$targetType] ?? ucfirst(str_replace('_', ' ', $targetType))) . ' #' . $targetId)
+                                        : 'General';
+                                }
+                                $status = strtolower($complaint['status'] ?? 'pending');
                             ?>
                             <li data-report-id="<?php echo $reportId; ?>">
                                 <div>
@@ -591,18 +683,21 @@ $complaintTypeCounts = array_map(fn($row) => (int)($row['count'] ?? 0), $complai
                                 </div>
                                 <div class="trend-metrics">
                                     <div class="trend-actions">
-                                        <?php if ($reportedPostId): ?>
-                                            <button type="button" class="link-btn" data-preview-post="<?php echo $reportedPostId; ?>">Preview</button>
-                                            <button type="button" class="link-btn danger" data-remove-post="<?php echo $reportedPostId; ?>" data-target-label="<?php echo htmlspecialchars($targetLabel); ?>">Remove</button>
+                                        <?php if ($targetType === 'post' && $targetId > 0): ?>
+                                            <button type="button" class="link-btn" data-preview-post="<?php echo $targetId; ?>">Preview</button>
+                                            <button type="button" class="link-btn danger" data-remove-post="<?php echo $targetId; ?>" data-target-label="<?php echo htmlspecialchars($targetLabel); ?>">Remove</button>
                                         <?php endif; ?>
-                                        <?php if ($reportedGroupId): ?>
-                                            <button type="button" class="link-btn danger" data-disable-group="<?php echo $reportedGroupId; ?>" data-target-label="<?php echo htmlspecialchars($targetLabel); ?>">Disable group</button>
+                                        <?php if ($targetType === 'group' && $targetId > 0): ?>
+                                            <button type="button" class="link-btn danger" data-disable-group="<?php echo $targetId; ?>" data-target-label="<?php echo htmlspecialchars($targetLabel); ?>">Disable group</button>
                                         <?php endif; ?>
-                                        <?php if ($reportedUserId): ?>
-                                            <button type="button" class="link-btn danger" data-ban-user="<?php echo $reportedUserId; ?>" data-ban-username="<?php echo htmlspecialchars($complaint['reported_username'] ?? 'User'); ?>">Ban</button>
+                                        <?php if ($targetType === 'user' && $targetId > 0): ?>
+                                            <button type="button" class="link-btn danger" data-ban-user="<?php echo $targetId; ?>" data-ban-username="<?php echo htmlspecialchars($complaint['reported_username'] ?? 'User'); ?>">Ban</button>
+                                        <?php endif; ?>
+                                        <?php if ($status === 'pending'): ?>
+                                            <button type="button" class="link-btn success" data-mark-reviewed="<?php echo $reportId; ?>">Mark reviewed</button>
                                         <?php endif; ?>
                                     </div>
-                                    <span class="status-pill status-<?php echo htmlspecialchars(strtolower($complaint['status'] ?? 'pending')); ?>"><?php echo ucfirst($complaint['status'] ?? 'pending'); ?></span>
+                                    <span class="status-pill status-<?php echo htmlspecialchars($status); ?>"><?php echo ucfirst($status); ?></span>
                                     <small><?php echo htmlspecialchars(date('M d, H:i', strtotime($complaint['created_at'] ?? 'now'))); ?></small>
                                 </div>
                             </li>
@@ -652,23 +747,31 @@ $renderComplaintItems = function(array $items, string $emptyMessage) {
         $reportType = ucfirst($item['report_type'] ?? 'Complaint');
         $status = strtolower($item['status'] ?? 'pending');
         $reportId = (int)($item['report_id'] ?? 0);
+        $targetType = strtolower((string)($item['target_type'] ?? ''));
+        $targetId = (int)($item['target_id'] ?? 0);
+        $groupId = (int)($item['group_id'] ?? 0);
         $reportedUserId = (int)($item['reported_user_id'] ?? 0);
-        $reportedPostId = (int)($item['reported_post_id'] ?? 0);
-        $reportedGroupId = (int)($item['reported_group_id'] ?? 0);
-        $reportedCommentId = (int)($item['reported_comment_id'] ?? 0);
         $reporter = $item['reporter_username'] ?? 'Anonymous';
         $reportedUsername = $item['reported_username'] ?? null;
         $createdAt = $item['created_at'] ?? '';
 
-        $targetLabel = 'General';
-        if ($reportedPostId) {
-            $targetLabel = 'Post #' . $reportedPostId;
-        } elseif ($reportedCommentId) {
-            $targetLabel = 'Comment #' . $reportedCommentId;
-        } elseif ($reportedGroupId) {
-            $targetLabel = 'Group #' . $reportedGroupId;
-        } elseif ($reportedUserId) {
-            $targetLabel = 'User #' . $reportedUserId;
+        $targetLabel = trim((string)($item['target_label'] ?? ''));
+        if ($targetLabel === '') {
+            $targetMap = [
+                'post' => 'Post',
+                'comment' => 'Comment',
+                'group' => 'Group',
+                'user' => 'User',
+                'question' => 'Question',
+                'answer' => 'Answer',
+                'bin' => 'File',
+                'bin_media' => 'File',
+                'channel' => 'Channel',
+                'message' => 'Message'
+            ];
+            $targetLabel = $targetId > 0
+                ? (($targetMap[$targetType] ?? ucfirst(str_replace('_', ' ', $targetType))) . ' #' . $targetId)
+                : 'General';
         }
 
         $description = trim($item['description'] ?? '');
@@ -685,19 +788,23 @@ $renderComplaintItems = function(array $items, string $emptyMessage) {
         }
         echo '</div>';
         echo '<div class="complaint-actions">';
-        if ($reportedPostId) {
-            echo '<button type="button" class="link-btn" data-preview-post="' . $reportedPostId . '">View post</button>';
-            echo '<button type="button" class="link-btn danger" data-remove-post="' . $reportedPostId . '" data-target-label="' . htmlspecialchars($targetLabel) . '">Remove post</button>';
+        if ($targetType === 'post' && $targetId > 0) {
+            echo '<button type="button" class="link-btn" data-preview-post="' . $targetId . '">View post</button>';
+            echo '<button type="button" class="link-btn danger" data-remove-post="' . $targetId . '" data-target-label="' . htmlspecialchars($targetLabel) . '">Remove post</button>';
         }
 
-        if ($reportedGroupId) {
-            echo '<a class="link-btn" href="' . BASE_PATH . 'index.php?controller=Group&action=index&group_id=' . $reportedGroupId . '">Open group</a>';
-            echo '<button type="button" class="link-btn danger" data-disable-group="' . $reportedGroupId . '" data-target-label="' . htmlspecialchars($targetLabel) . '">Disable group</button>';
+        if ($targetType === 'group' && $targetId > 0) {
+            echo '<a class="link-btn" href="' . BASE_PATH . 'index.php?controller=Group&action=index&group_id=' . $targetId . '">Open group</a>';
+            echo '<button type="button" class="link-btn danger" data-disable-group="' . $targetId . '" data-target-label="' . htmlspecialchars($targetLabel) . '">Disable group</button>';
         }
 
-        if ($reportedUserId) {
-            $usernameAttr = htmlspecialchars($reportedUsername ?? ('User #' . $reportedUserId));
-            echo '<button type="button" class="link-btn danger" data-ban-user="' . $reportedUserId . '" data-ban-username="' . $usernameAttr . '">Ban user</button>';
+        if ($targetType === 'user' && $targetId > 0) {
+            $usernameAttr = htmlspecialchars($reportedUsername ?? ('User #' . $targetId));
+            echo '<button type="button" class="link-btn danger" data-ban-user="' . $targetId . '" data-ban-username="' . $usernameAttr . '">Ban user</button>';
+        }
+
+        if ($status === 'pending') {
+            echo '<button type="button" class="link-btn success" data-mark-reviewed="' . $reportId . '">Mark reviewed</button>';
         }
 
         echo '<span class="status-pill status-' . htmlspecialchars($status) . '">' . ucfirst($status) . '</span>';
@@ -742,6 +849,47 @@ $renderComplaintItems = function(array $items, string $emptyMessage) {
     </div>
 </div>
 
+<div id="groupsDirectoryModal" class="admin-overlay" aria-hidden="true">
+    <div class="admin-overlay__dialog groups-directory-modal" role="dialog" aria-modal="true" aria-label="All groups directory">
+        <button type="button" class="admin-overlay__close" data-overlay-close="groups" aria-label="Close groups directory">
+            <i class="uil uil-multiply"></i>
+        </button>
+        <header class="overlay-header">
+            <div>
+                <p class="eyebrow">Group Operations</p>
+                <h2>All groups directory</h2>
+                <p class="muted">Search, review group health, and take action without leaving admin dashboard.</p>
+            </div>
+        </header>
+        <div class="groups-directory-summary">
+            <article>
+                <p>Total groups</p>
+                <strong data-groups-total data-countup>0</strong>
+            </article>
+            <article>
+                <p>Active</p>
+                <strong data-groups-active data-countup>0</strong>
+            </article>
+            <article>
+                <p>Disabled</p>
+                <strong data-groups-inactive data-countup>0</strong>
+            </article>
+        </div>
+        <div class="groups-directory-toolbar">
+            <input type="search" data-groups-search placeholder="Search by name, tag, focus, creator">
+            <select data-groups-filter>
+                <option value="all">All groups</option>
+                <option value="active">Active only</option>
+                <option value="inactive">Disabled only</option>
+            </select>
+            <button type="button" class="link-btn" data-groups-refresh>Refresh</button>
+        </div>
+        <div class="groups-directory-list" data-groups-directory-list>
+            <p class="muted">Loading groups…</p>
+        </div>
+    </div>
+</div>
+
 <div id="banUserModal" class="admin-overlay" aria-hidden="true">
     <div class="admin-overlay__dialog" role="dialog" aria-modal="true" aria-label="Ban user">
         <button type="button" class="admin-overlay__close" data-overlay-close="ban" aria-label="Close ban modal">
@@ -755,11 +903,12 @@ $renderComplaintItems = function(array $items, string $emptyMessage) {
             </div>
             <div class="ban-target" data-ban-target-label>—</div>
         </header>
-        <form id="banUserForm" class="ban-form">
+        <form id="banUserForm" class="ban-form hf-form">
             <input type="hidden" name="user_id" data-ban-user-id>
+            <input type="hidden" name="report_id" data-ban-report-id>
             <label>
                 <span>Duration</span>
-                <div class="ban-duration-options">
+                <div class="ban-duration-options hf-radio-grid">
                     <label><input type="radio" name="duration" value="24h" required checked>24 hours</label>
                     <label><input type="radio" name="duration" value="72h">3 days</label>
                     <label><input type="radio" name="duration" value="1w">1 week</label>
@@ -802,12 +951,12 @@ $renderComplaintItems = function(array $items, string $emptyMessage) {
             </div>
             <div class="ban-target" data-disable-target-label>—</div>
         </header>
-        <form id="disableGroupForm" class="ban-form">
+        <form id="disableGroupForm" class="ban-form hf-form">
             <input type="hidden" name="group_id" data-disable-group-id>
             <input type="hidden" name="report_id" data-disable-report-id>
             <label>
                 <span>Duration</span>
-                <div class="ban-duration-options">
+                <div class="ban-duration-options hf-radio-grid">
                     <label><input type="radio" name="duration" value="24h" required checked>24 hours</label>
                     <label><input type="radio" name="duration" value="72h">3 days</label>
                     <label><input type="radio" name="duration" value="1w">1 week</label>
@@ -850,7 +999,7 @@ $renderComplaintItems = function(array $items, string $emptyMessage) {
 
 <script src="./js/navbar.js"></script>
 <script src="./js/notificationpopup.js"></script>
-<script src="./js/calender.js"></script>
+    <script src="./js/calender.js?v=20250209_syntax"></script>
 <script src="./js/general.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script>
@@ -866,8 +1015,68 @@ const adminDashboardData = <?php echo json_encode([
 ], JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP); ?>;
 
 document.addEventListener('DOMContentLoaded', () => {
+    const numberFormatter = new Intl.NumberFormat();
+    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    const parseNumericText = value => {
+        const parsed = Number(String(value ?? '').replace(/[^0-9.-]/g, ''));
+        return Number.isFinite(parsed) ? parsed : 0;
+    };
+
+    const animateNumber = (element, target, options = {}) => {
+        if (!element) {
+            return;
+        }
+
+        const safeTarget = Math.max(0, Number(target) || 0);
+        const duration = Math.max(250, Number(options.duration) || 750);
+        const decimals = Number.isInteger(safeTarget) ? 0 : 1;
+        const formatValue = options.format || (value => (
+            decimals > 0
+                ? Number(value).toFixed(decimals)
+                : numberFormatter.format(Math.round(value))
+        ));
+
+        if (prefersReducedMotion || options.animate === false) {
+            element.textContent = formatValue(safeTarget);
+            return;
+        }
+
+        const startValue = parseNumericText(element.textContent);
+        const change = safeTarget - startValue;
+        const startTime = performance.now();
+
+        const tick = now => {
+            const elapsed = now - startTime;
+            const progress = Math.min(1, elapsed / duration);
+            const eased = 1 - Math.pow(1 - progress, 3);
+            const current = startValue + change * eased;
+            element.textContent = formatValue(current);
+
+            if (progress < 1) {
+                requestAnimationFrame(tick);
+            }
+        };
+
+        requestAnimationFrame(tick);
+    };
+
+    const animateStaticCountup = () => {
+        const targets = Array.from(document.querySelectorAll('[data-countup]'));
+        targets.forEach((element, index) => {
+            const targetValue = parseNumericText(element.textContent);
+            element.textContent = '0';
+            animateNumber(element, targetValue, {
+                animate: true,
+                duration: 650 + Math.min(index, 8) * 70
+            });
+        });
+    };
+
+    animateStaticCountup();
+
     if (window.Chart) {
-        const palette = ['#1877f2', '#8e44ad', '#ff7a18', '#30c48d'];
+        const palette = ['#0f172a', '#2563eb', '#14b8a6', '#64748b'];
         const dailyCtx = document.getElementById('dailyActiveChart');
         if (dailyCtx && adminDashboardData.dailyActive.labels.length) {
             new Chart(dailyCtx, {
@@ -877,8 +1086,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     datasets: [{
                         label: 'Active users',
                         data: adminDashboardData.dailyActive.counts,
-                        borderColor: '#1877f2',
-                        backgroundColor: 'rgba(24, 119, 242, 0.15)',
+                        borderColor: '#0f172a',
+                        backgroundColor: 'rgba(15, 23, 42, 0.08)',
                         tension: 0.4,
                         fill: true,
                         pointRadius: 3
@@ -970,17 +1179,32 @@ document.addEventListener('DOMContentLoaded', () => {
         updateState();
     };
 
-    const refreshSeeMoreGroups = (scope = document) => {
-        scope.querySelectorAll('[data-see-more-list]').forEach(applySeeMoreGroup);
+    const refreshSeeMoreGroups = (scope = document, options = {}) => {
+        const allowTemplateLists = Boolean(options.allowTemplateLists);
+        scope.querySelectorAll('[data-see-more-list]').forEach(list => {
+            if (!allowTemplateLists && list.closest('.quick-pane-templates')) {
+                return;
+            }
+            applySeeMoreGroup(list);
+        });
     };
 
     refreshSeeMoreGroups();
 
     const quickModal = document.getElementById('quickModal');
+    if (quickModal && quickModal.parentElement !== document.body) {
+        // Keep quick action modal at root level so it always covers the viewport.
+        document.body.appendChild(quickModal);
+    }
     const quickButtons = document.querySelectorAll('[data-action-target]');
     const quickTemplates = {};
     let lastFocusedButton = null;
     let closeQuickModal = () => {};
+    let refreshQuickTrendingPane = () => {};
+    const quickTrendingState = {
+        paneRoot: null,
+        posts: []
+    };
 
     if (quickModal) {
         const modalBody = quickModal.querySelector('.quick-modal__body');
@@ -994,6 +1218,8 @@ document.addEventListener('DOMContentLoaded', () => {
         closeQuickModal = () => {
             quickModal.classList.remove('open');
             quickModal.setAttribute('aria-hidden', 'true');
+            quickButtons.forEach(button => button.classList.remove('active'));
+            quickTrendingState.paneRoot = null;
             if (!document.querySelector('.admin-overlay.open')) {
                 document.body.classList.remove('modal-open');
             }
@@ -1009,9 +1235,28 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!modalBody || !quickTemplates[targetId]) return;
             const clone = quickTemplates[targetId].cloneNode(true);
             clone.removeAttribute('id');
+
+            // Remove transient list UI state copied from hidden templates.
+            clone.querySelectorAll('[data-see-more-toggle]').forEach(toggle => toggle.remove());
+            clone.querySelectorAll('[data-see-more-list]').forEach(list => {
+                list.removeAttribute('data-see-more-expanded');
+                Array.from(list.children).forEach(child => {
+                    child.removeAttribute('data-see-more-hidden');
+                });
+            });
+
             modalBody.innerHTML = '';
             modalBody.appendChild(clone);
-            refreshSeeMoreGroups(modalBody);
+            refreshSeeMoreGroups(modalBody, { allowTemplateLists: true });
+
+            if (targetId === 'quick-trending-posts') {
+                const paneRoot = modalBody.querySelector('[data-quick-trending-pane]');
+                if (paneRoot) {
+                    quickTrendingState.paneRoot = paneRoot;
+                    refreshQuickTrendingPane();
+                }
+            }
+
             quickModal.classList.add('open');
             quickModal.setAttribute('aria-hidden', 'false');
             document.body.classList.add('modal-open');
@@ -1046,7 +1291,8 @@ document.addEventListener('DOMContentLoaded', () => {
         complaints: document.getElementById('complaintsModal'),
         ban: document.getElementById('banUserModal'),
         disable: document.getElementById('disableGroupModal'),
-        preview: document.getElementById('postPreviewModal')
+        preview: document.getElementById('postPreviewModal'),
+        groups: document.getElementById('groupsDirectoryModal')
     };
 
     const syncBodyScrollLock = () => {
@@ -1067,11 +1313,26 @@ document.addEventListener('DOMContentLoaded', () => {
         syncBodyScrollLock();
     };
 
-    document.querySelectorAll('[data-open-complaints]').forEach(btn => {
-        btn.addEventListener('click', () => {
-            openOverlay(overlays.complaints);
-            refreshComplaintsBoard();
-        });
+    document.addEventListener('click', event => {
+        const complaintsTrigger = event.target.closest('[data-open-complaints]');
+        if (!complaintsTrigger) return;
+        event.preventDefault();
+        if (quickModal?.classList.contains('open')) {
+            closeQuickModal();
+        }
+        openOverlay(overlays.complaints);
+        refreshComplaintsBoard();
+    });
+
+    document.addEventListener('click', event => {
+        const groupsTrigger = event.target.closest('[data-open-groups-directory]');
+        if (!groupsTrigger) return;
+        event.preventDefault();
+        if (quickModal?.classList.contains('open')) {
+            closeQuickModal();
+        }
+        openOverlay(overlays.groups);
+        refreshGroupsDirectory();
     });
 
     document.querySelectorAll('[data-overlay-close]').forEach(btn => {
@@ -1129,6 +1390,18 @@ document.addEventListener('DOMContentLoaded', () => {
     let complaintsRefreshInFlight = false;
     let complaintsRefreshQueued = false;
 
+    const groupsDirectoryModal = overlays.groups;
+    const groupsDirectoryList = groupsDirectoryModal?.querySelector('[data-groups-directory-list]');
+    const groupsDirectorySearch = groupsDirectoryModal?.querySelector('[data-groups-search]');
+    const groupsDirectoryFilter = groupsDirectoryModal?.querySelector('[data-groups-filter]');
+    const groupsDirectoryRefreshBtn = groupsDirectoryModal?.querySelector('[data-groups-refresh]');
+    const groupsSummary = {
+        total: groupsDirectoryModal?.querySelector('[data-groups-total]'),
+        active: groupsDirectoryModal?.querySelector('[data-groups-active]'),
+        inactive: groupsDirectoryModal?.querySelector('[data-groups-inactive]')
+    };
+    let groupsRefreshInFlight = false;
+
     const buildAssetUrl = path => {
         if (!path) return '';
         if (/^https?:\/\//i.test(path)) {
@@ -1165,18 +1438,229 @@ document.addEventListener('DOMContentLoaded', () => {
         return `${str.slice(0, limit - 1)}…`;
     };
 
+    const toInt = value => {
+        const parsed = parseInt(value, 10);
+        return Number.isFinite(parsed) ? parsed : 0;
+    };
+
+    const toTimestamp = value => {
+        const parsed = Date.parse(value || '');
+        return Number.isFinite(parsed) ? parsed : 0;
+    };
+
+    const buildQuickTrendingItemMarkup = (post, maxEngagement) => {
+        const postId = toInt(post.post_id);
+        const userId = toInt(post.user_id);
+        const authorNameRaw = `${post.first_name || ''} ${post.last_name || ''}`.trim() || post.username || 'Unknown';
+        const authorName = escapeHtml(authorNameRaw);
+        const contentRaw = (post.content ?? '—').toString();
+        const excerpt = escapeHtml(truncateText(contentRaw, 90));
+        const upvotes = toInt(post.upvote_count);
+        const comments = toInt(post.comment_count);
+        const engagementScore = toInt(post.engagement_score);
+        const engagementPercent = Math.max(0, Math.min(100, maxEngagement > 0 ? Math.round((engagementScore / maxEngagement) * 100) : 0));
+        const profileUrl = `${BASE_PATH}index.php?controller=Profile&action=view&user_id=${userId}`;
+        const targetLabel = `Post #${postId}`;
+
+        return `
+            <li class="quick-trending-item" data-post-id="${postId}" data-author="${escapeHtml(authorNameRaw.toLowerCase())}" data-content="${escapeHtml(contentRaw.toLowerCase())}" data-engagement="${engagementScore}" data-upvotes="${upvotes}" data-comments="${comments}" data-created-at="${escapeHtml(post.created_at || '')}">
+                <div>
+                    <strong class="quick-trending-item__title">${authorName}</strong>
+                    <p class="muted quick-trending-item__excerpt">${excerpt}</p>
+                    <div class="engagement-bar" aria-label="Engagement score">
+                        <span style="width: ${engagementPercent}%"></span>
+                    </div>
+                </div>
+                <div class="quick-meta">
+                    <span>${upvotes} ▲ · ${comments} 💬</span>
+                    <div class="quick-meta__actions quick-trending-actions">
+                        <button type="button" class="link-btn" data-preview-post="${postId}">Preview</button>
+                        <button type="button" class="link-btn danger" data-remove-post="${postId}" data-target-label="${escapeHtml(targetLabel)}">Remove</button>
+                        <a class="quick-link" href="${profileUrl}">Profile</a>
+                    </div>
+                </div>
+            </li>
+        `;
+    };
+
+    const updateQuickTrendingStats = (paneRoot, moderation = {}) => {
+        if (!paneRoot) return;
+
+        const totalReports = toInt(moderation.total_reports);
+        const recentReports = toInt(moderation.reports_last_7);
+        const postReports = toInt(moderation.post_reports);
+        const commentReports = toInt(moderation.comment_reports);
+        const groupReports = toInt(moderation.group_reports);
+        const distributionBase = Math.max(1, postReports + commentReports + groupReports);
+
+        const reportsRecentEl = paneRoot.querySelector('[data-quick-reports-recent]');
+        const reportsTotalEl = paneRoot.querySelector('[data-quick-reports-total]');
+        const reportsBarEl = paneRoot.querySelector('[data-quick-reports-bar]');
+        const postReportEl = paneRoot.querySelector('[data-quick-post-reports]');
+        const commentReportEl = paneRoot.querySelector('[data-quick-comment-reports]');
+        const groupReportEl = paneRoot.querySelector('[data-quick-group-reports]');
+        const postsSegmentEl = paneRoot.querySelector('[data-quick-segment-posts]');
+        const commentsSegmentEl = paneRoot.querySelector('[data-quick-segment-comments]');
+        const groupsSegmentEl = paneRoot.querySelector('[data-quick-segment-groups]');
+
+        if (reportsRecentEl) reportsRecentEl.textContent = formatCount(recentReports);
+        if (reportsTotalEl) reportsTotalEl.textContent = formatCount(totalReports);
+        if (reportsBarEl) {
+            const width = Math.max(0, Math.min(100, totalReports > 0 ? Math.round((recentReports / totalReports) * 100) : 0));
+            reportsBarEl.style.width = `${width}%`;
+        }
+        if (postReportEl) postReportEl.textContent = String(postReports);
+        if (commentReportEl) commentReportEl.textContent = String(commentReports);
+        if (groupReportEl) groupReportEl.textContent = String(groupReports);
+        if (postsSegmentEl) postsSegmentEl.style.width = `${Math.round((postReports / distributionBase) * 100)}%`;
+        if (commentsSegmentEl) commentsSegmentEl.style.width = `${Math.round((commentReports / distributionBase) * 100)}%`;
+        if (groupsSegmentEl) groupsSegmentEl.style.width = `${Math.round((groupReports / distributionBase) * 100)}%`;
+    };
+
+    const getQuickTrendingFilteredPosts = paneRoot => {
+        if (!paneRoot) {
+            return [];
+        }
+
+        const searchValue = (paneRoot.querySelector('[data-quick-trending-search]')?.value || '').trim().toLowerCase();
+        const sortValue = (paneRoot.querySelector('[data-quick-trending-sort]')?.value || 'engagement').trim();
+
+        let posts = Array.isArray(quickTrendingState.posts) ? [...quickTrendingState.posts] : [];
+        if (searchValue !== '') {
+            posts = posts.filter(post => {
+                const author = `${post.first_name || ''} ${post.last_name || ''}`.trim() || post.username || '';
+                const haystack = `${author} ${(post.content ?? '').toString()}`.toLowerCase();
+                return haystack.includes(searchValue);
+            });
+        }
+
+        const comparators = {
+            newest: (a, b) => toTimestamp(b.created_at) - toTimestamp(a.created_at),
+            comments: (a, b) => toInt(b.comment_count) - toInt(a.comment_count),
+            upvotes: (a, b) => toInt(b.upvote_count) - toInt(a.upvote_count),
+            engagement: (a, b) => toInt(b.engagement_score) - toInt(a.engagement_score)
+        };
+
+        const comparator = comparators[sortValue] || comparators.engagement;
+        posts.sort((a, b) => {
+            const primary = comparator(a, b);
+            if (primary !== 0) {
+                return primary;
+            }
+            return toTimestamp(b.created_at) - toTimestamp(a.created_at);
+        });
+
+        return posts;
+    };
+
+    const renderQuickTrendingList = paneRoot => {
+        if (!paneRoot) return;
+
+        const list = paneRoot.querySelector('[data-quick-trending-list]');
+        const countEl = paneRoot.querySelector('[data-quick-trending-count]');
+        if (!list) return;
+
+        let emptyEl = paneRoot.querySelector('[data-quick-trending-empty]');
+        if (!emptyEl) {
+            emptyEl = document.createElement('p');
+            emptyEl.className = 'muted';
+            emptyEl.setAttribute('data-quick-trending-empty', 'true');
+            emptyEl.hidden = true;
+            emptyEl.textContent = 'No matching posts found.';
+            list.insertAdjacentElement('afterend', emptyEl);
+        }
+
+        const posts = getQuickTrendingFilteredPosts(paneRoot);
+        if (countEl) {
+            countEl.textContent = String(posts.length);
+        }
+
+        if (!posts.length) {
+            list.innerHTML = '';
+            emptyEl.hidden = false;
+            list.nextElementSibling?.matches('[data-see-more-toggle]') && list.nextElementSibling.remove();
+            return;
+        }
+
+        emptyEl.hidden = true;
+        const maxEngagement = posts.reduce((acc, post) => Math.max(acc, toInt(post.engagement_score)), 1);
+        list.innerHTML = posts.map(post => buildQuickTrendingItemMarkup(post, maxEngagement)).join('');
+        list.removeAttribute('data-see-more-expanded');
+        if (list.nextElementSibling?.matches('[data-see-more-toggle]')) {
+            list.nextElementSibling.remove();
+        }
+        applySeeMoreGroup(list);
+    };
+
+    const bindQuickTrendingControls = paneRoot => {
+        if (!paneRoot || paneRoot.dataset.quickTrendingBound === '1') {
+            return;
+        }
+
+        const searchInput = paneRoot.querySelector('[data-quick-trending-search]');
+        const sortSelect = paneRoot.querySelector('[data-quick-trending-sort]');
+        const refreshButton = paneRoot.querySelector('[data-quick-trending-refresh]');
+
+        searchInput?.addEventListener('input', () => renderQuickTrendingList(paneRoot));
+        sortSelect?.addEventListener('change', () => renderQuickTrendingList(paneRoot));
+        refreshButton?.addEventListener('click', () => refreshQuickTrendingPane());
+
+        paneRoot.dataset.quickTrendingBound = '1';
+    };
+
+    refreshQuickTrendingPane = async () => {
+        const paneRoot = quickTrendingState.paneRoot;
+        if (!paneRoot) {
+            return;
+        }
+
+        bindQuickTrendingControls(paneRoot);
+
+        const list = paneRoot.querySelector('[data-quick-trending-list]');
+        if (list) {
+            list.innerHTML = '<li class="muted quick-trending-loading">Loading latest posts…</li>';
+            if (list.nextElementSibling?.matches('[data-see-more-toggle]')) {
+                list.nextElementSibling.remove();
+            }
+        }
+
+        try {
+            const response = await fetch(`${BASE_PATH}index.php?controller=Admin&action=quickTrendingData&limit=20`, {
+                credentials: 'same-origin'
+            });
+            const data = await response.json();
+            if (!data.success) {
+                throw new Error(data.message || 'Unable to load trending posts.');
+            }
+
+            quickTrendingState.posts = Array.isArray(data.posts) ? data.posts : [];
+            updateQuickTrendingStats(paneRoot, data.moderation || {});
+            renderQuickTrendingList(paneRoot);
+        } catch (error) {
+            if (list) {
+                list.innerHTML = `<li class="muted quick-trending-loading">${escapeHtml(error.message || 'Unable to load trending posts.')}</li>`;
+            }
+        }
+    };
+
     const buildComplaintTargetLabel = complaint => {
-        if (complaint.reported_post_id) {
-            return `Post #${complaint.reported_post_id}`;
-        }
-        if (complaint.reported_comment_id) {
-            return `Comment #${complaint.reported_comment_id}`;
-        }
-        if (complaint.reported_group_id) {
-            return `Group #${complaint.reported_group_id}`;
-        }
-        if (complaint.reported_user_id) {
-            return `User #${complaint.reported_user_id}`;
+        const targetType = String(complaint.target_type || '').toLowerCase();
+        const targetId = parseInt(complaint.target_id, 10) || 0;
+        if (targetId > 0) {
+            const labels = {
+                post: 'Post',
+                comment: 'Comment',
+                group: 'Group',
+                user: 'User',
+                question: 'Question',
+                answer: 'Answer',
+                bin: 'File',
+                bin_media: 'File',
+                channel: 'Channel',
+                message: 'Message'
+            };
+            const label = labels[targetType] || targetType.replace(/_/g, ' ');
+            return `${label ? label.charAt(0).toUpperCase() + label.slice(1) : 'Target'} #${targetId}`;
         }
         return 'General';
     };
@@ -1197,27 +1681,30 @@ document.addEventListener('DOMContentLoaded', () => {
             const status = (item.status || 'pending').toLowerCase();
             const statusLabel = status.charAt(0).toUpperCase() + status.slice(1);
             const description = item.description ? `<p class="complaint-description">${escapeHtml(truncateText(item.description))}</p>` : '';
+            const targetType = String(item.target_type || '').toLowerCase();
+            const targetId = parseInt(item.target_id, 10) || 0;
             const targetName = escapeHtml(item.target_label || buildComplaintTargetLabel(item));
             const targetLabel = `${targetName} · Reported by ${escapeHtml(item.reporter_username || 'Anonymous')}`;
 
             const actionButtons = [];
-            const reportedPostId = parseInt(item.reported_post_id, 10) || 0;
-            const reportedGroupId = parseInt(item.reported_group_id, 10) || 0;
-            const reportedUserId = parseInt(item.reported_user_id, 10) || 0;
 
-            if (reportedPostId) {
-                actionButtons.push(`<button type="button" class="link-btn" data-preview-post="${reportedPostId}">View post</button>`);
-                actionButtons.push(`<button type="button" class="link-btn danger" data-remove-post="${reportedPostId}" data-target-label="${targetName}">Remove post</button>`);
+            if (targetType === 'post' && targetId > 0) {
+                actionButtons.push(`<button type="button" class="link-btn" data-preview-post="${targetId}">View post</button>`);
+                actionButtons.push(`<button type="button" class="link-btn danger" data-remove-post="${targetId}" data-target-label="${targetName}">Remove post</button>`);
             }
 
-            if (reportedGroupId) {
-                actionButtons.push(`<a class="link-btn" href="${BASE_PATH}index.php?controller=Group&action=index&group_id=${reportedGroupId}">Open group</a>`);
-                actionButtons.push(`<button type="button" class="link-btn danger" data-disable-group="${reportedGroupId}" data-target-label="${targetName}">Disable group</button>`);
+            if (targetType === 'group' && targetId > 0) {
+                actionButtons.push(`<a class="link-btn" href="${BASE_PATH}index.php?controller=Group&action=index&group_id=${targetId}">Open group</a>`);
+                actionButtons.push(`<button type="button" class="link-btn danger" data-disable-group="${targetId}" data-target-label="${targetName}">Disable group</button>`);
             }
 
-            if (reportedUserId) {
-                const username = escapeHtml(item.reported_username || `User #${reportedUserId}`);
-                actionButtons.push(`<button type="button" class="link-btn danger" data-ban-user="${reportedUserId}" data-ban-username="${username}">Ban user</button>`);
+            if (targetType === 'user' && targetId > 0) {
+                const username = escapeHtml(item.reported_username || `User #${targetId}`);
+                actionButtons.push(`<button type="button" class="link-btn danger" data-ban-user="${targetId}" data-ban-username="${username}">Ban user</button>`);
+            }
+
+            if (status === 'pending') {
+                actionButtons.push(`<button type="button" class="link-btn success" data-mark-reviewed="${reportId}">Mark reviewed</button>`);
             }
 
             const createdAt = item.created_at ? `<small>${escapeHtml(formatDateTime(item.created_at))}</small>` : '';
@@ -1255,26 +1742,30 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const markup = complaints.map(item => {
             const reportId = parseInt(item.report_id, 10) || 0;
+            const status = (item.status || 'pending').toLowerCase();
             const targetLabel = escapeHtml(item.target_label || buildComplaintTargetLabel(item));
+            const targetType = String(item.target_type || '').toLowerCase();
+            const targetId = parseInt(item.target_id, 10) || 0;
             const actions = [];
 
-            if (item.reported_post_id) {
-                const postId = parseInt(item.reported_post_id, 10) || 0;
-                actions.push(`<button type="button" class="link-btn" data-preview-post="${postId}">Preview</button>`);
-                actions.push(`<button type="button" class="link-btn danger" data-remove-post="${postId}" data-target-label="${targetLabel}">Remove</button>`);
+            if (targetType === 'post' && targetId > 0) {
+                actions.push(`<button type="button" class="link-btn" data-preview-post="${targetId}">Preview</button>`);
+                actions.push(`<button type="button" class="link-btn danger" data-remove-post="${targetId}" data-target-label="${targetLabel}">Remove</button>`);
             }
 
-            if (item.reported_group_id) {
-                const groupId = parseInt(item.reported_group_id, 10) || 0;
-                actions.push(`<button type="button" class="link-btn danger" data-disable-group="${groupId}" data-target-label="${targetLabel}">Disable group</button>`);
+            if (targetType === 'group' && targetId > 0) {
+                actions.push(`<button type="button" class="link-btn danger" data-disable-group="${targetId}" data-target-label="${targetLabel}">Disable group</button>`);
             }
 
-            if (item.reported_user_id) {
+            if (targetType === 'user' && targetId > 0) {
                 const username = escapeHtml(item.reported_username || 'User');
-                actions.push(`<button type="button" class="link-btn danger" data-ban-user="${parseInt(item.reported_user_id, 10)}" data-ban-username="${username}">Ban</button>`);
+                actions.push(`<button type="button" class="link-btn danger" data-ban-user="${targetId}" data-ban-username="${username}">Ban</button>`);
             }
 
-            const status = (item.status || 'pending').toLowerCase();
+            if (status === 'pending') {
+                actions.push(`<button type="button" class="link-btn success" data-mark-reviewed="${reportId}">Mark reviewed</button>`);
+            }
+
             return `
                 <li data-report-id="${reportId}">
                     <div>
@@ -1294,7 +1785,6 @@ document.addEventListener('DOMContentLoaded', () => {
         applySeeMoreGroup(recentComplaintsContainer.querySelector('[data-see-more-list]'));
     };
 
-    const numberFormatter = new Intl.NumberFormat();
     const formatCount = value => numberFormatter.format(Math.max(0, Number(value) || 0));
 
     const updateComplaintStats = stats => {
@@ -1305,16 +1795,16 @@ document.addEventListener('DOMContentLoaded', () => {
             complaintSummary.pending.textContent = `${formatCount(stats.pending_reports)} pending`;
         }
         if (complaintSummary.total) {
-            complaintSummary.total.textContent = formatCount(stats.total_reports);
+            animateNumber(complaintSummary.total, Math.max(0, Number(stats.total_reports) || 0), { animate: true, duration: 550 });
         }
         if (complaintSummary.resolved) {
-            complaintSummary.resolved.textContent = formatCount(stats.resolved_reports);
+            animateNumber(complaintSummary.resolved, Math.max(0, Number(stats.resolved_reports) || 0), { animate: true, duration: 550 });
         }
         if (complaintSummary.reviewed) {
-            complaintSummary.reviewed.textContent = formatCount(stats.reviewed_reports);
+            animateNumber(complaintSummary.reviewed, Math.max(0, Number(stats.reviewed_reports) || 0), { animate: true, duration: 550 });
         }
         if (complaintSummary.recent) {
-            complaintSummary.recent.textContent = formatCount(stats.recent_reports);
+            animateNumber(complaintSummary.recent, Math.max(0, Number(stats.recent_reports) || 0), { animate: true, duration: 550 });
         }
     };
 
@@ -1327,6 +1817,125 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
     };
+
+    const renderGroupsDirectory = groups => {
+        if (!groupsDirectoryList) {
+            return;
+        }
+
+        if (!groups?.length) {
+            groupsDirectoryList.innerHTML = '<p class="muted">No groups matched your filters.</p>';
+            return;
+        }
+
+        const rows = groups.map(group => {
+            const groupId = parseInt(group.group_id, 10) || 0;
+            const isActive = Number(group.is_active) === 1;
+            const statusClass = isActive ? 'status-reviewed' : 'status-pending';
+            const statusLabel = isActive ? 'active' : 'disabled';
+            const memberCount = formatCount(group.member_count);
+            const pendingCount = formatCount(group.pending_requests);
+            const postCount = formatCount(group.posts_last_30);
+            const creator = escapeHtml(group.creator_username || 'Unknown');
+            const focus = group.focus ? ` · ${escapeHtml(group.focus)}` : '';
+            const tag = group.tag ? `@${escapeHtml(group.tag)}` : '';
+            const createdAt = group.created_at ? escapeHtml(formatDateTime(group.created_at)) : '—';
+            const targetLabel = escapeHtml(group.name || `Group #${groupId}`);
+
+            const action = isActive
+                ? `<button type="button" class="link-btn danger" data-disable-group="${groupId}" data-target-label="${targetLabel}">Disable</button>`
+                : `<button type="button" class="link-btn success" data-enable-group="${groupId}" data-target-label="${targetLabel}">Enable</button>`;
+
+            return `
+                <li class="groups-directory-item" data-group-id="${groupId}">
+                    <div class="group-directory-main">
+                        <div class="group-directory-head">
+                            <strong>${escapeHtml(group.name || `Group #${groupId}`)}</strong>
+                            <span class="status-pill ${statusClass}">${statusLabel}</span>
+                        </div>
+                        <p class="muted">${escapeHtml((group.privacy_status || 'public').toString())}${focus}${tag ? ` · ${tag}` : ''}</p>
+                        <div class="group-directory-meta">
+                            <span>${memberCount} members</span>
+                            <span>${pendingCount} pending joins</span>
+                            <span>${postCount} posts (30d)</span>
+                            <span>Created by @${creator}</span>
+                            <span>${createdAt}</span>
+                        </div>
+                    </div>
+                    <div class="group-directory-actions">
+                        <a class="quick-link" href="${BASE_PATH}index.php?controller=Group&action=index&group_id=${groupId}">Inspect</a>
+                        ${action}
+                    </div>
+                </li>
+            `;
+        }).join('');
+
+        groupsDirectoryList.innerHTML = `<ul class="groups-directory-list__items" data-see-more-list="8">${rows}</ul>`;
+        applySeeMoreGroup(groupsDirectoryList.querySelector('[data-see-more-list]'));
+    };
+
+    const updateGroupsSummary = summary => {
+        if (!summary) {
+            return;
+        }
+        if (groupsSummary.total) {
+            animateNumber(groupsSummary.total, Math.max(0, Number(summary.total_groups) || 0), { animate: true, duration: 550 });
+        }
+        if (groupsSummary.active) {
+            animateNumber(groupsSummary.active, Math.max(0, Number(summary.active_groups) || 0), { animate: true, duration: 550 });
+        }
+        if (groupsSummary.inactive) {
+            animateNumber(groupsSummary.inactive, Math.max(0, Number(summary.inactive_groups) || 0), { animate: true, duration: 550 });
+        }
+    };
+
+    const refreshGroupsDirectory = async () => {
+        if (!groupsDirectoryList || groupsRefreshInFlight) {
+            return;
+        }
+
+        groupsRefreshInFlight = true;
+        groupsDirectoryList.innerHTML = '<p class="muted">Loading groups…</p>';
+
+        try {
+            const params = new URLSearchParams();
+            const statusValue = (groupsDirectoryFilter?.value || 'all').trim();
+            const searchValue = (groupsDirectorySearch?.value || '').trim();
+            params.set('status', statusValue || 'all');
+            if (searchValue) {
+                params.set('q', searchValue);
+            }
+            params.set('limit', '500');
+
+            const response = await fetch(`${BASE_PATH}index.php?controller=Admin&action=groupsDirectoryData&${params.toString()}`, {
+                credentials: 'same-origin'
+            });
+            const data = await response.json();
+            if (!data.success) {
+                throw new Error(data.message || 'Unable to load groups directory');
+            }
+
+            renderGroupsDirectory(data.groups || []);
+            updateGroupsSummary(data.summary || {});
+        } catch (error) {
+            groupsDirectoryList.innerHTML = `<p class="muted">${escapeHtml(error.message || 'Unable to load groups directory.')}</p>`;
+        } finally {
+            groupsRefreshInFlight = false;
+        }
+    };
+
+    if (groupsDirectorySearch) {
+        let searchTimer = null;
+        groupsDirectorySearch.addEventListener('input', () => {
+            if (searchTimer) {
+                clearTimeout(searchTimer);
+            }
+            searchTimer = setTimeout(() => refreshGroupsDirectory(), 250);
+        });
+    }
+
+    groupsDirectoryFilter?.addEventListener('change', () => refreshGroupsDirectory());
+    groupsDirectoryRefreshBtn?.addEventListener('click', () => refreshGroupsDirectory());
 
     const refreshComplaintsBoard = async () => {
         if (complaintsRefreshInFlight) {
@@ -1444,6 +2053,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 await markReportReviewed(reportId, sourceElement);
             } else {
                 refreshComplaintsBoard();
+                if (quickModal?.classList.contains('open') && quickTrendingState.paneRoot) {
+                    refreshQuickTrendingPane();
+                }
             }
         } catch (error) {
             alert(error.message || 'Unable to remove post.');
@@ -1478,6 +2090,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const banForm = document.getElementById('banUserForm');
     const banTargetLabel = banModal?.querySelector('[data-ban-target-label]');
     const banUserIdInput = banModal?.querySelector('[data-ban-user-id]');
+    const banReportIdInput = banModal?.querySelector('[data-ban-report-id]');
     const banFeedback = banModal?.querySelector('[data-ban-feedback]');
     const customWrapper = banModal?.querySelector('[data-custom-until]');
     const customInput = customWrapper?.querySelector('input[name="custom_until"]');
@@ -1494,10 +2107,14 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!banModal || !banForm || !banUserIdInput) return;
         banForm.reset();
         banUserIdInput.value = userId;
+        const sourceReportId = sourceComplaintEl?.getAttribute('data-report-id') || '';
+        if (banReportIdInput) {
+            banReportIdInput.value = sourceReportId;
+        }
         
         // Store the source complaint element for later marking as reviewed
-        if (sourceComplaintEl) {
-            banForm.dataset.sourceReportId = sourceComplaintEl.getAttribute('data-report-id') || '';
+        if (sourceReportId) {
+            banForm.dataset.sourceReportId = sourceReportId;
         } else {
             delete banForm.dataset.sourceReportId;
         }
@@ -1560,15 +2177,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     banFeedback.style.color = data.success ? '#30c48d' : '#ff5c5c';
                 }
                 if (data.success) {
-                    // Mark the source complaint as reviewed if it exists
-                    const sourceReportId = banForm.dataset.sourceReportId;
-                    if (sourceReportId) {
-                        const complaintItem = document.querySelector(`[data-report-id="${sourceReportId}"]`);
-                        if (complaintItem) {
-                            await markReportReviewed(parseInt(sourceReportId, 10), complaintItem);
-                        }
-                    }
-                    
                     // Refresh the complaints board
                     refreshComplaintsBoard();
                     
@@ -1709,6 +2317,9 @@ document.addEventListener('DOMContentLoaded', () => {
                         await markReportReviewed(sourceReportId, sourceEl || null);
                     } else {
                         refreshComplaintsBoard();
+                        if (overlays.groups?.classList.contains('open')) {
+                            refreshGroupsDirectory();
+                        }
                     }
                     setTimeout(() => {
                         closeOverlayEl(disableModal);
@@ -1723,6 +2334,32 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
     }
+
+    const handleGroupEnable = async (groupId, targetLabel) => {
+        if (!groupId) {
+            return;
+        }
+        const label = targetLabel || `Group #${groupId}`;
+        if (!window.confirm(`Enable ${label}?`)) {
+            return;
+        }
+
+        try {
+            const payload = new URLSearchParams({ group_id: String(groupId) });
+            const response = await fetch(`${BASE_PATH}index.php?controller=Admin&action=enableGroup`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: payload.toString()
+            });
+            const data = await response.json();
+            if (!data.success) {
+                throw new Error(data.message || 'Unable to enable group.');
+            }
+            refreshGroupsDirectory();
+        } catch (error) {
+            alert(error.message || 'Unable to enable group.');
+        }
+    };
 
     document.addEventListener('click', event => {
         const previewTrigger = event.target.closest('[data-preview-post]');
@@ -1757,10 +2394,12 @@ document.addEventListener('DOMContentLoaded', () => {
             event.preventDefault();
             const postId = parseInt(removeTrigger.getAttribute('data-remove-post'), 10);
             if (postId) {
-                const complaintItem = removeTrigger.closest('[data-report-id]');
-                const reportId = complaintItem ? parseInt(complaintItem.getAttribute('data-report-id'), 10) : 0;
+                const sourceItem = removeTrigger.closest('[data-report-id], [data-post-id]');
+                const reportId = sourceItem?.hasAttribute('data-report-id')
+                    ? parseInt(sourceItem.getAttribute('data-report-id'), 10)
+                    : 0;
                 const label = removeTrigger.getAttribute('data-target-label') || `Post #${postId}`;
-                handlePostRemoval(postId, reportId, label, complaintItem || null);
+                handlePostRemoval(postId, reportId, label, sourceItem || null);
             }
             return;
         }
@@ -1774,6 +2413,28 @@ document.addEventListener('DOMContentLoaded', () => {
                 const reportId = complaintItem ? parseInt(complaintItem.getAttribute('data-report-id'), 10) : 0;
                 const label = disableTrigger.getAttribute('data-target-label') || `Group #${groupId}`;
                 openDisableGroupForm(groupId, label, reportId, complaintItem || null);
+            }
+            return;
+        }
+
+        const enableTrigger = event.target.closest('[data-enable-group]');
+        if (enableTrigger) {
+            event.preventDefault();
+            const groupId = parseInt(enableTrigger.getAttribute('data-enable-group'), 10);
+            if (groupId) {
+                const label = enableTrigger.getAttribute('data-target-label') || `Group #${groupId}`;
+                handleGroupEnable(groupId, label);
+            }
+            return;
+        }
+
+        const markReviewedTrigger = event.target.closest('[data-mark-reviewed]');
+        if (markReviewedTrigger) {
+            event.preventDefault();
+            const reportId = parseInt(markReviewedTrigger.getAttribute('data-mark-reviewed'), 10);
+            if (reportId) {
+                const complaintItem = markReviewedTrigger.closest('[data-report-id]');
+                markReportReviewed(reportId, complaintItem || null);
             }
             return;
         }
@@ -1791,6 +2452,10 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         if (overlays.complaints?.classList.contains('open')) {
             closeOverlayEl(overlays.complaints);
+            return;
+        }
+        if (overlays.groups?.classList.contains('open')) {
+            closeOverlayEl(overlays.groups);
             return;
         }
         if (quickModal?.classList.contains('open')) {
