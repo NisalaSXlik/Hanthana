@@ -421,20 +421,25 @@ if (!isset($posts)) {
                     <div class="creator-list">
                         <?php if (!empty($popularGroups)): ?>
                             <?php foreach ($popularGroups as $group): ?>
-                                <div class="creator-card">
-                                    <div class="creator-info">
+                                <div class="creator-card" data-group-id="<?php echo (int)$group['group_id']; ?>">
+                                    <a href="<?php echo BASE_PATH; ?>index.php?controller=Group&action=index&group_id=<?php echo (int)$group['group_id']; ?>" 
+                                       class="creator-info" style="text-decoration:none;color:inherit;">
                                         <img src="<?php echo htmlspecialchars($group['display_picture'] ?? BASE_PATH . 'images/default_group.png'); ?>" 
                                              class="creator-avatar" alt="<?php echo htmlspecialchars($group['name']); ?>">
                                         <div class="creator-details">
                                             <h5><?php echo htmlspecialchars($group['name']); ?></h5>
-                                            <p class="creator-bio"><?php echo $group['member_count']; ?> members</p>
+                                            <p class="creator-bio"><?php echo (int)$group['member_count']; ?> members</p>
                                         </div>
-                                    </div>
-                                    <?php if ($group['is_member']): ?>
-                                        <button class="follow-btn followed" disabled>Joined</button>
-                                    <?php else: ?>
-                                        <button class="follow-btn" data-group-id="<?php echo $group['group_id']; ?>">Join</button>
-                                    <?php endif; ?>
+                                    </a>
+
+                                    <?php $isMember = !empty($group['is_member']); ?>
+                                    <button
+                                        class="follow-btn <?php echo $isMember ? 'followed' : ''; ?>"
+                                        data-group-id="<?php echo (int)$group['group_id']; ?>"
+                                        data-state="<?php echo $isMember ? 'joined' : 'idle'; ?>"
+                                    >
+                                        <?php echo $isMember ? 'Joined' : 'Join'; ?>
+                                    </button>
                                 </div>
                             <?php endforeach; ?>
                         <?php else: ?>
