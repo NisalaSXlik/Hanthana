@@ -124,6 +124,11 @@ $incomingFriendRequests = $friendModel->getIncomingRequests($currentUserId);
                 </div>
 
                 <div class="form-group">
+                    <label for="createEventImageMain">Event Image</label>
+                    <input type="file" id="createEventImageMain" accept="image/*">
+                </div>
+
+                <div class="form-group">
                     <label for="createEventDescription">Description</label>
                     <textarea id="createEventDescription" rows="4" placeholder="Describe your event..."></textarea>
                 </div>

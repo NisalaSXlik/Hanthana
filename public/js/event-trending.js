@@ -26,14 +26,15 @@ function notifyTrending(message, type = 'info') {
 
 function renderTrendingButton(event) {
     const isGoing = Number(event.is_going || 0) === 1;
-    const buttonClass = `btn btn-primary btn-add-trending${isGoing ? ' added' : ''}`;
+    const buttonClass = `btn btn-primary btn-add-trending btn-icon-only${isGoing ? ' added' : ''}`;
     const buttonLabel = isGoing
-        ? '<i class="uil uil-check-circle"></i> Added'
-        : '<i class="uil uil-calendar-alt"></i> Add to Calendar';
+        ? '<i class="uil uil-check-circle"></i>'
+        : '<i class="uil uil-calendar-alt"></i>';
 
     return `
         <button
             class="${buttonClass}"
+            title="${isGoing ? 'Added' : 'Add to Calendar'}"
             data-id="${Number(event.post_id || event.id || 0)}"
             data-group-id="${event.group_id ? Number(event.group_id) : ''}"
             data-title="${escapeText(event.event_title || event.title || 'Untitled Event')}"
@@ -68,13 +69,11 @@ async function loadTrendingEvents() {
             return `
                 <div class="request trending-event-item">
                     <div class="info">
-                        <div>
+                        <div class="trending-event-head">
                             <h5>${title}</h5>
-                            <p>${date} • ${goingCount} going</p>
+                            <div class="action">${renderTrendingButton(event)}</div>
                         </div>
-                    </div>
-                    <div class="action">
-                        ${renderTrendingButton(event)}
+                        <p>${date} • ${goingCount} going</p>
                     </div>
                 </div>
             `;
@@ -90,7 +89,7 @@ async function loadTrendingEvents() {
 
                 const originalHtml = button.innerHTML;
                 button.disabled = true;
-                button.innerHTML = '<i class="uil uil-spinner-alt uil-spin"></i> Updating...';
+                button.innerHTML = '<i class="uil uil-spinner-alt uil-spin"></i>';
 
                 try {
                     const response = await fetch(trendingApiUrl('?controller=Calendar&action=handleAjax'), {
@@ -117,8 +116,8 @@ async function loadTrendingEvents() {
                     const nowAdded = !!result.interested;
                     button.classList.toggle('added', nowAdded);
                     button.innerHTML = nowAdded
-                        ? '<i class="uil uil-check-circle"></i> Added'
-                        : '<i class="uil uil-calendar-alt"></i> Add to Calendar';
+                        ? '<i class="uil uil-check-circle"></i>'
+                        : '<i class="uil uil-calendar-alt"></i>';
 
                     notifyTrending(
                         result.message || (nowAdded ? 'Event added to calendar' : 'Event removed from calendar'),

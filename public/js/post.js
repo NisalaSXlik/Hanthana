@@ -17,6 +17,9 @@ document.addEventListener('DOMContentLoaded', function() {
     // General fields
     const imageUpload = document.querySelector('.image-upload');
     const postImageInput = document.getElementById('postImage');
+    const eventImageUpload = document.getElementById('eventImageUpload');
+    const eventPostImageInput = document.getElementById('eventPostImage');
+    const eventImageLabel = document.getElementById('eventImageLabel');
     const postTagsInput = document.getElementById('postTags');
     const tagCount = document.querySelector('.tag-count');
     
@@ -26,6 +29,7 @@ document.addEventListener('DOMContentLoaded', function() {
     
     let currentPostType = 'general';
     let selectedFile = null;
+    let selectedEventFile = null;
 
     // Show modal
     if (createBtn && postModal) {
@@ -143,6 +147,22 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
+    if (eventImageUpload && eventPostImageInput) {
+        eventImageUpload.addEventListener('click', function() {
+            eventPostImageInput.click();
+        });
+
+        eventPostImageInput.addEventListener('change', function(e) {
+            if (e.target.files && e.target.files[0]) {
+                selectedEventFile = e.target.files[0];
+                if (eventImageLabel) {
+                    eventImageLabel.textContent = selectedEventFile.name;
+                }
+                eventImageUpload.classList.add('has-file');
+            }
+        });
+    }
+
     // Tag validation
     postTagsInput.addEventListener('input', function() {
         const tags = this.value.split(',').map(tag => tag.trim()).filter(tag => tag.length > 0);
@@ -238,6 +258,9 @@ document.addEventListener('DOMContentLoaded', function() {
         formData.append('eventDate', eventDate);
         formData.append('eventLocation', eventLocation);
         formData.append('eventTime', eventTime);
+        if (selectedEventFile) {
+            formData.append('image', selectedEventFile);
+        }
 
         const groupId = new URLSearchParams(window.location.search).get('group_id');
         formData.append('is_group_post', groupId ? '1' : '0');
@@ -336,6 +359,10 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('createEventDate').value = '';
         document.getElementById('createEventTime').value = '';
         document.getElementById('createEventLocation').value = '';
+        selectedEventFile = null;
+        if (eventPostImageInput) eventPostImageInput.value = '';
+        if (eventImageLabel) eventImageLabel.textContent = 'Click to add event image';
+        if (eventImageUpload) eventImageUpload.classList.remove('has-file');
 
         // Question
         document.getElementById('questionTitleInput').value = '';

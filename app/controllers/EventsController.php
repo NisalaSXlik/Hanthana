@@ -106,6 +106,28 @@ class EventsController {
             return;
         }
 
+        $imagePath = null;
+        $imageName = null;
+        $imageSize = null;
+
+        if (isset($_FILES['image']) && $_FILES['image']['error'] === UPLOAD_ERR_OK) {
+            $uploadDir = __DIR__ . '/../../public/uploads/post_media/';
+            if (!is_dir($uploadDir)) {
+                mkdir($uploadDir, 0755, true);
+            }
+
+            $imageName = uniqid() . '_' . basename($_FILES['image']['name']);
+            $destinationPath = $uploadDir . $imageName;
+
+            if (!move_uploaded_file($_FILES['image']['tmp_name'], $destinationPath)) {
+                echo json_encode(['success' => false, 'error' => 'Image upload failed']);
+                return;
+            }
+
+            $imagePath = 'uploads/post_media/' . $imageName;
+            $imageSize = $_FILES['image']['size'] ?? null;
+        }
+
         $data = [
             'content' => $_POST['description'] ?? '',
             'post_type' => 'event',
@@ -115,7 +137,10 @@ class EventsController {
             'event_time' => $_POST['time'] ?? null,
             'event_location' => $_POST['location'] ?? '',
             'author_id' => $userId,
-            'is_group_post' => 0
+            'is_group_post' => 0,
+            'image_path' => $imagePath,
+            'image_name' => $imageName,
+            'image_size' => $imageSize
         ];
 
         $result = $this->postModel->createPost($data);

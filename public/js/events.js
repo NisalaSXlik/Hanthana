@@ -1,5 +1,6 @@
 // Events page functionality
 let currentFilter = 'upcoming';
+let eventCardGlobalHandlersBound = false;
 
 // Helper to construct API URL safely
 const getApiUrl = (queryString) => {
@@ -70,6 +71,7 @@ async function loadEvents(filter) {
             data.events.forEach(e => window.eventsMap[e.post_id || e.event_id] = e);
             
             container.innerHTML = data.events.map(event => createEventCard(event)).join('');
+            initializeEventCardActions();
             
         } else {
             container.innerHTML = `
@@ -100,9 +102,14 @@ function createEventCard(event) {
     const day = eventDate.getDate();
     const month = eventDate.toLocaleString('default', { month: 'short' });
     
-    const time = event.event_time ? formatTime(event.event_time) : 'Time TBA';
-    const location = event.location || 'Location TBA';
-    const description = event.description || 'No description available';
+    const eventTimeRaw =
+        event.event_time ||
+        event.time ||
+        event.eventTime ||
+        extractTimeFromDate(event.event_date);
+    const time = formatTime(eventTimeRaw);
+    const location = (event.event_location || event.location || 'TBA').trim();
+    const description = event.content || event.description || 'No description available';
     
     const groupInfo = event.group_name 
         ? `<i class="uil uil-users-alt"></i> ${escapeHtml(event.group_name)}` 
@@ -110,14 +117,34 @@ function createEventCard(event) {
     
     // Use event_title if available, fallback to title (PostModel returns event_title)
     const title = event.event_title || event.title || 'Untitled Event';
+    const eventImage = event.image_url || '';
+    const eventId = event.post_id || event.event_id;
+    const currentUserId = (typeof USER_ID !== 'undefined') ? Number(USER_ID) : Number(window.USER_ID || 0);
+    const postOwnerId = Number(event.author_id || event.user_id || 0);
+    const canDelete = postOwnerId === currentUserId;
     
     const isAdded = event.is_going == 1;
     const btnClass = isAdded ? 'btn-add-calendar added' : 'btn-add-calendar';
-    const btnContent = isAdded ? '<i class="uil uil-check"></i>' : '<i class="uil uil-calendar-alt"></i>';
+    const btnContent = isAdded
+        ? '<i class="uil uil-check"></i><span>Added</span>'
+        : '<i class="uil uil-calendar-alt"></i><span>Add Calendar</span>';
     
     return `
-        <div class="event-card" data-event-id="${event.post_id || event.event_id}">
+        <div class="event-card" data-event-id="${eventId}">
             <div class="event-card-header">
+                ${canDelete ? `
+                <div class="event-card-menu" data-event-id="${eventId}">
+                    <button type="button" class="event-card-menu-trigger" aria-label="Post menu">
+                        <i class="uil uil-ellipsis-h"></i>
+                    </button>
+                    <div class="event-card-menu-dropdown">
+                        <button type="button" class="event-card-menu-item delete" data-delete-event="${eventId}">
+                            <i class="uil uil-trash-alt"></i>
+                            <span>Delete</span>
+                        </button>
+                    </div>
+                </div>
+                ` : ''}
                 <h3 class="event-card-title">${escapeHtml(title)}</h3>
                 <div class="event-date-badge">
                     <span class="day">${day}</span>
@@ -127,30 +154,105 @@ function createEventCard(event) {
             </div>
 
             <div class="event-card-body">
-                <div class="event-detail">
-                    <i class="uil uil-clock"></i>
-                    <span>${time}</span>
-                </div>
-                <div class="event-detail">
-                    <i class="uil uil-location-point"></i>
-                    <span>${escapeHtml(location)}</span>
-                </div>
-                <div class="event-description">
-                    ${escapeHtml(description)}
+                <div class="event-card-content">
+                    <div class="event-card-main">
+                        <div class="event-detail">
+                            <i class="uil uil-clock"></i>
+                            <span><strong>Time:</strong> ${time}</span>
+                        </div>
+                        <div class="event-detail">
+                            <i class="uil uil-location-point"></i>
+                            <span><strong>Location:</strong> ${escapeHtml(location)}</span>
+                        </div>
+                        <div class="event-description">
+                            ${escapeHtml(description)}
+                        </div>
+                    </div>
+
+                    ${eventImage ? `
+                        <div class="event-card-image">
+                            <img src="${escapeHtml(eventImage)}" alt="Event image">
+                        </div>
+                    ` : ''}
                 </div>
                 <div class="event-card-footer">
                     <div class="event-stats">
                         <span><i class="uil uil-check-circle"></i> ${event.going_count || 0} going</span>
-                        <span><i class="uil uil-star"></i> ${event.interested_count || 0} interested</span>
                     </div>
+                    <button class="${btnClass}" title="${isAdded ? 'Added to Calendar' : 'Add to Calendar'}" onclick="addToCalendar(this, ${eventId})">
+                        ${btnContent}
+                    </button>
                 </div>
             </div>
-
-            <button class="${btnClass}" title="${isAdded ? 'Added to Calendar' : 'Add to Calendar'}" onclick="addToCalendar(this, ${event.post_id || event.event_id})">
-                ${btnContent}
-            </button>
         </div>
     `;
+}
+
+function initializeEventCardActions() {
+    document.querySelectorAll('.event-card-menu-trigger').forEach(trigger => {
+        trigger.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            const menu = trigger.closest('.event-card-menu');
+            if (!menu) return;
+
+            document.querySelectorAll('.event-card-menu.open').forEach(openMenu => {
+                if (openMenu !== menu) openMenu.classList.remove('open');
+            });
+
+            menu.classList.toggle('open');
+        });
+    });
+
+    document.querySelectorAll('[data-delete-event]').forEach(deleteBtn => {
+        deleteBtn.addEventListener('click', async (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+
+            const eventId = parseInt(deleteBtn.getAttribute('data-delete-event') || '0', 10);
+            if (!eventId) return;
+
+            const confirmed = window.confirm('Delete this event post?');
+            if (!confirmed) return;
+
+            await deleteEventPost(eventId);
+        });
+    });
+
+    if (!eventCardGlobalHandlersBound) {
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('.event-card-menu')) {
+                document.querySelectorAll('.event-card-menu.open').forEach(menu => menu.classList.remove('open'));
+            }
+        });
+        eventCardGlobalHandlersBound = true;
+    }
+}
+
+async function deleteEventPost(eventId) {
+    try {
+        const response = await fetch(getApiUrl('?controller=Posts&action=handleAjax'), {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                sub_action: 'delete',
+                post_id: eventId
+            })
+        });
+
+        const data = await response.json();
+
+        if (!data.success) {
+            showNotification(data.message || 'Failed to delete event', 'error');
+            return;
+        }
+
+        showNotification('Event deleted', 'success');
+        loadEvents(currentFilter);
+    } catch (error) {
+        console.error('Error deleting event:', error);
+        showNotification('Error deleting event', 'error');
+    }
 }
 
 /**
@@ -183,7 +285,7 @@ async function addToCalendar(btn, eventId) {
         const data = await response.json();
 
         if (!data.success) {
-            showNotification(data.message || 'Failed to update event interest', 'error');
+            showNotification(data.message || 'Failed to update event calendar status', 'error');
             btn.innerHTML = originalContent;
             btn.disabled = false;
             return;
@@ -191,7 +293,9 @@ async function addToCalendar(btn, eventId) {
 
         const isAdded = !!data.interested;
         btn.classList.toggle('added', isAdded);
-        btn.innerHTML = isAdded ? '<i class="uil uil-check"></i>' : '<i class="uil uil-calendar-alt"></i>';
+        btn.innerHTML = isAdded
+            ? '<i class="uil uil-check"></i><span>Added</span>'
+            : '<i class="uil uil-calendar-alt"></i><span>Add Calendar</span>';
         btn.title = isAdded ? 'Added to Calendar' : 'Add to Calendar';
         btn.disabled = false;
 
@@ -244,12 +348,14 @@ function hideCreateEventModal() {
  */
 async function handleCreateEvent(e) {
     e.preventDefault();
-    
-    const title = document.getElementById('createEventTitle').value.trim();
-    const description = document.getElementById('createEventDescription').value.trim();
-    const date = document.getElementById('createEventDate').value;
-    const time = document.getElementById('createEventTime').value;
-    const location = document.getElementById('createEventLocation').value.trim();
+
+    const form = e.currentTarget;
+    const title = form.querySelector('#createEventTitle')?.value.trim() || '';
+    const description = form.querySelector('#createEventDescription')?.value.trim() || '';
+    const date = form.querySelector('#createEventDate')?.value || '';
+    const time = form.querySelector('#createEventTime')?.value || '';
+    const location = form.querySelector('#createEventLocation')?.value.trim() || '';
+    const imageFile = form.querySelector('#createEventImageMain')?.files?.[0] || null;
     
     if (!title || !date) {
         showNotification('Please fill in required fields', 'error');
@@ -262,6 +368,9 @@ async function handleCreateEvent(e) {
     formData.append('date', date);
     formData.append('time', time);
     formData.append('location', location);
+    if (imageFile) {
+        formData.append('image', imageFile);
+    }
     
     try {
         const response = await fetch(getApiUrl('?controller=Events&ajax_action=createEvent'), {
@@ -288,12 +397,35 @@ async function handleCreateEvent(e) {
  * Helper: Format time
  */
 function formatTime(timeString) {
-    if (!timeString) return 'Time TBA';
-    const [hours, minutes] = timeString.split(':');
-    const hour = parseInt(hours);
+    if (!timeString) return 'TBA';
+
+    const text = String(timeString).trim();
+    const ampmMatch = text.match(/(\d{1,2})\D(\d{2})\s*(AM|PM)/i);
+    if (ampmMatch) {
+        const hour = parseInt(ampmMatch[1], 10);
+        const minute = ampmMatch[2];
+        const suffix = ampmMatch[3].toUpperCase();
+        if (Number.isNaN(hour)) return 'TBA';
+        return `${hour}:${minute} ${suffix}`;
+    }
+
+    const match = text.match(/(\d{1,2})\D(\d{2})(?:\D\d{2})?/);
+    if (!match) return 'TBA';
+
+    const hour = parseInt(match[1], 10);
+    const minute = match[2];
+    if (Number.isNaN(hour)) return 'TBA';
+
     const ampm = hour >= 12 ? 'PM' : 'AM';
     const hour12 = hour % 12 || 12;
-    return `${hour12}:${minutes} ${ampm}`;
+    return `${hour12}:${minute} ${ampm}`;
+}
+
+function extractTimeFromDate(dateValue) {
+    if (!dateValue) return '';
+    const text = String(dateValue).trim();
+    const match = text.match(/(\d{1,2}:\d{2})(?::\d{2})?/);
+    return match ? match[1] : '';
 }
 
 /**

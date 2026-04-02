@@ -116,6 +116,15 @@ if (isset($_SESSION['user_id'])) {
                                 </div>
 
                                 <div class="form-group">
+                                    <label>Event Image</label>
+                                    <div class="event-image-upload" id="eventImageUpload">
+                                        <i class="uil uil-image-upload"></i>
+                                        <p id="eventImageLabel">Click to add event image</p>
+                                    </div>
+                                    <input type="file" id="eventPostImage" accept="image/*" style="display: none;">
+                                </div>
+
+                                <div class="form-group">
                                     <label for="createEventDescription">Description</label>
                                     <textarea id="createEventDescription" rows="4" placeholder="Describe your event..."></textarea>
                                 </div>
