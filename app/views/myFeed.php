@@ -245,27 +245,41 @@ if (!isset($posts)) {
 										<?php elseif ($postType === 'event'): ?>
 											<!-- Event Post -->
 											<div class="event-content">
-												<h3 class="event-title"><?php echo htmlspecialchars($postMetadata['title'] ?? ($post['event_title'] ?? 'Untitled Event')); ?></h3>
-												<?php if (!empty($post['content'])): ?>
-													<p class="post-text"><?php echo nl2br(htmlspecialchars($post['content'])); ?></p>
-												<?php endif; ?>
-												<div class="event-details">
-													<?php if (!empty($postMetadata['date']) || !empty($post['event_date'])): ?>
-														<div class="event-detail">
-															<i class="uil uil-calendar-alt"></i>
-															<span><?php echo date('l, F j, Y', strtotime($postMetadata['date'] ?? $post['event_date'])); ?></span>
+												<div class="event-content-layout">
+													<div class="event-content-main">
+														<h3 class="event-title"><?php echo htmlspecialchars($postMetadata['title'] ?? ($post['event_title'] ?? 'Untitled Event')); ?></h3>
+														<?php
+															$eventDescription = trim((string)($postMetadata['description'] ?? ($post['content'] ?? '')));
+														?>
+														<?php if ($eventDescription !== ''): ?>
+															<p class="post-text"><?php echo nl2br(htmlspecialchars($eventDescription)); ?></p>
+														<?php endif; ?>
+														<div class="event-details">
+															<?php if (!empty($postMetadata['date']) || !empty($post['event_date'])): ?>
+																<div class="event-detail">
+																	<i class="uil uil-calendar-alt"></i>
+																	<span><?php echo date('l, F j, Y', strtotime($postMetadata['date'] ?? $post['event_date'])); ?></span>
+																</div>
+															<?php endif; ?>
+															<?php if (!empty($postMetadata['time']) || !empty($post['event_time'])): ?>
+																<div class="event-detail">
+																	<i class="uil uil-clock"></i>
+																	<span><?php echo htmlspecialchars($postMetadata['time'] ?? $post['event_time']); ?></span>
+																</div>
+															<?php endif; ?>
+															<?php if (!empty($postMetadata['location']) || !empty($post['event_location'])): ?>
+																<div class="event-detail">
+																	<i class="uil uil-map-marker"></i>
+																	<span><?php echo htmlspecialchars($postMetadata['location'] ?? $post['event_location']); ?></span>
+																</div>
+															<?php endif; ?>
 														</div>
-													<?php endif; ?>
-													<?php if (!empty($postMetadata['time']) || !empty($post['event_time'])): ?>
-														<div class="event-detail">
-															<i class="uil uil-clock"></i>
-															<span><?php echo htmlspecialchars($postMetadata['time'] ?? $post['event_time']); ?></span>
-														</div>
-													<?php endif; ?>
-													<?php if (!empty($postMetadata['location']) || !empty($post['event_location'])): ?>
-														<div class="event-detail">
-															<i class="uil uil-map-marker"></i>
-															<span><?php echo htmlspecialchars($postMetadata['location'] ?? $post['event_location']); ?></span>
+													</div>
+
+													<?php $eventImage = !empty($post['image_url']) ? MediaHelper::resolveMediaPath($post['image_url'], '') : ''; ?>
+													<?php if (!empty($eventImage)): ?>
+														<div class="event-side-image">
+															<img src="<?php echo htmlspecialchars($eventImage); ?>" alt="Event image">
 														</div>
 													<?php endif; ?>
 												</div>

@@ -356,6 +356,7 @@ class PostModel {
             SELECT
                 p.post_id,
                 p.content,
+                p.post_type,
                 p.created_at,
                 COALESCE(vt_total.upvotes, 0) AS upvote_count,
                 COALESCE(vt_total.downvotes, 0) AS downvote_count,
@@ -627,7 +628,7 @@ class PostModel {
     public function getUserPosts(int $userId): array {
         try {
             $groupColumns = $this->selectGroupPostColumns();
-            $sql = "SELECT p.post_id, p.content, p.post_type, p.visibility, p.created_at, p.updated_at, p.upvote_count, p.downvote_count, p.comment_count, p.share_count, p.is_edited, p.edited_at, {$groupColumns} p.event_title, p.event_date, p.event_location, p.is_group_post, p.author_id, u.user_id, u.username, u.first_name, u.last_name, u.profile_picture, pm.file_url AS image_url FROM Post p JOIN Users u ON u.user_id = p.author_id LEFT JOIN (SELECT pm1.post_id, pm1.file_url FROM PostMedia pm1 INNER JOIN (SELECT post_id, MIN(postmedia_id) AS first_media_id FROM PostMedia WHERE file_type = 'image' GROUP BY post_id) x ON x.first_media_id = pm1.postmedia_id) pm ON pm.post_id = p.post_id LEFT JOIN GroupsTable g ON g.group_id = p.group_id WHERE p.author_id = ? AND COALESCE(p.is_group_post, 0) = 0 ORDER BY p.created_at DESC";
+            $sql = "SELECT p.post_id, p.content, p.post_type, p.visibility, p.created_at, p.updated_at, p.upvote_count, p.downvote_count, p.comment_count, p.share_count, p.is_edited, p.edited_at, {$groupColumns} p.event_title, p.event_date, p.event_time, p.event_location, p.is_group_post, p.author_id, u.user_id, u.username, u.first_name, u.last_name, u.profile_picture, pm.file_url AS image_url FROM Post p JOIN Users u ON u.user_id = p.author_id LEFT JOIN (SELECT pm1.post_id, pm1.file_url FROM PostMedia pm1 INNER JOIN (SELECT post_id, MIN(postmedia_id) AS first_media_id FROM PostMedia WHERE file_type = 'image' GROUP BY post_id) x ON x.first_media_id = pm1.postmedia_id) pm ON pm.post_id = p.post_id LEFT JOIN GroupsTable g ON g.group_id = p.group_id WHERE p.author_id = ? AND COALESCE(p.is_group_post, 0) = 0 ORDER BY p.created_at DESC";
             $stmt = $this->getConnection()->prepare($sql);
             $stmt->execute([$userId]);
             $posts = $stmt->fetchAll(PDO::FETCH_ASSOC);

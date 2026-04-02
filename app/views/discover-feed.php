@@ -242,27 +242,41 @@ if (!isset($posts)) {
                                         <?php elseif ($postType === 'event'): ?>
                                             <!-- Event Post -->
                                             <div class="event-content">
-                                                <h3 class="event-title"><?php echo htmlspecialchars($postMetadata['title'] ?? ($post['event_title'] ?? 'Untitled Event')); ?></h3>
-                                                <?php if (!empty($post['content'])): ?>
-                                                    <p class="post-text"><?php echo nl2br(htmlspecialchars($post['content'])); ?></p>
-                                                <?php endif; ?>
-                                                <div class="event-details">
-                                                    <?php if (!empty($postMetadata['date']) || !empty($post['event_date'])): ?>
-                                                        <div class="event-detail">
-                                                            <i class="uil uil-calendar-alt"></i>
-                                                            <span><?php echo date('l, F j, Y', strtotime($postMetadata['date'] ?? $post['event_date'])); ?></span>
+                                                <div class="event-content-layout">
+                                                    <div class="event-content-main">
+                                                        <h3 class="event-title"><?php echo htmlspecialchars($postMetadata['title'] ?? ($post['event_title'] ?? 'Untitled Event')); ?></h3>
+                                                        <?php
+                                                            $eventDescription = trim((string)($postMetadata['description'] ?? ($post['content'] ?? '')));
+                                                        ?>
+                                                        <?php if ($eventDescription !== ''): ?>
+                                                            <p class="post-text"><?php echo nl2br(htmlspecialchars($eventDescription)); ?></p>
+                                                        <?php endif; ?>
+                                                        <div class="event-details">
+                                                            <?php if (!empty($postMetadata['date']) || !empty($post['event_date'])): ?>
+                                                                <div class="event-detail">
+                                                                    <i class="uil uil-calendar-alt"></i>
+                                                                    <span><?php echo date('l, F j, Y', strtotime($postMetadata['date'] ?? $post['event_date'])); ?></span>
+                                                                </div>
+                                                            <?php endif; ?>
+                                                            <?php if (!empty($postMetadata['time']) || !empty($post['event_time'])): ?>
+                                                                <div class="event-detail">
+                                                                    <i class="uil uil-clock"></i>
+                                                                    <span><?php echo htmlspecialchars($postMetadata['time'] ?? $post['event_time']); ?></span>
+                                                                </div>
+                                                            <?php endif; ?>
+                                                            <?php if (!empty($postMetadata['location']) || !empty($post['event_location'])): ?>
+                                                                <div class="event-detail">
+                                                                    <i class="uil uil-map-marker"></i>
+                                                                    <span><?php echo htmlspecialchars($postMetadata['location'] ?? $post['event_location']); ?></span>
+                                                                </div>
+                                                            <?php endif; ?>
                                                         </div>
-                                                    <?php endif; ?>
-                                                    <?php if (!empty($postMetadata['time']) || !empty($post['event_time'])): ?>
-                                                        <div class="event-detail">
-                                                            <i class="uil uil-clock"></i>
-                                                            <span><?php echo htmlspecialchars($postMetadata['time'] ?? $post['event_time']); ?></span>
-                                                        </div>
-                                                    <?php endif; ?>
-                                                    <?php if (!empty($postMetadata['location']) || !empty($post['event_location'])): ?>
-                                                        <div class="event-detail">
-                                                            <i class="uil uil-map-marker"></i>
-                                                            <span><?php echo htmlspecialchars($postMetadata['location'] ?? $post['event_location']); ?></span>
+                                                    </div>
+
+                                                    <?php $eventImage = !empty($post['image_url']) ? MediaHelper::resolveMediaPath($post['image_url'], '') : ''; ?>
+                                                    <?php if (!empty($eventImage)): ?>
+                                                        <div class="event-side-image">
+                                                            <img src="<?php echo htmlspecialchars($eventImage); ?>" alt="Event image">
                                                         </div>
                                                     <?php endif; ?>
                                                 </div>
@@ -421,20 +435,25 @@ if (!isset($posts)) {
                     <div class="creator-list">
                         <?php if (!empty($popularGroups)): ?>
                             <?php foreach ($popularGroups as $group): ?>
-                                <div class="creator-card">
-                                    <div class="creator-info">
+                                <div class="creator-card" data-group-id="<?php echo (int)$group['group_id']; ?>">
+                                    <a href="<?php echo BASE_PATH; ?>index.php?controller=Group&action=index&group_id=<?php echo (int)$group['group_id']; ?>" 
+                                       class="creator-info" style="text-decoration:none;color:inherit;">
                                         <img src="<?php echo htmlspecialchars($group['display_picture'] ?? BASE_PATH . 'images/default_group.png'); ?>" 
                                              class="creator-avatar" alt="<?php echo htmlspecialchars($group['name']); ?>">
                                         <div class="creator-details">
                                             <h5><?php echo htmlspecialchars($group['name']); ?></h5>
-                                            <p class="creator-bio"><?php echo $group['member_count']; ?> members</p>
+                                            <p class="creator-bio"><?php echo (int)$group['member_count']; ?> members</p>
                                         </div>
-                                    </div>
-                                    <?php if ($group['is_member']): ?>
-                                        <button class="follow-btn followed" disabled>Joined</button>
-                                    <?php else: ?>
-                                        <button class="follow-btn" data-group-id="<?php echo $group['group_id']; ?>">Join</button>
-                                    <?php endif; ?>
+                                    </a>
+
+                                    <?php $isMember = !empty($group['is_member']); ?>
+                                    <button
+                                        class="follow-btn <?php echo $isMember ? 'followed' : ''; ?>"
+                                        data-group-id="<?php echo (int)$group['group_id']; ?>"
+                                        data-state="<?php echo $isMember ? 'joined' : 'idle'; ?>"
+                                    >
+                                        <?php echo $isMember ? 'Joined' : 'Join'; ?>
+                                    </button>
                                 </div>
                             <?php endforeach; ?>
                         <?php else: ?>

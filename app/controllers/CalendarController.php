@@ -38,6 +38,9 @@ class CalendarController {
             case 'delete':
                 $this->deleteReminder($userId, $input);
                 break;
+            case 'toggle_event':
+                $this->toggleEventReminder($userId, $input);
+                break;
             default:
                 echo json_encode(['success' => false, 'message' => 'Unknown calendar action']);
         }
@@ -73,6 +76,49 @@ class CalendarController {
             error_log('Calendar delete error: ' . $e->getMessage());
             echo json_encode(['success' => false, 'message' => 'Failed to remove reminder']);
         }
+    }
+
+    private function toggleEventReminder(int $userId, array $input): void {
+        $postId = isset($input['post_id']) ? (int)$input['post_id'] : 0;
+        $groupId = isset($input['group_id']) ? (int)$input['group_id'] : 0;
+
+        if ($postId <= 0) {
+            echo json_encode(['success' => false, 'message' => 'Invalid event']);
+            return;
+        }
+
+        $existing = $this->calendarModel->getReminderForPost($userId, $postId);
+
+        if ($existing) {
+            $this->calendarModel->deleteReminder($userId, $postId);
+            echo json_encode([
+                'success' => true,
+                'interested' => false,
+                'message' => 'Removed from your calendar'
+            ]);
+            return;
+        }
+
+        $payload = [
+            'title' => trim((string)($input['event_title'] ?? $input['title'] ?? 'Untitled Event')),
+            'event_date' => !empty($input['event_date']) ? $input['event_date'] : null,
+            'event_time' => !empty($input['event_time']) ? $input['event_time'] : null,
+            'location' => !empty($input['event_location']) ? $input['event_location'] : ($input['location'] ?? null),
+            'description' => !empty($input['event_description']) ? $input['event_description'] : ($input['description'] ?? null),
+            'metadata' => [
+                'source' => 'events_page',
+                'post_id' => $postId,
+                'group_id' => $groupId ?: null
+            ]
+        ];
+
+        $saved = $this->calendarModel->upsertReminder($userId, $groupId ?: null, $postId, $payload);
+
+        echo json_encode([
+            'success' => (bool)$saved,
+            'interested' => (bool)$saved,
+            'message' => $saved ? 'Event saved to your calendar' : 'Failed to save reminder'
+        ]);
     }
 
     private function formatReminder(array $reminder): array {

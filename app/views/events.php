@@ -78,28 +78,17 @@ $incomingFriendRequests = $friendModel->getIncomingRequests($currentUserId);
             </div>
 
             <div class="right">
-                <div class="messages">
+                <div class="friend-requests">
                     <div class="heading">
-                        <h4>Messages</h4>
-                        <i class="uil uil-edit" id="openChatWidget" style="cursor: pointer;"></i>
+                        <h4><i class="uil uil-fire"></i> Most Going</h4>
                     </div>
-                    <div class="search-bar">
-                        <i class="uil uil-search"></i>
-                        <input type="search" placeholder="Search messages" id="sidebarChatSearch">
-                    </div>
-                    <div class="message-list" id="sidebarMessageList">
-                        <div class="loading-messages" style="text-align: center; padding: 1rem; color: #888;">
+                    <div class="trending-events-list" id="trendingEventsList">
+                        <div class="loading-events" style="text-align: center; padding: 1rem; color: #888;">
                             <i class="uil uil-spinner-alt" style="animation: spin 1s linear infinite;"></i>
-                            <p style="font-size: 0.9rem; margin-top: 0.5rem;">Loading messages...</p>
+                            <p style="font-size: 0.9rem; margin-top: 0.5rem;">Loading events...</p>
                         </div>
                     </div>
                 </div>
-
-                <?php
-                $friendRequests = $incomingFriendRequests ?? [];
-                include __DIR__ . '/templates/friend-requests.php';
-                ?>
-
                 <div class="toast-container" id="toastContainer"></div>
             </div>
         </div>
@@ -132,6 +121,11 @@ $incomingFriendRequests = $friendModel->getIncomingRequests($currentUserId);
                 <div class="form-group">
                     <label for="createEventTitle">Event Title <span class="required">*</span></label>
                     <input type="text" id="createEventTitle" required placeholder="Enter event title">
+                </div>
+
+                <div class="form-group">
+                    <label for="createEventImageMain">Event Image</label>
+                    <input type="file" id="createEventImageMain" accept="image/*">
                 </div>
 
                 <div class="form-group">
@@ -177,6 +171,7 @@ $incomingFriendRequests = $friendModel->getIncomingRequests($currentUserId);
     <script src="./js/poll.js"></script>
     <script src="./js/report.js"></script>
     <script src="./js/events.js"></script>
+    <script src="./js/event-trending.js"></script>
     <script>
         // Load top 3 conversations for sidebar
         (async function loadSidebarMessages() {

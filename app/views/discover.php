@@ -53,12 +53,27 @@ $incomingFriendRequests = $friendModel->getIncomingRequests($currentUserId);
                         </div>
                     </div>
 
+                    
                     <div class="discover-grid">
                         <?php if (!empty($allPosts)): ?>
-                            <?php foreach (array_slice($allPosts, 0, 12) as $post): ?>  
-                                <a href="<?php echo BASE_PATH; ?>index.php?controller=Discover&action=feed&post_id=<?php echo $post['post_id']; ?>" class="discover-item">
-                                    <img src="<?php echo htmlspecialchars($post['image_url'] ?? BASE_PATH . 'images/default_post.png'); ?>" 
-                                        alt="Post image">
+                            <?php foreach (array_slice($allPosts, 0, 12) as $post): ?>
+                                <?php
+                                    $postId = (int)($post['post_id'] ?? 0);
+                                    $imageUrl = trim((string)($post['image_url'] ?? ''));
+                                    $caption = trim((string)($post['content'] ?? ''));
+                                    $shortText = $caption !== '' ? mb_strimwidth($caption, 0, 110, '...') : 'No preview available';
+                                ?>
+                                <a href="<?php echo BASE_PATH; ?>index.php?controller=Discover&action=feed&post_id=<?php echo $postId; ?>"
+                                class="discover-item <?php echo empty($imageUrl) ? 'discover-item-text' : ''; ?>">
+
+                                    <?php if (!empty($imageUrl)): ?>
+                                        <img src="<?php echo htmlspecialchars($imageUrl); ?>" alt="Post image">
+                                    <?php else: ?>
+                                        <div class="discover-text-card">
+                                            <p><?php echo htmlspecialchars($shortText); ?></p>
+                                        </div>
+                                    <?php endif; ?>
+
                                     <div class="item-overlay">
                                         <span><i class="uil uil-heart"></i> <?php echo $post['upvote_count'] ?? 0; ?></span>
                                         <span><i class="uil uil-comment"></i> <?php echo $post['comment_count'] ?? 0; ?></span>
@@ -112,20 +127,25 @@ $incomingFriendRequests = $friendModel->getIncomingRequests($currentUserId);
                     <div class="creator-list">
                         <?php if (!empty($popularGroups)): ?>
                             <?php foreach ($popularGroups as $group): ?>
-                                <div class="creator-card">
-                                    <div class="creator-info">
+                                <div class="creator-card" data-group-id="<?php echo (int)$group['group_id']; ?>">
+                                    <a href="<?php echo BASE_PATH; ?>index.php?controller=Group&action=index&group_id=<?php echo (int)$group['group_id']; ?>" 
+                                       class="creator-info" style="text-decoration:none;color:inherit;">
                                         <img src="<?php echo htmlspecialchars($group['display_picture'] ?? BASE_PATH . 'images/default_group.png'); ?>" 
                                              class="creator-avatar" alt="<?php echo htmlspecialchars($group['name']); ?>">
                                         <div class="creator-details">
                                             <h5><?php echo htmlspecialchars($group['name']); ?></h5>
-                                            <p class="creator-bio"><?php echo $group['member_count']; ?> members</p>
+                                            <p class="creator-bio"><?php echo (int)$group['member_count']; ?> members</p>
                                         </div>
-                                    </div>
-                                    <?php if ($group['is_member']): ?>
-                                        <button class="follow-btn followed" disabled>Joined</button>
-                                    <?php else: ?>
-                                        <button class="follow-btn" data-group-id="<?php echo $group['group_id']; ?>">Join</button>
-                                    <?php endif; ?>
+                                    </a>
+
+                                    <?php $isMember = !empty($group['is_member']); ?>
+                                    <button
+                                        class="follow-btn <?php echo $isMember ? 'followed' : ''; ?>"
+                                        data-group-id="<?php echo (int)$group['group_id']; ?>"
+                                        data-state="<?php echo $isMember ? 'joined' : 'idle'; ?>"
+                                    >
+                                        <?php echo $isMember ? 'Joined' : 'Join'; ?>
+                                    </button>
                                 </div>
                             <?php endforeach; ?>
                         <?php else: ?>
@@ -139,7 +159,7 @@ $incomingFriendRequests = $friendModel->getIncomingRequests($currentUserId);
 
     <?php include __DIR__ . '/templates/chat-clean.php'; ?>
 
-    <script src="./js/all.js"></script>
+
     <script src="./js/navbar.js"></script>
     <script src="./js/calender.js"></script>
     <script src="./js/notificationpopup.js"></script>

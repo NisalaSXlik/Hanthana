@@ -16,9 +16,6 @@ class DiscoverController {
     }
 
 
-
-
-
     public function index() {
         if (!isset($_SESSION['user_id'])) {
             header("Location: " . BASE_PATH . "index.php?controller=Login&action=index");
@@ -30,6 +27,7 @@ class DiscoverController {
         // Use old working methods (don't merge)
         $allPosts = $this->postModel->getTrendingPosts(60, $userId);
 
+
         // Mark group posts
         foreach ($allPosts as &$post) {
             $post['is_group_post'] = !empty($post['group_id']);
@@ -39,14 +37,22 @@ class DiscoverController {
         $trendingHashtags = $this->postModel->getTrendingHashtags(10, 7);
         $popularGroups = $this->groupModel->getPopularGroups(8, $userId);
 
+        $joinedGroups = $this->groupModel->getGroupsJoinedBy((int)$userId);
+        $joinedMap = [];
+        foreach ($joinedGroups as $joinedGroup) {
+            $joinedMap[(int)($joinedGroup['group_id'] ?? 0)] = true;
+        }
+
         require_once __DIR__ . '/../helpers/MediaHelper.php';
         foreach ($popularGroups as &$group) {
-            if (!empty($group['display_picture'])) {
-                $group['display_picture'] = MediaHelper::resolveMediaPath($group['display_picture'], 'images/default_group.png');
-            } else {
-                $group['display_picture'] = MediaHelper::resolveMediaPath('', 'images/default_group.png');
-            }
+            $group['display_picture'] = !empty($group['display_picture'])
+                ? MediaHelper::resolveMediaPath($group['display_picture'], 'images/default_group.png')
+                : MediaHelper::resolveMediaPath('', 'images/default_group.png');
+
+            $groupId = (int)($group['group_id'] ?? 0);
+            $group['is_member'] = !empty($joinedMap[$groupId]);
         }
+        unset($group);
 
         require_once __DIR__ . '/../views/discover.php';
     }
@@ -100,12 +106,14 @@ class DiscoverController {
 
         require_once __DIR__ . '/../helpers/MediaHelper.php';
         foreach ($popularGroups as &$group) {
-            if (!empty($group['display_picture'])) {
-                $group['display_picture'] = MediaHelper::resolveMediaPath($group['display_picture'], 'images/default_group.png');
-            } else {
-                $group['display_picture'] = MediaHelper::resolveMediaPath('', 'images/default_group.png');
-            }
+            $group['display_picture'] = !empty($group['display_picture'])
+                ? MediaHelper::resolveMediaPath($group['display_picture'], 'images/default_group.png')
+                : MediaHelper::resolveMediaPath('', 'images/default_group.png');
+
+            $groupId = (int)($group['group_id'] ?? 0);
+            $group['is_member'] = !empty($joinedMap[$groupId]);
         }
+        unset($group);
 
         require_once __DIR__ . '/../views/discover-feed.php';
     }
@@ -122,6 +130,7 @@ class DiscoverController {
         $limit = 20;
 
         $posts = $this->postModel->getTrendingPosts($limit, $userId);
+
         
         echo json_encode(['success' => true, 'posts' => $posts]);
         exit();
@@ -140,8 +149,10 @@ class DiscoverController {
 
         $posts = $this->postModel->getTrendingPosts($limit, $userId);
 
+
         foreach ($posts as &$post) {
             $post['is_group_post'] = !empty($post['group_id']);
+
         }
 
         echo json_encode(['success' => true, 'posts' => $posts, 'count' => count($posts)]);
@@ -177,4 +188,6 @@ class DiscoverController {
     echo json_encode(['success' => true, 'post' => $post]);
     exit();
     }
+
+
 }

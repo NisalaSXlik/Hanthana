@@ -48,7 +48,8 @@ class PostsController {
         $tags = trim($data['tags'] ?? '');
         $postType = $data['postType'] ?? 'general';
         $eventTitle = trim($data['eventTitle'] ?? '');
-        $eventDate = $data['eventDate'] ?? '';
+        $eventDate = trim($data['eventDate'] ?? '');
+        $eventTime = trim($data['eventTime'] ?? ''); // ✅ capture event time
         $eventLocation = trim($data['eventLocation'] ?? '');
         $groupId = null;
 
@@ -59,9 +60,9 @@ class PostsController {
 
         // Mapping to DB ENUM values
         $visibilityMap = [
-            'only_me'     => 'private',
+            'only_me'      => 'private',
             'friends_only' => 'friends_only',
-            'everyone'   => 'public'
+            'everyone'     => 'public'
         ];
 
         // Final visibility for DB
@@ -89,12 +90,14 @@ class PostsController {
 
         // Handle image upload (only if provided)
         $serverPath = null;
-        $webPath = null;
         $imageName = null;
         $imageSize = null;
+        $dbPath = null;
+
         if (isset($_FILES['image']) && $_FILES['image']['error'] === UPLOAD_ERR_OK) {
             $uploadDir = __DIR__ . '/../../public/uploads/post_media/';
             if (!is_dir($uploadDir)) mkdir($uploadDir, 0755, true);
+
             $imageName = uniqid() . '_' . basename($_FILES['image']['name']);
             $serverPath = $uploadDir . $imageName;
             $dbPath = 'uploads/post_media/' . $imageName;
@@ -108,30 +111,31 @@ class PostsController {
         }
 
         // Prepare data with privacy settings
-        $data = [
+        $postData = [
             'content' => $caption,
             'post_type' => ($postType === 'event') ? 'event' : 'image',
-            'visibility' => $postVisibility, // Use user's privacy setting
+            'visibility' => $postVisibility,
             'event_title' => $eventTitle ?: null,
-            'event_date' => $eventDate ? date('Y-m-d H:i:s', strtotime($eventDate)) : null,
+            'event_date' => $eventDate ?: null,                 // date only from input type="date"
+            'event_time' => $eventTime !== '' ? $eventTime : null, // ✅ store time from form
             'event_location' => $eventLocation ?: null,
             'is_group_post' => false,
             'group_id' => $groupId,
             'author_id' => $authorId,
-            'image_path' => $dbPath ?? null,
+            'image_path' => $dbPath,
             'image_name' => $imageName,
             'image_size' => $imageSize
         ];
 
         // Create post
-        $result = $model->createPost($data);
+        $result = $model->createPost($postData);
 
         if ($result['success']) {
             echo json_encode([
-                'success' => true, 
-                'message' => 'Post created!', 
+                'success' => true,
+                'message' => 'Post created!',
                 'post_id' => $result['post_id'],
-                'visibility' => $postVisibility // Return visibility for frontend
+                'visibility' => $postVisibility
             ]);
         } else {
             http_response_code(500);

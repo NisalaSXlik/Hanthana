@@ -119,13 +119,14 @@
 .event-card {
     background: var(--color-white);
     border-radius: var(--card-border-radius);
-    overflow: hidden;
+    overflow: visible;
     box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
     transition: all 0.3s ease;
     cursor: pointer;
     display: flex;
     flex-direction: column;
     border: 1px solid transparent;
+    position: relative;
 }
 
 .event-card:hover {
@@ -137,9 +138,9 @@
 .event-card-header {
     background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%);
     color: white;
-    padding: 1.75rem;
+    padding: 1.1rem 1.2rem;
     position: relative;
-    min-height: 130px;
+    min-height: 88px;
     display: flex;
     flex-direction: column;
     justify-content: center;
@@ -150,46 +151,45 @@
 }
 
 .btn-add-calendar {
-    position: absolute;
-    bottom: 1.25rem;
-    right: 1.25rem;
-    background: rgba(255, 255, 255, 0.2);
-    color: white;
-    border: 1px solid rgba(255, 255, 255, 0.4);
-    width: 36px;
-    height: 36px;
-    border-radius: 50%;
-    display: flex;
+    position: static;
+    z-index: 1;
+    min-width: 132px;
+    height: 38px;
+    padding: 0 12px;
+    border-radius: 999px;
+    border: none;
+    background: linear-gradient(135deg, var(--color-primary), var(--color-secondary));
+    color: #fff;
+    display: inline-flex;
     align-items: center;
     justify-content: center;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    font-size: 1.1rem;
+    gap: 6px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    box-shadow: 0 6px 14px rgba(14, 165, 233, 0.35);
 }
 
 .btn-add-calendar:hover {
-    background: white;
-    color: var(--color-primary);
-    transform: scale(1.1);
+    transform: translateY(-1px);
+    box-shadow: 0 10px 18px rgba(14, 165, 233, 0.45);
 }
 
 .btn-add-calendar.added {
     background: var(--color-success);
-    border-color: var(--color-success);
-    color: white;
+    box-shadow: 0 8px 16px rgba(16, 185, 129, 0.35);
 }
 
 .event-date-badge {
     position: absolute;
-    top: 1.25rem;
-    right: 1.25rem;
+    top: 0.8rem;
+    right: 3.3rem;
     background: white;
     color: var(--color-primary);
-    padding: 0.85rem;
+    padding: 0.55rem 0.6rem;
     border-radius: var(--border-radius);
     text-align: center;
-    min-width: 75px;
-    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+    min-width: 58px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.18);
     transition: all 0.3s ease;
 }
 
@@ -199,27 +199,27 @@
 }
 
 .event-date-badge .day {
-    font-size: 2rem;
+    font-size: 1.35rem;
     font-weight: bold;
     display: block;
     line-height: 1;
 }
 
 .event-date-badge .month {
-    font-size: 0.9rem;
+    font-size: 0.72rem;
     display: block;
-    margin-top: 0.35rem;
+    margin-top: 0.22rem;
     text-transform: uppercase;
     font-weight: 600;
-    letter-spacing: 0.5px;
+    letter-spacing: 0.4px;
 }
 
 .event-card-title {
-    margin: 0 0 0.85rem 0;
+    margin: 0 0 0.5rem 0;
     font-size: 1.3rem;
-    padding-right: 90px;
-    line-height: 1.4;
-    font-weight: 600;
+    padding-right: 72px;
+    line-height: 1.3;
+    font-weight: 700;
 }
 
 .event-card-group {
@@ -244,6 +244,36 @@
     flex: 1;
     display: flex;
     flex-direction: column;
+}
+
+.event-card-content {
+    display: flex;
+    align-items: stretch;
+    gap: 16px;
+}
+
+.event-card-main {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+.event-card-image {
+    flex: 0 0 42%;
+    width: 42%;
+    max-width: 190px;
+    min-width: 150px;
+    min-height: 188px;
+    border-radius: 14px;
+    overflow: hidden;
+    background: #f3f6fb;
+    box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.06);
+}
+
+.event-card-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
 }
 
 .event-detail {
@@ -283,13 +313,92 @@
     opacity: 0.9;
 }
 
+@media (max-width: 640px) {
+    .event-card-content {
+        flex-direction: column;
+    }
+
+    .event-card-image {
+        width: 100%;
+        max-width: 100%;
+        min-width: 100%;
+        min-height: 180px;
+    }
+}
+
 .event-card-footer {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    margin-top: 12px;
     padding-top: 1.25rem;
     border-top: 2px solid var(--color-light);
     gap: 1rem;
+}
+
+.event-card-menu {
+    position: absolute;
+    top: 0.7rem;
+    right: 0.8rem;
+    z-index: 7;
+}
+
+.event-card-menu-trigger {
+    width: 30px;
+    height: 30px;
+    border: none;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.35);
+    color: #fff;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-shadow: 0 2px 8px rgba(15, 23, 42, 0.2);
+}
+
+.event-card-menu-trigger:hover {
+    background: rgba(255, 255, 255, 0.34);
+}
+
+.event-card-menu-dropdown {
+    position: absolute;
+    top: 34px;
+    right: 0;
+    min-width: 126px;
+    background: #fff;
+    border: 1px solid rgba(15, 23, 42, 0.08);
+    border-radius: 10px;
+    box-shadow: 0 8px 20px rgba(15, 23, 42, 0.15);
+    padding: 6px;
+    opacity: 0;
+    transform: translateY(-4px);
+    pointer-events: none;
+    transition: all 0.18s ease;
+}
+
+.event-card-menu.open .event-card-menu-dropdown {
+    opacity: 1;
+    transform: translateY(0);
+    pointer-events: auto;
+}
+
+.event-card-menu-item {
+    width: 100%;
+    border: none;
+    background: transparent;
+    color: #ef4444;
+    border-radius: 8px;
+    padding: 8px 10px;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    text-align: left;
+}
+
+.event-card-menu-item:hover {
+    background: rgba(239, 68, 68, 0.1);
 }
 
 .event-stats {
@@ -574,6 +683,135 @@
 .btn-secondary:hover {
     background: var(--color-gray);
     color: white;
+}
+
+/* Most Going list uses existing right-sidebar card styles from general.css */
+.trending-events-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.1rem;
+}
+
+.btn-add-trending {
+    width: auto;
+    min-height: 38px;
+    border: none;
+    border-radius: 999px;
+    background: linear-gradient(135deg, var(--color-primary), var(--color-secondary));
+    color: #fff;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px; /* icon right in front of text */
+    font-size: 0.85rem;
+    font-weight: 600;
+    box-shadow: 0 6px 14px rgba(14, 165, 233, 0.35);
+    transition: all 0.3s ease;
+}
+
+.btn-add-trending:hover:not(:disabled) {
+    transform: translateY(-1px);
+    box-shadow: 0 10px 18px rgba(14, 165, 233, 0.45);
+}
+
+.btn-add-trending.added {
+    background: var(--color-success);
+    box-shadow: 0 8px 16px rgba(16, 185, 129, 0.35);
+}
+
+.btn-add-trending:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+}
+
+.btn-add-trending.btn-icon-only {
+    padding: 0.4rem 0.6rem;
+    min-width: auto;
+    width: auto;
+    height: auto;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.btn-add-trending.btn-icon-only i {
+    font-size: 1.1rem;
+}
+
+.btn-add-trending i {
+    font-size: 1rem;
+}
+
+.trending-event-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+}
+
+.trending-event-item .info {
+    flex: 1;
+}
+
+.trending-event-item .action {
+    display: flex;
+    align-items: center;
+    margin: 0;
+    padding: 0;
+}
+
+.request.trending-event-item {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: flex-start !important;
+    justify-content: space-between !important;
+    gap: 0.75rem;
+}
+
+.request.trending-event-item .info {
+    display: block !important;
+    flex: 1;
+    min-width: 0;
+    padding-right: 0.35rem;
+}
+
+.request.trending-event-item .trending-event-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.95rem;
+    width: 100%;
+    margin-right: 0.5rem;
+}
+
+.request.trending-event-item .trending-event-head h5 {
+    margin: 0;
+    flex: 1;
+    line-height: 1.1;
+    margin-right: 0.65rem;
+}
+
+.request.trending-event-item .info p {
+    display: block;
+    width: 100%;
+    margin: 0.02rem 0 0 0;
+    line-height: 1.1;
+}
+
+.request.trending-event-item .action {
+    display: inline-flex;
+    align-items: center;
+    margin: 0;
+    padding: 0;
+    flex: 0 0 auto;
+    margin-left: 0.7rem;
+    margin-right: 0.45rem;
+}
+
+.request.trending-event-item .action .btn {
+    flex: 0 0 auto !important;
+    width: auto !important;
 }
 
 /* Responsive Design */
