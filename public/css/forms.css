@@ -1,0 +1,648 @@
+/* ==========================================================================
+   Unified Form Styles — Hanthana
+   A single source of truth for every form across the platform.
+   Include this file in every page that renders a form.
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   1. FORM CONTAINER
+   -------------------------------------------------------------------------- */
+.hf-form {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+    width: 100%;
+}
+
+/* --------------------------------------------------------------------------
+   2. FORM GROUP (label + input wrapper)
+   -------------------------------------------------------------------------- */
+.hf-form .form-group,
+.hf-form .hf-field,
+.hf-form .template-field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    margin-bottom: 0;
+}
+
+/* --------------------------------------------------------------------------
+   3. LABELS
+   -------------------------------------------------------------------------- */
+.hf-form label,
+.hf-form .hf-label {
+    display: block;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--color-dark);
+    line-height: 1.4;
+}
+
+.hf-form label .required,
+.hf-form .hf-label .required {
+    color: var(--color-danger);
+    margin-left: 2px;
+}
+
+.hf-form small,
+.hf-form .hf-hint {
+    font-size: 0.8rem;
+    color: var(--color-gray);
+    line-height: 1.4;
+    margin-top: 0.15rem;
+}
+
+/* --------------------------------------------------------------------------
+   4. TEXT INPUTS, TEXTAREAS, SELECTS
+   -------------------------------------------------------------------------- */
+.hf-form input[type="text"],
+.hf-form input[type="email"],
+.hf-form input[type="password"],
+.hf-form input[type="tel"],
+.hf-form input[type="url"],
+.hf-form input[type="number"],
+.hf-form input[type="date"],
+.hf-form input[type="time"],
+.hf-form input[type="datetime-local"],
+.hf-form input[type="search"],
+.hf-form textarea,
+.hf-form select {
+    width: 100%;
+    padding: 0.7rem 0.9rem;
+    border: 1.5px solid var(--color-light);
+    border-radius: 0.5rem;
+    background: var(--color-white);
+    color: var(--color-dark);
+    font-size: 0.95rem;
+    font-family: inherit;
+    line-height: 1.5;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    box-sizing: border-box;
+    outline: none;
+}
+
+.hf-form input::placeholder,
+.hf-form textarea::placeholder {
+    color: var(--color-gray);
+    opacity: 0.75;
+}
+
+/* Focus state */
+.hf-form input[type="text"]:focus,
+.hf-form input[type="email"]:focus,
+.hf-form input[type="password"]:focus,
+.hf-form input[type="tel"]:focus,
+.hf-form input[type="url"]:focus,
+.hf-form input[type="number"]:focus,
+.hf-form input[type="date"]:focus,
+.hf-form input[type="time"]:focus,
+.hf-form input[type="datetime-local"]:focus,
+.hf-form input[type="search"]:focus,
+.hf-form textarea:focus,
+.hf-form select:focus {
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.12);
+}
+
+/* Textarea specifics */
+.hf-form textarea {
+    resize: vertical;
+    min-height: 100px;
+    font-family: inherit;
+}
+
+/* Select specifics */
+.hf-form select {
+    cursor: pointer;
+    appearance: auto;
+}
+
+/* --------------------------------------------------------------------------
+   5. AUTH-PAGE ICON INPUTS (login / signup)
+   -------------------------------------------------------------------------- */
+.hf-form .hf-icon-field {
+    position: relative;
+    display: flex;
+    align-items: center;
+    border: 1.5px solid var(--color-light);
+    border-radius: 0.5rem;
+    padding: 0.7rem 1rem;
+    background: var(--color-light);
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.hf-form .hf-icon-field:focus-within {
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.12);
+}
+
+.hf-form .hf-icon-field i {
+    position: absolute;
+    left: 0.95rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--color-gray);
+    margin-right: 0;
+    font-size: 1.1rem;
+    flex-shrink: 0;
+    pointer-events: none;
+    z-index: 1;
+}
+
+.hf-form .hf-icon-field input {
+    flex: 1;
+    border: none;
+    background: transparent;
+    padding: 0.2rem 0 0.2rem 2.2rem;
+    font-size: 1rem;
+    line-height: 1.35;
+    outline: none;
+    color: var(--color-dark);
+    box-shadow: none;
+    width: 100%;
+}
+
+.signup-card .hf-form .hf-icon-field input {
+    padding-left: 2.35rem;
+}
+
+.hf-form .hf-icon-field input:focus {
+    box-shadow: none;
+    border: none;
+}
+
+.hf-form .hf-icon-field input::placeholder {
+    color: var(--color-gray);
+    opacity: 0.75;
+}
+
+/* --------------------------------------------------------------------------
+   6. CHECKBOXES & RADIO GROUPS
+   -------------------------------------------------------------------------- */
+.hf-form .hf-checkbox,
+.hf-form .checkbox-group {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.6rem;
+    margin-bottom: 0.5rem;
+}
+
+.hf-form .hf-checkbox label,
+.hf-form .checkbox-group label {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.6rem;
+    font-weight: normal;
+    cursor: pointer;
+    font-size: 0.95rem;
+    line-height: 1.4;
+}
+
+.hf-form .hf-checkbox input[type="checkbox"],
+.hf-form .hf-checkbox input[type="radio"],
+.hf-form .checkbox-group input[type="checkbox"],
+.hf-form .checkbox-group input[type="radio"] {
+    width: auto;
+    margin-top: 0.2rem;
+    transform: scale(1.15);
+    flex-shrink: 0;
+    cursor: pointer;
+}
+
+.hf-form .hf-checkbox span,
+.hf-form .checkbox-group span {
+    color: var(--color-dark);
+    font-weight: 500;
+}
+
+.hf-form .hf-checkbox small,
+.hf-form .checkbox-group small {
+    display: block;
+    font-size: 0.8rem;
+    color: var(--color-gray);
+    margin-top: 0.15rem;
+}
+
+/* Radio group grid (admin ban durations, etc.) */
+.hf-form .hf-radio-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.hf-form .hf-radio-grid label {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    font-weight: normal;
+    font-size: 0.9rem;
+    cursor: pointer;
+    padding: 0.4rem 0.8rem;
+    border: 1.5px solid var(--color-light);
+    border-radius: 0.5rem;
+    background: var(--color-white);
+    transition: all 0.2s ease;
+}
+
+.hf-form .hf-radio-grid label:has(input:checked) {
+    border-color: var(--color-primary);
+    background: rgba(14, 165, 233, 0.06);
+    color: var(--color-primary);
+}
+
+.hf-form .hf-radio-grid input[type="radio"] {
+    width: auto;
+    transform: scale(1);
+}
+
+/* --------------------------------------------------------------------------
+   7. FILE UPLOADS
+   -------------------------------------------------------------------------- */
+.hf-form .hf-upload-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    background: var(--color-primary);
+    color: var(--color-white);
+    border-radius: 0.5rem;
+    cursor: pointer;
+    font-size: 0.9rem;
+    font-weight: 500;
+    transition: background 0.2s ease;
+}
+
+.hf-form .hf-upload-label:hover {
+    background: var(--color-secondary);
+}
+
+.hf-form input[type="file"] {
+    font-size: 0.9rem;
+}
+
+.hf-form .hf-image-preview {
+    display: block;
+    max-width: 120px;
+    max-height: 120px;
+    border-radius: 0.5rem;
+    margin-top: 0.5rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    object-fit: cover;
+}
+
+/* --------------------------------------------------------------------------
+   8. FORM LAYOUT HELPERS
+   -------------------------------------------------------------------------- */
+
+/* Two-column row */
+.hf-form .hf-row,
+.hf-form .form-row,
+.hf-form .template-columns {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+}
+
+/* Grid layout for many fields */
+.hf-form .hf-grid,
+.hf-form .form-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 1rem 1.25rem;
+}
+
+/* Full-width override inside grids */
+.hf-form .full-width {
+    grid-column: 1 / -1;
+}
+
+/* --------------------------------------------------------------------------
+   9. BUTTONS
+   -------------------------------------------------------------------------- */
+.hf-form .hf-btn,
+.hf-form .btn,
+.hf-form button[type="submit"] {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+    padding: 0.65rem 1.5rem;
+    border: none;
+    border-radius: 0.5rem;
+    font-size: 0.95rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-decoration: none;
+    font-family: inherit;
+    line-height: 1.4;
+}
+
+.hf-form .hf-btn-primary,
+.hf-form .btn-primary,
+.hf-form button[type="submit"]:not(.btn-secondary):not(.hf-btn-secondary):not(.btn):not(.link-btn):not(.ghost) {
+    background: var(--color-primary);
+    color: var(--color-white);
+}
+
+.hf-form .hf-btn-primary:hover,
+.hf-form .btn-primary:hover,
+.hf-form button[type="submit"]:not(.btn-secondary):not(.hf-btn-secondary):not(.btn):not(.link-btn):not(.ghost):hover {
+    background: var(--color-secondary);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(14, 165, 233, 0.25);
+}
+
+.hf-form .hf-btn-secondary,
+.hf-form .btn-secondary {
+    background: var(--color-light);
+    color: var(--color-dark);
+    border: 1.5px solid var(--color-light);
+}
+
+.hf-form .hf-btn-secondary:hover,
+.hf-form .btn-secondary:hover {
+    background: rgba(14, 165, 233, 0.08);
+    border-color: var(--color-primary);
+    color: var(--color-primary);
+}
+
+.hf-form .hf-btn-danger,
+.hf-form .btn.danger {
+    background: var(--color-danger);
+    color: var(--color-white);
+}
+
+.hf-form .hf-btn-danger:hover,
+.hf-form .btn.danger:hover {
+    opacity: 0.9;
+    transform: translateY(-1px);
+}
+
+.hf-form .hf-btn-block,
+.hf-form .btn-block {
+    width: 100%;
+    padding: 0.8rem;
+}
+
+.hf-form button[type="submit"]:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none !important;
+    box-shadow: none !important;
+}
+
+/* --------------------------------------------------------------------------
+   10. MODAL FOOTER (buttons row)
+   -------------------------------------------------------------------------- */
+.hf-form .modal-footer,
+.hf-form .hf-actions,
+.hf-form .template-actions,
+.hf-form .report-modal__actions,
+.hf-form .ban-form__actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.75rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--color-light);
+    margin-top: 0.5rem;
+}
+
+/* --------------------------------------------------------------------------
+   11. INLINE / COMPACT FORMS  (comment forms, reply forms)
+   -------------------------------------------------------------------------- */
+.hf-form.hf-inline {
+    flex-direction: row;
+    align-items: flex-start;
+    gap: 0.5rem;
+}
+
+.hf-form.hf-inline textarea {
+    min-height: 44px;
+    padding: 0.5rem 0.7rem;
+    font-size: 0.9rem;
+    flex: 1;
+    resize: none;
+}
+
+.hf-form.hf-inline button[type="submit"] {
+    padding: 0.5rem 1rem;
+    white-space: nowrap;
+    align-self: flex-end;
+    height: fit-content;
+}
+
+.hf-form.hf-inline .search-bar input[type="search"],
+.hf-form.hf-inline .search-bar input[type="text"] {
+    border: none;
+    background: transparent;
+    box-shadow: none;
+    border-radius: 0;
+    width: 100%;
+    padding: 0.2rem 0;
+    line-height: 1.2;
+}
+
+.hf-form.hf-inline .search-bar input[type="search"]:focus,
+.hf-form.hf-inline .search-bar input[type="text"]:focus {
+    border: none;
+    box-shadow: none;
+}
+
+/* --------------------------------------------------------------------------
+   12. VALIDATION STATES
+   -------------------------------------------------------------------------- */
+.hf-form .form-group.success input,
+.hf-form .form-group.success textarea,
+.hf-form .form-group.success select {
+    border-color: var(--color-success);
+}
+
+.hf-form .form-group.error input,
+.hf-form .form-group.error textarea,
+.hf-form .form-group.error select {
+    border-color: var(--color-danger);
+}
+
+.hf-form .error-message,
+.hf-form .hf-error {
+    color: var(--color-danger);
+    font-size: 0.8rem;
+    margin-top: 0.2rem;
+}
+
+/* Form-level feedback messages */
+.hf-form .form-message,
+.hf-form .hf-feedback {
+    padding: 0.75rem 1rem;
+    border-radius: 0.5rem;
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+
+.hf-form .form-message.success,
+.hf-form .hf-feedback.success {
+    background: rgba(16, 185, 129, 0.1);
+    color: var(--color-success);
+    border: 1px solid rgba(16, 185, 129, 0.2);
+}
+
+.hf-form .form-message.error,
+.hf-form .hf-feedback.error {
+    background: rgba(239, 68, 68, 0.1);
+    color: var(--color-danger);
+    border: 1px solid rgba(239, 68, 68, 0.2);
+}
+
+/* --------------------------------------------------------------------------
+   13. PASSWORD INPUT WITH TOGGLE
+   -------------------------------------------------------------------------- */
+.hf-form .hf-password-wrap {
+    position: relative;
+}
+
+.hf-form .hf-password-wrap input {
+    padding-right: 2.5rem;
+}
+
+.hf-form .hf-password-toggle {
+    position: absolute;
+    right: 0.6rem;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--color-gray);
+    padding: 0.3rem;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: color 0.2s ease;
+}
+
+.hf-form .hf-password-toggle:hover {
+    color: var(--color-primary);
+}
+
+/* --------------------------------------------------------------------------
+   14. CHAR COUNT
+   -------------------------------------------------------------------------- */
+.hf-form .char-count {
+    text-align: right;
+    font-size: 0.75rem;
+    color: var(--color-gray);
+    margin-top: 0.15rem;
+}
+
+/* --------------------------------------------------------------------------
+   15. CONDITIONAL / COLLAPSIBLE FIELDS
+   -------------------------------------------------------------------------- */
+.hf-form .conditional-fields {
+    padding: 0.75rem;
+    background: rgba(14, 165, 233, 0.03);
+    border-radius: 0.5rem;
+    border: 1px solid var(--color-light);
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+/* --------------------------------------------------------------------------
+   16. RESPONSIVE
+   -------------------------------------------------------------------------- */
+@media (max-width: 768px) {
+    .hf-form .hf-row,
+    .hf-form .form-row,
+    .hf-form .template-columns {
+        grid-template-columns: 1fr;
+        gap: 0;
+    }
+
+    .hf-form .hf-grid,
+    .hf-form .form-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .hf-form .modal-footer,
+    .hf-form .hf-actions,
+    .hf-form .template-actions,
+    .hf-form .report-modal__actions,
+    .hf-form .ban-form__actions {
+        flex-direction: column;
+    }
+
+    .hf-form .modal-footer button,
+    .hf-form .hf-actions button,
+    .hf-form .template-actions button,
+    .hf-form .report-modal__actions button,
+    .hf-form .ban-form__actions button {
+        width: 100%;
+    }
+}
+
+/* --------------------------------------------------------------------------
+   17. DARK THEME SUPPORT
+   -------------------------------------------------------------------------- */
+.dark-theme .hf-form input[type="text"],
+.dark-theme .hf-form input[type="email"],
+.dark-theme .hf-form input[type="password"],
+.dark-theme .hf-form input[type="tel"],
+.dark-theme .hf-form input[type="url"],
+.dark-theme .hf-form input[type="number"],
+.dark-theme .hf-form input[type="date"],
+.dark-theme .hf-form input[type="time"],
+.dark-theme .hf-form input[type="datetime-local"],
+.dark-theme .hf-form input[type="search"],
+.dark-theme .hf-form textarea,
+.dark-theme .hf-form select {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(255, 255, 255, 0.15);
+    color: var(--color-white);
+}
+
+.dark-theme .hf-form input::placeholder,
+.dark-theme .hf-form textarea::placeholder {
+    color: var(--color-gray);
+}
+
+.dark-theme .hf-form label,
+.dark-theme .hf-form .hf-label {
+    color: var(--color-white);
+}
+
+.dark-theme .hf-form .hf-icon-field {
+    background: rgba(255, 255, 255, 0.06);
+    border-color: rgba(255, 255, 255, 0.15);
+}
+
+.dark-theme .hf-form .hf-icon-field input {
+    color: var(--color-white);
+}
+
+.dark-theme .hf-form .hf-radio-grid label {
+    background: rgba(255, 255, 255, 0.06);
+    border-color: rgba(255, 255, 255, 0.15);
+    color: var(--color-white);
+}
+
+.dark-theme .hf-form .hf-btn-secondary,
+.dark-theme .hf-form .btn-secondary {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(255, 255, 255, 0.15);
+    color: var(--color-white);
+}
+
+.dark-theme .hf-form .conditional-fields {
+    background: rgba(255, 255, 255, 0.04);
+    border-color: rgba(255, 255, 255, 0.1);
+}
+
+.dark-theme .hf-form .modal-footer,
+.dark-theme .hf-form .hf-actions,
+.dark-theme .hf-form .template-actions,
+.dark-theme .hf-form .report-modal__actions,
+.dark-theme .hf-form .ban-form__actions {
+    border-top-color: rgba(255, 255, 255, 0.1);
+}
