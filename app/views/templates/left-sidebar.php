@@ -1,14 +1,32 @@
 <?php
-// Start session if not already started
+require_once __DIR__ . '/../../../config/config.php';
+require_once __DIR__ . '/../../helpers/MediaHelper.php';
+require_once __DIR__ . '/../../models/UserModel.php';
+
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
-require_once __DIR__ . '/../../../config/config.php';
-require_once __DIR__ . '/../../helpers/MediaHelper.php';
+$userModel = new UserModel();
+$resolvedUserId = 0;
 
-$sidebarAvatarPath = $_SESSION['profile_picture'] ?? '';
-$sidebarAvatarUrl = MediaHelper::resolveMediaPath($sidebarAvatarPath, 'uploads/user_dp/default_user_dp.jpg');
+if (isset($currentUser) && is_array($currentUser) && isset($currentUser['user_id'])) {
+    $resolvedUserId = (int)$currentUser['user_id'];
+} elseif (isset($_SESSION['user_id'])) {
+    $resolvedUserId = (int)$_SESSION['user_id'];
+}
+
+$resolvedUser = $resolvedUserId > 0 ? $userModel->findById($resolvedUserId) : null;
+$currentUser = is_array($resolvedUser) ? $resolvedUser : [];
+$currentUserAvatar = MediaHelper::resolveMediaPath($currentUser['profile_picture'] ?? '', 'uploads/user_dp/default.png');
+$sidebarDisplayName = trim((string)($currentUser['first_name'] ?? '') . ' ' . (string)($currentUser['last_name'] ?? ''));
+if ($sidebarDisplayName === '') {
+    $sidebarDisplayName = trim((string)($_SESSION['first_name'] ?? '') . ' ' . (string)($_SESSION['last_name'] ?? ''));
+}
+if ($sidebarDisplayName === '') {
+    $sidebarDisplayName = (string)($currentUser['username'] ?? ($_SESSION['username'] ?? 'User'));
+}
+$sidebarUsername = (string)($currentUser['username'] ?? ($_SESSION['username'] ?? 'username'));
 
 $explicitSidebarKey = isset($activeSidebar) && is_string($activeSidebar) ? strtolower($activeSidebar) : null;
 
@@ -26,7 +44,8 @@ $menuActiveMap = [
     'feed' => ['home', 'feed'],
     'discover' => ['discover'],
     'events' => ['events'],
-    'popular' => ['popular']
+    'qna' => ['qna', 'popular'],
+    'acedemicdashboard' => ['acedemicdashboard', 'academicdashboard', 'groupmessages']
 ];
 
 $resolvedMenuKey = $explicitSidebarKey;
@@ -44,6 +63,44 @@ if (!function_exists('menuActiveClass')) {
         return ($resolvedKey !== null && $key === $resolvedKey) ? ' active' : '';
     }
 }
+
+require_once __DIR__ . '/../../models/GroupModel.php';
+$groupModel = new GroupModel();
+$userId = $_SESSION['user_id'] ?? null;
+$createdGroups = $userId ? $groupModel->getGroupsCreatedBy($userId) : [];
+$joinedGroups = $userId ? $groupModel->getGroupsJoinedBy($userId) : [];
+$createdGroupIds = array_column($createdGroups, 'group_id');
+$joinedOnlyGroups = array_values(array_filter($joinedGroups, function ($group) use ($createdGroupIds) {
+    return isset($group['group_id']) && !in_array($group['group_id'], $createdGroupIds, true);
+}));
+$totalUserGroups = count($createdGroups) + count($joinedOnlyGroups);
+$currentGroupId = isset($_GET['group_id']) ? (int)$_GET['group_id'] : null;
+
+$groupUniverse = array_values(array_merge($createdGroups, $joinedOnlyGroups));
+$groupNameFallbacks = ['Campus Explorers', 'Weekend Hikers', 'Foodies Circle', 'Photo Walk Crew'];
+$senderFallbacks = ['Nethmi', 'Kavindu', 'Ishara', 'Pabasara'];
+$messageFallbacks = [
+    'New meetup details were shared. Check the pinned update when free.',
+    'Reminder: tonight we vote on the next group event location.',
+    'A new photo dump was posted in the group album.',
+    'Quick update: route and start time changed for tomorrow.'
+];
+$timeFallbacks = ['2 min ago', '12 min ago', '35 min ago', '1 hr ago'];
+$unreadFallbacks = [3, 1, 2, 4];
+
+$dummyGroupMessages = [];
+for ($i = 0; $i < 4; $i++) {
+    $groupRow = $groupUniverse[$i] ?? null;
+    $dummyGroupMessages[] = [
+        'group_id' => isset($groupRow['group_id']) ? (int)$groupRow['group_id'] : null,
+        'group_name' => $groupRow['name'] ?? $groupNameFallbacks[$i],
+        'sender' => $senderFallbacks[$i],
+        'message' => $messageFallbacks[$i],
+        'time' => $timeFallbacks[$i],
+        'unread_count' => $unreadFallbacks[$i]
+    ];
+}
+$groupMessagesUnreadTotal = array_sum(array_column($dummyGroupMessages, 'unread_count'));
 ?>
 
 <!DOCTYPE html>
@@ -61,11 +118,11 @@ if (!function_exists('menuActiveClass')) {
     <a href="<?php echo rtrim(BASE_PATH, '/'); ?>/index.php?controller=Profile&action=view<?php echo isset($_SESSION['user_id']) ? '&user_id=' . (int)$_SESSION['user_id'] : ''; ?>" class="profile-button">
         <div class="profile">
             <div class="profile-picture">
-                <img src="<?php echo htmlspecialchars($sidebarAvatarUrl); ?>" alt="Your profile picture">
+                <img src="<?php echo htmlspecialchars($currentUserAvatar); ?>" alt="Your profile picture">
             </div>
             <div class="handle">
-                <h4><?php echo htmlspecialchars(($_SESSION['first_name'] ?? '') . ' ' . ($_SESSION['last_name'] ?? '')); ?></h4>
-                <p>@<?php echo htmlspecialchars($_SESSION['username'] ?? 'username'); ?></p>
+                <h4><?php echo htmlspecialchars($sidebarDisplayName); ?></h4>
+                <p>@<?php echo htmlspecialchars($sidebarUsername); ?></p>
             </div>
         </div>
     </a>
@@ -82,9 +139,13 @@ if (!function_exists('menuActiveClass')) {
             <i class="uil uil-calendar-alt"></i>
             <h3>Events</h3>
         </button>
-        <button type="button" class="menu-item<?php echo menuActiveClass('popular', $resolvedMenuKey); ?>" data-target="popular" data-url="<?php echo rtrim(BASE_PATH, '/'); ?>/index.php?controller=Popular&action=index" onclick="window.location.href=this.getAttribute('data-url')">
+        <button type="button" class="menu-item<?php echo menuActiveClass('qna', $resolvedMenuKey); ?>" data-target="qna" data-url="<?php echo rtrim(BASE_PATH, '/'); ?>/index.php?controller=QnA&action=index" onclick="window.location.href=this.getAttribute('data-url')">
             <i class="uil uil-fire"></i>
-            <h3>Popular</h3>
+            <h3>Q&amp;A</h3>
+        </button>
+        <button type="button" class="menu-item menu-item-group-messages<?php echo menuActiveClass('acedemicdashboard', $resolvedMenuKey); ?>" data-target="acedemicdashboard" data-url="<?php echo rtrim(BASE_PATH, '/'); ?>/index.php?controller=AcedemicDashboard&action=index" onclick="window.location.href=this.getAttribute('data-url')">
+            <i class="uil uil-comments"></i>
+            <h3>Dashboard</h3>
         </button>
     </div>
 
@@ -101,6 +162,8 @@ if (!function_exists('menuActiveClass')) {
     $totalUserGroups = count($createdGroups) + count($joinedOnlyGroups);
     $currentGroupId = isset($_GET['group_id']) ? (int)$_GET['group_id'] : null;
     ?>
+        
+
     <div class="joined-groups">
         <div class="joined-groups-header">
             <h4>Groups</h4>
@@ -114,7 +177,7 @@ if (!function_exists('menuActiveClass')) {
                     <strong style="font-size:13px;">Created by you</strong>
                     <?php foreach ($createdGroups as $sidebarGroup): ?>
                         <?php
-                        $displayUrl = MediaHelper::resolveMediaPath($sidebarGroup['display_picture'] ?? '', 'uploads/group_dp/default_group_dp.jpg');
+                        $displayUrl = MediaHelper::resolveMediaPath($sidebarGroup['display_picture'] ?? '', 'uploads/group_dp/default.png');
                         ?>
                         <div class="group <?php echo ($currentGroupId === $sidebarGroup['group_id']) ? 'active' : ''; ?>" data-group-id="<?php echo $sidebarGroup['group_id']; ?>" onclick="window.location.href='<?php echo rtrim(BASE_PATH, '/'); ?>/index.php?controller=Group&action=index&group_id=<?php echo $sidebarGroup['group_id']; ?>'">
                             <div class="group-icon">
@@ -133,7 +196,7 @@ if (!function_exists('menuActiveClass')) {
                     <strong style="font-size:13px;">Joined Groups</strong>
                     <?php foreach ($joinedOnlyGroups as $sidebarGroup): ?>
                         <?php 
-                        $displayUrl = MediaHelper::resolveMediaPath($sidebarGroup['display_picture'] ?? '', 'uploads/group_dp/default_group_dp.jpg');
+                        $displayUrl = MediaHelper::resolveMediaPath($sidebarGroup['display_picture'] ?? '', 'uploads/group_dp/default.png');
                         ?>
                         <div class="group <?php echo ($currentGroupId === $sidebarGroup['group_id']) ? 'active' : ''; ?>" data-group-id="<?php echo $sidebarGroup['group_id']; ?>" onclick="window.location.href='<?php echo rtrim(BASE_PATH, '/'); ?>/index.php?controller=Group&action=index&group_id=<?php echo $sidebarGroup['group_id']; ?>'">
                             <div class="group-icon">
@@ -181,19 +244,19 @@ $baseGroupUrl = rtrim(BASE_PATH, '/');
                             <p><?php echo count($createdGroups); ?> group<?php echo count($createdGroups) !== 1 ? 's' : ''; ?></p>
                         </header>
                         <ul class="groups-modal__list">
-                            <?php foreach ($createdGroups as $group): ?>
+                            <?php foreach ($createdGroups as $modalGroup): ?>
                                 <?php
-                                    $groupUrl = $baseGroupUrl . '/index.php?controller=Group&action=index&group_id=' . (int)($group['group_id'] ?? 0);
-                                    $avatar = MediaHelper::resolveMediaPath($group['display_picture'] ?? '', 'uploads/group_dp/default_group_dp.jpg');
-                                    $memberCount = (int)($group['member_count'] ?? 0);
+                                    $groupUrl = $baseGroupUrl . '/index.php?controller=Group&action=index&group_id=' . (int)($modalGroup['group_id'] ?? 0);
+                                    $avatar = MediaHelper::resolveMediaPath($modalGroup['display_picture'] ?? '', 'uploads/group_dp/default.png');
+                                    $memberCount = (int)($modalGroup['member_count'] ?? 0);
                                 ?>
                                 <li class="groups-modal__item">
                                     <div class="groups-modal__details">
                                         <div class="groups-modal__avatar">
-                                            <img src="<?php echo htmlspecialchars($avatar); ?>" alt="<?php echo htmlspecialchars($group['name'] ?? 'Group'); ?>">
+                                            <img src="<?php echo htmlspecialchars($avatar); ?>" alt="<?php echo htmlspecialchars($modalGroup['name'] ?? 'Group'); ?>">
                                         </div>
                                         <div class="groups-modal__info">
-                                            <h5><?php echo htmlspecialchars($group['name'] ?? 'Untitled group'); ?></h5>
+                                            <h5><?php echo htmlspecialchars($modalGroup['name'] ?? 'Untitled group'); ?></h5>
                                             <p class="groups-modal__meta">Created · <?php echo $memberCount; ?> member<?php echo $memberCount !== 1 ? 's' : ''; ?></p>
                                         </div>
                                     </div>
@@ -211,20 +274,20 @@ $baseGroupUrl = rtrim(BASE_PATH, '/');
                             <p><?php echo count($joinedOnlyGroups); ?> group<?php echo count($joinedOnlyGroups) !== 1 ? 's' : ''; ?></p>
                         </header>
                         <ul class="groups-modal__list">
-                            <?php foreach ($joinedOnlyGroups as $group): ?>
+                            <?php foreach ($joinedOnlyGroups as $modalGroup): ?>
                                 <?php
-                                    $groupUrl = $baseGroupUrl . '/index.php?controller=Group&action=index&group_id=' . (int)($group['group_id'] ?? 0);
-                                    $avatar = MediaHelper::resolveMediaPath($group['display_picture'] ?? '', 'uploads/group_dp/default_group_dp.jpg');
-                                    $memberCount = (int)($group['member_count'] ?? 0);
-                                    $privacy = ucfirst($group['privacy_status'] ?? 'public');
+                                    $groupUrl = $baseGroupUrl . '/index.php?controller=Group&action=index&group_id=' . (int)($modalGroup['group_id'] ?? 0);
+                                    $avatar = MediaHelper::resolveMediaPath($modalGroup['display_picture'] ?? '', 'uploads/group_dp/default.png');
+                                    $memberCount = (int)($modalGroup['member_count'] ?? 0);
+                                    $privacy = ucfirst($modalGroup['privacy_status'] ?? 'public');
                                 ?>
                                 <li class="groups-modal__item">
                                     <div class="groups-modal__details">
                                         <div class="groups-modal__avatar">
-                                            <img src="<?php echo htmlspecialchars($avatar); ?>" alt="<?php echo htmlspecialchars($group['name'] ?? 'Group'); ?>">
+                                            <img src="<?php echo htmlspecialchars($avatar); ?>" alt="<?php echo htmlspecialchars($modalGroup['name'] ?? 'Group'); ?>">
                                         </div>
                                         <div class="groups-modal__info">
-                                            <h5><?php echo htmlspecialchars($group['name'] ?? 'Untitled group'); ?></h5>
+                                            <h5><?php echo htmlspecialchars($modalGroup['name'] ?? 'Untitled group'); ?></h5>
                                             <p class="groups-modal__meta">Joined · <?php echo $memberCount; ?> member<?php echo $memberCount !== 1 ? 's' : ''; ?> · <?php echo htmlspecialchars($privacy); ?></p>
                                         </div>
                                     </div>
@@ -248,7 +311,7 @@ $baseGroupUrl = rtrim(BASE_PATH, '/');
                 <i class="uil uil-times"></i>
             </button>
         </div>
-        <form id="createGroupForm" class="modal-body">
+        <form id="createGroupForm" class="modal-body hf-form">
             <div id="groupErrorMsg" style="display:none;color:#d32f2f;font-weight:bold;margin-bottom:10px;"></div>
             <div class="form-group">
                 <label for="groupName">Group Name <span class="required">*</span></label>

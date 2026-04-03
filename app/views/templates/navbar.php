@@ -1,14 +1,8 @@
 <?php
-// Start session if not already started
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
-
 require_once __DIR__ . '/../../../config/config.php';
 require_once __DIR__ . '/../../helpers/MediaHelper.php';
 
-$avatarPath = $_SESSION['profile_picture'] ?? '';
-$profileAvatarUrl = MediaHelper::resolveMediaPath($avatarPath, 'uploads/user_dp/default_user_dp.jpg');
+$currentUserAvatar = MediaHelper::resolveMediaPath($currentUser['profile_picture'], 'uploads/user_dp/default.png');
 $showPostModal = !isset($hidePostModal) || !$hidePostModal;
 // Load notifications for logged in user
 $notifications = [];
@@ -77,7 +71,7 @@ if (isset($_SESSION['user_id'])) {
             </div>
             
             <?php if ($showPostModal): ?>
-                <!-- Post Creation Modal -->
+                <!-- Post Creation Modal with 3 tabs -->
                 <div class="post-modal" id="postModal">
                     <div class="modal-content">
                         <div class="modal-header">
@@ -85,16 +79,19 @@ if (isset($_SESSION['user_id'])) {
                             <button class="close-modal">&times;</button>
                         </div>
                         <div class="modal-body">
+                            <!-- Tab buttons -->
                             <div class="post-type-selector">
                                 <button class="post-type-btn active" data-type="general">General Post</button>
                                 <button class="post-type-btn" data-type="event">Event Post</button>
+                                <button class="post-type-btn" data-type="question">Question Post</button>
                             </div>
                             
-                            <div class="post-content">
+                            <!-- ===== GENERAL POST FIELDS ===== -->
+                            <div id="generalFields" style="display: block;">
                                 <div class="image-upload">
                                     <i class="uil uil-image-upload"></i>
                                     <p>Drag photos and videos here or click to browse</p>
-                                    <input type="file" id="postImage" accept="image/*" style="display: none;">
+                                    <input type="file" id="postImage" accept="image/*,video/*" style="display: none;">
                                 </div>
                                 
                                 <div class="post-details">
@@ -108,24 +105,99 @@ if (isset($_SESSION['user_id'])) {
                                         <input type="text" id="postTags" placeholder="e.g., travel, srilanka, beach, vacation, sunset">
                                         <small class="tag-count">0/5 tags</small>
                                     </div>
-                                    
-                                    <div class="event-details" id="eventDetails" style="display: none;">
-                                        <div class="form-group">
-                                            <label for="eventTitle">Event Title</label>
-                                            <input type="text" id="eventTitle" placeholder="Event name">
-                                        </div>
-                                        <div class="form-group">
-                                            <label for="eventDate">Date & Time</label>
-                                            <input type="datetime-local" id="eventDate">
-                                        </div>
-                                        <div class="form-group">
-                                            <label for="eventLocation">Location</label>
-                                            <input type="text" id="eventLocation" placeholder="Where is the event?">
-                                        </div>
+                                </div>
+                            </div>
+                            
+                            <!-- ===== EVENT POST FIELDS ===== -->
+                            <div id="eventFields" style="display: none;">
+                                <div class="form-group">
+                                    <label for="createEventTitle">Event Title <span class="required">*</span></label>
+                                    <input type="text" id="createEventTitle" placeholder="Enter event title">
+                                </div>
+
+                                <div class="form-group">
+                                    <label>Event Image</label>
+                                    <div class="event-image-upload" id="eventImageUpload">
+                                        <i class="uil uil-image-upload"></i>
+                                        <p id="eventImageLabel">Click to add event image</p>
                                     </div>
+                                    <input type="file" id="eventPostImage" accept="image/*" style="display: none;">
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="createEventDescription">Description</label>
+                                    <textarea id="createEventDescription" rows="4" placeholder="Describe your event..."></textarea>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="createEventDate">Date <span class="required">*</span></label>
+                                    <input type="date" id="createEventDate">
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="createEventTime">Time</label>
+                                    <input type="time" id="createEventTime">
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="createEventLocation">Location</label>
+                                    <input type="text" id="createEventLocation" placeholder="Enter location">
+                                </div>
+                            </div>
+                            
+                            <!-- ===== QUESTION POST FIELDS ===== -->
+                            <div id="questionFields" style="display: none;">
+                                <section class="template-section">
+                                    <div class="template-label-row">
+                                        <label>Question style</label>
+                                        <small>Select one to pre-fill your title</small>
+                                    </div>
+                                    <div class="question-type-grid" role="list">
+                                        <button type="button" class="template-chip active" data-template-prefix="How do I">How do I...</button>
+                                        <button type="button" class="template-chip" data-template-prefix="Why does">Why does...</button>
+                                        <button type="button" class="template-chip" data-template-prefix="What is">What is...</button>
+                                        <button type="button" class="template-chip" data-template-prefix="Best way to">Best way to...</button>
+                                        <button type="button" class="template-chip" data-template-prefix="Troubleshooting">Troubleshooting...</button>
+                                    </div>
+                                </section>
+
+                                <div class="form-group">
+                                    <label>Question title <span class="required">*</span></label>
+                                    <input type="text" name="title" id="questionTitleInput" placeholder="Summarize your question in one sentence">
+                                    <small>Example: "How do I create a modal popup in PHP?"</small>
+                                </div>
+
+                                <div class="form-group">
+                                    <label>Category</label>
+                                    <select name="category" id="questionCategory">
+                                        <option value="General">General</option>
+                                        <option value="Technology">Technology</option>
+                                        <option value="Science">Science</option>
+                                        <option value="Education">Education</option>
+                                        <option value="Health">Health</option>
+                                        <option value="Finance">Finance</option>
+                                        <option value="Career">Career</option>
+                                        <option value="Lifestyle">Lifestyle</option>
+                                        <option value="Travel">Travel</option>
+                                        <option value="Entertainment">Entertainment</option>
+                                        <option value="Sports">Sports</option>
+                                        <option value="Other">Other</option>
+                                    </select>
+                                </div>
+
+                                <div class="form-group">
+                                    <label>What problem are you facing? <span class="required">*</span></label>
+                                    <textarea name="problem_statement" id="problemStatement" maxlength="400" placeholder="Describe the exact issue, error messages, or blockers."></textarea>
+                                    <div class="char-count" data-for="problem_statement">0 / 400</div>
+                                </div>
+
+                                <div class="form-group">
+                                    <label>Topics (comma separated)</label>
+                                    <input type="text" name="topics" id="questionTopics" placeholder="e.g., php, mysql, async">
                                 </div>
                             </div>
                         </div>
+                        
                         <div class="modal-footer">
                             <button class="btn btn-secondary cancel-btn">Cancel</button>
                             <button class="btn btn-primary share-btn">Share</button>
@@ -134,52 +206,102 @@ if (isset($_SESSION['user_id'])) {
                 </div>
             <?php endif; ?>
             
+            <!-- Notification Button -->
             <div class="notification">
-                <i class="uil uil-bell">
+                <i class="uil uil-bell" id="notificationBellBtn">
                     <small class="notification-count"><?php echo $unreadCount > 9 ? '9+' : ($unreadCount > 0 ? (int)$unreadCount : ''); ?></small>
                 </i>
-                <div class="notifications-popup">
-                    <?php if (!empty($notifications)): ?>
-                        <?php foreach ($notifications as $n): ?>
-                            <?php
-                                $actionUrl = $n['action_url'] ?? '';
-                                $nid = (int)$n['notification_id'];
-                                $priority = htmlspecialchars($n['priority'] ?? 'medium');
-                                $typeLabel = ucwords(str_replace('_', ' ', $n['type'] ?? 'Update'));
-                                $triggerPic = $n['trigger_profile_picture'] ?? '';
-                                $imgUrl = MediaHelper::resolveMediaPath($triggerPic, 'uploads/user_dp/default_user_dp.jpg');
-                                $isUnread = empty($n['is_read']);
-                            ?>
-                            <div class="notification-item-wrap<?php echo $isUnread ? ' is-unread' : ''; ?>" data-notif-id="<?php echo $nid; ?>" data-priority="<?php echo $priority; ?>">
-                                <a href="#" class="notification-item" data-action-url="<?php echo htmlspecialchars($actionUrl); ?>" data-notif-id="<?php echo $nid; ?>">
-                                    <div class="notification-avatar">
-                                        <div class="profile-picture">
-                                            <img src="<?php echo htmlspecialchars($imgUrl); ?>" alt="Trigger avatar">
-                                        </div>
+                
+                <!-- Quick Popup (small version for navbar) -->
+                <div class="notifications-popup-quick" id="notificationsPopupQuick">
+                    <div class="quick-popup-header">
+                        <h3 class="quick-popup-title">Notifications</h3>
+                        <button class="quick-popup-close" id="closeQuickPopup">
+                            <i class="uil uil-times"></i>
+                        </button>
+                    </div>
+                    <div class="quick-popup-content" id="quickNotificationsList">
+                        <?php if (!empty($notifications)): ?>
+                            <?php foreach (array_slice($notifications, 0, 5) as $n): ?>
+                                <?php
+                                    $actionUrl = $n['action_url'] ?? '';
+                                    $nid = (int)$n['notification_id'];
+                                    $priority = htmlspecialchars($n['priority'] ?? 'medium');
+                                    $rawType = (string)($n['type'] ?? 'system_alert');
+                                    $typeLabel = strtolower(str_replace('_', ' ', $rawType));
+                                    $typeClassMap = [
+                                        'friend_request' => 'friend',
+                                        'friend_request_accepted' => 'friend',
+                                        'post_comment' => 'comment',
+                                        'post_upvote' => 'like',
+                                        'post_downvote' => 'like',
+                                        'group_request' => 'group',
+                                        'message' => 'message',
+                                        'mention' => 'mention',
+                                        'event_reminder' => 'event',
+                                        'system_alert' => 'system',
+                                    ];
+                                    $typeClass = $typeClassMap[$rawType] ?? 'system';
+                                    $triggerPic = $n['trigger_profile_picture'] ?? '';
+                                    $imgUrl = MediaHelper::resolveMediaPath($triggerPic, 'uploads/user_dp/default.png');
+                                    $isUnread = empty($n['is_read']);
+                                    $friendshipId = 0;
+                                    if ($rawType === 'friend_request' && !empty($actionUrl)) {
+                                        $queryString = (string)parse_url($actionUrl, PHP_URL_QUERY);
+                                        if ($queryString !== '') {
+                                            parse_str($queryString, $queryParams);
+                                            $friendshipId = (int)($queryParams['friendship_id'] ?? 0);
+                                        }
+                                    }
+                                ?>
+                                <div class="notification-item-modern<?php echo ($isUnread ? ' is-unread' : ''); ?>" data-notif-id="<?php echo $nid; ?>" data-priority="<?php echo $priority; ?>" data-action-url="<?php echo htmlspecialchars($actionUrl); ?>" data-notif-type="<?php echo htmlspecialchars($rawType); ?>" data-friendship-id="<?php echo $friendshipId; ?>">
+                                    <div class="notification-avatar-modern">
+                                        <img src="<?php echo htmlspecialchars($imgUrl); ?>" alt="User avatar">
+                                        <div class="notification-avatar-badge"></div>
                                     </div>
-                                    <div class="notification-content">
-                                        <div class="notification-meta">
-                                            <span class="notification-chip"><?php echo htmlspecialchars($typeLabel); ?></span>
-                                            <small class="notification-time"><?php echo htmlspecialchars(date('M j, H:i', strtotime($n['created_at']))); ?></small>
+                                    <div class="notification-content-modern">
+                                        <div class="notification-header-modern">
+                                            <span class="notification-type-chip <?php echo htmlspecialchars($typeClass); ?>"><?php echo htmlspecialchars($typeLabel); ?></span>
+                                            <span class="notification-timestamp"><?php echo htmlspecialchars(date('M j', strtotime($n['created_at']))); ?></span>
                                         </div>
-                                        <p class="notification-title"><?php echo htmlspecialchars($n['title'] ?? ''); ?></p>
-                                        <p class="notification-message"><?php echo htmlspecialchars($n['message'] ?? ''); ?></p>
+                                        <p class="notification-title-modern"><?php echo htmlspecialchars($n['title'] ?? ''); ?></p>
+                                        <p class="notification-message-modern"><?php echo htmlspecialchars($n['message'] ?? ''); ?></p>
+                                        <?php if ($rawType === 'friend_request' && $friendshipId > 0): ?>
+                                            <div class="notification-actions">
+                                                <button
+                                                    type="button"
+                                                    class="notification-action-btn primary"
+                                                    data-action="accept"
+                                                    data-friendship-id="<?php echo $friendshipId; ?>"
+                                                >Accept</button>
+                                                <button
+                                                    type="button"
+                                                    class="notification-action-btn secondary"
+                                                    data-action="decline"
+                                                    data-friendship-id="<?php echo $friendshipId; ?>"
+                                                >Decline</button>
+                                            </div>
+                                        <?php endif; ?>
                                     </div>
-                                </a>
-                                <button class="notif-dismiss" data-notif-id="<?php echo $nid; ?>" title="Dismiss notification" aria-label="Dismiss notification">&times;</button>
+                                    <button class="notification-dismiss-modern" data-notif-id="<?php echo $nid; ?>" title="Dismiss">
+                                        <i class="uil uil-times"></i>
+                                    </button>
+                                </div>
+                            <?php endforeach; ?>
+                        <?php else: ?>
+                            <div class="notification-empty-state" style="padding: 2rem; text-align: center;">
+                                <div style="font-size: 2.5rem; opacity: 0.3;">📭</div>
+                                <div style="color: var(--notif-text-secondary); margin-top: 0.5rem;">No notifications</div>
                             </div>
-                        <?php endforeach; ?>
-                    <?php else: ?>
-                        <div>
-                            <div class="notification-body">
-                                No notifications
-                            </div>
-                        </div>
-                    <?php endif; ?>
+                        <?php endif; ?>
+                    </div>
+                    <div class="quick-popup-footer">
+                        <button class="quick-popup-view-all" id="viewAllNotificationsBtn">View all notifications →</button>
+                    </div>
                 </div>
             </div>
             <div class="profile-picture" id="profileDropdown">
-                <img src="<?php echo htmlspecialchars($profileAvatarUrl); ?>" alt="Your profile picture">
+                <img src=".<?php echo htmlspecialchars($currentUserAvatar); ?>" alt="Your profile picture">
                 <div class="profile-dropdown">
                     <a href="<?php echo BASE_PATH; ?>index.php?controller=Profile&action=view<?php echo isset($_SESSION['user_id']) ? '&user_id=' . (int)$_SESSION['user_id'] : ''; ?>"><i class="uil uil-user"></i> My Profile</a>
                     <?php if (($_SESSION['role'] ?? 'user') === 'admin'): ?>
@@ -193,3 +315,50 @@ if (isset($_SESSION['user_id'])) {
         </div>
     </div>
 </nav>
+
+<!-- Notification Center Modal -->
+<div class="notification-center-overlay" id="notificationCenterOverlay"></div>
+<div class="notification-center-modal" id="notificationCenterModal">
+    <div class="notification-center-header">
+        <h2 class="notification-center-title">
+            <i class="uil uil-bell"></i>
+            Notifications
+        </h2>
+        <div class="notification-center-actions">
+            <button class="notif-header-btn notif-close-btn" id="closeNotificationCenter">
+                <i class="uil uil-times"></i>
+            </button>
+        </div>
+    </div>
+
+    <div class="notification-tabs">
+        <button class="notification-tab active" data-tab="all">
+            All
+            <span class="notification-tab-badge" id="badgeAll" style="display: none;">0</span>
+        </button>
+        <button class="notification-tab" data-tab="unread">
+            Unread
+            <span class="notification-tab-badge" id="badgeUnread"><?php echo $unreadCount > 0 ? $unreadCount : ''; ?></span>
+        </button>
+        <button class="notification-tab" data-tab="requests">
+            Requests
+            <span class="notification-tab-badge" id="badgeRequests" style="display: none;">0</span>
+        </button>
+    </div>
+
+    <div class="notification-center-content" id="notificationCenterContent">
+        <div class="notification-empty-state">
+            <div class="notification-empty-state-icon">
+                <i class="uil uil-inbox"></i>
+            </div>
+            <div class="notification-empty-state-title">All caught up!</div>
+            <div class="notification-empty-state-text">No new notifications at the moment</div>
+        </div>
+    </div>
+
+    <div class="notification-center-footer">
+        <button class="notification-footer-btn" id="markAllReadBtn">Mark all as read</button>
+        <button class="notification-footer-btn primary" id="clearReadBtn">Clear read</button>
+    </div>
+</div>
+<script src="<?php echo BASE_PATH; ?>js/notification-center.js"></script>
