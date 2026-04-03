@@ -1,27 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
-
-:root {
-    --color-dark: #1e293b;
-    --color-light: #f1f5f9;
-    --color-white: #ffffff;
-    --color-primary: #0ea5e9;
-    --color-secondary: #0369a1;
-    --color-success: #10b981;
-    --color-danger: #ef4444;
-    --color-gray: #64748b;
-    
-    --border-radius: 1rem;
-    --card-border-radius: 0.5rem;
-    --btn-padding: 0.5rem 1.5rem;
-    --card-padding: 1rem;
-}
-
-* {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-    font-family: 'Poppins', sans-serif;
-}
+/* discover.css - uses global :root variables from general.css */
 
 /*-------------discover page--------------*/
 
@@ -30,8 +7,42 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
+    gap: 1rem;
     margin-bottom: 2rem;
     padding: 0 1rem;
+}
+
+.discover-header h2 {
+    margin: 0;
+    flex: 0 0 auto;
+    white-space: nowrap;
+}
+
+.discover-header .hf-form.hf-inline {
+    flex: 0 1 28rem;
+    width: 100%;
+    min-width: 0;
+    gap: 0;
+}
+
+.discover-header .search-bar {
+    width: 100%;
+    max-width: none;
+}
+
+@media (max-width: 768px) {
+    .discover-header {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .discover-header h2 {
+        white-space: normal;
+    }
+
+    .discover-header .hf-form.hf-inline {
+        flex: 1 1 auto;
+    }
 }
 
 .discover-grid {
@@ -39,6 +50,16 @@
     grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
     gap: 1rem;
     padding: 0 1rem;
+}
+
+.discover-search-empty {
+    grid-column: 1 / -1;
+    margin: 0;
+    padding: 1rem;
+    text-align: center;
+    color: var(--color-gray);
+    background: var(--color-white);
+    border-radius: 10px;
 }
 
 .discover-item {
@@ -134,12 +155,12 @@
 
         .section-header h4 {
             font-size: 18px;
-            color: #1a1a1a;
+            color: var(--color-dark);
             font-weight: 600;
         }
 
         .see-all {
-            color: #1d9bf0;
+            color: var(--color-primary);
             font-size: 14px;
             text-decoration: none;
             font-weight: 500;
@@ -172,7 +193,7 @@
         .trending-rank {
             font-weight: 700;
             font-size: 16px;
-            color: #1d9bf0;
+            color: var(--color-primary);
             width: 24px;
             text-align: center;
         }
@@ -186,13 +207,13 @@
             margin: 0;
             font-size: 15px;
             font-weight: 600;
-            color: #0f1419;
+            color: var(--color-dark);
         }
 
         .post-count {
             margin: 2px 0 0;
             font-size: 13px;
-            color: #536471;
+            color: var(--color-gray);
         }
 
         /* SUGGESTED CREATORS - MODERN CARDS */
@@ -232,7 +253,7 @@
         }
 
         .creator-card:hover .creator-avatar {
-            border-color: #1d9bf0;
+            border-color: var(--color-primary);
             transform: scale(1.05);
         }
 
@@ -244,13 +265,13 @@
             margin: 0;
             font-size: 15px;
             font-weight: 600;
-            color: #0f1419;
+            color: var(--color-dark);
         }
 
         .creator-bio {
             margin: 0;
             font-size: 13px;
-            color: #536471;
+            color: var(--color-gray);
         }
 
         .follow-btn {
@@ -339,14 +360,14 @@
 
 .modal-content {
     position: relative;
-    background: #1e1e1e;
+    background: var(--color-white);
     width: 420px;
     max-width: 90vw;
     border-radius: 12px;
     padding: 32px;
     text-align: center;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+    border: 1px solid var(--color-light);
     /* Centering animation */
     transform: translateY(20px);
     opacity: 1;

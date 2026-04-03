@@ -27,16 +27,17 @@ $currentUser = $userModel->findById($_SESSION['user_id']);
     <link rel="stylesheet" href="./css/groupprofileview.css">
     <link rel="stylesheet" href="./css/navbar.css">
     <link rel="stylesheet" href="./css/mediaquery.css">
-    <link rel="stylesheet" href="./css/calender.css">
+    <link rel="stylesheet" href="./css/calender.css?v=20250209_zindex">
     <link rel="stylesheet" href="./css/post.css">
     <link rel="stylesheet" href="./css/myfeed.css">
     <link rel="stylesheet" href="./css/notificationpopup.css">
     <link rel="stylesheet" href="./css/events-page.css">
     <link rel="stylesheet" href="./css/userprofileview.css">
     <link rel="stylesheet" href="./css/report.css">
+    <link rel="stylesheet" href="./css/forms.css">
     <link rel="stylesheet" href="https://unicons.iconscout.com/release/v4.0.0/css/line.css">
 </head>
-<body>
+<body class="profile-page">
     <?php include __DIR__ . '/templates/navbar.php'; ?>
 
     <main>
@@ -308,7 +309,6 @@ $currentUser = $userModel->findById($_SESSION['user_id']);
                     </div>
                 </div>
             </div>
-
             <div class="right profile-sidebar">
                 <div class="group-details">
                     <h4>Profile Snapshot</h4>
@@ -429,7 +429,7 @@ $currentUser = $userModel->findById($_SESSION['user_id']);
                     <i class="uil uil-times"></i>
                 </button>
             </div>
-            <form id="editProfileForm" class="modal-body" enctype="multipart/form-data">
+            <form id="editProfileForm" class="modal-body hf-form" enctype="multipart/form-data">
                 <div id="profileFormMessage" class="form-message" style="display:none;"></div>
                 <div class="form-grid">
                     <div class="form-group">
@@ -599,7 +599,7 @@ $currentUser = $userModel->findById($_SESSION['user_id']);
                     <div class="comments-list" id="postViewCommentsList">
                         <div class="comments-loading">Loading comments...</div>
                     </div>
-                    <form id="postViewCommentForm" class="comment-form">
+                    <form id="postViewCommentForm" class="comment-form hf-form hf-inline">
                         <textarea id="postViewCommentInput" placeholder="Add a comment..." rows="2"></textarea>
                         <button type="submit" id="postViewCommentSubmit">Post</button>
                     </form>
@@ -623,7 +623,7 @@ $currentUser = $userModel->findById($_SESSION['user_id']);
             'group' => $groupPosts ?? []
         ], JSON_UNESCAPED_SLASHES); ?>
     </script>
-    <script src="./js/calender.js"></script>
+    <script src="./js/calender.js?v=20250209_syntax"></script>
     <script src="./js/feed.js"></script>
     <script src="./js/friends.js"></script>
     <script src="./js/general.js"></script>

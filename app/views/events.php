@@ -78,17 +78,30 @@ $incomingFriendRequests = $friendModel->getIncomingRequests($currentUserId);
             </div>
 
             <div class="right">
-                <div class="friend-requests">
+                <div class="messages">
                     <div class="heading">
-                        <h4><i class="uil uil-fire"></i> Most Going</h4>
+                        <h4>Messages</h4>
+                        <i class="uil uil-edit" id="openChatWidget" style="cursor: pointer;"></i>
                     </div>
-                    <div class="trending-events-list" id="trendingEventsList">
-                        <div class="loading-events" style="text-align: center; padding: 1rem; color: #888;">
+                    <form class="hf-form hf-inline" onsubmit="return false;">
+                    <div class="search-bar">
+                        <i class="uil uil-search"></i>
+                        <input type="search" placeholder="Search messages" id="sidebarChatSearch">
+                    </div>
+                    </form>
+                    <div class="message-list" id="sidebarMessageList">
+                        <div class="loading-messages" style="text-align: center; padding: 1rem; color: #888;">
                             <i class="uil uil-spinner-alt" style="animation: spin 1s linear infinite;"></i>
-                            <p style="font-size: 0.9rem; margin-top: 0.5rem;">Loading events...</p>
+                            <p style="font-size: 0.9rem; margin-top: 0.5rem;">Loading messages...</p>
                         </div>
                     </div>
                 </div>
+
+                <?php
+                $friendRequests = $incomingFriendRequests ?? [];
+                include __DIR__ . '/templates/friend-requests.php';
+                ?>
+
                 <div class="toast-container" id="toastContainer"></div>
             </div>
         </div>

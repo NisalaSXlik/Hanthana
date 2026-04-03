@@ -1503,7 +1503,7 @@
         if (!anchor) return;
         clearReplyForm();
         const form = document.createElement('form');
-        form.className = 'reply-form';
+        form.className = 'reply-form hf-form hf-inline';
         form.innerHTML = `
             <textarea placeholder="Write a reply..."></textarea>
             <button type="button">Reply</button>

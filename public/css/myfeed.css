@@ -1,21 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
-
-:root {
-    --color-dark: #1e293b;
-    --color-light: #f1f5f9;
-    --color-white: #ffffff;
-    --color-primary: #0ea5e9;
-    --color-secondary: #0369a1;
-    --color-success: #10b981;
-    --color-danger: #ef4444;
-    --color-gray: #64748b;
-    
-    --border-radius: 1rem;
-    --card-border-radius: 0.5rem;
-    --btn-padding: 0.5rem 1.5rem;
-    --card-padding: 1rem;
-}
-
+/* Uses global :root variables from general.css */
 
 /* Middle Feed */
 .middle .feeds {

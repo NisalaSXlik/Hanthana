@@ -181,15 +181,15 @@
 
 .event-date-badge {
     position: absolute;
-    top: 0.8rem;
-    right: 3.3rem;
+    top: 1.25rem;
+    right: 1.25rem;
     background: white;
     color: var(--color-primary);
-    padding: 0.55rem 0.6rem;
+    padding: 0.85rem;
     border-radius: var(--border-radius);
     text-align: center;
-    min-width: 58px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.18);
+    min-width: 75px;
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
     transition: all 0.3s ease;
 }
 
@@ -486,8 +486,8 @@
 }
 
 .btn-rsvp.going:hover:not(:disabled) {
-    background: #059669;
-    border-color: #059669;
+    background: var(--color-success);
+    border-color: var(--color-success);
     box-shadow: 0 4px 12px rgba(16, 185, 129, 0.5);
 }
 

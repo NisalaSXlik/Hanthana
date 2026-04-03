@@ -74,10 +74,11 @@ function parseStructuredQuestionContent(?string $content): array {
     <link rel="stylesheet" href="./css/navbar.css">
     <link rel="stylesheet" href="./css/myfeed.css">
     <link rel="stylesheet" href="./css/mediaquery.css">
-    <link rel="stylesheet" href="./css/calender.css">
+    <link rel="stylesheet" href="./css/calender.css?v=20250209_zindex">
     <link rel="stylesheet" href="./css/post.css">
     <link rel="stylesheet" href="./css/notificationpopup.css">
     <link rel="stylesheet" href="./css/questions.css">
+    <link rel="stylesheet" href="./css/forms.css">
     <link rel="stylesheet" href="https://unicons.iconscout.com/release/v4.0.8/css/line.css">
 </head>
 <body class="page-questions">
@@ -87,7 +88,7 @@ function parseStructuredQuestionContent(?string $content): array {
         <div class="container questions-layout">
             <?php 
             (function() {
-                $activeSidebar = 'popular';
+                $activeSidebar = 'qna';
                 include __DIR__ . '/templates/left-sidebar.php';
             })();
             ?>
@@ -96,7 +97,7 @@ function parseStructuredQuestionContent(?string $content): array {
                 <?php $structuredSections = parseStructuredQuestionContent($question['content'] ?? ''); ?>
                 <div class="question-detail-container">
                     <!-- Back button -->
-                    <a href="<?php echo BASE_PATH; ?>index.php?controller=Popular&action=index" class="back-link">
+                    <a href="<?php echo BASE_PATH; ?>index.php?controller=QnA&action=index" class="back-link">
                         <i class="uil uil-arrow-left"></i> Back to Questions
                     </a>
                     
@@ -227,7 +228,7 @@ function parseStructuredQuestionContent(?string $content): array {
                     <!-- Answer Form -->
                     <div class="answer-form-section <?php echo $shouldCollapse ? 'collapsed' : ''; ?>" id="answerFormSection">
                         <h3>Your Answer</h3>
-                        <form id="answerForm">
+                        <form id="answerForm" class="hf-form">
                             <input type="hidden" name="question_id" value="<?php echo $question['question_id']; ?>">
                             <textarea name="content" rows="8" placeholder="Write your answer here..." required></textarea>
                             <button type="submit" class="btn-primary">Post Answer</button>
@@ -242,10 +243,12 @@ function parseStructuredQuestionContent(?string $content): array {
                         <h4>Messages</h4>
                         <i class="uil uil-edit"></i>
                     </div>
+                    <form class="hf-form hf-inline" onsubmit="return false;">
                     <div class="search-bar">
                         <i class="uil uil-search"></i>
                         <input type="search" placeholder="Search messages">
                     </div>
+                    </form>
                 </div>
 
                 <?php
@@ -265,7 +268,7 @@ function parseStructuredQuestionContent(?string $content): array {
         const BASE_PATH = '<?php echo rtrim(BASE_PATH, '/'); ?>';
         const USER_ID = <?php echo $userId; ?>;
     </script>
-    <script src="./js/calender.js"></script>
+    <script src="./js/calender.js?v=20250209_syntax"></script>
     <script src="./js/general.js"></script>
     <script src="./js/friends.js"></script>
     <script src="./js/navbar.js"></script>

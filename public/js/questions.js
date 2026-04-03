@@ -138,7 +138,7 @@ ${section.value}`)
         formData.append('sub_action', 'createQuestion');
         
         try {
-            const response = await fetch(QUESTIONS_BASE_PATH + 'index.php?controller=Popular&action=handleAjax', {
+            const response = await fetch(QUESTIONS_BASE_PATH + 'index.php?controller=QnA&action=handleAjax', {
                 method: 'POST',
                 body: formData
             });
@@ -146,7 +146,7 @@ ${section.value}`)
             const result = await response.json();
             
             if (result.success) {
-                window.location.href = QUESTIONS_BASE_PATH + 'index.php?controller=Popular&action=view&id=' + result.question_id;
+                window.location.href = QUESTIONS_BASE_PATH + 'index.php?controller=QnA&action=view&id=' + result.question_id;
             } else {
                 alert(result.message || 'Failed to post question');
             }
@@ -164,7 +164,7 @@ ${section.value}`)
         formData.append('sub_action', 'createAnswer');
         
         try {
-            const response = await fetch(QUESTIONS_BASE_PATH + 'index.php?controller=Popular&action=handleAjax', {
+            const response = await fetch(QUESTIONS_BASE_PATH + 'index.php?controller=QnA&action=handleAjax', {
                 method: 'POST',
                 body: formData
             });
@@ -195,7 +195,7 @@ ${section.value}`)
             formData.append('vote_type', voteType);
             
             try {
-                const response = await fetch(QUESTIONS_BASE_PATH + 'index.php?controller=Popular&action=handleAjax', {
+                const response = await fetch(QUESTIONS_BASE_PATH + 'index.php?controller=QnA&action=handleAjax', {
                     method: 'POST',
                     body: formData
                 });
@@ -224,7 +224,7 @@ ${section.value}`)
             formData.append('vote_type', voteType);
             
             try {
-                const response = await fetch(QUESTIONS_BASE_PATH + 'index.php?controller=Popular&action=handleAjax', {
+                const response = await fetch(QUESTIONS_BASE_PATH + 'index.php?controller=QnA&action=handleAjax', {
                     method: 'POST',
                     body: formData
                 });

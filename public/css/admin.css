@@ -13,7 +13,7 @@ body {
     background: var(--admin-bg);
 }
 
-.admin-page .calendar-icon:hover .calendar-popup,
+.admin-page .calendar-icon.is-open .calendar-popup,
 .admin-page .notification:hover .notifications-popup {
     display: none;
 }

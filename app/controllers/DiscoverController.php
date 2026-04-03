@@ -27,7 +27,6 @@ class DiscoverController {
         // Use old working methods (don't merge)
         $allPosts = $this->postModel->getTrendingPosts(60, $userId);
 
-
         // Mark group posts
         foreach ($allPosts as &$post) {
             $post['is_group_post'] = !empty($post['group_id']);
@@ -130,7 +129,6 @@ class DiscoverController {
         $limit = 20;
 
         $posts = $this->postModel->getTrendingPosts($limit, $userId);
-
         
         echo json_encode(['success' => true, 'posts' => $posts]);
         exit();
@@ -188,6 +186,4 @@ class DiscoverController {
     echo json_encode(['success' => true, 'post' => $post]);
     exit();
     }
-
-
 }

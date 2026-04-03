@@ -40,18 +40,19 @@ function timeAgo($timestamp) {
     <link rel="stylesheet" href="./css/navbar.css">
     <link rel="stylesheet" href="./css/myfeed.css">
     <link rel="stylesheet" href="./css/mediaquery.css">
-    <link rel="stylesheet" href="./css/calender.css">
+    <link rel="stylesheet" href="./css/calender.css?v=20250209_zindex">
     <link rel="stylesheet" href="./css/post.css">
     <link rel="stylesheet" href="./css/notificationpopup.css">
     <link rel="stylesheet" href="./css/questions.css">
+    <link rel="stylesheet" href="./css/forms.css">
     <link rel="stylesheet" href="https://unicons.iconscout.com/release/v4.0.8/css/line.css">
 </head>
-<body class="page-questions">
+<body class="page-questions page-popular">
     <?php include __DIR__ . '/templates/navbar.php'; ?>
     
     <main>
         <div class="container questions-layout">
-            <?php $activeSidebar = 'popular'; include __DIR__ . '/templates/left-sidebar.php'; ?>
+            <?php $activeSidebar = 'qna'; include __DIR__ . '/templates/left-sidebar.php'; ?>
 
             <div class="middle">
                 <div class="questions-container-full">
@@ -59,10 +60,12 @@ function timeAgo($timestamp) {
                     <div class="questions-main">
                         <div class="questions-header">
                             <h1>Community Q&A</h1>
-                            <div class="search-box">
+                            <form class="hf-form hf-inline" onsubmit="return false;">
+                            <div class="search-bar">
                                 <i class="uil uil-search"></i>
                                 <input type="text" placeholder="Search questions..." id="searchInput" value="<?php echo htmlspecialchars($_GET['search'] ?? ''); ?>" aria-label="Search questions">
                             </div>
+                            </form>
                         </div>
                         
                         <div class="questions-list">
@@ -101,7 +104,7 @@ function timeAgo($timestamp) {
                                         </div>
 
                                         <h2 class="question-title">
-                                            <a href="<?php echo BASE_PATH; ?>index.php?controller=Popular&action=view&id=<?php echo $q['question_id']; ?>">
+                                            <a href="<?php echo BASE_PATH; ?>index.php?controller=QnA&action=view&id=<?php echo $q['question_id']; ?>">
                                                 <?php echo htmlspecialchars($q['title']); ?>
                                             </a>
                                         </h2>
@@ -177,13 +180,13 @@ function timeAgo($timestamp) {
                 <div class="sidebar-section">
                     <h3>Filter by</h3>
                     <div class="filter-options">
-                        <a href="?controller=Popular&action=index&sort=recent" class="filter-option <?php echo ($_GET['sort'] ?? 'recent') === 'recent' ? 'active' : ''; ?>">
+                        <a href="?controller=QnA&action=index&sort=recent" class="filter-option <?php echo ($_GET['sort'] ?? 'recent') === 'recent' ? 'active' : ''; ?>">
                             <i class="uil uil-clock"></i> Recent
                         </a>
-                        <a href="?controller=Popular&action=index&sort=popular" class="filter-option <?php echo ($_GET['sort'] ?? '') === 'popular' ? 'active' : ''; ?>">
+                        <a href="?controller=QnA&action=index&sort=popular" class="filter-option <?php echo ($_GET['sort'] ?? '') === 'popular' ? 'active' : ''; ?>">
                             <i class="uil uil-fire"></i> Popular
                         </a>
-                        <a href="?controller=Popular&action=index&sort=unanswered" class="filter-option <?php echo ($_GET['sort'] ?? '') === 'unanswered' ? 'active' : ''; ?>">
+                        <a href="?controller=QnA&action=index&sort=unanswered" class="filter-option <?php echo ($_GET['sort'] ?? '') === 'unanswered' ? 'active' : ''; ?>">
                             <i class="uil uil-comment-slash"></i> Unanswered
                         </a>
                     </div>
@@ -193,7 +196,7 @@ function timeAgo($timestamp) {
                     <h3>Categories</h3>
                     <div class="filter-options">
                         <?php foreach ($categories as $cat): ?>
-                            <a href="?controller=Popular&action=index&category=<?php echo urlencode($cat); ?>" 
+                            <a href="?controller=QnA&action=index&category=<?php echo urlencode($cat); ?>" 
                                class="filter-option <?php echo ($_GET['category'] ?? '') === $cat ? 'active' : ''; ?>">
                                 <?php echo htmlspecialchars($cat); ?>
                             </a>
@@ -206,10 +209,12 @@ function timeAgo($timestamp) {
                         <h4>Messages</h4>
                         <i class="uil uil-edit" id="openChatWidget" style="cursor: pointer;"></i>
                     </div>
+                    <form class="hf-form hf-inline" onsubmit="return false;">
                     <div class="search-bar">
                         <i class="uil uil-search"></i>
                         <input type="search" placeholder="Search messages" id="sidebarChatSearch">
                     </div>
+                    </form>
                     <div class="message-list" id="sidebarMessageList">
                         <div class="loading-messages" style="text-align: center; padding: 1rem; color: #888;">
                             <i class="uil uil-spinner-alt" style="animation: spin 1s linear infinite;"></i>
@@ -248,7 +253,7 @@ function timeAgo($timestamp) {
     <script>
         const USER_ID = <?php echo $currentUserId; ?>;
     </script>
-    <script src="./js/calender.js"></script>
+    <script src="./js/calender.js?v=20250209_syntax"></script>
     <script src="./js/general.js"></script>
     <script src="./js/friends.js"></script>
     <script src="./js/navbar.js"></script>

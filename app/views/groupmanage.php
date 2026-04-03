@@ -27,10 +27,11 @@ $friendRequests = $friendRequests ?? [];
     <link rel="stylesheet" href="./css/groupprofileview.css">
     <link rel="stylesheet" href="./css/navbar.css">
     <link rel="stylesheet" href="./css/mediaquery.css">
-    <link rel="stylesheet" href="./css/calender.css">
+    <link rel="stylesheet" href="./css/calender.css?v=20250209_zindex">
     <link rel="stylesheet" href="./css/post.css">
     <link rel="stylesheet" href="./css/myfeed.css">
     <link rel="stylesheet" href="./css/notificationpopup.css">
+    <link rel="stylesheet" href="./css/forms.css">
     <link rel="stylesheet" href="https://unicons.iconscout.com/release/v4.0.8/css/line.css">
 </head>
 <body>
@@ -91,7 +92,7 @@ $friendRequests = $friendRequests ?? [];
     </main>
 
     <script>const BASE_PATH = '<?php echo BASE_PATH; ?>'; const GROUP_ID = <?php echo (int)$group['group_id']; ?>;</script>
-    <script src="./js/calender.js"></script>
+    <script src="./js/calender.js?v=20250209_syntax"></script>
     <script src="./js/feed.js"></script>
     <script src="./js/friends.js"></script>
     <script src="./js/general.js"></script>

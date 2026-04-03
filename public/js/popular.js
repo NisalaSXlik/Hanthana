@@ -45,7 +45,7 @@ async function loadPopularGroups() {
     const container = document.getElementById('popularGroupsContainer');
     
     try {
-        const response = await fetch(`${BASE_PATH}/index.php?controller=Popular&ajax_action=getPopularGroups&limit=12`);
+        const response = await fetch(`${BASE_PATH}/index.php?controller=QnA&ajax_action=getPopularGroups&limit=12`);
         const data = await response.json();
         
         if (data.success && data.groups && data.groups.length > 0) {
@@ -182,7 +182,7 @@ async function loadTrendingPosts() {
     const container = document.getElementById('trendingPostsContainer');
     
     try {
-        const response = await fetch(`${BASE_PATH}/index.php?controller=Popular&ajax_action=getTrendingPosts&limit=10`);
+        const response = await fetch(`${BASE_PATH}/index.php?controller=QnA&ajax_action=getTrendingPosts&limit=10`);
         const data = await response.json();
         
         console.log('Trending posts data:', data); // Debug log

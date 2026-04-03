@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>My Profile - Hanthana Events</title>
     <link rel="stylesheet" href="/NewHanthaneAfterProperMVC/public/css/style.css">
+    <link rel="stylesheet" href="/NewHanthaneAfterProperMVC/public/css/forms.css">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
@@ -19,10 +20,12 @@
             </div>
             
             <div class="nav-center">
+                <form class="hf-form hf-inline" onsubmit="return false;">
                 <div class="search-bar">
                     <i class="fas fa-search"></i>
                     <input type="search" placeholder="Search...">
                 </div>
+                </form>
             </div>
             
             <div class="nav-right">

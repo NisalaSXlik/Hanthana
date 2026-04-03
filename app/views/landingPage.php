@@ -33,6 +33,7 @@ if (!isset($posts)) {
     <link rel="stylesheet" href="./css/discover.css">
     <link rel="stylesheet" href="./css/navbar.css"> 
     <link rel="stylesheet" href="./css/mediaquery.css">
+    <link rel="stylesheet" href="./css/forms.css">
     <link rel="stylesheet" href="https://unicons.iconscout.com/release/v4.0.8/css/line.css">
 </head>
 <body onload="protectedContentLoad()">
@@ -54,10 +55,12 @@ if (!isset($posts)) {
                 <h2 class="logo">Hanthana</h2>
             </div>
             <div class="nav-center">
+                <form class="hf-form hf-inline" onsubmit="return false;">
                 <div class="search-bar">
                     <i class="uil uil-search"></i>
                     <input type="search" placeholder="Search...">
                 </div>
+                </form>
             </div>
             <div class="nav-right">
                 <button class="btn btn-primary">Create</button>
@@ -82,10 +85,12 @@ if (!isset($posts)) {
                 <div class="middle-feed">
                     <div class="discover-header">
                         <h2>Discover</h2>
+                        <form class="hf-form hf-inline" onsubmit="return false;">
                         <div class="search-bar">
                             <i class="uil uil-search"></i>
                             <input type="search" placeholder="Search...">
                         </div>
+                        </form>
                     </div>
 
                     <div class="discover-grid">

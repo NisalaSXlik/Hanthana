@@ -509,7 +509,13 @@ class GroupModel {
     public function approveJoinRequest($groupId, $userId, $adminId) {
         $sql = "UPDATE GroupMember SET status = 'active', joined_at = NOW() WHERE group_id = ? AND user_id = ? AND status = 'pending'";
         $stmt = $this->db->prepare($sql);
-        return $stmt->execute([$groupId, $userId]);
+        $result = $stmt->execute([$groupId, $userId]);
+
+        if ($result && $stmt->rowCount() > 0) {
+            $this->addMemberToMainChannel($groupId, $userId);
+        }
+
+        return $result;
     }
 
     /**
