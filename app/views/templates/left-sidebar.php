@@ -3,9 +3,22 @@ require_once __DIR__ . '/../../../config/config.php';
 require_once __DIR__ . '/../../helpers/MediaHelper.php';
 require_once __DIR__ . '/../../models/UserModel.php';
 
-$userModel = new UserModel;
-$currentUser = $userModel->findById($currentUser['user_id']);
-$currentUserAvatar = MediaHelper::resolveMediaPath($currentUser['profile_picture'], 'uploads/user_dp/default.png');
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+
+$userModel = new UserModel();
+$resolvedUserId = 0;
+
+if (isset($currentUser) && is_array($currentUser) && isset($currentUser['user_id'])) {
+    $resolvedUserId = (int)$currentUser['user_id'];
+} elseif (isset($_SESSION['user_id'])) {
+    $resolvedUserId = (int)$_SESSION['user_id'];
+}
+
+$resolvedUser = $resolvedUserId > 0 ? $userModel->findById($resolvedUserId) : null;
+$currentUser = is_array($resolvedUser) ? $resolvedUser : [];
+$currentUserAvatar = MediaHelper::resolveMediaPath($currentUser['profile_picture'] ?? '', 'uploads/user_dp/default.png');
 
 $explicitSidebarKey = isset($activeSidebar) && is_string($activeSidebar) ? strtolower($activeSidebar) : null;
 

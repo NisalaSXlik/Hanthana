@@ -406,26 +406,7 @@ CREATE TABLE AdminActions (
     FOREIGN KEY (target_group_id) REFERENCES GroupsTable(group_id) ON DELETE SET NULL
 );
 
-CREATE TABLE Reports (
-    report_id INT AUTO_INCREMENT PRIMARY KEY,
-    reporter_id INT NOT NULL,
-    reported_user_id INT NULL,
-    reported_post_id INT NULL,
-    reported_comment_id INT NULL,
-    reported_group_id INT NULL,
-    report_type ENUM('spam','harassment','inappropriate','other') NOT NULL,
-    description TEXT,
-    status ENUM('pending','reviewed','resolved') DEFAULT 'pending',
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    reviewed_by INT NULL,
-    reviewed_at TIMESTAMP NULL,
-    FOREIGN KEY (reporter_id) REFERENCES Users(user_id) ON DELETE CASCADE,
-    FOREIGN KEY (reported_user_id) REFERENCES Users(user_id) ON DELETE SET NULL,
-    FOREIGN KEY (reported_post_id) REFERENCES Post(post_id) ON DELETE SET NULL,
-    FOREIGN KEY (reported_comment_id) REFERENCES Comment(comment_id) ON DELETE SET NULL,
-    FOREIGN KEY (reported_group_id) REFERENCES GroupsTable(group_id) ON DELETE SET NULL,
-    FOREIGN KEY (reviewed_by) REFERENCES Users(user_id) ON DELETE SET NULL
-);
+
 
 -- filepath: /mnt/c/Users/G-San/Desktop/Hanthane/DB/DB.sql
 -- Add after MediaFile table
@@ -583,6 +564,7 @@ CREATE TABLE Answers (
     answer_id INT AUTO_INCREMENT PRIMARY KEY,
     question_id INT NOT NULL,
     user_id INT NOT NULL,
+    parent_answer_id INT NULL,
     content TEXT NOT NULL,
     is_accepted BOOLEAN DEFAULT FALSE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -590,9 +572,13 @@ CREATE TABLE Answers (
     is_deleted BOOLEAN DEFAULT FALSE,
     FOREIGN KEY (question_id) REFERENCES Questions(question_id) ON DELETE CASCADE,
     FOREIGN KEY (user_id) REFERENCES Users(user_id) ON DELETE CASCADE,
+    FOREIGN KEY (parent_answer_id) REFERENCES Answers(answer_id) ON DELETE CASCADE,
     INDEX idx_question (question_id),
+    INDEX idx_parent_answer (parent_answer_id),
     INDEX idx_created (created_at)
 );
+
+
 
 -- Question votes
 CREATE TABLE QuestionVotes (
@@ -625,6 +611,29 @@ CREATE TABLE QuestionTopics (
     topic_name VARCHAR(50) NOT NULL,
     FOREIGN KEY (question_id) REFERENCES Questions(question_id) ON DELETE CASCADE,
     INDEX idx_topic (topic_name)
+);
+
+CREATE TABLE Reports (
+    report_id INT AUTO_INCREMENT PRIMARY KEY,
+    reporter_id INT NOT NULL,
+    reported_user_id INT NULL,
+    reported_post_id INT NULL,
+    reported_comment_id INT NULL,
+    reported_group_id INT NULL,
+    reported_question_id INT NULL,
+    report_type ENUM('spam','harassment','inappropriate','other') NOT NULL,
+    description TEXT,
+    status ENUM('pending','reviewed','resolved') DEFAULT 'pending',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    reviewed_by INT NULL,
+    reviewed_at TIMESTAMP NULL,
+    FOREIGN KEY (reporter_id) REFERENCES Users(user_id) ON DELETE CASCADE,
+    FOREIGN KEY (reported_user_id) REFERENCES Users(user_id) ON DELETE SET NULL,
+    FOREIGN KEY (reported_post_id) REFERENCES Post(post_id) ON DELETE SET NULL,
+    FOREIGN KEY (reported_comment_id) REFERENCES Comment(comment_id) ON DELETE SET NULL,
+    FOREIGN KEY (reported_group_id) REFERENCES GroupsTable(group_id) ON DELETE SET NULL,
+    FOREIGN KEY (reported_question_id) REFERENCES Questions(question_id) ON DELETE SET NULL,
+    FOREIGN KEY (reviewed_by) REFERENCES Users(user_id) ON DELETE SET NULL
 );
 
 INSERT INTO `Users` (`user_id`, `first_name`, `last_name`, `email`, `phone_number`, `password_hash`, `username`, `bio`, `profile_picture`, `cover_photo`, `created_at`, `updated_at`, `university`, `last_login`, `friends_count`, `is_active`, `date_of_birth`, `location`, `role`, `banned_until`, `ban_reason`, `ban_notes`, `banned_by`) VALUES

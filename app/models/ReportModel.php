@@ -222,8 +222,8 @@ class ReportModel {
 
         $connection = $this->db->getConnection();
         $sql = "INSERT INTO {$this->table} 
-                (reporter_id, report_type, description, reported_post_id, reported_comment_id, reported_group_id, reported_user_id)
-                VALUES (:reporter_id, :report_type, :description, :reported_post_id, :reported_comment_id, :reported_group_id, :reported_user_id)";
+                (reporter_id, report_type, description, reported_post_id, reported_comment_id, reported_group_id, reported_user_id, reported_question_id)
+                VALUES (:reporter_id, :report_type, :description, :reported_post_id, :reported_comment_id, :reported_group_id, :reported_user_id, :reported_question_id)";
 
         $params = [
             ':reporter_id' => $reporterId,
@@ -232,7 +232,8 @@ class ReportModel {
             ':reported_post_id' => $payload['reported_post_id'] ?? null,
             ':reported_comment_id' => $payload['reported_comment_id'] ?? null,
             ':reported_group_id' => $payload['reported_group_id'] ?? null,
-            ':reported_user_id' => $payload['reported_user_id'] ?? null
+            ':reported_user_id' => $payload['reported_user_id'] ?? null,
+            ':reported_question_id' => $payload['reported_question_id'] ?? null
         ];
 
         try {

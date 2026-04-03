@@ -301,24 +301,11 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
 
-        // Compose question content from sections
-        const sections = [
-            { label: 'Problem', value: problemStatement },
-            { label: 'Context', value: document.getElementById('contextDetails').value.trim() },
-            { label: 'Attempts', value: document.getElementById('attemptDetails').value.trim() },
-            { label: 'Expected Outcome', value: document.getElementById('expectedOutcome').value.trim() }
-        ];
-
-        const content = sections
-            .filter(s => s.value)
-            .map(s => `${s.label}:\n${s.value}`)
-            .join('\n\n');
-
         const formData = new FormData();
         formData.append('sub_action', 'createQuestion');
         formData.append('title', title);
         formData.append('category', document.getElementById('questionCategory').value || 'General');
-        formData.append('content', content);
+        formData.append('content', problemStatement);
         formData.append('topics', document.getElementById('questionTopics').value.trim());
 
         fetch(BASE_PATH + 'index.php?controller=Popular&action=handleAjax', {
@@ -368,9 +355,6 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('questionTitleInput').value = '';
         document.getElementById('questionCategory').value = 'General';
         document.getElementById('problemStatement').value = '';
-        document.getElementById('contextDetails').value = '';
-        document.getElementById('attemptDetails').value = '';
-        document.getElementById('expectedOutcome').value = '';
         document.getElementById('questionTopics').value = '';
 
         // Reset char counts
