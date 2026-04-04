@@ -5,7 +5,7 @@
             <h3 id="reportModalTitle">Report content</h3>
             <p>You are reporting <span id="reportTargetLabel">this content</span>. Tell us what happened.</p>
         </header>
-        <form id="reportForm" class="report-form">
+        <form id="reportForm" class="report-form hf-form">
             <input type="hidden" name="target_type" id="reportTargetType">
             <input type="hidden" name="target_id" id="reportTargetId">
 

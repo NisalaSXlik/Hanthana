@@ -732,7 +732,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         clearReplyForm();
         const form = document.createElement('form');
-        form.className = 'reply-form';
+        form.className = 'reply-form hf-form hf-inline';
         form.innerHTML = `
             <textarea placeholder="Write a reply..." rows="3"></textarea>
             <button type="button">Reply</button>

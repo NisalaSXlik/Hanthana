@@ -15,10 +15,6 @@ $currentUserId = $_SESSION['user_id'];
 $userModel = new UserModel;
 $currentUser = $userModel->findById((int)$_SESSION['user_id']);
 
-require_once __DIR__ . '/../models/FriendModel.php';
-$friendModel = new FriendModel();
-$incomingFriendRequests = $friendModel->getIncomingRequests($currentUserId);
-
 function timeAgo($timestamp) {
     $time = strtotime($timestamp);
     $diff = time() - $time;
@@ -38,30 +34,51 @@ function timeAgo($timestamp) {
     <title>Community Q&A - Hanthane</title>
     <link rel="stylesheet" href="./css/general.css">
     <link rel="stylesheet" href="./css/navbar.css">
-    <link rel="stylesheet" href="./css/myfeed.css">
     <link rel="stylesheet" href="./css/mediaquery.css">
-    <link rel="stylesheet" href="./css/calender.css">
+    <link rel="stylesheet" href="./css/calender.css?v=20250209_zindex">
     <link rel="stylesheet" href="./css/post.css">
     <link rel="stylesheet" href="./css/notificationpopup.css">
     <link rel="stylesheet" href="./css/questions.css">
+    <link rel="stylesheet" href="./css/forms.css">
+    <link rel="stylesheet" href="./css/report.css">
     <link rel="stylesheet" href="https://unicons.iconscout.com/release/v4.0.8/css/line.css">
 </head>
-<body class="page-questions">
+<body class="page-questions page-popular">
     <?php include __DIR__ . '/templates/navbar.php'; ?>
     
     <main>
         <div class="container questions-layout">
-            <?php $activeSidebar = 'popular'; include __DIR__ . '/templates/left-sidebar.php'; ?>
+            <?php $activeSidebar = 'qna'; include __DIR__ . '/templates/left-sidebar.php'; ?>
 
             <div class="middle">
                 <div class="questions-container-full">
                     <!-- Main Content -->
                     <div class="questions-main">
                         <div class="questions-header">
-                            <h1>Community Q&A</h1>
-                            <div class="search-box">
-                                <i class="uil uil-search"></i>
-                                <input type="text" placeholder="Search questions..." id="searchInput" value="<?php echo htmlspecialchars($_GET['search'] ?? ''); ?>" aria-label="Search questions">
+                            <div class="questions-header-top">
+                                <div class="questions-title-block">
+                                    <h1><i class="uil uil-question-circle"></i> Q&amp;A</h1>
+                                    <p>Ask questions, share answers, and learn with the Hanthane community</p>
+                                </div>
+                                <form class="hf-form hf-inline" onsubmit="return false;">
+                                    <div class="search-bar">
+                                        <i class="uil uil-search"></i>
+                                        <input type="text" placeholder="Search questions..." id="searchInput" value="<?php echo htmlspecialchars($_GET['search'] ?? ''); ?>" aria-label="Search questions">
+                                    </div>
+                                </form>
+                            </div>
+                            <div class="questions-header-actions">
+                                <div class="filter-tabs">
+                                    <a href="?controller=QnA&action=index&sort=recent" class="filter-tab <?php echo ($_GET['sort'] ?? 'recent') === 'recent' ? 'active' : ''; ?>">
+                                        <i class="uil uil-clock"></i> Recent
+                                    </a>
+                                    <a href="?controller=QnA&action=index&sort=popular" class="filter-tab <?php echo ($_GET['sort'] ?? '') === 'popular' ? 'active' : ''; ?>">
+                                        <i class="uil uil-fire"></i> Popular
+                                    </a>
+                                    <a href="?controller=QnA&action=index&sort=unanswered" class="filter-tab <?php echo ($_GET['sort'] ?? '') === 'unanswered' ? 'active' : ''; ?>">
+                                        <i class="uil uil-comment-slash"></i> Unanswered
+                                    </a>
+                                </div>
                             </div>
                         </div>
                         
@@ -85,35 +102,64 @@ function timeAgo($timestamp) {
                                             ? mb_strtolower($searchBlob)
                                             : strtolower($searchBlob);
                                     ?>
-                                    <article class="question-card" data-search-text="<?php echo htmlspecialchars($normalizedSearchBlob, ENT_QUOTES, 'UTF-8'); ?>">
+                                    <?php $isOwner = (int)$q['user_id'] === (int)$currentUserId; ?>
+                                    <article class="question-card" data-question-id="<?php echo (int)$q['question_id']; ?>" data-search-text="<?php echo htmlspecialchars($normalizedSearchBlob, ENT_QUOTES, 'UTF-8'); ?>">
                                         <div class="question-card-head">
                                             <div class="question-author">
-                                                <img src="<?php echo BASE_PATH . ($q['profile_picture'] ?: 'public/images/default-avatar.png'); ?>" 
-                                                     alt="<?php echo htmlspecialchars($q['first_name']); ?>">
-                                                <div>
-                                                    <span class="author-name"><?php echo htmlspecialchars($q['first_name'] . ' ' . $q['last_name']); ?></span>
-                                                    <small class="question-time"><?php echo timeAgo($q['created_at']); ?></small>
-                                                </div>
+                                                <a href="<?php echo BASE_PATH; ?>index.php?controller=Profile&action=view&user_id=<?php echo (int)$q['user_id']; ?>" class="question-author-link">
+                                                    <img src="<?php echo BASE_PATH . ($q['profile_picture'] ?: 'public/images/default-avatar.png'); ?>"
+                                                         alt="<?php echo htmlspecialchars($q['first_name']); ?>">
+                                                    <div>
+                                                        <span class="author-name"><?php echo htmlspecialchars($q['first_name'] . ' ' . $q['last_name']); ?></span>
+                                                        <small class="question-time"><?php echo timeAgo($q['created_at']); ?></small>
+                                                    </div>
+                                                </a>
                                             </div>
+
                                             <div class="question-card-meta">
-                                                <span><i class="uil uil-eye"></i> <?php echo $q['views']; ?> views</span>
+                                                <span><i class="uil uil-eye"></i> <?php echo (int)$q['views']; ?> views</span>
+
+                                                <div class="question-menu-wrap">
+                                                    <button type="button" class="question-menu-trigger" aria-label="Question menu">
+                                                        <i class="uil uil-ellipsis-h"></i>
+                                                    </button>
+
+                                                    <div class="question-menu">
+                                                        <?php if ($isOwner): ?>
+                                                            <button type="button" class="question-menu-item edit-question" data-question-id="<?php echo (int)$q['question_id']; ?>">
+                                                                <i class="uil uil-edit"></i> Edit
+                                                            </button>
+                                                            <button type="button" class="question-menu-item delete-question" data-question-id="<?php echo (int)$q['question_id']; ?>">
+                                                                <i class="uil uil-trash-alt"></i> Delete
+                                                            </button>
+                                                        <?php endif; ?>
+
+                                                        <?php if (!$isOwner): ?>
+                                                            <button type="button"
+                                                                    class="question-menu-item report-trigger"
+                                                                    data-report-type="question"
+                                                                    data-target-id="<?php echo (int)$q['question_id']; ?>"
+                                                                    data-target-label="<?php echo htmlspecialchars($q['title'], ENT_QUOTES); ?>">
+                                                                <i class="uil uil-exclamation-circle"></i> Report
+                                                            </button>
+                                                        <?php endif; ?>
+                                                    </div>
+                                                </div>
                                             </div>
                                         </div>
 
                                         <h2 class="question-title">
-                                            <a href="<?php echo BASE_PATH; ?>index.php?controller=Popular&action=view&id=<?php echo $q['question_id']; ?>">
+                                            <a href="<?php echo BASE_PATH; ?>index.php?controller=QnA&action=view&id=<?php echo $q['question_id']; ?>">
                                                 <?php echo htmlspecialchars($q['title']); ?>
                                             </a>
                                         </h2>
 
                                         <?php if (!empty($q['content'])): ?>
                                             <p class="question-excerpt">
-                                                <?php 
+                                                <?php
                                                 $content = $q['content'];
-                                                // Check for structured content (Problem, Context, etc.)
                                                 if (preg_match('/Problem:\s*(.*?)\s*(?:Context:|Attempts:|Expected Outcome:|$)/is', $content, $matches)) {
                                                     $displayContent = trim($matches[1]);
-                                                    // Add ellipsis if truncated
                                                     if (strlen($content) > strlen($displayContent) + 20) {
                                                         $displayContent .= '...';
                                                     }
@@ -126,18 +172,10 @@ function timeAgo($timestamp) {
                                             </p>
                                         <?php endif; ?>
 
-                                        <?php if (!empty($q['topics'])): ?>
-                                            <div class="question-topics">
-                                                <?php foreach (explode(',', $q['topics']) as $topic): ?>
-                                                    <span class="topic-tag"><?php echo htmlspecialchars($topic); ?></span>
-                                                <?php endforeach; ?>
-                                            </div>
-                                        <?php endif; ?>
-
                                         <div class="question-card-footer">
                                             <div class="question-card-actions">
                                                 <div class="interaction-item">
-                                                    <button class="vote-btn inline upvote <?php echo $q['user_vote'] === 'upvote' ? 'active' : ''; ?>" 
+                                                    <button class="vote-btn inline upvote <?php echo $q['user_vote'] === 'upvote' ? 'active' : ''; ?>"
                                                             data-question-id="<?php echo $q['question_id']; ?>">
                                                         <i class="uil uil-arrow-up"></i>
                                                     </button>
@@ -151,9 +189,42 @@ function timeAgo($timestamp) {
                                                     <span class="interaction-count" aria-label="Downvotes"><?php echo (int) $q['downvote_count']; ?></span>
                                                 </div>
                                             </div>
+
                                             <div class="question-card-stats">
-                                                <span><i class="uil uil-comment"></i> <?php echo $q['answer_count']; ?> answers</span>
-                                                <span><i class="uil uil-eye"></i> <?php echo $q['views']; ?> views</span>
+                                                <button type="button"
+                                                        class="question-answer-link question-answer-link-btn toggle-inline-answers"
+                                                        data-question-id="<?php echo (int)$q['question_id']; ?>"
+                                                        data-target="inlineAnswers-<?php echo (int)$q['question_id']; ?>"
+                                                        aria-expanded="false">
+                                                    <i class="uil uil-comment"></i> <?php echo (int)$q['answer_count']; ?> answers
+                                                </button>
+                                            </div>
+                                        </div>
+
+                                        <div id="inlineAnswers-<?php echo (int)$q['question_id']; ?>"
+                                             class="inline-answers-panel collapsed"
+                                             data-question-id="<?php echo (int)$q['question_id']; ?>"
+                                             aria-hidden="true">
+                                            <div class="inline-answers-header">
+                                                <h4>Answers</h4>
+                                                <button type="button" class="close-inline-answers" aria-label="Close answers">
+                                                    <i class="uil uil-times"></i>
+                                                </button>
+                                            </div>
+
+                                            <div class="inline-answers-list comments-container">
+                                                <div class="no-comments">Loading answers...</div>
+                                            </div>
+
+                                            <div class="add-comment-form inline-answer-form-wrap">
+                                                <form class="inline-answer-form">
+                                                    <input type="hidden" name="question_id" value="<?php echo (int)$q['question_id']; ?>">
+                                                    <input type="hidden" name="parent_answer_id" value="">
+                                                    <div class="comment-input-wrapper">
+                                                        <textarea name="content" class="comment-input" rows="3" placeholder="Write your answer..." required></textarea>
+                                                        <button type="submit" class="comment-submit-btn">Post Answer</button>
+                                                    </div>
+                                                </form>
                                             </div>
                                         </div>
                                     </article>
@@ -175,25 +246,10 @@ function timeAgo($timestamp) {
                 </button>
                 
                 <div class="sidebar-section">
-                    <h3>Filter by</h3>
-                    <div class="filter-options">
-                        <a href="?controller=Popular&action=index&sort=recent" class="filter-option <?php echo ($_GET['sort'] ?? 'recent') === 'recent' ? 'active' : ''; ?>">
-                            <i class="uil uil-clock"></i> Recent
-                        </a>
-                        <a href="?controller=Popular&action=index&sort=popular" class="filter-option <?php echo ($_GET['sort'] ?? '') === 'popular' ? 'active' : ''; ?>">
-                            <i class="uil uil-fire"></i> Popular
-                        </a>
-                        <a href="?controller=Popular&action=index&sort=unanswered" class="filter-option <?php echo ($_GET['sort'] ?? '') === 'unanswered' ? 'active' : ''; ?>">
-                            <i class="uil uil-comment-slash"></i> Unanswered
-                        </a>
-                    </div>
-                </div>
-                
-                <div class="sidebar-section">
                     <h3>Categories</h3>
                     <div class="filter-options">
                         <?php foreach ($categories as $cat): ?>
-                            <a href="?controller=Popular&action=index&category=<?php echo urlencode($cat); ?>" 
+                            <a href="?controller=QnA&action=index&category=<?php echo urlencode($cat); ?>" 
                                class="filter-option <?php echo ($_GET['category'] ?? '') === $cat ? 'active' : ''; ?>">
                                 <?php echo htmlspecialchars($cat); ?>
                             </a>
@@ -201,34 +257,13 @@ function timeAgo($timestamp) {
                     </div>
                 </div>
 
-                <div class="messages">
-                    <div class="heading">
-                        <h4>Messages</h4>
-                        <i class="uil uil-edit" id="openChatWidget" style="cursor: pointer;"></i>
-                    </div>
-                    <div class="search-bar">
-                        <i class="uil uil-search"></i>
-                        <input type="search" placeholder="Search messages" id="sidebarChatSearch">
-                    </div>
-                    <div class="message-list" id="sidebarMessageList">
-                        <div class="loading-messages" style="text-align: center; padding: 1rem; color: #888;">
-                            <i class="uil uil-spinner-alt" style="animation: spin 1s linear infinite;"></i>
-                            <p style="font-size: 0.9rem; margin-top: 0.5rem;">Loading messages...</p>
-                        </div>
-                    </div>
-                </div>
-
-                <?php
-                    $friendRequests = $incomingFriendRequests ?? [];
-                    include __DIR__ . '/templates/friend-requests.php';
-                ?>
-
                 <div class="toast-container" id="toastContainer"></div>
             </div>
         </div>
     </main>
     
     <?php include __DIR__ . '/templates/question-ask-modal.php'; ?>
+    <?php include __DIR__ . '/templates/report-modal.php'; ?>
 
     <div class="calendar-popup" id="calendarPopup">
         <div class="calendar-popup-header">
@@ -248,79 +283,13 @@ function timeAgo($timestamp) {
     <script>
         const USER_ID = <?php echo $currentUserId; ?>;
     </script>
-    <script src="./js/calender.js"></script>
+    <script src="./js/calender.js?v=20250209_syntax"></script>
     <script src="./js/general.js"></script>
-    <script src="./js/friends.js"></script>
     <script src="./js/navbar.js"></script>
     <script src="./js/post.js"></script>
     <script src="./js/notificationpopup.js"></script>
     <script src="./js/questions.js"></script>
     <script src="./js/popular.js"></script>
-    <script>
-		// Load top 3 conversations for sidebar
-		(async function loadSidebarMessages() {
-			const listContainer = document.getElementById('sidebarMessageList');
-			const searchInput = document.getElementById('sidebarChatSearch');
-			const editIcon = document.getElementById('openChatWidget');
-			
-			if (!listContainer) return;
-			
-			try {
-				const response = await fetch('<?php echo BASE_PATH; ?>index.php?controller=Chat&action=listConversations');
-				const data = await response.json();
-				const conversations = Array.isArray(data) ? data : (data.data || []);
-				
-				listContainer.innerHTML = '';
-				
-				if (!conversations.length) {
-					listContainer.innerHTML = '<div style="text-align: center; padding: 1rem; color: #888;"><p>No messages yet</p></div>';
-					return;
-				}
-				
-				// Show only top 3
-				const top3 = conversations.slice(0, 3);
-				
-				top3.forEach(conv => {
-					const messageDiv = document.createElement('div');
-					messageDiv.className = 'message';
-					messageDiv.style.cursor = 'pointer';
-					
-					const avatarPath = conv.avatar || 'uploads/user_dp/default_user_dp.jpg';
-					const fullAvatar = avatarPath.startsWith('http') ? avatarPath : '<?php echo BASE_PATH; ?>' + avatarPath;
-					
-					messageDiv.innerHTML = `
-						<div class="profile-picture">
-							<img src="${fullAvatar}" alt="${conv.display_name || 'User'}">
-							${conv.is_online ? '<div class="active"></div>' : ''}
-						</div>
-						<div class="message-body">
-							<h5>${conv.display_name || 'Unknown'}</h5>
-							<p>${conv.last_message_preview || 'No messages yet'}</p>
-						</div>
-					`;
-					
-					messageDiv.addEventListener('click', () => {
-						// Open chat widget
-						const chatIcon = document.getElementById('chatIcon');
-						if (chatIcon) chatIcon.click();
-					});
-					
-					listContainer.appendChild(messageDiv);
-				});
-				
-			} catch (error) {
-				console.error('Failed to load sidebar messages:', error);
-				listContainer.innerHTML = '<div style="text-align: center; padding: 1rem; color: #888;"><p>Failed to load messages</p></div>';
-			}
-			
-			// Edit icon opens chat widget
-			if (editIcon) {
-				editIcon.addEventListener('click', () => {
-					const chatIcon = document.getElementById('chatIcon');
-					if (chatIcon) chatIcon.click();
-				});
-			}
-		})();
-    </script>
+    <script src="./js/report.js"></script>
 </body>
 </html>

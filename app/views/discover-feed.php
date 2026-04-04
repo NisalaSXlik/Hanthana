@@ -329,13 +329,12 @@ if (!isset($posts)) {
                                             <i class="uil uil-arrow-down <?php echo $downClass; ?>" data-vote-type="downvote"></i>
                                             <span class="interaction-count"><?php echo (int)($post['downvote_count'] ?? 0); ?></span>
                                         </div>
-                                        <div class="interaction-item load-comments-btn" data-post-id="<?php echo (int)$post['post_id']; ?>">
-                                            <i class="uil uil-comment"></i>
-                                            <span class="interaction-count"><?php echo (int)($post['comment_count'] ?? 0); ?></span>
-                                        </div>
                                     </div>
-                                    <div class="interaction-item bookmark-item">
-                                        <i class="uil uil-bookmark"></i>
+                                    <div class="comments-side">
+                                        <button type="button" class="question-answer-link-btn load-comments-btn" data-post-id="<?php echo (int)$post['post_id']; ?>">
+                                            <i class="uil uil-comment"></i>
+                                            <?php echo (int)($post['comment_count'] ?? 0); ?> comments
+                                        </button>
                                     </div>
                                     <?php if (!$isOwner): ?>
                                         <div class="interaction-item report-item">
@@ -354,16 +353,6 @@ if (!isset($posts)) {
                                 <?php if (!$isGroupPost && !empty($post['content'])): ?>
                                     <div class="caption">
                                         <p><b><?php echo htmlspecialchars($post['username'] ?? ''); ?></b> <?php echo htmlspecialchars($post['content']); ?></p>
-                                    </div>
-                                <?php endif; ?>
-
-                                <?php if (!empty($post['comment_count'])): ?>
-                                    <div class="comments load-comments-btn" data-post-id="<?php echo (int)$post['post_id']; ?>">
-                                        View all <?php echo (int)$post['comment_count']; ?> comments
-                                    </div>
-                                <?php else: ?>
-                                    <div class="comments load-comments-btn" data-post-id="<?php echo (int)$post['post_id']; ?>" style="display:none;">
-                                        View all 0 comments
                                     </div>
                                 <?php endif; ?>
 

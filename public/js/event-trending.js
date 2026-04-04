@@ -65,16 +65,17 @@ async function loadTrendingEvents() {
             const title = escapeText(event.event_title || event.title || 'Untitled Event');
             const date = escapeText(event.event_date || 'Date TBA');
             const goingCount = Number(event.going_count || 0);
+            const details = [date, `${goingCount} going`].filter(Boolean).join(' • ');
 
             return `
                 <div class="request trending-event-item">
                     <div class="info">
-                        <div class="trending-event-head">
+                        <div class="trending-event-text" title="${title}">
                             <h5>${title}</h5>
-                            <div class="action">${renderTrendingButton(event)}</div>
+                            <p>${details}</p>
                         </div>
-                        <p>${date} • ${goingCount} going</p>
                     </div>
+                    <div class="action">${renderTrendingButton(event)}</div>
                 </div>
             `;
         }).join('');

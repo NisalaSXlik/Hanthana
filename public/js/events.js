@@ -1,6 +1,7 @@
 // Events page functionality
 let currentFilter = 'upcoming';
 let eventCardGlobalHandlersBound = false;
+let selectedEventCreateFile = null;
 
 // Helper to construct API URL safely
 const getApiUrl = (queryString) => {
@@ -32,20 +33,151 @@ function initializeEventHandlers() {
     if (createBtn) {
         createBtn.addEventListener('click', function(e) {
             e.preventDefault();
-            showCreateEventModal();
+            showEventsCreateModal();
         });
     }
-    
-    // Modal close buttons
-    const closeModalBtn = document.getElementById('closeEventModal');
-    const cancelBtn = document.getElementById('cancelEventBtn');
-    if (closeModalBtn) closeModalBtn.addEventListener('click', hideCreateEventModal);
-    if (cancelBtn) cancelBtn.addEventListener('click', hideCreateEventModal);
-    
-    // Create event form
-    const createForm = document.getElementById('createEventForm');
-    if (createForm) {
-        createForm.addEventListener('submit', handleCreateEvent);
+
+    const closeBtn = document.getElementById('eventsCreateClose');
+    const cancelBtn = document.getElementById('eventsCreateCancel');
+    const modal = document.getElementById('eventsCreateModal');
+    const form = document.getElementById('eventsCreateForm');
+    const imageUpload = document.getElementById('epEventImageUpload');
+    const imageInput = document.getElementById('epEventImage');
+
+    closeBtn?.addEventListener('click', hideEventsCreateModal);
+    cancelBtn?.addEventListener('click', hideEventsCreateModal);
+    form?.addEventListener('submit', submitEventsCreateForm);
+
+    modal?.addEventListener('click', (event) => {
+        if (event.target === modal) hideEventsCreateModal();
+    });
+
+    imageUpload?.addEventListener('click', () => imageInput?.click());
+    imageInput?.addEventListener('change', handleEventsImageSelect);
+}
+
+function showEventsCreateModal() {
+    const modal = document.getElementById('eventsCreateModal');
+    const dateInput = document.getElementById('epEventDate');
+    if (!modal) return;
+
+    modal.classList.add('active');
+    modal.setAttribute('aria-hidden', 'false');
+    document.body.style.overflow = 'hidden';
+
+    if (dateInput) {
+        const today = new Date().toISOString().split('T')[0];
+        dateInput.min = today;
+    }
+}
+
+function hideEventsCreateModal() {
+    const modal = document.getElementById('eventsCreateModal');
+    const form = document.getElementById('eventsCreateForm');
+    const imageUpload = document.getElementById('epEventImageUpload');
+    const imageLabel = document.getElementById('epEventImageLabel');
+    const preview = document.getElementById('epEventImagePreview');
+    const imageInput = document.getElementById('epEventImage');
+
+    if (!modal) return;
+
+    modal.classList.remove('active');
+    modal.setAttribute('aria-hidden', 'true');
+    document.body.style.overflow = '';
+
+    form?.reset();
+    selectedEventCreateFile = null;
+    if (imageInput) imageInput.value = '';
+    if (imageLabel) imageLabel.textContent = 'Click to add event image';
+    imageUpload?.classList.remove('has-file');
+    if (preview) {
+        preview.style.display = 'none';
+        preview.removeAttribute('src');
+    }
+}
+
+function handleEventsImageSelect(event) {
+    const file = event.target.files?.[0] || null;
+    const imageUpload = document.getElementById('epEventImageUpload');
+    const imageLabel = document.getElementById('epEventImageLabel');
+    const preview = document.getElementById('epEventImagePreview');
+
+    selectedEventCreateFile = file;
+
+    if (!file) {
+        imageUpload?.classList.remove('has-file');
+        if (imageLabel) imageLabel.textContent = 'Click to add event image';
+        if (preview) {
+            preview.style.display = 'none';
+            preview.removeAttribute('src');
+        }
+        return;
+    }
+
+    if (imageLabel) imageLabel.textContent = file.name;
+    imageUpload?.classList.add('has-file');
+
+    if (preview) {
+        const reader = new FileReader();
+        reader.onload = (loadEvent) => {
+            preview.src = loadEvent.target?.result || '';
+            preview.style.display = 'block';
+        };
+        reader.readAsDataURL(file);
+    }
+}
+
+async function submitEventsCreateForm(event) {
+    event.preventDefault();
+
+    const title = document.getElementById('epEventTitle')?.value.trim() || '';
+    const description = document.getElementById('epEventDescription')?.value.trim() || '';
+    const date = document.getElementById('epEventDate')?.value || '';
+    const time = document.getElementById('epEventTime')?.value || '';
+    const location = document.getElementById('epEventLocation')?.value.trim() || '';
+
+    if (!title || !date) {
+        showNotification('Event title and date are required.', 'error');
+        return;
+    }
+
+    const submitBtn = event.currentTarget.querySelector('button[type="submit"]');
+    if (submitBtn) submitBtn.disabled = true;
+
+    try {
+        const formData = new FormData();
+        formData.append('sub_action', 'create');
+        formData.append('postType', 'event');
+        formData.append('caption', description);
+        formData.append('tags', 'event,upcoming,community,social,announcement');
+        formData.append('eventTitle', title);
+        formData.append('eventDate', date);
+        formData.append('eventLocation', location);
+        formData.append('eventTime', time);
+        formData.append('is_group_post', '0');
+        if (selectedEventCreateFile) {
+            formData.append('image', selectedEventCreateFile);
+        }
+
+        const response = await fetch(getApiUrl('?controller=Posts&action=handleAjax'), {
+            method: 'POST',
+            body: formData
+        });
+
+        const data = await response.json();
+        if (!data.success) {
+            showNotification(data.message || 'Failed to create event', 'error');
+            return;
+        }
+
+        showNotification('Event created successfully!', 'success');
+        hideEventsCreateModal();
+        loadEvents(currentFilter);
+    } catch (error) {
+        console.error('Error creating event:', error);
+        showNotification('An error occurred', 'error');
+    } finally {
+        if (submitBtn) submitBtn.disabled = false;
     }
 }
 
@@ -117,7 +249,7 @@ function createEventCard(event) {
     
     // Use event_title if available, fallback to title (PostModel returns event_title)
     const title = event.event_title || event.title || 'Untitled Event';
-    const eventImage = event.image_url || '';
+    const eventImage = resolveEventImageUrl(event.image_url || '');
     const eventId = event.post_id || event.event_id;
     const currentUserId = (typeof USER_ID !== 'undefined') ? Number(USER_ID) : Number(window.USER_ID || 0);
     const postOwnerId = Number(event.author_id || event.user_id || 0);
@@ -171,7 +303,7 @@ function createEventCard(event) {
 
                     ${eventImage ? `
                         <div class="event-card-image">
-                            <img src="${escapeHtml(eventImage)}" alt="Event image">
+                            <img src="${escapeHtml(eventImage)}" alt="Event image" onerror="this.closest('.event-card-image').style.display='none';">
                         </div>
                     ` : ''}
                 </div>
@@ -316,81 +448,16 @@ async function addToCalendar(btn, eventId) {
 // Make addToCalendar globally available
 window.addToCalendar = addToCalendar;
 
-/**
- * Show create event modal
- */
-function showCreateEventModal() {
-    const modal = document.getElementById('createEventModal');
-    if (modal) {
-        modal.style.display = 'flex';
-        // Set min date to today
-        const dateInput = document.getElementById('createEventDate');
-        if (dateInput) {
-            const today = new Date().toISOString().split('T')[0];
-            dateInput.min = today;
-        }
+function resolveEventImageUrl(rawValue) {
+    const value = String(rawValue || '').trim();
+    if (!value) return '';
+    if (/^https?:\/\//i.test(value) || value.startsWith('/')) {
+        return value;
     }
-}
 
-/**
- * Hide create event modal
- */
-function hideCreateEventModal() {
-    const modal = document.getElementById('createEventModal');
-    if (modal) {
-        modal.style.display = 'none';
-        document.getElementById('createEventForm').reset();
-    }
-}
-
-/**
- * Handle create event form submission
- */
-async function handleCreateEvent(e) {
-    e.preventDefault();
-
-    const form = e.currentTarget;
-    const title = form.querySelector('#createEventTitle')?.value.trim() || '';
-    const description = form.querySelector('#createEventDescription')?.value.trim() || '';
-    const date = form.querySelector('#createEventDate')?.value || '';
-    const time = form.querySelector('#createEventTime')?.value || '';
-    const location = form.querySelector('#createEventLocation')?.value.trim() || '';
-    const imageFile = form.querySelector('#createEventImageMain')?.files?.[0] || null;
-    
-    if (!title || !date) {
-        showNotification('Please fill in required fields', 'error');
-        return;
-    }
-    
-    const formData = new FormData();
-    formData.append('title', title);
-    formData.append('description', description);
-    formData.append('date', date);
-    formData.append('time', time);
-    formData.append('location', location);
-    if (imageFile) {
-        formData.append('image', imageFile);
-    }
-    
-    try {
-        const response = await fetch(getApiUrl('?controller=Events&ajax_action=createEvent'), {
-            method: 'POST',
-            body: formData
-        });
-        
-        const data = await response.json();
-        
-        if (data.success) {
-            showNotification('Event created successfully!', 'success');
-            hideCreateEventModal();
-            loadEvents(currentFilter);
-        } else {
-            showNotification(data.message || data.error || 'Failed to create event', 'error');
-        }
-    } catch (error) {
-        console.error('Error creating event:', error);
-        showNotification('An error occurred', 'error');
-    }
+    const basePath = (typeof BASE_PATH === 'string' ? BASE_PATH : '/').replace(/\/$/, '');
+    const normalized = value.replace(/^\/+/, '');
+    return `${basePath}/${normalized}`;
 }
 
 /**

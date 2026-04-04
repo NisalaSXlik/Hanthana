@@ -13,7 +13,7 @@
 /* Responsive */
 @media (max-width: 992px) {
     main .container:not(.questions-layout) {
-        grid-template-columns: 25% 50% 23%;
+        grid-template-columns: 20% 56% 20%;
         gap: 1%;
     }
 }

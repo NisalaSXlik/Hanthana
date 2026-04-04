@@ -1,8 +1,87 @@
 .profile-header {
     background: var(--color-white);
-    border-radius: 16px;
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+    border-radius: var(--profile-card-radius);
+    box-shadow: var(--profile-card-shadow);
     overflow: hidden;
+}
+
+/* Profile-specific layout alignment */
+body.profile-page {
+    --profile-card-radius: var(--card-border-radius, 0.5rem);
+    --profile-card-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
+    --profile-card-padding: 1.25rem;
+}
+
+body.profile-page main .container {
+    grid-template-columns: minmax(16rem, 18rem) minmax(0, 1fr) minmax(18rem, 21rem);
+    gap: 1.5rem;
+    align-items: start;
+}
+
+body.profile-page .middle {
+    min-width: 0;
+}
+
+body.profile-page .profile-sidebar {
+    align-self: start;
+    position: sticky;
+    top: 6.5rem;
+}
+
+body.profile-page .profile-info {
+    align-items: flex-start;
+}
+
+body.profile-page .profile-actions {
+    justify-content: flex-start;
+}
+
+/* Sidebar groups inside profile view: stack text like other cards */
+body.profile-page .joined-groups .group {
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.55rem 0.6rem;
+}
+
+body.profile-page .joined-groups .group-info {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.15rem;
+}
+
+body.profile-page .joined-groups .group-info h5 {
+    margin: 0;
+    line-height: 1.1;
+}
+
+body.profile-page .joined-groups .group-member-count {
+    margin: 0;
+    white-space: nowrap;
+    color: var(--color-gray);
+    font-size: 0.8rem;
+}
+
+@media (max-width: 1200px) {
+    body.profile-page main .container {
+        grid-template-columns: minmax(15rem, 18rem) minmax(0, 1fr);
+    }
+
+    body.profile-page .profile-sidebar {
+        grid-column: 1 / -1;
+        position: relative;
+        top: 0;
+    }
+}
+
+@media (max-width: 900px) {
+    body.profile-page main .container {
+        grid-template-columns: 1fr;
+    }
+
+    body.profile-page .left {
+        display: none;
+    }
 }
 
 .profile-cover {
@@ -282,10 +361,10 @@
 .group-content .tab-content {
     display: none;
     background: var(--color-white);
-    border-radius: 16px;
+    border-radius: var(--profile-card-radius);
     border: 1px solid var(--color-light);
-    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.06);
-    padding: 28px 32px;
+    box-shadow: var(--profile-card-shadow);
+    padding: var(--profile-card-padding) calc(var(--profile-card-padding) + 0.5rem);
 }
 
 .group-content .tab-content.active {
@@ -294,10 +373,10 @@
 
 .posts-feed .feed {
     background: var(--color-white);
-    border-radius: 16px;
+    border-radius: var(--profile-card-radius);
     border: 1px solid var(--color-light);
     margin-bottom: 20px;
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05);
+    box-shadow: var(--profile-card-shadow);
 }
 
 .posts-feed .head .info h3 {
@@ -371,7 +450,7 @@
     flex-direction: column;
     gap: 12px;
     padding: 20px;
-    background: linear-gradient(135deg, #0ea5e9 0%, #0369a1 100%);
+    background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%);
     color: white;
     text-align: center;
 }
@@ -483,10 +562,10 @@
 .about-section {
     background: var(--color-white);
     border: 1px solid var(--color-light);
-    border-radius: 16px;
-    padding: 24px 28px;
+    border-radius: var(--profile-card-radius);
+    padding: var(--profile-card-padding);
     margin-bottom: 20px;
-    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.04);
+    box-shadow: var(--profile-card-shadow);
 }
 
 .about-section h3 {
@@ -556,9 +635,9 @@
 
 .profile-sidebar .group-details {
     background: var(--color-white);
-    padding: 28px;
-    border-radius: 20px;
-    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.08);
+    padding: var(--profile-card-padding);
+    border-radius: var(--profile-card-radius);
+    box-shadow: var(--profile-card-shadow);
     margin-bottom: 24px;
     border: 1px solid var(--color-light);
 }
@@ -609,9 +688,9 @@
 
 .profile-sidebar .top-collaborators {
     background: var(--color-white);
-    padding: 28px;
-    border-radius: 20px;
-    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.08);
+    padding: var(--profile-card-padding);
+    border-radius: var(--profile-card-radius);
+    box-shadow: var(--profile-card-shadow);
     border: 1px solid var(--color-light);
 }
 
@@ -639,9 +718,9 @@
     align-items: flex-start;
     gap: 14px;
     border: 1px solid var(--color-light);
-    border-radius: 16px;
-    padding: 16px 18px;
-    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.05);
+    border-radius: var(--profile-card-radius);
+    padding: 14px 16px;
+    box-shadow: var(--profile-card-shadow);
     background: var(--color-white);
 }
 
@@ -733,8 +812,8 @@
 .profile-edit-modal .modal-content {
     background: var(--color-white);
     width: min(760px, 100%);
-    border-radius: 18px;
-    box-shadow: 0 20px 45px rgba(0, 0, 0, 0.2);
+    border-radius: var(--profile-card-radius);
+    box-shadow: 0 16px 36px rgba(0, 0, 0, 0.16);
     overflow: hidden;
     max-height: 90vh;
     display: flex;
@@ -1224,10 +1303,11 @@ html {
 /* Groups Summary in Sidebar */
 .user-groups-summary {
     background: var(--color-white);
-    border-radius: var(--card-border-radius);
-    padding: 1.5rem;
+    border-radius: var(--profile-card-radius);
+    padding: var(--profile-card-padding);
     margin-bottom: 1.5rem;
-    box-shadow: var(--box-shadow);
+    box-shadow: var(--profile-card-shadow);
+    border: 1px solid var(--color-light);
 }
 
 .user-groups-summary .heading {
@@ -1295,7 +1375,7 @@ html {
 .group-card:hover {
     transform: translateY(-1px);
     box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
-    background: #f8fbff;
+    background: var(--gray-50);
 }
 
 .group-icon {
@@ -1328,6 +1408,18 @@ html {
     margin: 0.15rem 0 0;
     font-size: 0.8rem;
     color: var(--color-gray);
+}
+
+/* Stack sidebar group labels and keep counts on one line */
+.user-groups-summary .group-card .group-info {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.15rem;
+}
+
+.user-groups-summary .group-card .group-info p {
+    white-space: nowrap;
 }
 
 .user-groups-summary .view-all-groups {
@@ -1898,7 +1990,7 @@ html {
 
 .post-view-image {
     flex: 1.2;
-    background: #000;
+    background: var(--color-dark);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -1933,7 +2025,7 @@ html {
     left: 0;
     right: 0;
     height: 4px;
-    background: linear-gradient(90deg, #0ea5e9 0%, #0369a1 100%);
+    background: linear-gradient(90deg, var(--color-primary) 0%, var(--color-secondary) 100%);
 }
 
 .post-view-text-content p {
@@ -1987,7 +2079,7 @@ html {
 .modal-comments-toggle {
     background: rgba(14, 165, 233, 0.08);
     border: 1px solid rgba(14, 165, 233, 0.3);
-    color: #0369a1;
+    color: var(--color-secondary);
     border-radius: 8px;
     padding: 8px 12px;
     display: inline-flex;
@@ -2006,7 +2098,7 @@ html {
 
 .modal-vote.liked i,
 .modal-vote.liked span {
-    color: #0ea5e9;
+    color: var(--color-primary);
 }
 
 .post-view-comments {
@@ -2071,7 +2163,7 @@ html {
     font-family: inherit;
     font-size: 14px;
     min-height: 48px;
-    background: #f8fafc;
+    background: var(--gray-50);
 }
 
 .comment-form button {
@@ -2154,12 +2246,12 @@ html {
     border-radius: 6px;
     border: 1px solid rgba(14, 165, 233, 0.3);
     padding: 6px 8px;
-    background: #fff;
+    background: var(--color-white);
 }
 
 .reply-form button {
     border: 1px solid rgba(14, 165, 233, 0.6);
-    background: #fff;
+    background: var(--color-white);
     color: var(--color-primary);
     padding: 6px 12px;
     border-radius: 6px;

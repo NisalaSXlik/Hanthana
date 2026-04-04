@@ -2,7 +2,25 @@
 require_once __DIR__ . '/../../../config/config.php';
 require_once __DIR__ . '/../../helpers/MediaHelper.php';
 
-$currentUserAvatar = MediaHelper::resolveMediaPath($currentUser['profile_picture'], 'uploads/user_dp/default.png');
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+
+if (!isset($currentUser) || !is_array($currentUser)) {
+    $currentUser = null;
+    if (isset($_SESSION['user_id'])) {
+        require_once __DIR__ . '/../../models/UserModel.php';
+        $userModel = new UserModel();
+        $resolvedUser = $userModel->findById((int)$_SESSION['user_id']);
+        if (is_array($resolvedUser)) {
+            $currentUser = $resolvedUser;
+        }
+    }
+}
+
+$currentUser = is_array($currentUser) ? $currentUser : [];
+
+$currentUserAvatar = MediaHelper::resolveMediaPath($currentUser['profile_picture'] ?? '', 'uploads/user_dp/default.png');
 $showPostModal = !isset($hidePostModal) || !$hidePostModal;
 // Load notifications for logged in user
 $notifications = [];
@@ -21,6 +39,7 @@ if (isset($_SESSION['user_id'])) {
         </div>
         <div class="nav-center">
             <div class="nav-search">
+                <form class="hf-form hf-inline" onsubmit="return false;">
                 <div class="search-bar">
                     <i class="uil uil-search"></i>
                     <input
@@ -31,6 +50,7 @@ if (isset($_SESSION['user_id'])) {
                         autocomplete="off"
                     >
                 </div>
+                </form>
                 <div class="nav-search-results hidden" id="navSearchResults"></div>
             </div>
         </div>
@@ -71,7 +91,7 @@ if (isset($_SESSION['user_id'])) {
             </div>
             
             <?php if ($showPostModal): ?>
-                <!-- Post Creation Modal with 3 tabs -->
+                <!-- Post Creation Modal -->
                 <div class="post-modal" id="postModal">
                     <div class="modal-content">
                         <div class="modal-header">
@@ -189,24 +209,6 @@ if (isset($_SESSION['user_id'])) {
                                     <label>What problem are you facing? <span class="required">*</span></label>
                                     <textarea name="problem_statement" id="problemStatement" maxlength="400" placeholder="Describe the exact issue, error messages, or blockers."></textarea>
                                     <div class="char-count" data-for="problem_statement">0 / 400</div>
-                                </div>
-
-                                <div class="form-group">
-                                    <label>Context / environment</label>
-                                    <textarea name="context_details" id="contextDetails" maxlength="400" placeholder="Share stack, versions, constraints, or relevant background."></textarea>
-                                    <div class="char-count" data-for="context_details">0 / 400</div>
-                                </div>
-
-                                <div class="form-group">
-                                    <label>What have you tried?</label>
-                                    <textarea name="attempts" id="attemptDetails" maxlength="400" placeholder="List approaches, code snippets, or research already done."></textarea>
-                                    <div class="char-count" data-for="attempts">0 / 400</div>
-                                </div>
-
-                                <div class="form-group">
-                                    <label>Expected outcome</label>
-                                    <textarea name="expected_outcome" id="expectedOutcome" maxlength="300" placeholder="Clarify the goal or result you're aiming for."></textarea>
-                                    <div class="char-count" data-for="expected_outcome">0 / 300</div>
                                 </div>
 
                                 <div class="form-group">

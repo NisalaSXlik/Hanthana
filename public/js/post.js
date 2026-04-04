@@ -159,6 +159,20 @@ document.addEventListener('DOMContentLoaded', function() {
                     eventImageLabel.textContent = selectedEventFile.name;
                 }
                 eventImageUpload.classList.add('has-file');
+
+                let preview = eventImageUpload.querySelector('.event-image-preview');
+                if (!preview) {
+                    preview = document.createElement('img');
+                    preview.className = 'event-image-preview';
+                    eventImageUpload.appendChild(preview);
+                }
+
+                const reader = new FileReader();
+                reader.onload = function(event) {
+                    preview.src = event.target.result;
+                    preview.style.display = 'block';
+                };
+                reader.readAsDataURL(selectedEventFile);
             }
         });
     }
@@ -301,24 +315,11 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
 
-        // Compose question content from sections
-        const sections = [
-            { label: 'Problem', value: problemStatement },
-            { label: 'Context', value: document.getElementById('contextDetails').value.trim() },
-            { label: 'Attempts', value: document.getElementById('attemptDetails').value.trim() },
-            { label: 'Expected Outcome', value: document.getElementById('expectedOutcome').value.trim() }
-        ];
-
-        const content = sections
-            .filter(s => s.value)
-            .map(s => `${s.label}:\n${s.value}`)
-            .join('\n\n');
-
         const formData = new FormData();
         formData.append('sub_action', 'createQuestion');
         formData.append('title', title);
         formData.append('category', document.getElementById('questionCategory').value || 'General');
-        formData.append('content', content);
+        formData.append('content', problemStatement);
         formData.append('topics', document.getElementById('questionTopics').value.trim());
 
         fetch(BASE_PATH + 'index.php?controller=Popular&action=handleAjax', {
@@ -363,14 +364,17 @@ document.addEventListener('DOMContentLoaded', function() {
         if (eventPostImageInput) eventPostImageInput.value = '';
         if (eventImageLabel) eventImageLabel.textContent = 'Click to add event image';
         if (eventImageUpload) eventImageUpload.classList.remove('has-file');
+        if (eventImageUpload) {
+            const preview = eventImageUpload.querySelector('.event-image-preview');
+            if (preview) {
+                preview.remove();
+            }
+        }
 
         // Question
         document.getElementById('questionTitleInput').value = '';
         document.getElementById('questionCategory').value = 'General';
         document.getElementById('problemStatement').value = '';
-        document.getElementById('contextDetails').value = '';
-        document.getElementById('attemptDetails').value = '';
-        document.getElementById('expectedOutcome').value = '';
         document.getElementById('questionTopics').value = '';
 
         // Reset char counts
@@ -494,6 +498,14 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             }
             return;
+        }
+
+        const menuItem = e.target.closest('.post-menu .menu-item');
+        if (menuItem) {
+            const postMenu = menuItem.closest('.post-menu');
+            if (postMenu) {
+                postMenu.classList.remove('open');
+            }
         }
 
         // Close menus when clicking outside
