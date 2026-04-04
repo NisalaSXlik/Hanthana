@@ -8,6 +8,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const closeModal = document.getElementById('closeModal');
     const cancelBtn = document.getElementById('cancelBtn');
     const askQuestionForm = document.getElementById('askQuestionForm');
+    const answerForm = document.getElementById('answerForm');
     const searchInput = document.getElementById('searchInput');
     const templateChips = document.querySelectorAll('.template-chip');
     const titleInput = document.getElementById('questionTitleInput');
@@ -291,6 +292,14 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
 
+        const menuItem = event.target.closest('.question-menu-item');
+        if (menuItem) {
+            const wrap = menuItem.closest('.question-menu-wrap');
+            if (wrap) {
+                wrap.classList.remove('open');
+            }
+        }
+
         if (!event.target.closest('.question-menu-wrap')) {
             document.querySelectorAll('.question-menu-wrap.open').forEach((item) => item.classList.remove('open'));
         }
@@ -419,14 +428,24 @@ document.addEventListener('DOMContentLoaded', function() {
                 </div>
                 <div class="comment-text">${escapeHtml(answer.content || '').replace(/\n/g, '<br>')}</div>
                 <div class="comment-actions">
-                    ${level === 0 ? `<button class="comment-action reply-btn" data-answer-id="${id}"><i class="fas fa-reply"></i><span>Reply</span></button>` : ''}
-                    ${canModerate ? `<button class="comment-action edit-answer-btn" data-answer-id="${id}">Edit</button><button class="comment-action delete-answer-btn" data-answer-id="${id}">Delete</button>` : ''}
+                    ${level === 0 ? `<button class="comment-action reply-btn" data-answer-id="${id}"><i class="uil uil-corner-up-left"></i><span>Reply</span></button>` : '<span></span>'}
+                    <div class="question-menu-wrap answer-menu-wrap">
+                        <button type="button" class="question-menu-trigger answer-menu-trigger" aria-label="Answer menu">
+                            <i class="uil uil-ellipsis-h"></i>
+                        </button>
+                        <div class="question-menu">
+                            ${canModerate ? `<button type="button" class="question-menu-item edit-answer-btn" data-answer-id="${id}"><i class="uil uil-edit"></i> Edit</button><button type="button" class="question-menu-item delete-answer-btn" data-answer-id="${id}"><i class="uil uil-trash-alt"></i> Delete</button>` : ''}
+                            <button type="button" class="question-menu-item report-trigger" data-report-type="answer" data-target-id="${id}" data-target-label="${escapeHtml(author)} answer">
+                                <i class="uil uil-exclamation-circle"></i> Report
+                            </button>
+                        </div>
+                    </div>
                 </div>
                 ${level === 0 ? `
                 <div class="reply-form" id="reply-form-${id}">
                     <div class="reply-input-container">
                         <input type="text" class="reply-input" placeholder="Write a reply..." data-answer-id="${id}">
-                        <button class="reply-submit-btn" data-answer-id="${id}"><i class="fas fa-paper-plane"></i></button>
+                        <button class="reply-submit-btn" data-answer-id="${id}"><i class="uil uil-message"></i></button>
                     </div>
                 </div>
                 ` : ''}
@@ -458,7 +477,19 @@ document.addEventListener('DOMContentLoaded', function() {
             method: 'POST',
             body: formData
         });
-        return response.json();
+
+        if (!response.ok) {
+            throw new Error(`Failed to fetch answers (${response.status})`);
+        }
+
+        let data;
+        try {
+            data = await response.json();
+        } catch (error) {
+            throw new Error('Invalid server response while loading answers');
+        }
+
+        return data;
     };
 
     const submitAnswer = async (questionId, content, parentAnswerId = '') => {
@@ -510,23 +541,31 @@ document.addEventListener('DOMContentLoaded', function() {
     const loadInlineAnswers = async (panelEl) => {
         const questionId = panelEl.dataset.questionId;
         const listEl = panelEl.querySelector('.inline-answers-list');
-        if (!questionId || !listEl) return;
+        if (!questionId || !listEl) return false;
 
         listEl.innerHTML = '<div class="no-comments">Loading answers...</div>';
-        const result = await fetchAnswers(questionId);
+        let result;
+        try {
+            result = await fetchAnswers(questionId);
+        } catch (error) {
+            console.error('Failed to load answers:', error);
+            listEl.innerHTML = '<div class="no-comments">Failed to load answers. Please try again.</div>';
+            return false;
+        }
 
         if (!result.success) {
             listEl.innerHTML = '<div class="no-comments">Failed to load answers.</div>';
-            return;
+            return false;
         }
 
         const answers = Array.isArray(result.answers) ? result.answers : [];
         if (!answers.length) {
             listEl.innerHTML = '<div class="no-comments">No answers yet. Be the first to answer!</div>';
-            return;
+            return true;
         }
 
         listEl.innerHTML = answers.map((answer) => renderAnswerNode(answer, 0)).join('');
+        return true;
     };
 
     inlineAnswerToggles.forEach((toggleBtn) => {
@@ -544,8 +583,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 toggleBtn.setAttribute('aria-expanded', 'true');
 
                 if (!loadedPanels.has(targetId)) {
-                    await loadInlineAnswers(panel);
-                    loadedPanels.add(targetId);
+                    const loaded = await loadInlineAnswers(panel);
+                    if (loaded) {
+                        loadedPanels.add(targetId);
+                    }
                 }
             } else {
                 panel.classList.add('collapsed');
