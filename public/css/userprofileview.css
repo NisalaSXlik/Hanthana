@@ -12,12 +12,6 @@ body.profile-page {
     --profile-card-padding: 1.25rem;
 }
 
-body.profile-page main .container {
-    grid-template-columns: minmax(16rem, 18rem) minmax(0, 1fr) minmax(18rem, 21rem);
-    gap: 1.5rem;
-    align-items: start;
-}
-
 body.profile-page .middle {
     min-width: 0;
 }

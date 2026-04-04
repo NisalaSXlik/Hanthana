@@ -17,7 +17,9 @@
 }
 
 .detail-item:hover {
-  background: var(--color-light);
+  background: rgba(14, 165, 233, 0.08);
+  border-color: rgba(14, 165, 233, 0.35);
+  transform: translateY(-1px);
 }
 
 .detail-item i {
@@ -2170,7 +2172,9 @@
 }
 
 .detail-item:hover {
-    background: var(--color-light);
+  background: rgba(14, 165, 233, 0.08);
+  border-color: rgba(14, 165, 233, 0.35);
+  transform: translateY(-1px);
 }
 
 .detail-item i {

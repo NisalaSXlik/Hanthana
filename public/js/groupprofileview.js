@@ -58,7 +58,10 @@
     if (groupSettingsNavBtn) {
         groupSettingsNavBtn.addEventListener('click', (e) => {
             e.preventDefault();
-            openEditModal();
+            const settingsHref = groupSettingsNavBtn.getAttribute('href');
+            if (settingsHref) {
+                window.location.href = settingsHref;
+            }
         });
     }
 

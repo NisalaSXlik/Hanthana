@@ -31,63 +31,192 @@ $friendRequests = $friendRequests ?? [];
     <link rel="stylesheet" href="./css/post.css">
     <link rel="stylesheet" href="./css/myfeed.css">
     <link rel="stylesheet" href="./css/notificationpopup.css">
+    <link rel="stylesheet" href="./css/groupmanage.css">
     <link rel="stylesheet" href="./css/forms.css">
     <link rel="stylesheet" href="https://unicons.iconscout.com/release/v4.0.8/css/line.css">
 </head>
-<body>
+<body class="group-manage-page">
     <?php include __DIR__ . '/templates/navbar.php'; ?>
 
     <main>
         <div class="container">
             <?php include __DIR__ . '/templates/left-sidebar.php'; ?>
             <div class="middle">
-                <div class="manage-header">
-                    <h2>Manage Requests for <?php echo htmlspecialchars($group['name']); ?></h2>
-                    <p><?php echo htmlspecialchars($group['description'] ?? ''); ?></p>
+                <div class="manage-header events-like-header">
+                    <h1><i class="uil uil-sliders-v-alt"></i> Group Manage</h1>
+                    <p>Review requests for private and secret group activity in <?php echo htmlspecialchars($group['name']); ?>.</p>
+                </div>
+
+                <div class="profile-tabs manage-tabs">
+                    <ul>
+                        <li class="active"><a href="#" data-tab="join-requests">Join Requests</a></li>
+                        <li><a href="#" data-tab="post-requests">Post Requests</a></li>
+                        <li><a href="#" data-tab="bin-requests">Bin Requests</a></li>
+                        <li><a href="#" data-tab="channel-requests">Channel Requests</a></li>
+                    </ul>
                 </div>
 
                 <div class="manage-content">
-                    <?php if (!empty($pendingRequests)): ?>
-                        <div class="requests-list">
-                            <?php foreach ($pendingRequests as $req): ?>
-                                <div class="request-row" id="request-<?php echo (int)$req['user_id']; ?>">
-                                    <div class="request-left">
-                                        <img class="request-dp" src="<?php echo htmlspecialchars(MediaHelper::resolveMediaPath($req['profile_picture'] ?? '', 'uploads/user_dp/default_user_dp.jpg')); ?>" alt="<?php echo htmlspecialchars($req['first_name'] . ' ' . $req['last_name']); ?>">
-                                        <div class="request-meta">
-                                            <strong><?php echo htmlspecialchars($req['first_name'] . ' ' . $req['last_name']); ?></strong>
-                                            <div class="muted">@<?php echo htmlspecialchars($req['username']); ?><?php if (!empty($req['joined_at'])): ?> · <?php echo htmlspecialchars(date('M j, H:i', strtotime($req['joined_at']))); ?><?php endif; ?></div>
+                    <section class="manage-card tab-content active" id="join-requests-content">
+                        <h3><i class="uil uil-user-plus"></i> Join Requests</h3>
+                        <?php if (!empty($pendingRequests)): ?>
+                            <div class="requests-list">
+                                <?php foreach ($pendingRequests as $req): ?>
+                                    <div class="request-row" id="request-<?php echo (int)$req['user_id']; ?>">
+                                        <div class="request-left">
+                                            <img class="request-dp" src="<?php echo htmlspecialchars(MediaHelper::resolveMediaPath($req['profile_picture'] ?? '', 'uploads/user_dp/default_user_dp.jpg')); ?>" alt="<?php echo htmlspecialchars($req['first_name'] . ' ' . $req['last_name']); ?>">
+                                            <div class="request-meta">
+                                                <strong><?php echo htmlspecialchars($req['first_name'] . ' ' . $req['last_name']); ?></strong>
+                                                <div class="muted">@<?php echo htmlspecialchars($req['username']); ?><?php if (!empty($req['joined_at'])): ?> · <?php echo htmlspecialchars(date('M j, H:i', strtotime($req['joined_at']))); ?><?php endif; ?></div>
+                                            </div>
+                                        </div>
+                                        <div class="request-actions">
+                                            <button class="btn btn-primary approve-request" data-user-id="<?php echo (int)$req['user_id']; ?>" data-group-id="<?php echo (int)$group['group_id']; ?>">Approve</button>
+                                            <button class="btn btn-secondary reject-request" data-user-id="<?php echo (int)$req['user_id']; ?>" data-group-id="<?php echo (int)$group['group_id']; ?>">Reject</button>
                                         </div>
                                     </div>
-                                    <div class="request-actions">
-                                        <button class="btn btn-primary approve-request" data-user-id="<?php echo (int)$req['user_id']; ?>" data-group-id="<?php echo (int)$group['group_id']; ?>">Approve</button>
-                                        <button class="btn btn-secondary reject-request" data-user-id="<?php echo (int)$req['user_id']; ?>" data-group-id="<?php echo (int)$group['group_id']; ?>">Reject</button>
-                                    </div>
+                                <?php endforeach; ?>
+                            </div>
+                        <?php else: ?>
+                            <div class="manage-empty-inline">No pending join requests right now.</div>
+                        <?php endif; ?>
+
+                        <div class="manage-subdivider"></div>
+                    </section>
+
+                    <section class="manage-card tab-content" id="post-requests-content">
+                        <h3><i class="uil uil-file-exclamation-alt"></i> Post Requests</h3>
+                        <table class="manage-table">
+                            <thead>
+                                <tr>
+                                    <th>Member</th>
+                                    <th>Post Type</th>
+                                    <th>Reason</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>Nethmi Perera</td>
+                                    <td>Question</td>
+                                    <td>Private group post approval needed</td>
+                                    <td>
+                                        <button class="btn btn-primary btn-sm" type="button">Approve</button>
+                                        <button class="btn btn-secondary btn-sm" type="button">Reject</button>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>Kavindu Jay</td>
+                                    <td>Event</td>
+                                    <td>Secret group event publishing request</td>
+                                    <td>
+                                        <button class="btn btn-primary btn-sm" type="button">Approve</button>
+                                        <button class="btn btn-secondary btn-sm" type="button">Reject</button>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </section>
+
+                    <section class="manage-card tab-content" id="bin-requests-content">
+                        <h3><i class="uil uil-folder-exclamation"></i> Bin Requests</h3>
+                        <table class="manage-table">
+                            <thead>
+                                <tr>
+                                    <th>Member</th>
+                                    <th>Bin Name</th>
+                                    <th>Request</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>Isuri Kavya</td>
+                                    <td>Semester Materials</td>
+                                    <td>Create bin in secret group</td>
+                                    <td>
+                                        <button class="btn btn-primary btn-sm" type="button">Approve</button>
+                                        <button class="btn btn-secondary btn-sm" type="button">Reject</button>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>Malinda S</td>
+                                    <td>Exam Archives</td>
+                                    <td>Bin visibility escalation request</td>
+                                    <td>
+                                        <button class="btn btn-primary btn-sm" type="button">Approve</button>
+                                        <button class="btn btn-secondary btn-sm" type="button">Reject</button>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </section>
+
+                    <section class="manage-card tab-content" id="channel-requests-content">
+                        <h3><i class="uil uil-channel"></i> Channel Requests</h3>
+                        <div class="channel-list message-thread-list">
+                            <div class="channel-item">
+                                <div>
+                                    <strong>Channel request: #first-year-help</strong>
+                                    <p>Member asked to create a new help channel.</p>
                                 </div>
-                            <?php endforeach; ?>
-                        </div>
-                    <?php else: ?>
-                        <div class="empty-state manage-empty">
-                            <div class="empty-illustration">
-                                <i class="uil uil-inbox" style="font-size:48px;color:var(--color-gray);"></i>
+                                <button class="btn btn-secondary btn-sm" type="button">Review</button>
                             </div>
-                            <h3>No pending join requests</h3>
-                            <p class="muted">There are currently no users waiting to join <strong><?php echo htmlspecialchars($group['name']); ?></strong>. When someone requests to join, you'll see their request here with options to approve or reject.</p>
-                            <div class="empty-actions">
-                                <a href="<?php echo BASE_PATH; ?>index.php?controller=Group&action=index&group_id=<?php echo (int)$group['group_id']; ?>" class="btn btn-secondary">View Group</a>
-                                <button id="refreshRequestsBtn" class="btn btn-primary">Refresh</button>
+                            <div class="channel-item">
+                                <div>
+                                    <strong>Channel request: #internships</strong>
+                                    <p>Member asked to open a new internships channel.</p>
+                                </div>
+                                <button class="btn btn-secondary btn-sm" type="button">Review</button>
                             </div>
                         </div>
-                    <?php endif; ?>
+
+                        <div class="manage-subdivider"></div>
+
+                        <table class="manage-table">
+                            <thead>
+                                <tr>
+                                    <th>Member Name</th>
+                                    <th>Message Complaint</th>
+                                    <th>Moderation Decision</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                        <table class="manage-table">
+                            <thead>
+                                <tr>
+                                    <th>Channel</th>
+                                    <th>Request Type</th>
+                                    <th>Reason</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>#hostel-talk</td>
+                                    <td>New channel</td>
+                                    <td>Repeated study discussion requests</td>
+                                    <td>
+                                        <button class="btn btn-primary btn-sm" type="button">Approve</button>
+                                        <button class="btn btn-secondary btn-sm" type="button">Reject</button>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>#project-marketplace</td>
+                                    <td>New channel</td>
+                                    <td>Group wants a project buying/selling space</td>
+                                    <td>
+                                        <button class="btn btn-primary btn-sm" type="button">Approve</button>
+                                        <button class="btn btn-secondary btn-sm" type="button">Reject</button>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </section>
                 </div>
             </div>
-            <div class="right">
-                <!-- Optionally show group summary -->
-                <div class="group-summary">
-                    <h4>Group Summary</h4>
-                    <p><?php echo htmlspecialchars($group['name']); ?></p>
-                    <small><?php echo (int)($group['member_count'] ?? 0); ?> members</small>
-                </div>
-            </div>
+
+            <?php include __DIR__ . '/templates/group-right.php'; ?>
         </div>
     </main>
 
@@ -102,6 +231,28 @@ $friendRequests = $friendRequests ?? [];
     <script src="./js/comment.js"></script>
     <script src="./js/groupprofileview.js"></script>
     <script>
+        document.querySelectorAll('.manage-tabs a[data-tab]').forEach(function(tabLink) {
+            tabLink.addEventListener('click', function(event) {
+                event.preventDefault();
+
+                const selectedTab = this.getAttribute('data-tab');
+
+                document.querySelectorAll('.manage-tabs li').forEach(function(tabItem) {
+                    tabItem.classList.remove('active');
+                });
+                this.parentElement.classList.add('active');
+
+                document.querySelectorAll('.manage-content .tab-content').forEach(function(section) {
+                    section.classList.remove('active');
+                });
+
+                const activeSection = document.getElementById(selectedTab + '-content');
+                if (activeSection) {
+                    activeSection.classList.add('active');
+                }
+            });
+        });
+
         // Refresh button handler for the empty state
         document.addEventListener('DOMContentLoaded', function() {
             // Handle initial refresh button if present

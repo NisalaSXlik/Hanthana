@@ -31,7 +31,9 @@
     $fileBankHref = rtrim(BASE_PATH, '/') . '/index.php?controller=FileBank&action=index';
     $channelHref = rtrim(BASE_PATH, '/') . '/index.php?controller=ChannelPage&action=index';
     $membersHref = rtrim(BASE_PATH, '/') . '/index.php?controller=GroupProfileView&action=members';
+    $groupReportsHref = rtrim(BASE_PATH, '/') . '/index.php?controller=GroupReports&action=index';
     $manageHref = rtrim(BASE_PATH, '/') . '/index.php?controller=Group&action=manage';
+    $groupSettingsHref = rtrim(BASE_PATH, '/') . '/index.php?controller=GroupSettings&action=index';
 
     if (!empty($groupHomeQuery)) {
         $groupHomeHref .= '&' . http_build_query($groupHomeQuery);
@@ -46,15 +48,19 @@
         $membersHref .= '&' . http_build_query($membersQuery);
     }
     if (!empty($manageQuery)) {
+        $groupReportsHref .= '&' . http_build_query($manageQuery);
+    }
+    if (!empty($manageQuery)) {
         $manageHref .= '&' . http_build_query($manageQuery);
+        $groupSettingsHref .= '&' . http_build_query($manageQuery);
     }
 
-    $activeGroupIdForReport = 0;
-    if (isset($groupId) && (int)$groupId > 0) {
-        $activeGroupIdForReport = (int)$groupId;
-    } elseif (!empty($manageQuery['group_id'])) {
-        $activeGroupIdForReport = (int)$manageQuery['group_id'];
-    }
+    // $activeGroupIdForReport = 0;
+    // if (isset($groupId) && (int)$groupId > 0) {
+    //     $activeGroupIdForReport = (int)$groupId;
+    // } elseif (!empty($manageQuery['group_id'])) {
+    //     $activeGroupIdForReport = (int)$manageQuery['group_id'];
+    // }
 ?>
 
 <div class="right">
@@ -77,22 +83,20 @@
                 <i class="uil uil-users-alt" style="font-size: 1.4rem;"></i>
                 <span style="font-size: 0.82rem; font-weight: 500;">Members</span>
             </a>
-            <?php if ($activeGroupIdForReport > 0): ?>
-            <button type="button" class="detail-item" data-report-type="group" data-target-id="<?php echo (int)$activeGroupIdForReport; ?>" data-target-label="<?php echo htmlspecialchars('group ' . ($group['name'] ?? 'group'), ENT_QUOTES); ?>" style="flex-direction: column; align-items: center; justify-content: center; padding: 1rem 0.5rem; text-decoration: none; border: 1px solid var(--color-light); border-radius: var(--border-radius); text-align: center; gap: 0.4rem; transition: background 0.2s; background: transparent; cursor: pointer;">
-                <i class="uil uil-exclamation-circle" style="font-size: 1.4rem;"></i>
-                <span style="font-size: 0.82rem; font-weight: 500;">Reports</span>
-            </button>
-            <?php endif; ?>
 
             <?php if (!empty($isAdmin)): ?>
+            <a href="<?php echo $groupReportsHref; ?>" class="detail-item" style="flex-direction: column; align-items: center; justify-content: center; padding: 1rem 0.5rem; text-decoration: none; border: 1px solid var(--color-light); border-radius: var(--border-radius); text-align: center; gap: 0.4rem; transition: background 0.2s;">
+                <i class="uil uil-exclamation-circle" style="font-size: 1.4rem;"></i>
+                <span style="font-size: 0.82rem; font-weight: 500;">Moderation</span>
+            </a>
             <a href="<?php echo $manageHref; ?>" class="detail-item" style="flex-direction: column; align-items: center; justify-content: center; padding: 1rem 0.5rem; text-decoration: none; border: 1px solid var(--color-light); border-radius: var(--border-radius); text-align: center; gap: 0.4rem; transition: background 0.2s;">
                 <i class="uil uil-sliders-v" style="font-size: 1.4rem;"></i>
                 <span style="font-size: 0.82rem; font-weight: 500;">Requests</span>
             </a>
-            <button type="button" id="groupSettingsNavBtn" class="detail-item" style="flex-direction: column; align-items: center; justify-content: center; padding: 1rem 0.5rem; text-decoration: none; border: 1px solid var(--color-light); border-radius: var(--border-radius); text-align: center; gap: 0.4rem; transition: background 0.2s; background: transparent; cursor: pointer;">
+            <a href="<?php echo $groupSettingsHref; ?>" id="groupSettingsNavBtn" class="detail-item" style="flex-direction: column; align-items: center; justify-content: center; padding: 1rem 0.5rem; text-decoration: none; border: 1px solid var(--color-light); border-radius: var(--border-radius); text-align: center; gap: 0.4rem; transition: background 0.2s; background: transparent; cursor: pointer;">
                 <i class="uil uil-cog" style="font-size: 1.4rem;"></i>
                 <span style="font-size: 0.82rem; font-weight: 500;">Settings</span>
-            </button>
+            </a>
             <?php endif; ?>
         </div>
     </div>

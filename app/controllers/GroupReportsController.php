@@ -1,6 +1,6 @@
 <?php
 
-class FileBankController extends BaseController
+class GroupReportsController extends BaseController
 {
     private GroupModel $groupModel;
     private UserModel $userModel;
@@ -28,15 +28,18 @@ class FileBankController extends BaseController
 
         $_SESSION['current_group_id'] = $groupId;
 
-        $currentUserId = $_SESSION['user_id'];
+        $currentUserId = (int)$_SESSION['user_id'];
         $currentUser = $this->userModel->findById($currentUserId);
-        $isGroupCreator = (int)($group['created_by'] ?? 0) === (int)$currentUserId;
-        $isGroupAdmin = $this->groupModel->isGroupAdmin($groupId, (int)$currentUserId);
-        $isCreator = $isGroupCreator;
-        $isAdmin = $isGroupCreator || $isGroupAdmin;
+        $isCreator = (int)($group['created_by'] ?? 0) === $currentUserId;
+        $isGroupAdmin = $this->groupModel->isGroupAdmin($groupId, $currentUserId);
+        $isAdmin = $isCreator || $isGroupAdmin;
         $canModerateFileBank = $isAdmin;
 
-        require_once __DIR__ . '/../views/filebank.php';
+        if (!$isCreator && !$isAdmin) {
+            $this->redirect('GroupProfileView');
+        }
+
+        require_once __DIR__ . '/../views/groupreports.php';
     }
 
     private function resolveGroupId(): int
@@ -49,15 +52,15 @@ class FileBankController extends BaseController
         ];
 
         foreach ($candidates as $candidate) {
-            $groupId = (int) $candidate;
+            $groupId = (int)$candidate;
             if ($groupId > 0) {
                 return $groupId;
             }
         }
 
-        $joinedGroups = $this->groupModel->getGroupsJoinedBy((int) $_SESSION['user_id']);
+        $joinedGroups = $this->groupModel->getGroupsJoinedBy((int)$_SESSION['user_id']);
         if (!empty($joinedGroups) && !empty($joinedGroups[0]['group_id'])) {
-            return (int) $joinedGroups[0]['group_id'];
+            return (int)$joinedGroups[0]['group_id'];
         }
 
         return 0;

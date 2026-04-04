@@ -70,20 +70,6 @@ $currentUser = $userModel->findById($_SESSION['user_id']);
                             <?php if ($displayHandle !== ''): ?>
                                 <p class="profile-handle"><?php echo htmlspecialchars($displayHandle); ?></p>
                             <?php endif; ?>
-                            <div class="profile-stats">
-                                <button type="button" class="stat stat-link" data-tab-target="posts" aria-label="View posts section">
-                                    <strong><?php echo $totalPostsCount; ?></strong>
-                                    <span>Posts</span>
-                                </button>
-                                <button type="button" class="stat stat-link" data-friend-count-trigger>
-                                    <strong data-friend-count="<?php echo $friendsCount; ?>"><?php echo $friendsCount; ?></strong>
-                                    <span>Friends</span>
-                                </button>
-                                <button type="button" class="stat stat-link" data-tab-target="photos" aria-label="View photos section">
-                                    <strong><?php echo count($photoPosts); ?></strong>
-                                    <span>Photos</span>
-                                </button>
-                            </div>
                             <p class="profile-bio"><?php echo htmlspecialchars($bio); ?></p>
                             <div class="profile-meta">
                                 <span><i class="uil uil-location-point"></i> <?php echo htmlspecialchars($location); ?></span>
@@ -326,51 +312,6 @@ $currentUser = $userModel->findById($_SESSION['user_id']);
                             <span>Member since <?php echo htmlspecialchars($joinedAt); ?></span>
                         </div>
                     </div>
-                </div>
-
-                <!-- Groups Summary -->
-                <div class="user-groups-summary">
-                    <div class="heading">
-                        <h4>Group Activity</h4>
-                    </div>
-                    <div class="groups-stats">
-                        <div class="stat-item">
-                            <i class="uil uil-users-alt"></i>
-                            <div>
-                                <strong><?php echo $joinedGroupsCount; ?></strong>
-                                <span>Groups Joined</span>
-                            </div>
-                        </div>
-                        <div class="stat-item">
-                            <i class="uil uil-file-alt"></i>
-                            <div>
-                                <strong><?php echo $groupPostCount; ?></strong>
-                                <span>Group Posts</span>
-                            </div>
-                        </div>
-                    </div>
-                    <?php if (!empty($userGroups)): ?>
-                        <div class="group-list">
-                            <?php foreach (array_slice($userGroups, 0, 3) as $group): ?>
-                                <a href="<?php echo BASE_PATH; ?>index.php?controller=Group&action=view&id=<?php echo (int)$group['group_id']; ?>" 
-                                   class="group-card">
-                                    <div class="group-icon">
-                                        <img src="<?php echo htmlspecialchars(MediaHelper::resolveMediaPath($group['group_photo'] ?? '', 'uploads/group_photos/default.png')); ?>" 
-                                             alt="<?php echo htmlspecialchars($group['group_name']); ?>">
-                                    </div>
-                                    <div class="group-info">
-                                        <h5><?php echo htmlspecialchars($group['group_name']); ?></h5>
-                                        <p><?php echo (int)$group['member_count']; ?> members</p>
-                                    </div>
-                                </a>
-                            <?php endforeach; ?>
-                        </div>
-                        <?php if (count($userGroups) > 3): ?>
-                            <a href="#" class="btn btn-secondary view-all-groups" data-tab-target="group-posts">
-                                View all <?php echo count($userGroups); ?> groups
-                            </a>
-                        <?php endif; ?>
-                    <?php endif; ?>
                 </div>
 
                 <div class="top-collaborators">
