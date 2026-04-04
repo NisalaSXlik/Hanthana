@@ -15,6 +15,23 @@ if (!isset($_SESSION['user_id'])) {
 $currentUserId = $_SESSION['user_id'];
 $userModel = new UserModel;
 $currentUser = $userModel->findById($_SESSION['user_id']);
+
+// Keep active group context in session for related pages like File Bank.
+$resolvedGroupId = 0;
+if (isset($groupId) && (int)$groupId > 0) {
+    $resolvedGroupId = (int)$groupId;
+} elseif (isset($group['group_id']) && (int)$group['group_id'] > 0) {
+    $resolvedGroupId = (int)$group['group_id'];
+} elseif (isset($_GET['group_id']) && (int)$_GET['group_id'] > 0) {
+    $resolvedGroupId = (int)$_GET['group_id'];
+} elseif (isset($_GET['id']) && (int)$_GET['id'] > 0) {
+    $resolvedGroupId = (int)$_GET['id'];
+}
+
+if ($resolvedGroupId > 0) {
+    $_SESSION['current_group_id'] = $resolvedGroupId;
+    $groupId = $resolvedGroupId;
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -126,7 +143,7 @@ $currentUser = $userModel->findById($_SESSION['user_id']);
                                             <i class="uil uil-user-check"></i>
                                             <span>Manage Requests</span>
                                         </a>
-                                        <?php if ($isCreator): ?>
+                                        <?php if ($isAdmin): ?>
                                         <a href="#" class="dropdown-item delete-option" id="deleteGroupOption">
                                             <i class="uil uil-trash-alt"></i>
                                             <span>Delete Group</span>
@@ -675,6 +692,60 @@ $currentUser = $userModel->findById($_SESSION['user_id']);
                     <!-- Members tab -->
                     <div class="tab-content" id="members-content">
                         <div class="members-grid">
+                            <?php
+                                $adminMembers = [];
+                                $regularMembers = [];
+                                foreach (($groupMembers ?? []) as $gm) {
+                                    if (($gm['role'] ?? '') === 'admin') {
+                                        $adminMembers[] = $gm;
+                                    } else {
+                                        $regularMembers[] = $gm;
+                                    }
+                                }
+                            ?>
+
+                            <?php if ($isAdmin): ?>
+                                <div class="governance-panel">
+                                    <h4>Group Governance</h4>
+                                    <div class="governance-meta">
+                                        <?php
+                                            $approvedCount = (int)($deleteApprovalStatus['approved_count'] ?? 0);
+                                            $adminCount = (int)($deleteApprovalStatus['admin_count'] ?? 0);
+                                            $viewerApproved = !empty($deleteApprovalStatus['viewer_approved']);
+                                        ?>
+                                        <p class="muted">Delete approvals: <strong><?php echo $approvedCount; ?>/<?php echo $adminCount; ?></strong> admins</p>
+                                        <button class="btn btn-danger" id="approveDeleteGroupBtn" <?php echo $viewerApproved ? 'disabled' : ''; ?>>
+                                            <?php echo $viewerApproved ? 'Deletion Approval Sent' : 'Approve Group Deletion'; ?>
+                                        </button>
+                                    </div>
+                                    <?php if (!empty($roleChangeRequests)): ?>
+                                        <div class="role-vote-list">
+                                            <?php foreach ($roleChangeRequests as $voteReq): ?>
+                                                <div class="role-vote-item <?php echo ($voteReq['status'] ?? '') === 'pending' ? 'pending' : 'resolved'; ?>">
+                                                    <div>
+                                                        <strong><?php echo htmlspecialchars(trim(($voteReq['target_first_name'] ?? '') . ' ' . ($voteReq['target_last_name'] ?? ''))); ?></strong>
+                                                        <small>@<?php echo htmlspecialchars($voteReq['target_username'] ?? ''); ?></small>
+                                                        <p>Change role to <strong><?php echo htmlspecialchars(ucfirst($voteReq['requested_role'] ?? 'member')); ?></strong></p>
+                                                    </div>
+                                                    <div class="role-vote-actions">
+                                                        <span class="vote-count"><?php echo (int)($voteReq['vote_count'] ?? 0); ?>/<?php echo (int)($voteReq['votes_needed'] ?? 1); ?> votes</span>
+                                                        <?php if (($voteReq['status'] ?? '') === 'pending' && empty($voteReq['viewer_voted'])): ?>
+                                                            <button
+                                                                class="btn btn-primary vote-role-change-btn"
+                                                                data-request-id="<?php echo (int)$voteReq['request_id']; ?>">
+                                                                Approve
+                                                            </button>
+                                                        <?php else: ?>
+                                                            <span class="vote-status-chip"><?php echo htmlspecialchars(ucfirst((string)($voteReq['status'] ?? 'pending'))); ?></span>
+                                                        <?php endif; ?>
+                                                    </div>
+                                                </div>
+                                            <?php endforeach; ?>
+                                        </div>
+                                    <?php endif; ?>
+                                </div>
+                            <?php endif; ?>
+
                             <?php if ($isAdmin && !empty($pendingRequests)): ?>
                                 <div class="pending-requests">
                                     <h4>Pending Join Requests</h4>
@@ -685,7 +756,7 @@ $currentUser = $userModel->findById($_SESSION['user_id']);
                                                 <img src="<?php echo htmlspecialchars(MediaHelper::resolveMediaPath($req['profile_picture'] ?? '', 'uploads/user_dp/default.png')); ?>" alt="<?php echo htmlspecialchars($req['first_name'] . ' ' . $req['last_name']); ?>">
                                                 <div class="requester-info">
                                                     <strong><?php echo htmlspecialchars($req['first_name'] . ' ' . $req['last_name']); ?></strong>
-                                                    <small>@<?php echo htmlspecialchars($req['username']); ?> · <?php echo htmlspecialchars(date('M j, H:i', strtotime($req['requested_at']))); ?></small>
+                                                    <small>@<?php echo htmlspecialchars($req['username']); ?> · <?php echo !empty($req['requested_at']) ? htmlspecialchars(date('M j, H:i', strtotime($req['requested_at']))) : 'Recently'; ?></small>
                                                 </div>
                                             </div>
                                             <div class="request-actions">
@@ -698,26 +769,68 @@ $currentUser = $userModel->findById($_SESSION['user_id']);
                             <?php endif; ?>
 
                             <?php if (!empty($groupMembers)): ?>
-                                <?php foreach ($groupMembers as $member): ?>
+                                <div class="member-section-block">
+                                    <h4>Admins</h4>
+                                </div>
+                                <?php foreach ($adminMembers as $member): ?>
                                     <?php
                                         $memberId = isset($member['user_id']) ? (int)$member['user_id'] : (int)($member['id'] ?? 0);
                                         $profileUrl = rtrim(BASE_PATH, '/') . '/index.php?controller=Profile&action=view&user_id=' . $memberId;
                                         $dp = MediaHelper::resolveMediaPath($member['profile_picture'] ?? '', 'uploads/user_dp/default.png');
                                     ?>
-                                    <a class="member-link" href="<?php echo htmlspecialchars($profileUrl); ?>">
-                                        <div class="member-card">
+                                    <div class="member-link">
+                                        <div class="member-card" data-member-id="<?php echo $memberId; ?>" data-member-role="<?php echo htmlspecialchars($member['role'] ?? 'member'); ?>">
                                             <div class="member-dp">
-                                                <img src="<?php echo htmlspecialchars($dp); ?>" alt="<?php echo htmlspecialchars($member['first_name'] . ' ' . $member['last_name']); ?>">
+                                                <a href="<?php echo htmlspecialchars($profileUrl); ?>">
+                                                    <img src="<?php echo htmlspecialchars($dp); ?>" alt="<?php echo htmlspecialchars($member['first_name'] . ' ' . $member['last_name']); ?>">
+                                                </a>
                                             </div>
                                             <div class="member-info">
-                                                <p class="member-name"><?php echo htmlspecialchars($member['first_name'] . ' ' . $member['last_name']); ?></p>
+                                                <p class="member-name"><a href="<?php echo htmlspecialchars($profileUrl); ?>"><?php echo htmlspecialchars($member['first_name'] . ' ' . $member['last_name']); ?></a></p>
                                                 <small class="member-username">@<?php echo htmlspecialchars($member['username'] ?? ''); ?></small>
                                                 <?php if (!empty($member['role'])): ?>
                                                     <span class="member-role"><?php echo htmlspecialchars(ucfirst($member['role'])); ?></span>
                                                 <?php endif; ?>
                                             </div>
+                                            <?php if ($isAdmin && $memberId !== (int)$currentUserId): ?>
+                                                <div class="member-admin-actions">
+                                                    <button class="btn btn-secondary propose-role-change-btn" data-target-user-id="<?php echo $memberId; ?>" data-requested-role="member">Start Demotion Vote</button>
+                                                </div>
+                                            <?php endif; ?>
                                         </div>
-                                    </a>
+                                    </div>
+                                <?php endforeach; ?>
+
+                                <div class="member-section-block">
+                                    <h4>Members</h4>
+                                </div>
+                                <?php foreach ($regularMembers as $member): ?>
+                                    <?php
+                                        $memberId = isset($member['user_id']) ? (int)$member['user_id'] : (int)($member['id'] ?? 0);
+                                        $profileUrl = rtrim(BASE_PATH, '/') . '/index.php?controller=Profile&action=view&user_id=' . $memberId;
+                                        $dp = MediaHelper::resolveMediaPath($member['profile_picture'] ?? '', 'uploads/user_dp/default.png');
+                                    ?>
+                                    <div class="member-link">
+                                        <div class="member-card" data-member-id="<?php echo $memberId; ?>" data-member-role="<?php echo htmlspecialchars($member['role'] ?? 'member'); ?>">
+                                            <div class="member-dp">
+                                                <a href="<?php echo htmlspecialchars($profileUrl); ?>">
+                                                    <img src="<?php echo htmlspecialchars($dp); ?>" alt="<?php echo htmlspecialchars($member['first_name'] . ' ' . $member['last_name']); ?>">
+                                                </a>
+                                            </div>
+                                            <div class="member-info">
+                                                <p class="member-name"><a href="<?php echo htmlspecialchars($profileUrl); ?>"><?php echo htmlspecialchars($member['first_name'] . ' ' . $member['last_name']); ?></a></p>
+                                                <small class="member-username">@<?php echo htmlspecialchars($member['username'] ?? ''); ?></small>
+                                                <?php if (!empty($member['role'])): ?>
+                                                    <span class="member-role"><?php echo htmlspecialchars(ucfirst($member['role'])); ?></span>
+                                                <?php endif; ?>
+                                            </div>
+                                            <?php if ($isAdmin && $memberId !== (int)$currentUserId): ?>
+                                                <div class="member-admin-actions">
+                                                    <button class="btn btn-primary propose-role-change-btn" data-target-user-id="<?php echo $memberId; ?>" data-requested-role="admin">Start Promotion Vote</button>
+                                                </div>
+                                            <?php endif; ?>
+                                        </div>
+                                    </div>
                                 <?php endforeach; ?>
                             <?php else: ?>
                                 <div class="no-members-centered">
@@ -760,36 +873,7 @@ $currentUser = $userModel->findById($_SESSION['user_id']);
                 </div>
             </div>
 
-            <div class="right">
-                <div class="group-details">
-                    <h4>Group Details</h4>
-                    <div class="detail-list">
-                        <div class="detail-item">
-                            <i class="uil uil-user"></i>
-                            <span><?php echo ucfirst(htmlspecialchars($group['privacy_status'])) . ' Group'; ?></span>
-                        </div>
-                        <div class="detail-item">
-                            <i class="uil uil-compass"></i>
-                            <span><?php echo htmlspecialchars($group['focus'] ?? 'No focus'); ?></span>
-                        </div>
-                        <div class="detail-item">
-                            <i class="uil uil-home"></i>
-                            <span><?php echo htmlspecialchars($group['tag'] ?? 'No tag'); ?></span>
-                        </div>
-                        <div class="detail-item">
-                            <i class="uil uil-calendar-alt"></i>
-                            <span>Created <?php echo date('F Y', strtotime($group['created_at'])); ?></span>
-                        </div>
-                    </div>
-                </div>
-
-                <?php
-                    $friendRequests = $incomingFriendRequests ?? [];
-                    include __DIR__ . '/templates/friend-requests.php';
-                ?>
-
-                <!-- Top Collaborators -->
-            </div>
+            <?php include __DIR__ . '/templates/group-right.php'; ?>
         </div>
 
         <!-- Instagram-style Post View Modal -->
@@ -1162,6 +1246,7 @@ $currentUser = $userModel->findById($_SESSION['user_id']);
     <script src="./js/group-post-interactions.js"></script>
     <script>
         const GROUP_ID = <?php echo $groupId; ?>;
+        window.CURRENT_GROUP_ID = <?php echo (int)($groupId ?? 0); ?>;
         const IS_CREATOR = <?php echo $isCreator ? 'true' : 'false'; ?>;
         const IS_ADMIN = <?php echo $isAdmin ? 'true' : 'false'; ?>;
         const HAS_PENDING_REQUEST = <?php echo !empty($hasPendingRequest) ? 'true' : 'false'; ?>;

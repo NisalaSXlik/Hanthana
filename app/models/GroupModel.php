@@ -494,6 +494,7 @@ class GroupModel {
      */
     public function getPendingRequests($groupId) {
         $sql = "SELECT gm.*, u.user_id, u.username, u.first_name, u.last_name, u.profile_picture
+                , gm.joined_at AS requested_at
             FROM GroupMember gm
                 INNER JOIN Users u ON gm.user_id = u.user_id
                 WHERE gm.group_id = ? AND gm.status = 'pending'
@@ -681,6 +682,257 @@ class GroupModel {
         $sql = "UPDATE GroupMember SET role = ? WHERE group_id = ? AND user_id = ? AND status = 'active'";
         $stmt = $this->db->prepare($sql);
         return $stmt->execute([$role, $groupId, $userId]);
+    }
+
+    public function getActiveAdminCount(int $groupId): int {
+        $sql = "SELECT COUNT(*) AS c FROM GroupMember WHERE group_id = ? AND status = 'active' AND role = 'admin'";
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute([$groupId]);
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+        return (int)($row['c'] ?? 0);
+    }
+
+    public function getDeleteApprovalStatus(int $groupId, int $viewerId = 0): array {
+        $adminCount = $this->getActiveAdminCount($groupId);
+
+        $stmt = $this->db->prepare("SELECT COUNT(*) AS c FROM GroupDeleteApprovals WHERE group_id = ?");
+        $stmt->execute([$groupId]);
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+        $approvedCount = (int)($row['c'] ?? 0);
+
+        $viewerApproved = false;
+        if ($viewerId > 0) {
+            $voteStmt = $this->db->prepare("SELECT 1 FROM GroupDeleteApprovals WHERE group_id = ? AND admin_user_id = ? LIMIT 1");
+            $voteStmt->execute([$groupId, $viewerId]);
+            $viewerApproved = (bool)$voteStmt->fetchColumn();
+        }
+
+        return [
+            'admin_count' => $adminCount,
+            'approved_count' => $approvedCount,
+            'viewer_approved' => $viewerApproved,
+            'all_approved' => ($adminCount > 0 && $approvedCount >= $adminCount)
+        ];
+    }
+
+    public function approveGroupDeletion(int $groupId, int $adminId): array {
+        if (!$this->isGroupAdmin($groupId, $adminId)) {
+            return ['success' => false, 'message' => 'Only group admins can approve deletion.'];
+        }
+
+        $ins = $this->db->prepare(
+            "INSERT INTO GroupDeleteApprovals (group_id, admin_user_id, approved_at)
+             VALUES (?, ?, NOW())
+             ON DUPLICATE KEY UPDATE approved_at = approved_at"
+        );
+        $ins->execute([$groupId, $adminId]);
+
+        $status = $this->getDeleteApprovalStatus($groupId, $adminId);
+        if ($status['all_approved']) {
+            $deleted = $this->deleteGroup($groupId);
+            if ($deleted) {
+                return [
+                    'success' => true,
+                    'deleted' => true,
+                    'message' => 'All admins approved. Group deleted.',
+                    'status' => $status
+                ];
+            }
+
+            return ['success' => false, 'message' => 'All approvals collected, but failed to delete group.', 'status' => $status];
+        }
+
+        return [
+            'success' => true,
+            'deleted' => false,
+            'message' => 'Delete approval recorded.',
+            'status' => $status
+        ];
+    }
+
+    public function createRoleChangeRequest(int $groupId, int $targetUserId, string $requestedRole, int $adminId): array {
+        $requestedRole = strtolower(trim($requestedRole));
+        if (!in_array($requestedRole, ['admin', 'member'], true)) {
+            return ['success' => false, 'message' => 'Invalid target role.'];
+        }
+
+        if (!$this->isGroupAdmin($groupId, $adminId)) {
+            return ['success' => false, 'message' => 'Only group admins can start role votes.'];
+        }
+
+        $membership = $this->getMembership($groupId, $targetUserId);
+        if (!$membership || ($membership['status'] ?? '') !== 'active') {
+            return ['success' => false, 'message' => 'Target user is not an active member.'];
+        }
+
+        $currentRole = strtolower((string)($membership['role'] ?? 'member'));
+        if ($currentRole === $requestedRole) {
+            return ['success' => false, 'message' => 'User already has that role.'];
+        }
+
+        $existingStmt = $this->db->prepare(
+            "SELECT request_id
+             FROM GroupRoleChangeRequests
+             WHERE group_id = ? AND target_user_id = ? AND requested_role = ? AND status = 'pending'
+             ORDER BY created_at DESC
+             LIMIT 1"
+        );
+        $existingStmt->execute([$groupId, $targetUserId, $requestedRole]);
+        $existingId = (int)$existingStmt->fetchColumn();
+
+        if ($existingId > 0) {
+            return $this->approveRoleChangeRequest($groupId, $existingId, $adminId);
+        }
+
+        $this->db->beginTransaction();
+        try {
+            $insert = $this->db->prepare(
+                "INSERT INTO GroupRoleChangeRequests
+                    (group_id, target_user_id, requested_role, current_role, proposed_by, status, created_at)
+                 VALUES (?, ?, ?, ?, ?, 'pending', NOW())"
+            );
+            $insert->execute([$groupId, $targetUserId, $requestedRole, $currentRole, $adminId]);
+            $requestId = (int)$this->db->lastInsertId();
+
+            $voteInsert = $this->db->prepare(
+                "INSERT INTO GroupRoleChangeVotes (request_id, admin_user_id, voted_at)
+                 VALUES (?, ?, NOW())"
+            );
+            $voteInsert->execute([$requestId, $adminId]);
+
+            $this->db->commit();
+
+            return $this->approveRoleChangeRequest($groupId, $requestId, $adminId, true);
+        } catch (Throwable $e) {
+            if ($this->db->inTransaction()) {
+                $this->db->rollBack();
+            }
+            return ['success' => false, 'message' => 'Failed to create role vote request.'];
+        }
+    }
+
+    public function approveRoleChangeRequest(int $groupId, int $requestId, int $adminId, bool $alreadyVoted = false): array {
+        if (!$this->isGroupAdmin($groupId, $adminId)) {
+            return ['success' => false, 'message' => 'Only group admins can vote on role changes.'];
+        }
+
+        $reqStmt = $this->db->prepare(
+            "SELECT request_id, group_id, target_user_id, requested_role, status
+             FROM GroupRoleChangeRequests
+             WHERE request_id = ? AND group_id = ?
+             LIMIT 1"
+        );
+        $reqStmt->execute([$requestId, $groupId]);
+        $request = $reqStmt->fetch(PDO::FETCH_ASSOC);
+
+        if (!$request) {
+            return ['success' => false, 'message' => 'Role vote request not found.'];
+        }
+
+        if (($request['status'] ?? '') !== 'pending') {
+            return ['success' => false, 'message' => 'This role vote is already closed.'];
+        }
+
+        if (!$alreadyVoted) {
+            $voteStmt = $this->db->prepare(
+                "INSERT INTO GroupRoleChangeVotes (request_id, admin_user_id, voted_at)
+                 VALUES (?, ?, NOW())
+                 ON DUPLICATE KEY UPDATE voted_at = voted_at"
+            );
+            $voteStmt->execute([$requestId, $adminId]);
+        }
+
+        $countStmt = $this->db->prepare("SELECT COUNT(*) AS c FROM GroupRoleChangeVotes WHERE request_id = ?");
+        $countStmt->execute([$requestId]);
+        $voteCount = (int)($countStmt->fetch(PDO::FETCH_ASSOC)['c'] ?? 0);
+
+        $adminCount = $this->getActiveAdminCount($groupId);
+        $needed = max(1, (int)floor($adminCount / 2) + 1);
+
+        if ($voteCount >= $needed) {
+            $this->db->beginTransaction();
+            try {
+                $roleStmt = $this->db->prepare(
+                    "UPDATE GroupMember
+                     SET role = ?
+                     WHERE group_id = ? AND user_id = ? AND status = 'active'"
+                );
+                $roleStmt->execute([$request['requested_role'], $groupId, (int)$request['target_user_id']]);
+
+                $closeStmt = $this->db->prepare(
+                    "UPDATE GroupRoleChangeRequests
+                     SET status = 'approved', resolved_at = NOW()
+                     WHERE request_id = ?"
+                );
+                $closeStmt->execute([$requestId]);
+
+                $this->db->commit();
+
+                return [
+                    'success' => true,
+                    'applied' => true,
+                    'message' => 'Majority reached. Member role updated.',
+                    'votes' => $voteCount,
+                    'needed' => $needed
+                ];
+            } catch (Throwable $e) {
+                if ($this->db->inTransaction()) {
+                    $this->db->rollBack();
+                }
+                return ['success' => false, 'message' => 'Vote passed, but failed to update role.'];
+            }
+        }
+
+        return [
+            'success' => true,
+            'applied' => false,
+            'message' => 'Vote recorded.',
+            'votes' => $voteCount,
+            'needed' => $needed
+        ];
+    }
+
+    public function getRoleChangeRequests(int $groupId, int $viewerId = 0): array {
+        $sql = "SELECT
+                    r.request_id,
+                    r.group_id,
+                    r.target_user_id,
+                    r.requested_role,
+                    r.current_role,
+                    r.proposed_by,
+                    r.status,
+                    r.created_at,
+                    r.resolved_at,
+                    u.username AS target_username,
+                    u.first_name AS target_first_name,
+                    u.last_name AS target_last_name,
+                    COUNT(v.admin_user_id) AS vote_count
+                FROM GroupRoleChangeRequests r
+                INNER JOIN Users u ON u.user_id = r.target_user_id
+                LEFT JOIN GroupRoleChangeVotes v ON v.request_id = r.request_id
+                WHERE r.group_id = ?
+                GROUP BY r.request_id
+                ORDER BY FIELD(r.status, 'pending', 'approved', 'rejected'), r.created_at DESC
+                LIMIT 25";
+
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute([$groupId]);
+        $rows = $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
+
+        $adminCount = $this->getActiveAdminCount($groupId);
+        $needed = max(1, (int)floor($adminCount / 2) + 1);
+
+        if ($viewerId > 0 && !empty($rows)) {
+            $voteStmt = $this->db->prepare("SELECT 1 FROM GroupRoleChangeVotes WHERE request_id = ? AND admin_user_id = ? LIMIT 1");
+            foreach ($rows as &$row) {
+                $voteStmt->execute([(int)$row['request_id'], $viewerId]);
+                $row['viewer_voted'] = (bool)$voteStmt->fetchColumn();
+                $row['votes_needed'] = $needed;
+            }
+            unset($row);
+        }
+
+        return $rows;
     }
 
     /**

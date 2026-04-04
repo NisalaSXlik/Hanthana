@@ -220,10 +220,6 @@ CREATE TABLE Vote (
     UNIQUE(post_id, user_id)
 );
 
-
-
-
-
 -- Chat Conversations (Direct Messages & Group Chats)
 CREATE TABLE Conversations (
     conversation_id INT AUTO_INCREMENT PRIMARY KEY,
@@ -348,26 +344,30 @@ CREATE TABLE Bin (
     bin_id INT AUTO_INCREMENT PRIMARY KEY,
     group_id INT NOT NULL,
     created_by INT NOT NULL,
-    name VARCHAR(255),
+    name VARCHAR(255) NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
     FOREIGN KEY (group_id) REFERENCES GroupsTable(group_id) ON DELETE CASCADE,
-    FOREIGN KEY (created_by) REFERENCES Users(user_id) ON DELETE CASCADE
+    FOREIGN KEY (created_by) REFERENCES Users(user_id) ON DELETE CASCADE,
+
+    UNIQUE (group_id, name)
 );
 
 -- BinMedia (existing - good)
 CREATE TABLE BinMedia (
+    media_id INT AUTO_INCREMENT PRIMARY KEY,
     bin_id INT NOT NULL,
-    media_id INT NOT NULL,
+    file_name VARCHAR(255),
+    file_type ENUM('image','video','document','other'),
+    file_path VARCHAR(255),
+    file_size INT,
     added_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     added_by INT NOT NULL,
-    PRIMARY KEY(bin_id, media_id),
+    UNIQUE (bin_id, file_name),
     FOREIGN KEY (bin_id) REFERENCES Bin(bin_id) ON DELETE CASCADE,
     FOREIGN KEY (media_id) REFERENCES MediaFile(media_id) ON DELETE CASCADE,
     FOREIGN KEY (added_by) REFERENCES Users(user_id) ON DELETE CASCADE
 );
-
-
-
 
 -- Post Views Tracking (for popular feed)
 CREATE TABLE PostViews (
@@ -613,6 +613,43 @@ CREATE TABLE QuestionTopics (
     INDEX idx_topic (topic_name)
 );
 
+CREATE TABLE GroupRoleChangeRequests (
+    request_id INT AUTO_INCREMENT PRIMARY KEY,
+    group_id INT NOT NULL,
+    target_user_id INT NOT NULL,
+    requested_role ENUM('admin', 'member') NOT NULL,
+    current_role ENUM('admin', 'member') NOT NULL,
+    proposed_by INT NOT NULL,
+    status ENUM('pending', 'approved', 'rejected') NOT NULL DEFAULT 'pending',
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    resolved_at DATETIME NULL,
+    INDEX idx_grcr_group_status (group_id, status),
+    INDEX idx_grcr_target (target_user_id),
+    CONSTRAINT fk_grcr_group FOREIGN KEY (group_id) REFERENCES GroupsTable(group_id) ON DELETE CASCADE,
+    CONSTRAINT fk_grcr_target_user FOREIGN KEY (target_user_id) REFERENCES Users(user_id) ON DELETE CASCADE,
+    CONSTRAINT fk_grcr_proposer FOREIGN KEY (proposed_by) REFERENCES Users(user_id) ON DELETE CASCADE
+);
+
+CREATE TABLE GroupRoleChangeVotes (
+    request_id INT NOT NULL,
+    admin_user_id INT NOT NULL,
+    voted_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (request_id, admin_user_id),
+    INDEX idx_grcv_admin (admin_user_id),
+    CONSTRAINT fk_grcv_request FOREIGN KEY (request_id) REFERENCES GroupRoleChangeRequests(request_id) ON DELETE CASCADE,
+    CONSTRAINT fk_grcv_admin FOREIGN KEY (admin_user_id) REFERENCES Users(user_id) ON DELETE CASCADE
+);
+
+CREATE TABLE GroupDeleteApprovals (
+    group_id INT NOT NULL,
+    admin_user_id INT NOT NULL,
+    approved_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (group_id, admin_user_id),
+    INDEX idx_gda_admin (admin_user_id),
+    CONSTRAINT fk_gda_group FOREIGN KEY (group_id) REFERENCES GroupsTable(group_id) ON DELETE CASCADE,
+    CONSTRAINT fk_gda_admin FOREIGN KEY (admin_user_id) REFERENCES Users(user_id) ON DELETE CASCADE
+);
+
 CREATE TABLE Reports (
     report_id INT AUTO_INCREMENT PRIMARY KEY,
     reporter_id INT NOT NULL,
@@ -620,6 +657,7 @@ CREATE TABLE Reports (
     reported_post_id INT NULL,
     reported_comment_id INT NULL,
     reported_group_id INT NULL,
+    reported_media_id INT NULL,
     reported_question_id INT NULL,
     report_type ENUM('spam','harassment','inappropriate','other') NOT NULL,
     description TEXT,
@@ -632,6 +670,7 @@ CREATE TABLE Reports (
     FOREIGN KEY (reported_post_id) REFERENCES Post(post_id) ON DELETE SET NULL,
     FOREIGN KEY (reported_comment_id) REFERENCES Comment(comment_id) ON DELETE SET NULL,
     FOREIGN KEY (reported_group_id) REFERENCES GroupsTable(group_id) ON DELETE SET NULL,
+    FOREIGN KEY (reported_media_id) REFERENCES BinMedia(media_id) ON DELETE SET NULL,
     FOREIGN KEY (reported_question_id) REFERENCES Questions(question_id) ON DELETE SET NULL,
     FOREIGN KEY (reviewed_by) REFERENCES Users(user_id) ON DELETE SET NULL
 );
