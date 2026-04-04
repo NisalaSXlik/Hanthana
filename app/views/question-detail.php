@@ -63,6 +63,43 @@ function parseStructuredQuestionContent(?string $content): array {
 
     return $sections;
 }
+
+function renderAnswerNode(array $answer, int $currentUserId, int $questionOwnerId, int $level = 0): string {
+    $answerId = (int)($answer['answer_id'] ?? 0);
+    $authorName = htmlspecialchars(trim(($answer['first_name'] ?? '') . ' ' . ($answer['last_name'] ?? '')));
+    $time = htmlspecialchars(timeAgo($answer['created_at'] ?? 'now'));
+    $profilePic = BASE_PATH . ($answer['profile_picture'] ?: 'public/images/default-avatar.png');
+    $content = nl2br(htmlspecialchars($answer['content'] ?? ''));
+    $canModerate = (int)($answer['user_id'] ?? 0) === $currentUserId
+        || $questionOwnerId === $currentUserId;
+    $accepted = !empty($answer['is_accepted']);
+    $replyStyle = $level > 0 ? ' style="margin-left: 40px;"' : '';
+
+    $repliesHtml = '';
+    if (!empty($answer['replies']) && is_array($answer['replies'])) {
+        foreach ($answer['replies'] as $reply) {
+            $repliesHtml .= renderAnswerNode($reply, $currentUserId, $questionOwnerId, $level + 1);
+        }
+    }
+
+    return '
+        <div class="comment' . ($level > 0 ? ' reply' : '') . '" data-answer-id="' . $answerId . '"' . $replyStyle . '>
+            <div class="comment-header-info">
+                <img src="' . htmlspecialchars($profilePic) . '" class="comment-avatar" alt="' . $authorName . '">
+                <span class="comment-author">' . $authorName . '</span>
+                <span class="comment-time">' . $time . '</span>
+                ' . ($accepted ? '<span class="answer-badge">Accepted</span>' : '') . '
+            </div>
+            <div class="comment-text">' . $content . '</div>
+            <div class="comment-actions">
+                ' . ($level === 0 ? '<button class="comment-action reply-btn" data-answer-id="' . $answerId . '"><i class="fas fa-reply"></i><span>Reply</span></button>' : '') . '
+                ' . ($canModerate ? '<button class="comment-action edit-answer-btn" data-answer-id="' . $answerId . '">Edit</button><button class="comment-action delete-answer-btn" data-answer-id="' . $answerId . '">Delete</button>' : '') . '
+            </div>
+            ' . ($level === 0 ? '<div class="reply-form" id="reply-form-' . $answerId . '"><div class="reply-input-container"><input type="text" class="reply-input" placeholder="Write a reply..." data-answer-id="' . $answerId . '"><button class="reply-submit-btn" data-answer-id="' . $answerId . '"><i class="fas fa-paper-plane"></i></button></div></div>' : '') . '
+            ' . ($repliesHtml ? '<div class="comment-replies">' . $repliesHtml . '</div>' : '') . '
+        </div>
+    ';
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -165,63 +202,45 @@ function parseStructuredQuestionContent(?string $content): array {
                     <!-- Answers Section -->
                     <?php 
                         $answerCount = count($answers);
-                        $shouldCollapse = true;
                     ?>
                     <div class="answers-section" id="answersSection">
-                        <div class="answers-header">
-                            <h2><?php echo $answerCount; ?> <?php echo $answerCount === 1 ? 'Answer' : 'Answers'; ?></h2>
-                            <button class="toggle-answers-btn" type="button" data-targets="answersList answerFormSection" aria-expanded="false" data-label-show="Show answers" data-label-hide="Hide answers">
-                                <i class="uil uil-comments"></i>
-                                <span>Show answers</span>
-                            </button>
-                        </div>
+                        <button class="toggle-answers-btn"
+                                type="button"
+                                data-targets="answersPanel"
+                                aria-expanded="false"
+                                data-label-show="View all <?php echo $answerCount; ?> answers"
+                                data-label-hide="Hide answers">
+                            <span>View all <?php echo $answerCount; ?> answers</span>
+                        </button>
 
-                        <div id="answersList" class="answers-list <?php echo $shouldCollapse ? 'collapsed' : ''; ?>">
-                            <?php if (empty($answers)): ?>
-                                <div class="no-answers">
-                                    <i class="uil uil-comment-slash"></i>
-                                    <p>No answers yet. Be the first to answer!</p>
-                                </div>
-                            <?php else: ?>
-                                <?php foreach ($answers as $answer): ?>
-                                    <div class="answer-card">
-                                    <div class="answer-header">
-                                        <div class="answer-author">
-                                            <img src="<?php echo BASE_PATH . ($answer['profile_picture'] ?: 'public/images/default-avatar.png'); ?>" 
-                                                 alt="<?php echo htmlspecialchars($answer['first_name']); ?>">
-                                            <div>
-                                                <strong><?php echo htmlspecialchars($answer['first_name'] . ' ' . $answer['last_name']); ?></strong>
-                                                <span><?php echo timeAgo($answer['created_at']); ?></span>
-                                            </div>
-                                        </div>
-                                        <?php if ($answer['is_accepted']): ?>
-                                            <span class="answer-badge">Accepted</span>
-                                        <?php endif; ?>
-                                    </div>
+                        <div id="answersPanel" class="comment-section collapsed">
+                            <div class="comment-header">
+                                <h3>Answers</h3>
+                                <button class="close-comments" type="button" id="closeAnswersBtn">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            </div>
 
-                                    <div class="answer-body">
-                                        <?php echo nl2br(htmlspecialchars($answer['content'])); ?>
-                                    </div>
+                            <div class="comments-container">
+                                <?php if (empty($answers)): ?>
+                                    <div class="no-comments">No answers yet. Be the first to answer!</div>
+                                <?php else: ?>
+                                    <?php foreach ($answers as $answer): ?>
+                                        <?php echo renderAnswerNode($answer, $userId, (int)$question['user_id']); ?>
+                                    <?php endforeach; ?>
+                                <?php endif; ?>
+                            </div>
 
-                                    <div class="answer-actions">
-                                        <div class="interaction-item">
-                                            <button class="vote-btn inline upvote <?php echo $answer['user_vote'] === 'upvote' ? 'active' : ''; ?>" 
-                                                    data-answer-id="<?php echo $answer['answer_id']; ?>">
-                                                <i class="uil uil-arrow-up"></i>
-                                            </button>
-                                            <span class="interaction-count" aria-label="Upvotes"><?php echo (int) $answer['upvote_count']; ?></span>
-                                        </div>
-                                        <div class="interaction-item">
-                                            <button class="vote-btn inline downvote <?php echo $answer['user_vote'] === 'downvote' ? 'active' : ''; ?>"
-                                                    data-answer-id="<?php echo $answer['answer_id']; ?>">
-                                                <i class="uil uil-arrow-down"></i>
-                                            </button>
-                                            <span class="interaction-count" aria-label="Downvotes"><?php echo (int) $answer['downvote_count']; ?></span>
-                                        </div>
+                            <div class="add-comment-form">
+                                <form id="answerForm">
+                                    <input type="hidden" name="question_id" value="<?php echo $question['question_id']; ?>">
+                                    <input type="hidden" name="parent_answer_id" value="">
+                                    <div class="comment-input-wrapper">
+                                        <textarea name="content" class="comment-input" rows="3" placeholder="Write your answer..." required></textarea>
+                                        <button type="submit" class="comment-submit-btn">Post Answer</button>
                                     </div>
-                                    </div>
-                                <?php endforeach; ?>
-                            <?php endif; ?>
+                                </form>
+                            </div>
                         </div>
                     </div>
                     
@@ -274,5 +293,6 @@ function parseStructuredQuestionContent(?string $content): array {
     <script src="./js/navbar.js"></script>
     <script src="./js/notificationpopup.js"></script>
     <script src="./js/questions.js"></script>
+    <script src="./js/answers.js"></script>
 </body>
 </html>
