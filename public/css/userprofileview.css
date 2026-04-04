@@ -13,8 +13,8 @@ body.profile-page {
 }
 
 body.profile-page main .container {
-    grid-template-columns: minmax(16rem, 18rem) minmax(0, 1fr) minmax(18rem, 21rem);
-    gap: 1.5rem;
+    grid-template-columns: 20% 56% 20%;
+    gap: 1rem;
     align-items: start;
 }
 
@@ -62,24 +62,20 @@ body.profile-page .joined-groups .group-member-count {
     font-size: 0.8rem;
 }
 
-@media (max-width: 1200px) {
+@media (max-width: 992px) {
     body.profile-page main .container {
-        grid-template-columns: minmax(15rem, 18rem) minmax(0, 1fr);
-    }
-
-    body.profile-page .profile-sidebar {
-        grid-column: 1 / -1;
-        position: relative;
-        top: 0;
+        grid-template-columns: 20% 56% 20%;
+        gap: 1%;
     }
 }
 
-@media (max-width: 900px) {
+@media (max-width: 768px) {
     body.profile-page main .container {
         grid-template-columns: 1fr;
     }
 
-    body.profile-page .left {
+    body.profile-page .left,
+    body.profile-page .right {
         display: none;
     }
 }
@@ -504,6 +500,7 @@ body.profile-page .joined-groups .group-member-count {
     border-radius: 16px;
     background: var(--color-dark);
     box-shadow: 0 12px 24px rgba(0, 0, 0, 0.18);
+    aspect-ratio: 4 / 5;
 }
 
 .photo-grid .photo-item img {
@@ -1757,7 +1754,7 @@ html {
 
 .groups-stats {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: 1fr;
     gap: 1rem;
     margin-bottom: 1.5rem;
 }

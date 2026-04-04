@@ -278,6 +278,45 @@ main .container.questions-layout .left {
     font-size: 1.1rem;
 }
 
+/* Dedicated style for Q&A sort tabs */
+.questions-filter-tabs {
+    display: flex;
+    gap: 0.65rem;
+    flex-wrap: wrap;
+}
+
+.questions-filter-tab {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.45rem 0.9rem;
+    border: 1px solid rgba(14, 165, 233, 0.25);
+    border-radius: 999px;
+    background: #f8fbff;
+    color: #4b607a;
+    font-size: 0.95rem;
+    font-weight: 600;
+    text-decoration: none;
+    transition: all 0.2s ease;
+}
+
+.questions-filter-tab:hover {
+    background: #edf7ff;
+    color: var(--color-primary);
+    border-color: rgba(14, 165, 233, 0.55);
+}
+
+.questions-filter-tab.active {
+    background: var(--color-primary);
+    color: #fff;
+    border-color: var(--color-primary);
+    box-shadow: 0 4px 10px rgba(14, 165, 233, 0.28);
+}
+
+.questions-filter-tab i {
+    font-size: 1rem;
+}
+
 /* Question Cards */
 .questions-list {
     display: flex;

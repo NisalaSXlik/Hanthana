@@ -349,30 +349,67 @@
         .chat-search-bar {
             display: flex;
             align-items: center;
-            background: var(--color-light);
-            border-radius: var(--border-radius);
-            padding: 0.5rem 1rem;
+            background: var(--color-white);
+            border-radius: 2rem;
+            padding: 0.6rem 1rem;
             width: 100%;
             position: relative;
+            border: 1px solid rgba(14, 165, 233, 0.3);
+            box-shadow: 0 2px 8px rgba(14, 165, 233, 0.15);
+            transition: all 0.3s ease;
+            max-width: 100%;
+        }
+
+        .chat-search-bar:hover {
+            box-shadow: 0 4px 12px rgba(14, 165, 233, 0.25);
+            border-color: var(--color-primary);
+        }
+
+        .chat-search-bar:focus-within {
+            box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.2);
         }
 
         .chat-search-bar i {
-            color: var(--color-gray);
+            color: var(--color-primary);
             margin-right: 0.5rem;
-            font-size: 1rem;
+            font-size: 1.1rem;
+            transition: transform 0.3s ease, color 0.3s ease;
+        }
+
+        .chat-search-bar:focus-within i {
+            transform: scale(1.1);
+            color: var(--color-secondary);
         }
 
         .chat-search-bar input {
             border: none;
             background: transparent;
             width: 100%;
-            font-size: 0.9rem;
+            font-size: 0.95rem;
             color: var(--color-dark);
+            outline: none;
+            padding: 0.2rem;
+        }
+
+        .chat-search-section .hf-form.hf-inline .chat-search-bar input[type="text"] {
+            border: none;
+            background: transparent;
+            box-shadow: none;
+            border-radius: 0;
+            width: 100%;
+            padding: 0.2rem;
+            line-height: 1.2;
+        }
+
+        .chat-search-section .hf-form.hf-inline .chat-search-bar input[type="text"]:focus {
+            border: none;
+            box-shadow: none;
             outline: none;
         }
 
         .chat-search-bar input::placeholder {
             color: var(--color-gray);
+            opacity: 0.8;
         }
 
         /* Users List */
