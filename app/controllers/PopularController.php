@@ -47,7 +47,7 @@ class PopularController {
         
         $questionId = $_GET['id'] ?? null;
         if (!$questionId) {
-            header('Location: ' . BASE_PATH . 'index.php?controller=Popular&action=index');
+            header('Location: ' . BASE_PATH . 'index.php?controller=QnA&action=index');
             exit();
         }
         
@@ -59,7 +59,7 @@ class PopularController {
         $question = $this->questionModel->getQuestion($questionId, $userId);
         
         if (!$question) {
-            header('Location: ' . BASE_PATH . 'index.php?controller=Popular&action=index');
+            header('Location: ' . BASE_PATH . 'index.php?controller=QnA&action=index');
             exit();
         }
         

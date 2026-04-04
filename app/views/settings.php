@@ -48,8 +48,9 @@ try {
     <link rel="stylesheet" href="./css/post.css">
     <link rel="stylesheet" href="./css/navbar.css">
     <link rel="stylesheet" href="./css/mediaquery.css">
-    <link rel="stylesheet" href="./css/calender.css">
+    <link rel="stylesheet" href="./css/calender.css?v=20250209_zindex">
     <link rel="stylesheet" href="./css/settings.css">
+    <link rel="stylesheet" href="./css/forms.css">
     <link rel="stylesheet" href="./css/notificationpopup.css">
     <link rel="stylesheet" href="https://unicons.iconscout.com/release/v4.0.8/css/line.css">
     
@@ -101,7 +102,7 @@ try {
                             <!-- Profile Information -->
                             <div class="settings-card">
                                 <h3>Profile Information</h3>
-                                <form id="profileForm" class="settings-form">
+                                <form id="profileForm" class="settings-form hf-form">
                                     <div id="profileFormMessage" class="form-message" style="display:none;"></div>
                                     
                                     <div class="form-row">
@@ -158,7 +159,7 @@ try {
                             <!-- Change Password -->
                             <div class="settings-card">
                                 <h3>Change Password</h3>
-                                <form id="passwordForm" class="settings-form">
+                                <form id="passwordForm" class="settings-form hf-form">
                                     <div id="passwordFormMessage" class="form-message" style="display:none;"></div>
                                     
                                     <div class="form-group">
@@ -193,7 +194,7 @@ try {
                         <div class="settings-content">
                             <div class="settings-card">
                                 <h3>Profile & Content Privacy</h3>
-                                <form id="privacyForm" class="settings-form">
+                                <form id="privacyForm" class="settings-form hf-form">
                                     <div id="privacyFormMessage" class="form-message" style="display:none;"></div>
                                     
                                     <div class="form-group">
@@ -271,7 +272,7 @@ try {
                         <div class="settings-content">
                             <div class="settings-card">
                                 <h3>Email Notifications</h3>
-                                <form id="notificationForm" class="settings-form">
+                                <form id="notificationForm" class="settings-form hf-form">
                                     <div id="notificationFormMessage" class="form-message" style="display:none;"></div>
                                     
                                     <div class="form-group checkbox-group">
@@ -320,7 +321,7 @@ try {
 
                             <div class="settings-card">
                                 <h3>Push Notifications</h3>
-                                <form id="pushForm" class="settings-form">
+                                <form id="pushForm" class="settings-form hf-form">
                                     <div id="pushFormMessage" class="form-message" style="display:none;"></div>
                                     
                                     <div class="form-group checkbox-group">
@@ -347,7 +348,7 @@ try {
                         <div class="settings-content">
                             <div class="settings-card">
                                 <h3>Theme & Display</h3>
-                                <form id="appearanceForm" class="settings-form">
+                                <form id="appearanceForm" class="settings-form hf-form">
                                     <div id="appearanceFormMessage" class="form-message" style="display:none;"></div>
                                     
                                     <div class="form-group">
@@ -384,10 +385,12 @@ try {
                         <h4>Messages</h4>
                         <i class="uil uil-edit" id="openChatWidget" style="cursor: pointer;"></i>
                     </div>
+                    <form class="hf-form hf-inline" onsubmit="return false;">
                     <div class="search-bar">
                         <i class="uil uil-search"></i>
                         <input type="search" placeholder="Search messages" id="sidebarChatSearch">
                     </div>
+                    </form>
                     <div class="message-list" id="sidebarMessageList">
                         <div class="loading-messages" style="text-align: center; padding: 1rem; color: #888;">
                             <i class="uil uil-spinner-alt" style="animation: spin 1s linear infinite;"></i>
@@ -417,7 +420,7 @@ try {
     
     <?php include __DIR__ . '/templates/chat-clean.php'; ?>
 
-    <script src="./js/calender.js"></script>
+    <script src="./js/calender.js?v=20250209_syntax"></script>
     <script src="./js/general.js"></script>
     <script src="./js/friends.js"></script>
     <script src="./js/navbar.js"></script>

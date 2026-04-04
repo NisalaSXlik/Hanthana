@@ -10,6 +10,7 @@
     <link rel="stylesheet" href="/NewHanthaneAfterProperMVC/public/css/navbar.css">
     <link rel="stylesheet" href="/NewHanthaneAfterProperMVC/public/css/event-feed.css">
     <link rel="stylesheet" href="/NewHanthaneAfterProperMVC/public/css/event-modal.css">
+    <link rel="stylesheet" href="/NewHanthaneAfterProperMVC/public/css/forms.css">
     
     <!-- Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -26,10 +27,12 @@
             </div>
             
             <div class="nav-center">
+                <form class="hf-form hf-inline" onsubmit="return false;">
                 <div class="search-bar">
                     <i class="fas fa-search"></i>
                     <input type="search" placeholder="Search events...">
                 </div>
+                </form>
             </div>
             
             <div class="nav-right">
@@ -171,7 +174,7 @@
                 </button>
             </div>
             <div class="modal-body">
-                <form id="eventForm">
+                <form id="eventForm" class="hf-form">
                     <div class="form-group">
                         <label for="eventTitle">Event Title</label>
                         <input type="text" id="eventTitle" required>

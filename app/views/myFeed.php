@@ -34,10 +34,11 @@ if (!isset($posts)) {
 	<link rel="stylesheet" href="./css/general.css">
 	<link rel="stylesheet" href="./css/navbar.css">
 	<link rel="stylesheet" href="./css/mediaquery.css">
-	<link rel="stylesheet" href="./css/calender.css">
+	<link rel="stylesheet" href="./css/calender.css?v=20250209_zindex">
 	<link rel="stylesheet" href="./css/post.css">
 	<link rel="stylesheet" href="./css/notificationpopup.css">
 	<link rel="stylesheet" href="./css/report.css">
+	<link rel="stylesheet" href="./css/forms.css">
 	<link rel="stylesheet" href="https://unicons.iconscout.com/release/v4.0.8/css/line.css">
 </head>
 <body>
@@ -245,41 +246,27 @@ if (!isset($posts)) {
 										<?php elseif ($postType === 'event'): ?>
 											<!-- Event Post -->
 											<div class="event-content">
-												<div class="event-content-layout">
-													<div class="event-content-main">
-														<h3 class="event-title"><?php echo htmlspecialchars($postMetadata['title'] ?? ($post['event_title'] ?? 'Untitled Event')); ?></h3>
-														<?php
-															$eventDescription = trim((string)($postMetadata['description'] ?? ($post['content'] ?? '')));
-														?>
-														<?php if ($eventDescription !== ''): ?>
-															<p class="post-text"><?php echo nl2br(htmlspecialchars($eventDescription)); ?></p>
-														<?php endif; ?>
-														<div class="event-details">
-															<?php if (!empty($postMetadata['date']) || !empty($post['event_date'])): ?>
-																<div class="event-detail">
-																	<i class="uil uil-calendar-alt"></i>
-																	<span><?php echo date('l, F j, Y', strtotime($postMetadata['date'] ?? $post['event_date'])); ?></span>
-																</div>
-															<?php endif; ?>
-															<?php if (!empty($postMetadata['time']) || !empty($post['event_time'])): ?>
-																<div class="event-detail">
-																	<i class="uil uil-clock"></i>
-																	<span><?php echo htmlspecialchars($postMetadata['time'] ?? $post['event_time']); ?></span>
-																</div>
-															<?php endif; ?>
-															<?php if (!empty($postMetadata['location']) || !empty($post['event_location'])): ?>
-																<div class="event-detail">
-																	<i class="uil uil-map-marker"></i>
-																	<span><?php echo htmlspecialchars($postMetadata['location'] ?? $post['event_location']); ?></span>
-																</div>
-															<?php endif; ?>
+												<h3 class="event-title"><?php echo htmlspecialchars($postMetadata['title'] ?? ($post['event_title'] ?? 'Untitled Event')); ?></h3>
+												<?php if (!empty($post['content'])): ?>
+													<p class="post-text"><?php echo nl2br(htmlspecialchars($post['content'])); ?></p>
+												<?php endif; ?>
+												<div class="event-details">
+													<?php if (!empty($postMetadata['date']) || !empty($post['event_date'])): ?>
+														<div class="event-detail">
+															<i class="uil uil-calendar-alt"></i>
+															<span><?php echo date('l, F j, Y', strtotime($postMetadata['date'] ?? $post['event_date'])); ?></span>
 														</div>
-													</div>
-
-													<?php $eventImage = !empty($post['image_url']) ? MediaHelper::resolveMediaPath($post['image_url'], '') : ''; ?>
-													<?php if (!empty($eventImage)): ?>
-														<div class="event-side-image">
-															<img src="<?php echo htmlspecialchars($eventImage); ?>" alt="Event image">
+													<?php endif; ?>
+													<?php if (!empty($postMetadata['time']) || !empty($post['event_time'])): ?>
+														<div class="event-detail">
+															<i class="uil uil-clock"></i>
+															<span><?php echo htmlspecialchars($postMetadata['time'] ?? $post['event_time']); ?></span>
+														</div>
+													<?php endif; ?>
+													<?php if (!empty($postMetadata['location']) || !empty($post['event_location'])): ?>
+														<div class="event-detail">
+															<i class="uil uil-map-marker"></i>
+															<span><?php echo htmlspecialchars($postMetadata['location'] ?? $post['event_location']); ?></span>
 														</div>
 													<?php endif; ?>
 												</div>
@@ -380,7 +367,7 @@ if (!isset($posts)) {
 										<div class="comments-loading">Click to load comments</div>
 									</div>
 
-									<div class="add-comment-form">
+									<form class="add-comment-form hf-form hf-inline" onsubmit="return false;">
 										<div class="comment-input-container">
 											<?php
 											$currentUserAvatar = MediaHelper::resolveMediaPath($currentUser['profile_picture'] ?? '', 'uploads/user_dp/default.png');
@@ -391,7 +378,7 @@ if (!isset($posts)) {
 												<button class="comment-submit-btn" data-post-id="<?php echo (int)$post['post_id']; ?>">Post Comment</button>
 											</div>
 										</div>
-									</div>
+									</form>
 								</div>
 							</div>
 						<?php endforeach; ?>
@@ -411,10 +398,12 @@ if (!isset($posts)) {
 						<h4>Messages</h4>
 						<i class="uil uil-edit" id="openChatWidget" style="cursor: pointer;"></i>
 					</div>
+					<form class="hf-form hf-inline" onsubmit="return false;">
 					<div class="search-bar">
 						<i class="uil uil-search"></i>
 						<input type="search" placeholder="Search messages" id="sidebarChatSearch">
 					</div>
+					</form>
 					<div class="message-list" id="sidebarMessageList">
 						<div class="loading-messages" style="text-align: center; padding: 1rem; color: #888;">
 							<i class="uil uil-spinner-alt" style="animation: spin 1s linear infinite;"></i>
@@ -454,6 +443,7 @@ if (!isset($posts)) {
 				<h3 id="editPostTitle">Edit Post</h3>
 				<button class="close-modal edit-close" aria-label="Close">&times;</button>
 			</div>
+			<form class="hf-form" onsubmit="return false;">
 			<div class="modal-body">
 				<div class="form-group">
 					<label for="editPostContent">Content</label>
@@ -464,10 +454,11 @@ if (!isset($posts)) {
 				<button class="btn btn-secondary cancel-edit">Cancel</button>
 				<button class="btn btn-primary save-edit" disabled>Save</button>
 			</div>
+			</form>
 		</div>
 	</div>
 
-	<script src="./js/calender.js"></script>
+	<script src="./js/calender.js?v=20250209_syntax"></script>
 	<script src="./js/feed.js"></script>
 	<script src="./js/friends.js"></script>
 	<script src="./js/general.js"></script>
@@ -480,16 +471,31 @@ if (!isset($posts)) {
 	<script src="./js/report.js"></script>
 	<script>
 		document.addEventListener('DOMContentLoaded', function() {
+			document.querySelectorAll('.comment-section, .comments.load-comments-btn, .add-comment-form, .comment-input-container, .comment-input-wrapper').forEach(el => {
+				el.addEventListener('click', function(event) {
+					event.stopPropagation();
+				});
+			});
+
 			document.querySelectorAll('.feed[data-navigate-url]').forEach(feedCard => {
 				const navigateUrl = feedCard.dataset.navigateUrl;
 				if (!navigateUrl) return;
 
 				feedCard.addEventListener('click', function(event) {
 					if (event.defaultPrevented) return;
+					const contentClickTarget = event.target.closest(
+						'.photo, .post-image, .group-post-content, .question-content, .resource-content, .event-content, .assignment-content'
+					);
+					if (!contentClickTarget) {
+						return;
+					}
 					if (
+						event.target.closest('form') ||
+						event.target.closest('.hf-form') ||
 						event.target.closest('.action-buttons') ||
 						event.target.closest('.interaction-buttons') ||
 						event.target.closest('.comment-section') ||
+						event.target.closest('.comment-input-container') ||
 						event.target.closest('.add-comment-form') ||
 						event.target.closest('.load-comments-btn') ||
 						event.target.closest('.poll-content') ||

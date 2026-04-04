@@ -125,7 +125,7 @@ document.addEventListener('DOMContentLoaded', function() {
         formData.append('sub_action', 'createQuestion');
 
         try {
-            const response = await fetch(QUESTIONS_BASE_PATH + 'index.php?controller=Popular&action=handleAjax', {
+            const response = await fetch(QUESTIONS_BASE_PATH + 'index.php?controller=QnA&action=handleAjax', {
                 method: 'POST',
                 body: formData
             });
@@ -133,9 +133,36 @@ document.addEventListener('DOMContentLoaded', function() {
             const result = await response.json();
 
             if (result.success) {
-                window.location.href = QUESTIONS_BASE_PATH + 'index.php?controller=Popular&action=index';
+                window.location.href = QUESTIONS_BASE_PATH + 'index.php?controller=QnA&action=view&id=' + result.question_id;
             } else {
                 alert(result.message || 'Failed to post question');
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            alert('An error occurred. Please try again.');
+        }
+    });
+    
+    // Submit answer
+    answerForm?.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        const formData = new FormData(answerForm);
+        formData.append('sub_action', 'createAnswer');
+        
+        try {
+            const response = await fetch(QUESTIONS_BASE_PATH + 'index.php?controller=QnA&action=handleAjax', {
+                method: 'POST',
+                body: formData
+            });
+            
+            const result = await response.json();
+            
+            if (result.success) {
+                // Reload to show new answer
+                location.reload();
+            } else {
+                alert(result.message || 'Failed to post answer');
             }
         } catch (error) {
             console.error('Error:', error);
@@ -155,7 +182,7 @@ document.addEventListener('DOMContentLoaded', function() {
             formData.append('vote_type', voteType);
             
             try {
-                const response = await fetch(QUESTIONS_BASE_PATH + 'index.php?controller=Popular&action=handleAjax', {
+                const response = await fetch(QUESTIONS_BASE_PATH + 'index.php?controller=QnA&action=handleAjax', {
                     method: 'POST',
                     body: formData
                 });
@@ -172,6 +199,34 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
     
+    // Vote on answers
+    document.querySelectorAll('.vote-btn[data-answer-id]').forEach(btn => {
+        btn.addEventListener('click', async function() {
+            const answerId = this.dataset.answerId;
+            const voteType = this.classList.contains('upvote') ? 'upvote' : 'downvote';
+            
+            const formData = new FormData();
+            formData.append('sub_action', 'voteAnswer');
+            formData.append('answer_id', answerId);
+            formData.append('vote_type', voteType);
+            
+            try {
+                const response = await fetch(QUESTIONS_BASE_PATH + 'index.php?controller=QnA&action=handleAjax', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    // Reload to update vote counts
+                    location.reload();
+                }
+            } catch (error) {
+                console.error('Error:', error);
+            }
+        });
+    });
     
     // Question search (client-side filter + optional server refresh on Enter)
     const questionCards = Array.from(document.querySelectorAll('.question-card'));

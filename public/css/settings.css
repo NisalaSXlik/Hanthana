@@ -253,7 +253,7 @@ main .container {
     left: 0;
     right: 0;
     bottom: 0;
-    background-color: #ccc;
+    background-color: var(--gray-300);
     transition: background 0.2s;
     border-radius: 22px;
 }

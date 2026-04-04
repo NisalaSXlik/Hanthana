@@ -26,11 +26,12 @@ $currentUser = $userModel->findById($_SESSION['user_id']);
     <link rel="stylesheet" href="./css/groupprofileview.css">
     <link rel="stylesheet" href="./css/navbar.css">
     <link rel="stylesheet" href="./css/mediaquery.css">
-    <link rel="stylesheet" href="./css/calender.css">
+    <link rel="stylesheet" href="./css/calender.css?v=20250209_zindex">
     <link rel="stylesheet" href="./css/post.css">
     <link rel="stylesheet" href="./css/myfeed.css">
     <link rel="stylesheet" href="./css/notificationpopup.css">
     <link rel="stylesheet" href="./css/report.css">
+    <link rel="stylesheet" href="./css/forms.css">
     <link rel="stylesheet" href="https://unicons.iconscout.com/release/v4.0.8/css/line.css">
 </head>
 <body>
@@ -432,6 +433,7 @@ $currentUser = $userModel->findById($_SESSION['user_id']);
                                             </div>
                                             
                                             <div class="add-comment-form">
+                                                <form class="hf-form hf-inline" onsubmit="return false;">
                                                 <div class="comment-input-container">
                                                     <?php
                                                     $currentUserAvatar = MediaHelper::resolveMediaPath($_SESSION['profile_picture'] ?? '', 'uploads/user_dp/default.png');
@@ -442,6 +444,7 @@ $currentUser = $userModel->findById($_SESSION['user_id']);
                                                         <button class="comment-submit-btn" data-post-id="<?php echo (int)$post['post_id']; ?>">Post Comment</button>
                                                     </div>
                                                 </div>
+                                                </form>
                                             </div>
                                         </div>
                                     </div>
@@ -851,7 +854,7 @@ $currentUser = $userModel->findById($_SESSION['user_id']);
                         <div class="comments-list" id="postViewCommentsList">
                             <div class="comments-loading">Loading comments...</div>
                         </div>
-                        <form id="postViewCommentForm" class="comment-form">
+                        <form id="postViewCommentForm" class="comment-form hf-form hf-inline">
                             <textarea id="postViewCommentInput" placeholder="Add a comment..." rows="2"></textarea>
                             <button type="submit" id="postViewCommentSubmit">Post</button>
                         </form>
@@ -870,7 +873,7 @@ $currentUser = $userModel->findById($_SESSION['user_id']);
                     <i class="uil uil-times"></i>
                 </button>
             </div>
-            <form id="editGroupForm" class="modal-body" enctype="multipart/form-data">
+            <form id="editGroupForm" class="modal-body hf-form" enctype="multipart/form-data">
                 <input type="hidden" name="group_id" value="<?php echo $groupId; ?>">
                 <div class="form-group">
                     <label for="editGroupName">Group Name</label>
@@ -955,7 +958,7 @@ $currentUser = $userModel->findById($_SESSION['user_id']);
                     <i class="uil uil-times"></i>
                 </button>
             </div>
-            <form id="createGroupPostForm" class="modal-body" enctype="multipart/form-data">
+            <form id="createGroupPostForm" class="modal-body hf-form" enctype="multipart/form-data">
                 <input type="hidden" name="group_id" value="<?php echo $groupId; ?>">
                 <input type="hidden" name="post_type" id="selectedPostType" value="discussion">
                 
@@ -1143,7 +1146,7 @@ $currentUser = $userModel->findById($_SESSION['user_id']);
     <?php include __DIR__ . '/templates/report-modal.php'; ?>
 
     <script> const BASE_PATH = '<?php echo BASE_PATH; ?>'; </script>
-    <script src="./js/calender.js"></script>
+    <script src="./js/calender.js?v=20250209_syntax"></script>
     <script src="./js/feed.js"></script>
     <script src="./js/friends.js"></script>
     <script src="./js/general.js"></script>

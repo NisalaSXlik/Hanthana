@@ -39,6 +39,7 @@ if (isset($_SESSION['user_id'])) {
         </div>
         <div class="nav-center">
             <div class="nav-search">
+                <form class="hf-form hf-inline" onsubmit="return false;">
                 <div class="search-bar">
                     <i class="uil uil-search"></i>
                     <input
@@ -49,6 +50,7 @@ if (isset($_SESSION['user_id'])) {
                         autocomplete="off"
                     >
                 </div>
+                </form>
                 <div class="nav-search-results hidden" id="navSearchResults"></div>
             </div>
         </div>
@@ -89,7 +91,7 @@ if (isset($_SESSION['user_id'])) {
             </div>
             
             <?php if ($showPostModal): ?>
-                <!-- Post Creation Modal with 3 tabs -->
+                <!-- Post Creation Modal -->
                 <div class="post-modal" id="postModal">
                     <div class="modal-content">
                         <div class="modal-header">

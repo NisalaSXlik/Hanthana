@@ -171,54 +171,54 @@ class MessageModel {
     }
 
     public function ensureGroupConversation($userId, $channelId) {
-        $sql =
-           "SELECT
-            co.conversation_id, co.conversation_type, co.name AS conversation_name,
-            co.last_message_at, co.last_message_text,
-            
-            lm.message_id AS last_message_id,
-            lm.message_type AS last_message_type,
-            lm.content AS last_message_content,
-            lm.created_at AS message_created_at,
-            
-            ch.channel_id AS sender_id,
-            ch.name AS sender_first_name,
-            '' AS sender_last_name,
-            ch.display_picture AS sender_avatar
-        FROM Conversations co
-        INNER JOIN Channel ch ON ch.conversation_id = co.conversation_id
-        INNER JOIN ConversationParticipants cp
-            ON cp.conversation_id = co.conversation_id
-            AND cp.user_id = :userId
-            AND cp.is_active = TRUE
-        LEFT JOIN Messages lm
-            ON lm.message_id = (
-                SELECT m2.message_id
-                FROM Messages m2
-                WHERE m2.conversation_id = co.conversation_id
-                AND m2.is_deleted = FALSE
-                ORDER BY m2.created_at DESC
-                LIMIT 1
-            )
-        WHERE ch.channel_id = :channelId
-        LIMIT 1";
+        $accessSql = "SELECT
+                ch.conversation_id,
+                ch.group_id
+            FROM Channel ch
+            INNER JOIN GroupMember gm
+                ON gm.group_id = ch.group_id
+                AND gm.user_id = :userId
+                AND gm.status = 'active'
+            WHERE ch.channel_id = :channelId
+            LIMIT 1";
 
-        $stmt = $this->conn()->prepare($sql);
-        $stmt->bindValue(':channelId', $channelId, PDO::PARAM_INT);
-        $stmt->bindValue(':userId', $userId, PDO::PARAM_INT);
-        $stmt->execute();
-        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+        $accessStmt = $this->conn()->prepare($accessSql);
+        $accessStmt->bindValue(':channelId', $channelId, PDO::PARAM_INT);
+        $accessStmt->bindValue(':userId', $userId, PDO::PARAM_INT);
+        $accessStmt->execute();
+        $access = $accessStmt->fetch(PDO::FETCH_ASSOC);
 
-        if ($row) {
-            return $this->formatConversation($row, $userId);
+        if (!$access) {
+            throw new RuntimeException('You are not a member of this group.');
         }
 
-        // If conversation doesn't exist, create it
+        $conversationId = (int)($access['conversation_id'] ?? 0);
+        if ($conversationId > 0) {
+            $this->ensureParticipant($conversationId, $userId);
+            $conversation = $this->getConversationById($conversationId, $userId);
+            if ($conversation) {
+                return $conversation;
+            }
+        }
+
         return $this->createGroupConversation($userId, $channelId);
     }
 
     // Add this new method to create group conversations
     private function createGroupConversation(int $userId, int $channelId): array {
+        $existingConversationSql = "SELECT conversation_id FROM Channel WHERE channel_id = :channelId LIMIT 1";
+        $existingConversationStmt = $this->conn()->prepare($existingConversationSql);
+        $existingConversationStmt->execute([':channelId' => $channelId]);
+        $existingConversationId = (int)($existingConversationStmt->fetchColumn() ?: 0);
+
+        if ($existingConversationId > 0) {
+            $this->ensureParticipant($existingConversationId, $userId);
+            $existingConversation = $this->getConversationById($existingConversationId, $userId);
+            if ($existingConversation) {
+                return $existingConversation;
+            }
+        }
+
         // First, check if user is a member of the group
         $checkSql = "SELECT g.group_id, c.name 
                  FROM Channel c

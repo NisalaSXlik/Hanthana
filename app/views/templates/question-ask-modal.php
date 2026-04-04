@@ -8,7 +8,7 @@ $questionCategories = isset($categories) && is_array($categories) ? $categories 
             <h2>Craft Your Question</h2>
             <button class="modal-close" id="closeModal"><i class="uil uil-times"></i></button>
         </div>
-        <form id="askQuestionForm" class="question-template-form">
+        <form id="askQuestionForm" class="question-template-form hf-form">
             <section class="template-section">
                 <div class="template-label-row">
                     <label>Question style</label>
