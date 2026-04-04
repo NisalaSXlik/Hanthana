@@ -158,7 +158,7 @@
     --color-gray: #64748b;
     
     --border-radius: 1rem;
-    --card-border-radius: 0.5rem;
+    --card-border-radius: 1rem;
     --btn-padding: 0.5rem 1.5rem;
     --card-padding: 1rem;
 }

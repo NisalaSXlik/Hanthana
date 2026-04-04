@@ -159,6 +159,20 @@ document.addEventListener('DOMContentLoaded', function() {
                     eventImageLabel.textContent = selectedEventFile.name;
                 }
                 eventImageUpload.classList.add('has-file');
+
+                let preview = eventImageUpload.querySelector('.event-image-preview');
+                if (!preview) {
+                    preview = document.createElement('img');
+                    preview.className = 'event-image-preview';
+                    eventImageUpload.appendChild(preview);
+                }
+
+                const reader = new FileReader();
+                reader.onload = function(event) {
+                    preview.src = event.target.result;
+                    preview.style.display = 'block';
+                };
+                reader.readAsDataURL(selectedEventFile);
             }
         });
     }
@@ -350,6 +364,12 @@ document.addEventListener('DOMContentLoaded', function() {
         if (eventPostImageInput) eventPostImageInput.value = '';
         if (eventImageLabel) eventImageLabel.textContent = 'Click to add event image';
         if (eventImageUpload) eventImageUpload.classList.remove('has-file');
+        if (eventImageUpload) {
+            const preview = eventImageUpload.querySelector('.event-image-preview');
+            if (preview) {
+                preview.remove();
+            }
+        }
 
         // Question
         document.getElementById('questionTitleInput').value = '';
@@ -478,6 +498,14 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             }
             return;
+        }
+
+        const menuItem = e.target.closest('.post-menu .menu-item');
+        if (menuItem) {
+            const postMenu = menuItem.closest('.post-menu');
+            if (postMenu) {
+                postMenu.classList.remove('open');
+            }
         }
 
         // Close menus when clicking outside

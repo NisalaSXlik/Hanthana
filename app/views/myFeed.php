@@ -112,21 +112,27 @@ if (!isset($posts)) {
 											</small>
 										</div>
 									</div>
-									<?php if ($isOwner): ?>
-										<div class="post-menu">
-											<button class="menu-trigger" aria-label="Post menu"><i class="uil uil-ellipsis-h"></i></button>
-											<div class="menu">
+									<div class="post-menu">
+										<button class="menu-trigger" aria-label="Post menu"><i class="uil uil-ellipsis-h"></i></button>
+										<div class="menu">
+											<?php if ($isOwner): ?>
 												<button class="menu-item edit-post" data-post-id="<?php echo (int)$post['post_id']; ?>">
 													<i class="uil uil-edit"></i> Edit
 												</button>
 												<button class="menu-item delete-post" data-post-id="<?php echo (int)$post['post_id']; ?>">
 													<i class="uil uil-trash-alt"></i> Delete
 												</button>
-											</div>
+											<?php else: ?>
+												<button type="button"
+													class="menu-item report-trigger"
+													data-report-type="post"
+													data-target-id="<?php echo (int)$post['post_id']; ?>"
+													data-target-label="<?php echo htmlspecialchars($reportLabel, ENT_QUOTES); ?>">
+													<i class="uil uil-exclamation-circle"></i> Report
+												</button>
+											<?php endif; ?>
 										</div>
-									<?php else: ?>
-										<i class="uil uil-ellipsis-h"></i>
-									<?php endif; ?>
+									</div>
 								</div>
 
 								<?php
@@ -319,39 +325,19 @@ if (!isset($posts)) {
 											<i class="uil uil-arrow-down <?php echo $downClass; ?>" data-vote-type="downvote"></i>
 											<span class="interaction-count"><?php echo (int)($post['downvote_count'] ?? 0); ?></span>
 										</div>
-										<div class="interaction-item load-comments-btn" data-post-id="<?php echo (int)$post['post_id']; ?>">
+									</div>
+									<div class="comments-side">
+										<button type="button" class="question-answer-link-btn load-comments-btn" data-post-id="<?php echo (int)$post['post_id']; ?>">
 											<i class="uil uil-comment"></i>
-											<span class="interaction-count"><?php echo (int)($post['comment_count'] ?? 0); ?></span>
-										</div>
+											<?php echo (int)($post['comment_count'] ?? 0); ?> comments
+										</button>
 									</div>
-									<div class="interaction-item bookmark-item">
-										<i class="uil uil-bookmark"></i>
+									
 									</div>
-									<?php if (!$isOwner): ?>
-										<div class="interaction-item report-item">
-											<button type="button"
-												class="report-trigger"
-												data-report-type="post"
-												data-target-id="<?php echo (int)$post['post_id']; ?>"
-												data-target-label="<?php echo htmlspecialchars($reportLabel, ENT_QUOTES); ?>">
-												<i class="uil uil-exclamation-circle"></i>
-												<span>Report</span>
-											</button>
-										</div>
-									<?php endif; ?>
-								</div> <?php if (!$isGroupPost && !empty($post['content'])): ?>
+
+									<?php if (!$isGroupPost && !empty($post['content'])): ?>
 									<div class="caption">
 										<p><b><?php echo htmlspecialchars($post['username'] ?? ''); ?></b> <?php echo htmlspecialchars($post['content']); ?></p>
-									</div>
-								<?php endif; ?>
-
-								<?php if (!empty($post['comment_count'])): ?>
-									<div class="comments load-comments-btn" data-post-id="<?php echo (int)$post['post_id']; ?>">
-										View all <?php echo (int)$post['comment_count']; ?> comments
-									</div>
-								<?php else: ?>
-									<div class="comments load-comments-btn" data-post-id="<?php echo (int)$post['post_id']; ?>" style="display:none;">
-										View all 0 comments
 									</div>
 								<?php endif; ?>
 
@@ -471,7 +457,7 @@ if (!isset($posts)) {
 	<script src="./js/report.js"></script>
 	<script>
 		document.addEventListener('DOMContentLoaded', function() {
-			document.querySelectorAll('.comment-section, .comments.load-comments-btn, .add-comment-form, .comment-input-container, .comment-input-wrapper').forEach(el => {
+			document.querySelectorAll('.comment-section, .add-comment-form, .comment-input-container, .comment-input-wrapper').forEach(el => {
 				el.addEventListener('click', function(event) {
 					event.stopPropagation();
 				});
