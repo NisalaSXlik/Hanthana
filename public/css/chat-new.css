@@ -565,6 +565,19 @@
             word-break: break-word;
         }
 
+        .message-sender {
+            font-size: 0.78rem;
+            font-weight: 700;
+            line-height: 1.2;
+            color: var(--color-dark);
+            opacity: 0.95;
+        }
+
+        .message.own .message-sender {
+            text-align: right;
+            color: var(--primary-700, var(--color-primary));
+        }
+
         .message-attachment {
             border-radius: 10px;
             overflow: hidden;

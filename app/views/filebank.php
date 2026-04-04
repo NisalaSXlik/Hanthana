@@ -31,6 +31,16 @@ $groupId = $resolvedGroupId;
 if ($groupId > 0) {
     $_SESSION['current_group_id'] = $groupId;
 }
+
+$fileBankGroupName = trim((string)($group['name'] ?? 'Group'));
+if ($fileBankGroupName === '') {
+    $fileBankGroupName = 'Group';
+}
+
+$fileBankGroupDp = MediaHelper::resolveMediaPath(
+    (string)($group['display_picture'] ?? ''),
+    'images/default_group.png'
+);
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -66,8 +76,9 @@ if ($groupId > 0) {
                     <!-- Title bar -->
                     <div class="fb-titlebar">
                         <div class="fb-titlebar-left">
+                            <img class="fb-group-dp" src="<?php echo htmlspecialchars($fileBankGroupDp, ENT_QUOTES, 'UTF-8'); ?>" alt="<?php echo htmlspecialchars($fileBankGroupName, ENT_QUOTES, 'UTF-8'); ?>">
                             <i class="uil uil-folder-open"></i>
-                            <span>Group Name's File Bank</span>
+                            <span><?php echo htmlspecialchars($fileBankGroupName, ENT_QUOTES, 'UTF-8'); ?>'s File Bank</span>
                         </div>
                     </div>
 

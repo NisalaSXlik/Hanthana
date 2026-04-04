@@ -257,9 +257,6 @@ a {
 .btn-secondary {
     background: var(--color-light);
     color: var(--color-primary);
-    width: 100%;
-    padding: 0.7rem;
-    font-size: 0.9rem;
 }
 
 .btn-secondary:hover {

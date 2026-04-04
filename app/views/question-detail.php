@@ -179,6 +179,18 @@ function renderAnswerNode(array $answer, int $currentUserId, int $questionOwnerI
                                     <?php echo nl2br(htmlspecialchars($question['content'])); ?>
                                 </div>
                             <?php endif; ?>
+
+                            <?php if (!empty($question['attachment_path'])): ?>
+                                <div class="question-attachment-block">
+                                    <span class="question-attachment-label">Attachment</span>
+                                    <a class="question-attachment-link"
+                                       href="<?php echo BASE_PATH . ltrim((string)$question['attachment_path'], '/'); ?>"
+                                       download="<?php echo htmlspecialchars((string)($question['attachment_name'] ?? 'question-attachment')); ?>">
+                                        <i class="uil uil-download-alt"></i>
+                                        <span><?php echo htmlspecialchars((string)($question['attachment_name'] ?? 'Download attachment')); ?></span>
+                                    </a>
+                                </div>
+                            <?php endif; ?>
                         </div>
 
                         <div class="question-actions">

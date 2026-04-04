@@ -172,6 +172,15 @@ function timeAgo($timestamp) {
                                             </p>
                                         <?php endif; ?>
 
+                                        <?php if (!empty($q['attachment_path'])): ?>
+                                            <a class="question-attachment-link"
+                                               href="<?php echo BASE_PATH . ltrim((string)$q['attachment_path'], '/'); ?>"
+                                               download="<?php echo htmlspecialchars((string)($q['attachment_name'] ?? 'question-attachment')); ?>">
+                                                <i class="uil uil-paperclip"></i>
+                                                <span><?php echo htmlspecialchars((string)($q['attachment_name'] ?? 'Download attachment')); ?></span>
+                                            </a>
+                                        <?php endif; ?>
+
                                         <div class="question-card-footer">
                                             <div class="question-card-actions">
                                                 <div class="interaction-item">

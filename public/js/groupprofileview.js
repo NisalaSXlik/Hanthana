@@ -19,55 +19,138 @@
     }
 
     // ===== DROPDOWN MENU =====
-    const optionsBtn = document.getElementById('groupOptionsBtn');
-    const optionsMenu = document.getElementById('groupOptionsMenu');
-    const editOption = document.getElementById('editGroupOption');
-    const manageRequestsOption = document.getElementById('manageRequestsOption');
-    const deleteOption = document.getElementById('deleteGroupOption');
+    const groupMenuBtn = document.getElementById('groupMenuBtn');
+    const groupDropdownMenu = document.getElementById('groupDropdownMenu');
+    const aboutGroupBtn = document.getElementById('aboutGroupBtn');
+    const editGroupBtn = document.getElementById('editGroupBtn');
+    const manageGroupBtn = document.getElementById('manageGroupBtn');
+    const deleteGroupBtn = document.getElementById('deleteGroupBtn');
+    const groupSettingsNavBtn = document.getElementById('groupSettingsNavBtn');
 
-    if (optionsBtn && optionsMenu) {
-        optionsBtn.addEventListener('click', (e) => {
+    // Dropdown toggle
+    if (groupMenuBtn && groupDropdownMenu) {
+        groupMenuBtn.addEventListener('click', (e) => {
             e.stopPropagation();
-            const isVisible = optionsMenu.style.display === 'block';
-            optionsMenu.style.display = isVisible ? 'none' : 'block';
+            groupDropdownMenu.classList.toggle('active');
         });
 
-        document.addEventListener('click', () => {
-            optionsMenu.style.display = 'none';
+        document.addEventListener('click', (e) => {
+            if (!groupMenuBtn.contains(e.target) && !groupDropdownMenu.contains(e.target)) {
+                groupDropdownMenu.classList.remove('active');
+            }
         });
 
-        optionsMenu.addEventListener('click', (e) => {
-            e.stopPropagation();
+        groupDropdownMenu.addEventListener('click', () => {
+            // Let clicks bubble so report.js document handler can catch report-trigger clicks.
         });
     }
 
-    // Handle Manage Requests option click
-    if (manageRequestsOption) {
-        manageRequestsOption.addEventListener('click', (e) => {
+    // Edit Group button
+    if (editGroupBtn) {
+        editGroupBtn.addEventListener('click', (e) => {
             e.preventDefault();
             e.stopPropagation();
-            console.log('Manage Requests clicked');
-            console.log('BASE_PATH:', BASE_PATH);
-            console.log('GROUP_ID:', GROUP_ID);
-            if (optionsMenu) optionsMenu.style.display = 'none';
+            openEditModal();
+            if (groupDropdownMenu) groupDropdownMenu.classList.remove('active');
+        });
+    }
+
+    if (groupSettingsNavBtn) {
+        groupSettingsNavBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            openEditModal();
+        });
+    }
+
+    // Manage Group button
+    if (manageGroupBtn) {
+        manageGroupBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            if (groupDropdownMenu) groupDropdownMenu.classList.remove('active');
             const url = BASE_PATH + 'index.php?controller=Group&action=manage&group_id=' + GROUP_ID;
-            console.log('Navigating to:', url);
             window.location.href = url;
         });
-    } else {
-        console.log('manageRequestsOption not found');
+    }
+
+    // Delete Group button
+    if (deleteGroupBtn) {
+        deleteGroupBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            if (groupDropdownMenu) groupDropdownMenu.classList.remove('active');
+            const deleteModal = document.getElementById('deleteGroupModal');
+            if (deleteModal) {
+                deleteModal.style.display = 'flex';
+                document.body.style.overflow = 'hidden';
+            }
+        });
+    }
+
+    // Action buttons: Join, Leave
+    const joinGroupBtn = document.getElementById('joinGroupBtn');
+    const leaveGroupBtn = document.getElementById('leaveGroupBtn');
+
+    if (joinGroupBtn) {
+        joinGroupBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            console.log('Join group clicked');
+            // TODO: Implement join group action
+        });
+    }
+
+    if (leaveGroupBtn) {
+        leaveGroupBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            console.log('Leave group clicked');
+            // TODO: Implement leave group action
+        });
     }
 
     // ===== EDIT GROUP MODAL =====
     const editModal = document.getElementById('editGroupModal');
     const closeEditModal = document.getElementById('closeEditGroupModal');
     const cancelEditBtn = document.getElementById('cancelEditGroupBtn');
+    const aboutGroupModal = document.getElementById('aboutGroupModal');
+    const closeAboutGroupModalBtn = document.getElementById('closeAboutGroupModal');
+
+    const openAboutGroupModal = () => {
+        if (!aboutGroupModal) return;
+        aboutGroupModal.style.display = 'flex';
+        document.body.style.overflow = 'hidden';
+        if (groupDropdownMenu) groupDropdownMenu.classList.remove('active');
+    };
+
+    const closeAboutGroupModal = () => {
+        if (!aboutGroupModal) return;
+        aboutGroupModal.style.display = 'none';
+        document.body.style.overflow = '';
+    };
+
+    if (aboutGroupBtn) {
+        aboutGroupBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            openAboutGroupModal();
+        });
+    }
+
+    if (closeAboutGroupModalBtn) {
+        closeAboutGroupModalBtn.addEventListener('click', closeAboutGroupModal);
+    }
+
+    if (aboutGroupModal) {
+        aboutGroupModal.addEventListener('click', (e) => {
+            if (e.target === aboutGroupModal) {
+                closeAboutGroupModal();
+            }
+        });
+    }
 
     const openEditModal = () => {
         if (editModal) {
             editModal.style.display = 'flex';
             document.body.style.overflow = 'hidden';
-            if (optionsMenu) optionsMenu.style.display = 'none';
+            if (groupDropdownMenu) groupDropdownMenu.classList.remove('active');
         }
     };
 
@@ -77,11 +160,6 @@
             document.body.style.overflow = '';
         }
     };
-
-    if (editOption) editOption.addEventListener('click', (e) => {
-        e.preventDefault();
-        openEditModal();
-    });
 
     // Header quick actions: Edit Cover / Edit DP
     const headerEditCoverBtn = document.querySelector('.edit-cover-btn');
@@ -125,7 +203,7 @@
         if (deleteModal) {
             deleteModal.classList.add('active');
             document.body.style.overflow = 'hidden';
-            if (optionsMenu) optionsMenu.style.display = 'none';
+            if (groupDropdownMenu) groupDropdownMenu.classList.remove('active');
         }
     };
 
@@ -135,11 +213,6 @@
             document.body.style.overflow = '';
         }
     };
-
-    if (deleteOption) deleteOption.addEventListener('click', (e) => {
-        e.preventDefault();
-        openDeleteModal();
-    });
 
     if (cancelDeleteBtn) cancelDeleteBtn.addEventListener('click', closeDeleteModal);
 
