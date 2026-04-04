@@ -336,7 +336,7 @@ class AuthController {
         $this->setAuthenticatedSession($user);
         $this->userModel->updateLastLogin($user['user_id']);
 
-        header('Location: ' . BASE_PATH . 'index.php?controller=GroupMessages&action=index');
+        header('Location: ' . BASE_PATH . 'index.php?controller=AcedemicDashboard&action=index');
         exit();
     }
     

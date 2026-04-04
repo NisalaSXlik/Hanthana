@@ -1,4 +1,6 @@
 <?php
+require_once __DIR__ . '/../core/Database.php';
+
 class QuestionModel {
     private $db;
     
@@ -45,6 +47,11 @@ class QuestionModel {
         if (!empty($filters['search'])) {
             $sql .= " AND MATCH(q.title, q.content) AGAINST(? IN NATURAL LANGUAGE MODE)";
             $params[] = $filters['search'];
+        }
+
+        if (!empty($filters['mine'])) {
+            $sql .= " AND q.user_id = ?";
+            $params[] = (int)$userId;
         }
         
         $sql .= " GROUP BY q.question_id";
@@ -334,6 +341,50 @@ class QuestionModel {
             'Politics',
             'Other'
         ];
+    }
+
+    public function getMyQuestionsLatestAnswers(int $userId, int $limit = 8): array {
+        try {
+            $sql = "SELECT
+                        q.question_id,
+                        q.title,
+                        a.answer_id,
+                        a.content AS latest_answer_content,
+                        a.created_at AS latest_answer_at,
+                        u.first_name,
+                        u.last_name,
+                        (
+                            SELECT GROUP_CONCAT(DISTINCT qt.topic_name ORDER BY qt.topic_name SEPARATOR ', ')
+                            FROM QuestionTopics qt
+                            WHERE qt.question_id = q.question_id
+                        ) AS question_topics
+                    FROM Questions q
+                    INNER JOIN Answers a
+                        ON a.question_id = q.question_id
+                        AND a.is_deleted = FALSE
+                        AND a.user_id <> ?
+                    INNER JOIN Users u ON u.user_id = a.user_id
+                    WHERE q.user_id = ?
+                        AND q.is_deleted = FALSE
+                        AND a.answer_id = (
+                            SELECT a3.answer_id
+                            FROM Answers a3
+                            WHERE a3.question_id = q.question_id
+                                AND a3.is_deleted = FALSE
+                                AND a3.user_id <> ?
+                            ORDER BY a3.created_at DESC, a3.answer_id DESC
+                            LIMIT 1
+                        )
+                    ORDER BY a.created_at DESC
+                    LIMIT " . (int)$limit;
+
+            $stmt = $this->db->getConnection()->prepare($sql);
+            $stmt->execute([$userId, $userId, $userId]);
+            return $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
+        } catch (Throwable $e) {
+            error_log('getMyQuestionsLatestAnswers error: ' . $e->getMessage());
+            return [];
+        }
     }
 
     public function updateQuestion(int $questionId, int $userId, array $data): array {

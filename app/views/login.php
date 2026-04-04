@@ -7,7 +7,7 @@ if (session_status() === PHP_SESSION_NONE) {
 }
 
 if (isset($_SESSION['user_id'])) {
-    header('Location: ' . BASE_PATH . 'index.php?controller=GroupMessages&action=index');
+    header('Location: ' . BASE_PATH . 'index.php?controller=AcedemicDashboard&action=index');
     exit();
 }
 
@@ -24,7 +24,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $result = $authController->login($identifier, $password);
     
     if ($result['success']) {
-        header('Location: ' . BASE_PATH . 'index.php?controller=GroupMessages&action=index');
+        header('Location: ' . BASE_PATH . 'index.php?controller=AcedemicDashboard&action=index');
         exit;
     } else {
         $error = $result['errors'][0] ?? 'Login failed';
