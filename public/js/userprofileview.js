@@ -1,5 +1,5 @@
 const postsPayloadElement = document.getElementById('profilePostPayload');
-let parsedPostsData = { personal: [], group: [] };
+let parsedPostsData = { personal: [], group: [], saved: [] };
 if (postsPayloadElement) {
     try {
         parsedPostsData = JSON.parse(postsPayloadElement.textContent || '{}');
@@ -10,6 +10,7 @@ if (postsPayloadElement) {
 
 window.PERSONAL_POSTS = parsedPostsData.personal || [];
 window.GROUP_POSTS = parsedPostsData.group || [];
+window.SAVED_POSTS = parsedPostsData.saved || [];
 
 document.addEventListener('DOMContentLoaded', () => {
     const tabLinks = document.querySelectorAll('.profile-tabs a');
@@ -75,6 +76,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const closeModalBtn = document.getElementById('closeEditProfileModal');
     const cancelBtn = document.getElementById('cancelEditProfileBtn');
     const form = document.getElementById('editProfileForm');
+    const emailInput = document.getElementById('emailInput');
     const messageBox = document.getElementById('profileFormMessage');
     const profilePictureInput = document.getElementById('profilePictureInput');
     const coverPhotoInput = document.getElementById('coverPhotoInput');
@@ -118,6 +120,33 @@ document.addEventListener('DOMContentLoaded', () => {
         messageBox.style.display = 'block';
     };
 
+    const isValidUniversityEmail = (email) => {
+        return /^[^@\s]+@[a-z0-9-]+(?:\.[a-z0-9-]+)*\.ac\.lk$/i.test(String(email || '').trim());
+    };
+
+    const validateProfileEmailInput = () => {
+        if (!emailInput) return true;
+
+        const email = emailInput.value.trim();
+        if (!email) {
+            emailInput.setCustomValidity('Email is required.');
+            return false;
+        }
+
+        if (!isValidUniversityEmail(email)) {
+            emailInput.setCustomValidity('Use university email ending with .ac.lk');
+            return false;
+        }
+
+        emailInput.setCustomValidity('');
+        return true;
+    };
+
+    if (emailInput) {
+        emailInput.addEventListener('input', validateProfileEmailInput);
+        emailInput.addEventListener('blur', validateProfileEmailInput);
+    }
+
     function showToast(message, type = 'success') {
         let toastContainer = document.getElementById('toastContainer');
         if (!toastContainer) {
@@ -132,6 +161,156 @@ document.addEventListener('DOMContentLoaded', () => {
         toast.innerHTML = `<i class="uil ${icons[type] || icons.success}"></i> ${message}`;
         toastContainer.appendChild(toast);
         setTimeout(() => { toast.classList.add('fade-out'); setTimeout(() => toast.remove(), 300); }, 3000);
+    }
+
+    const profileMore = document.querySelector('[data-profile-more]');
+    const messageButton = document.querySelector('.profile-message-btn[data-user-id]');
+    const profileMoreTrigger = profileMore ? profileMore.querySelector('[data-profile-more-trigger]') : null;
+    const profileMoreMenu = profileMore ? profileMore.querySelector('[data-profile-more-menu]') : null;
+    const blockUserBtn = profileMore ? profileMore.querySelector('[data-profile-block-user]') : null;
+
+    const closeProfileMoreMenu = () => {
+        if (!profileMoreTrigger || !profileMoreMenu) return;
+        profileMoreMenu.hidden = true;
+        profileMoreTrigger.setAttribute('aria-expanded', 'false');
+    };
+
+    const openProfileMoreMenu = () => {
+        if (!profileMoreTrigger || !profileMoreMenu) return;
+        profileMoreMenu.hidden = false;
+        profileMoreTrigger.setAttribute('aria-expanded', 'true');
+    };
+
+    if (profileMoreTrigger && profileMoreMenu) {
+        profileMoreTrigger.addEventListener('click', (event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            const isOpen = profileMoreTrigger.getAttribute('aria-expanded') === 'true';
+            if (isOpen) {
+                closeProfileMoreMenu();
+            } else {
+                openProfileMoreMenu();
+            }
+        });
+
+        profileMoreMenu.addEventListener('click', (event) => {
+            if (event.target.closest('.profile-more-item')) {
+                closeProfileMoreMenu();
+            }
+        });
+
+        document.addEventListener('click', (event) => {
+            if (!profileMore.contains(event.target)) {
+                closeProfileMoreMenu();
+            }
+        });
+
+        document.addEventListener('keydown', (event) => {
+            if (event.key === 'Escape') {
+                closeProfileMoreMenu();
+            }
+        });
+    }
+
+    const setBlockedStateOnFriendButtons = (targetUserId) => {
+        if (!targetUserId) return;
+
+        if (typeof window.__hanthanaUpdateFriendButtonState === 'function') {
+            window.__hanthanaUpdateFriendButtonState(targetUserId, 'blocked');
+            return;
+        }
+
+        const selectors = `.add-friend-btn[data-user-id="${targetUserId}"]`;
+        document.querySelectorAll(selectors).forEach((button) => {
+            button.dataset.state = 'blocked';
+            button.disabled = true;
+            const textElement = button.querySelector('span');
+            if (textElement) {
+                textElement.textContent = 'Unavailable';
+            } else {
+                button.textContent = 'Unavailable';
+            }
+        });
+    };
+
+    if (blockUserBtn) {
+        blockUserBtn.addEventListener('click', async (event) => {
+            event.preventDefault();
+
+            const targetUserId = parseInt(blockUserBtn.dataset.userId || '0', 10);
+            const targetLabel = (blockUserBtn.dataset.userLabel || 'this user').trim();
+            if (!targetUserId) {
+                showToast('Unable to block this user right now.', 'error');
+                return;
+            }
+
+            if (!window.confirm(`Block ${targetLabel}? You will no longer interact with this account.`)) {
+                return;
+            }
+
+            const originalHtml = blockUserBtn.innerHTML;
+            blockUserBtn.disabled = true;
+            blockUserBtn.innerHTML = '<i class="uil uil-spinner-alt"></i><span>Blocking...</span>';
+
+            try {
+                const response = await fetch(BASE_PATH + 'index.php?controller=Settings&action=blockUser', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: `user_id=${encodeURIComponent(targetUserId)}`,
+                });
+
+                const responseText = await response.text();
+                let data = null;
+                try {
+                    data = JSON.parse(responseText);
+                } catch (parseError) {
+                    console.error('Block user parse error:', parseError, responseText);
+                }
+
+                if (!response.ok || !data || !data.success) {
+                    throw new Error((data && data.message) ? data.message : 'Unable to block this user right now.');
+                }
+
+                setBlockedStateOnFriendButtons(targetUserId);
+                blockUserBtn.innerHTML = '<i class="uil uil-ban"></i><span>Blocked</span>';
+                blockUserBtn.disabled = true;
+                showToast(data.message || 'User blocked successfully.', 'success');
+            } catch (error) {
+                console.error('Block user failed:', error);
+                blockUserBtn.innerHTML = originalHtml;
+                blockUserBtn.disabled = false;
+                showToast(error?.message || 'Unable to block this user right now.', 'error');
+            }
+        });
+    }
+
+    if (messageButton) {
+        messageButton.addEventListener('click', async (event) => {
+            event.preventDefault();
+            const targetUserId = Number(messageButton.dataset.userId || 0);
+            if (!targetUserId) {
+                showToast('Unable to open chat for this user.', 'error');
+                return;
+            }
+
+            try {
+                if (window.HanthanaChat && typeof window.HanthanaChat.openDirectConversation === 'function') {
+                    await window.HanthanaChat.openDirectConversation(targetUserId);
+                    return;
+                }
+
+                window.dispatchEvent(new CustomEvent('hanthana:open-chat', {
+                    detail: {
+                        type: 'direct',
+                        targetId: targetUserId,
+                    }
+                }));
+            } catch (error) {
+                showToast(error?.message || 'Unable to open chat for this user.', 'error');
+            }
+        });
     }
 
     const updatePreview = (input, preview, displayTarget) => {
@@ -155,6 +334,11 @@ document.addEventListener('DOMContentLoaded', () => {
         form.addEventListener('submit', async event => {
             event.preventDefault();
             console.log('=== FORM SUBMIT STARTED ===');
+
+            if (!validateProfileEmailInput()) {
+                emailInput?.reportValidity();
+                return;
+            }
             
             const formData = new FormData(form);
             formData.append('sub_action', 'update_profile');
@@ -314,16 +498,55 @@ document.addEventListener('DOMContentLoaded', () => {
             fileField: 'cover',
             trigger: triggerEditCover,
             loadingContent: '<i class="uil uil-cloud-upload"></i> Uploading...',
-            successContent: '<i class="uil uil-check"></i> Saved',
+            successContent: '<i class="uis uis-bookmark"></i> Saved',
             responseKey: 'image_url',
             previewTargets: [coverDisplay, coverPreview]
         });
     }
 
+    const connectionsCard = document.querySelector('.profile-connections-card');
+    if (connectionsCard) {
+        const tabButtons = connectionsCard.querySelectorAll('[data-connections-tab]');
+        const panels = connectionsCard.querySelectorAll('[data-connections-panel]');
+        const seeMoreLinks = connectionsCard.querySelectorAll('[data-connections-see-more]');
+
+        const setConnectionsTab = (tabName) => {
+            tabButtons.forEach((button) => {
+                const isActive = button.dataset.connectionsTab === tabName;
+                button.classList.toggle('active', isActive);
+                button.setAttribute('aria-selected', isActive ? 'true' : 'false');
+            });
+
+            panels.forEach((panel) => {
+                const isActive = panel.dataset.connectionsPanel === tabName;
+                panel.classList.toggle('active', isActive);
+                panel.hidden = !isActive;
+            });
+
+            seeMoreLinks.forEach((link) => {
+                const isActive = link.dataset.connectionsSeeMore === tabName;
+                link.classList.toggle('active', isActive);
+            });
+        };
+
+        tabButtons.forEach((button) => {
+            button.addEventListener('click', () => {
+                const tabName = button.dataset.connectionsTab;
+                if (!tabName) return;
+                setConnectionsTab(tabName);
+            });
+        });
+
+        setConnectionsTab('friends');
+    }
+
     const friendListModal = document.getElementById('friendListModal');
+    const groupListModal = document.getElementById('groupListModal');
     let lastFriendTrigger = null;
+    let lastGroupTrigger = null;
 
     const friendTriggers = document.querySelectorAll('[data-friend-count-trigger]');
+    const groupTriggers = document.querySelectorAll('[data-group-count-trigger]');
 
     const openFriendListModal = (trigger) => {
         if (!friendListModal) return;
@@ -345,6 +568,26 @@ document.addEventListener('DOMContentLoaded', () => {
         lastFriendTrigger = null;
     };
 
+    const openGroupListModal = (trigger) => {
+        if (!groupListModal) return;
+        lastGroupTrigger = trigger || null;
+        groupListModal.classList.add('active');
+        groupListModal.setAttribute('aria-hidden', 'false');
+        document.body.style.overflow = 'hidden';
+        const closeButton = groupListModal.querySelector('[data-close-groups-modal]');
+        if (closeButton) setTimeout(() => closeButton.focus(), 10);
+    };
+
+    const closeGroupListModal = () => {
+        if (!groupListModal) return;
+        groupListModal.classList.remove('active');
+        groupListModal.setAttribute('aria-hidden', 'true');
+        const editModalIsOpen = document.querySelector('.profile-edit-modal.active');
+        if (!editModalIsOpen) document.body.style.overflow = '';
+        if (lastGroupTrigger && typeof lastGroupTrigger.focus === 'function') lastGroupTrigger.focus();
+        lastGroupTrigger = null;
+    };
+
     if (friendListModal) {
         const closeTargets = friendListModal.querySelectorAll('[data-close-friends-modal]');
         closeTargets.forEach((element) => {
@@ -357,6 +600,18 @@ document.addEventListener('DOMContentLoaded', () => {
         document.addEventListener('keydown', (event) => { if (event.key === 'Escape' && friendListModal.classList.contains('active')) closeFriendListModal(); });
     }
 
+    if (groupListModal) {
+        const closeTargets = groupListModal.querySelectorAll('[data-close-groups-modal]');
+        closeTargets.forEach((element) => {
+            element.addEventListener('click', (event) => {
+                event.preventDefault();
+                closeGroupListModal();
+            });
+        });
+        groupListModal.addEventListener('click', (event) => { if (event.target === groupListModal) closeGroupListModal(); });
+        document.addEventListener('keydown', (event) => { if (event.key === 'Escape' && groupListModal.classList.contains('active')) closeGroupListModal(); });
+    }
+
     if (friendTriggers.length) {
         friendTriggers.forEach((trigger) => {
             trigger.addEventListener('click', (event) => {
@@ -367,6 +622,21 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (event.key === 'Enter' || event.key === ' ') {
                     event.preventDefault();
                     openFriendListModal(trigger);
+                }
+            });
+        });
+    }
+
+    if (groupTriggers.length) {
+        groupTriggers.forEach((trigger) => {
+            trigger.addEventListener('click', (event) => {
+                event.preventDefault();
+                openGroupListModal(trigger);
+            });
+            trigger.addEventListener('keydown', (event) => {
+                if (event.key === 'Enter' || event.key === ' ') {
+                    event.preventDefault();
+                    openGroupListModal(trigger);
                 }
             });
         });
@@ -387,6 +657,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const postViewUpvoteBtn = document.getElementById('postViewUpvoteBtn');
     const postViewDownvoteBtn = document.getElementById('postViewDownvoteBtn');
     const postViewCommentToggle = document.getElementById('postViewCommentToggle');
+    const postViewSaveBtn = document.getElementById('postViewSaveBtn');
     const postViewUpvoteCount = document.getElementById('postViewUpvoteCount');
     const postViewDownvoteCount = document.getElementById('postViewDownvoteCount');
     const postViewCommentCount = document.getElementById('postViewCommentCount');
@@ -396,10 +667,175 @@ document.addEventListener('DOMContentLoaded', () => {
     const postViewCommentForm = document.getElementById('postViewCommentForm');
     const postViewCommentInput = document.getElementById('postViewCommentInput');
     const postViewCommentSubmit = document.getElementById('postViewCommentSubmit');
+    const postViewMenu = document.getElementById('postViewMenu');
+    const postViewMenuTrigger = document.getElementById('postViewMenuTrigger');
+    const postViewMenuDropdown = document.getElementById('postViewMenuDropdown');
+    const postViewEditAction = document.getElementById('postViewEditAction');
+    const postViewDeleteAction = document.getElementById('postViewDeleteAction');
+    const postViewReportAction = document.getElementById('postViewReportAction');
 
     let currentPostIndex = 0;
     let currentPostType = 'personal';
     let currentPosts = [];
+    let modalCommentsMeta = { currentUserId: null, postOwnerId: null };
+    const resolvedViewerUserId = Number(
+        (typeof VIEWER_USER_ID !== 'undefined'
+            ? VIEWER_USER_ID
+            : (window.VIEWER_USER_ID ?? window.CURRENT_USER_ID ?? 0)) || 0
+    );
+    const resolvedProfileUserId = Number(
+        (typeof PROFILE_USER_ID !== 'undefined'
+            ? PROFILE_USER_ID
+            : (window.PROFILE_USER_ID ?? 0)) || 0
+    );
+    const resolvedIsOwnerProfile = String(
+        (typeof IS_OWNER !== 'undefined'
+            ? IS_OWNER
+            : (window.IS_OWNER ?? 'false'))
+    ) === 'true';
+
+    function getPostsCollection(type) {
+        if (type === 'group') return window.GROUP_POSTS || [];
+        if (type === 'saved') return window.SAVED_POSTS || [];
+        return window.PERSONAL_POSTS || [];
+    }
+
+    function resolvePostOwnerId(post) {
+        return Number(
+            post?.author_id
+            ?? post?.user_id
+            ?? post?.authorId
+            ?? post?.userId
+            ?? resolvedProfileUserId
+            ?? 0
+        ) || 0;
+    }
+
+    function canManagePost(post) {
+        if (resolvedIsOwnerProfile && (currentPostType === 'personal' || currentPostType === 'group')) {
+            return true;
+        }
+
+        const ownerId = resolvePostOwnerId(post);
+        if (ownerId > 0 && resolvedViewerUserId > 0) {
+            return ownerId === resolvedViewerUserId;
+        }
+
+        if (ownerId > 0 && resolvedProfileUserId > 0 && resolvedIsOwnerProfile) {
+            return ownerId === resolvedProfileUserId;
+        }
+
+        return false;
+    }
+
+    function isPostViewMenuOpen() {
+        return !!postViewMenuDropdown && postViewMenuDropdown.hidden === false;
+    }
+
+    function closePostViewMenu() {
+        if (!postViewMenuDropdown || !postViewMenuTrigger) return;
+        postViewMenuDropdown.hidden = true;
+        postViewMenuTrigger.setAttribute('aria-expanded', 'false');
+    }
+
+    function openPostViewMenu() {
+        if (!postViewMenuDropdown || !postViewMenuTrigger) return;
+        postViewMenuDropdown.hidden = false;
+        postViewMenuTrigger.setAttribute('aria-expanded', 'true');
+    }
+
+    function syncPostViewMenu(post) {
+        if (!postViewMenu || !postViewReportAction || !postViewEditAction || !postViewDeleteAction) return;
+
+        const postId = Number(post?.post_id || post?.postId || 0);
+        const ownsPost = canManagePost(post);
+
+        postViewMenu.hidden = false;
+        postViewEditAction.hidden = !ownsPost;
+        postViewDeleteAction.hidden = !ownsPost;
+        postViewReportAction.hidden = ownsPost;
+        postViewReportAction.classList.toggle('is-hidden', ownsPost);
+
+        postViewReportAction.dataset.targetId = postId ? String(postId) : '';
+        postViewReportAction.dataset.targetLabel = `${(post?.username || 'user')} post`;
+
+        closePostViewMenu();
+    }
+
+    async function updateCurrentPostContent(newContent) {
+        const post = currentPosts[currentPostIndex];
+        const postId = Number(post?.post_id || post?.postId || 0);
+        if (!postId) return false;
+
+        const formData = new FormData();
+        formData.append('sub_action', 'update');
+        formData.append('post_id', String(postId));
+        formData.append('content', newContent);
+
+        const response = await fetch(BASE_PATH + 'index.php?controller=Posts&action=handleAjax', {
+            method: 'POST',
+            body: formData,
+        });
+        const data = await response.json();
+        if (!data.success) {
+            throw new Error(data.message || 'Unable to update this post.');
+        }
+
+        const collection = getPostsCollection(currentPostType);
+        if (collection[currentPostIndex]) {
+            collection[currentPostIndex].content = newContent;
+        }
+        if (currentPosts[currentPostIndex]) {
+            currentPosts[currentPostIndex].content = newContent;
+        }
+
+        return true;
+    }
+
+    async function deleteCurrentPost() {
+        const post = currentPosts[currentPostIndex];
+        const postId = Number(post?.post_id || post?.postId || 0);
+        if (!postId) return;
+
+        const formData = new FormData();
+        formData.append('sub_action', 'delete');
+        formData.append('post_id', String(postId));
+
+        const response = await fetch(BASE_PATH + 'index.php?controller=Posts&action=handleAjax', {
+            method: 'POST',
+            body: formData,
+        });
+        const data = await response.json();
+        if (!data.success) {
+            throw new Error(data.message || 'Unable to delete this post.');
+        }
+
+        const collection = getPostsCollection(currentPostType);
+        collection.splice(currentPostIndex, 1);
+        currentPosts = collection;
+
+        const selector = `.post-grid-item[data-post-type="${currentPostType === 'group' ? 'group' : (currentPostType === 'saved' ? 'saved' : 'personal')}"]`;
+        const gridItems = Array.from(document.querySelectorAll(selector));
+        const toRemove = gridItems[currentPostIndex];
+        if (toRemove) {
+            toRemove.remove();
+        }
+
+        Array.from(document.querySelectorAll(selector)).forEach((item, index) => {
+            item.setAttribute('data-post-index', String(index));
+        });
+
+        if (!currentPosts.length) {
+            closePostModal();
+            return;
+        }
+
+        if (currentPostIndex >= currentPosts.length) {
+            currentPostIndex = currentPosts.length - 1;
+        }
+        displayPost(currentPostIndex);
+        updateNavigationButtons();
+    }
 
     function focusModalCommentsPanel() {
         if (postViewCommentsPanel && !postViewCommentsPanel.classList.contains('active')) {
@@ -414,13 +850,31 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function openPostModal(index, type) {
-        currentPostIndex = index;
+        const normalizedIndex = Number(index);
+        if (!Number.isInteger(normalizedIndex) || normalizedIndex < 0) {
+            return;
+        }
+
+        currentPostIndex = normalizedIndex;
         currentPostType = type;
-        currentPosts = type === 'personal' ? (window.PERSONAL_POSTS || []) : (window.GROUP_POSTS || []);
+        if (type === 'group') {
+            currentPosts = window.GROUP_POSTS || [];
+        } else if (type === 'saved') {
+            currentPosts = window.SAVED_POSTS || [];
+        } else {
+            currentPosts = window.PERSONAL_POSTS || [];
+        }
         
         if (!currentPosts || currentPosts.length === 0) return;
-        
-        displayPost(currentPostIndex);
+        if (currentPostIndex >= currentPosts.length) return;
+
+        try {
+            displayPost(currentPostIndex);
+        } catch (error) {
+            console.error('Failed to open post modal:', error);
+            return;
+        }
+
         postViewModal.classList.add('active');
         postViewModal.setAttribute('aria-hidden', 'false');
         document.body.style.overflow = 'hidden';
@@ -430,12 +884,19 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function openPostModalByPostId(postId, type) {
-        const posts = type === 'personal' ? (window.PERSONAL_POSTS || []) : (window.GROUP_POSTS || []);
+        let posts = [];
+        if (type === 'group') {
+            posts = window.GROUP_POSTS || [];
+        } else if (type === 'saved') {
+            posts = window.SAVED_POSTS || [];
+        } else {
+            posts = window.PERSONAL_POSTS || [];
+        }
         const index = posts.findIndex(post => parseInt(post.post_id) === postId);
         
         if (index !== -1) {
             // Switch to appropriate tab first
-            const targetTab = type === 'personal' ? 'posts' : 'group-posts';
+            const targetTab = type === 'group' ? 'group-posts' : (type === 'saved' ? 'saved' : 'posts');
             setActiveTab(targetTab);
             
             // Small delay to ensure tab content is rendered
@@ -449,27 +910,417 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function closePostModal() {
         clearReplyForm();
+        closePostViewMenu();
         postViewModal.classList.remove('active');
         postViewModal.setAttribute('aria-hidden', 'true');
         document.body.style.overflow = '';
+    }
+
+    function normalizePostMetadata(metadata) {
+        if (!metadata) {
+            return {};
+        }
+
+        if (typeof metadata === 'string') {
+            try {
+                const parsed = JSON.parse(metadata);
+                return parsed && typeof parsed === 'object' ? parsed : {};
+            } catch (error) {
+                return {};
+            }
+        }
+
+        return typeof metadata === 'object' ? metadata : {};
+    }
+
+    function resolveModalPostType(post) {
+        const isGroupPost = Number(post?.is_group_post || 0) === 1 || !!post?.group_id;
+        const rawType = isGroupPost
+            ? (post?.group_post_type || post?.post_type || 'discussion')
+            : (post?.post_type || post?.group_post_type || 'discussion');
+
+        const normalized = String(rawType || '').toLowerCase();
+        if (!normalized || normalized === 'text' || normalized === 'image' || normalized === 'general') {
+            return 'discussion';
+        }
+        return normalized;
+    }
+
+    function formatMultilineText(value) {
+        if (!value) {
+            return '';
+        }
+        return escapeHtml(String(value)).replace(/\n/g, '<br>');
+    }
+
+    function formatModalEventDate(dateValue) {
+        if (!dateValue) {
+            return '';
+        }
+        const parsed = new Date(dateValue);
+        if (Number.isNaN(parsed.getTime())) {
+            return escapeHtml(String(dateValue));
+        }
+        return parsed.toLocaleDateString(undefined, {
+            weekday: 'long',
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+        });
+    }
+
+    function resolveResourceDownloadUrl(pathValue) {
+        if (!pathValue) {
+            return '';
+        }
+
+        const raw = String(pathValue).trim();
+        if (!raw) {
+            return '';
+        }
+
+        if (/^https?:\/\//i.test(raw)) {
+            return raw;
+        }
+
+        const basePath = BASE_PATH.endsWith('/') ? BASE_PATH : `${BASE_PATH}/`;
+        return `${basePath}${raw.replace(/^\/+/, '')}`;
+    }
+
+    function renderDiscussionPostMarkup(post) {
+        const content = (post?.content || '').trim();
+        const imageUrl = post?.image_url || '';
+
+        if (!imageUrl && content) {
+            return {
+                mode: 'simple-text',
+                html: `<p>${formatMultilineText(content)}</p>`,
+            };
+        }
+
+        if (imageUrl && !content) {
+            return {
+                mode: 'image-only',
+                html: '',
+                imageUrl,
+            };
+        }
+
+        const textBlock = content
+            ? `<p class="post-text modal-post-paragraph">${formatMultilineText(content)}</p>`
+            : '';
+
+        const imageBlock = imageUrl
+            ? `
+                <div class="photo post-image modal-type-image-wrap">
+                    <img class="modal-type-image" src="${escapeHtml(imageUrl)}" alt="Post image">
+                </div>
+            `
+            : '';
+
+        return {
+            mode: 'rich',
+            html: `
+                <div class="modal-post-content modal-post-discussion">
+                    ${textBlock || '<p class="modal-post-empty">No content available for this post.</p>'}
+                    ${imageBlock}
+                </div>
+            `,
+        };
+    }
+
+    function renderQuestionPostMarkup(post, metadata) {
+        const content = (post?.content || '').trim();
+        const category = (metadata?.category || '').trim();
+        const tags = Array.isArray(metadata?.tags)
+            ? metadata.tags
+            : (typeof metadata?.tags === 'string' ? metadata.tags.split(',').map(tag => tag.trim()).filter(Boolean) : []);
+
+        const categoryBlock = category
+            ? `<span class="question-category">${escapeHtml(category)}</span>`
+            : '';
+
+        const textBlock = content
+            ? `<p class="post-text modal-post-paragraph">${formatMultilineText(content)}</p>`
+            : '<p class="modal-post-empty">Question details are unavailable.</p>';
+
+        const tagsBlock = tags.length
+            ? `<div class="question-tags">${tags.map(tag => `<span class="tag">${escapeHtml(tag)}</span>`).join('')}</div>`
+            : '';
+
+        const imageBlock = post?.image_url
+            ? `
+                <div class="photo post-image modal-type-image-wrap">
+                    <img class="modal-type-image" src="${escapeHtml(post.image_url)}" alt="Question image">
+                </div>
+            `
+            : '';
+
+        return {
+            mode: 'rich',
+            html: `
+                <div class="modal-post-content modal-post-question">
+                    <div class="question-content">
+                        ${categoryBlock}
+                        ${textBlock}
+                        ${tagsBlock}
+                    </div>
+                    ${imageBlock}
+                </div>
+            `,
+        };
+    }
+
+    function renderResourcePostMarkup(post, metadata) {
+        const title = (metadata?.title || 'Untitled Resource').trim();
+        const resourceType = (metadata?.resource_type || metadata?.type || '').trim();
+        const resourceLink = (metadata?.resource_link || metadata?.link || '').trim();
+        const downloadUrl = resolveResourceDownloadUrl(metadata?.file_path || '');
+        const content = (post?.content || '').trim();
+
+        const typeBlock = resourceType
+            ? `<span class="resource-type-label">${escapeHtml(resourceType)}</span>`
+            : '';
+
+        const descriptionBlock = content
+            ? `<p class="post-text modal-post-paragraph">${formatMultilineText(content)}</p>`
+            : '';
+
+        const actions = [];
+        if (downloadUrl) {
+            actions.push(`
+                <a href="${escapeHtml(downloadUrl)}" class="resource-download" download target="_blank" rel="noopener noreferrer">
+                    <i class="uil uil-download-alt"></i>
+                    <span>Download</span>
+                </a>
+            `);
+        }
+        if (resourceLink) {
+            actions.push(`
+                <a href="${escapeHtml(resourceLink)}" class="resource-link" target="_blank" rel="noopener noreferrer">
+                    <i class="uil uil-external-link-alt"></i>
+                    <span>Open Link</span>
+                </a>
+            `);
+        }
+
+        return {
+            mode: 'rich',
+            html: `
+                <div class="modal-post-content modal-post-resource">
+                    <div class="resource-content">
+                        <h3 class="resource-title">${escapeHtml(title)}</h3>
+                        ${typeBlock}
+                        ${descriptionBlock || '<p class="modal-post-empty">No description provided for this resource.</p>'}
+                        ${actions.length ? `<div class="resource-actions">${actions.join('')}</div>` : ''}
+                    </div>
+                </div>
+            `,
+        };
+    }
+
+    function renderPollPostMarkup(post, metadata) {
+        const isGroupPoll = Number(post?.is_group_post || 0) === 1 || !!post?.group_id;
+        const options = Array.isArray(metadata?.options) ? metadata.options : [];
+        const votesRaw = Array.isArray(metadata?.votes) ? metadata.votes : [];
+        const votes = options.map((_, index) => Number(votesRaw[index] || 0));
+        const totalVotes = votes.reduce((sum, value) => sum + value, 0);
+        const selectedVote = Number.isInteger(Number(post?.user_poll_vote)) ? Number(post.user_poll_vote) : -1;
+        const hasVoted = selectedVote >= 0;
+
+        const optionsMarkup = options.length
+            ? options.map((optionText, index) => {
+                const voteCount = Number(votes[index] || 0);
+                const percentage = totalVotes > 0 ? Math.round((voteCount / totalVotes) * 100) : 0;
+                const selectedClass = hasVoted && selectedVote === index ? 'selected' : '';
+                return `
+                    <div class="poll-option ${selectedClass}" data-option-index="${index}">
+                        <button class="poll-option-btn" type="button" aria-label="Vote for ${escapeHtml(String(optionText))}" ${isGroupPoll ? '' : 'disabled'}>
+                            <span class="option-text">${escapeHtml(String(optionText))}</span>
+                            <div class="option-stats">
+                                <span class="option-percentage">${percentage}%</span>
+                                <span class="option-votes">${voteCount} vote${voteCount === 1 ? '' : 's'}</span>
+                            </div>
+                            <div class="option-progress" style="width: ${percentage}%"></div>
+                        </button>
+                    </div>
+                `;
+            }).join('')
+            : '<p class="modal-post-empty">Poll options are unavailable for this post.</p>';
+
+        const durationMarkup = metadata?.duration
+            ? `<span class="poll-duration">Ends in ${escapeHtml(String(metadata.duration))} days</span>`
+            : '';
+
+        const pollMetaNote = isGroupPoll
+            ? durationMarkup
+            : '<span class="poll-duration">Voting is available from the group post view.</span>';
+
+        return {
+            mode: 'rich',
+            html: `
+                <div class="modal-post-content modal-post-poll">
+                    <div class="poll-content">
+                        ${post?.content ? `<p class="post-text poll-question">${formatMultilineText(post.content)}</p>` : ''}
+                        <div class="poll-options" data-post-id="${escapeHtml(String(post?.post_id || ''))}">
+                            ${optionsMarkup}
+                        </div>
+                        <div class="poll-footer" data-post-id="${escapeHtml(String(post?.post_id || ''))}">
+                            <button type="button" class="poll-total-votes" data-post-id="${escapeHtml(String(post?.post_id || ''))}">
+                                <i class="uil uil-users-alt"></i>
+                                <span>${totalVotes} total vote${totalVotes === 1 ? '' : 's'}</span>
+                            </button>
+                            ${pollMetaNote}
+                        </div>
+                    </div>
+                </div>
+            `,
+        };
+    }
+
+    function renderEventPostMarkup(post, metadata) {
+        const title = (metadata?.title || post?.event_title || 'Untitled Event').trim();
+        const description = (post?.content || metadata?.description || '').trim();
+        const dateValue = metadata?.date || post?.event_date || '';
+        const timeValue = metadata?.time || post?.event_time || '';
+        const locationValue = metadata?.location || post?.event_location || '';
+
+        const details = [];
+        if (dateValue) {
+            details.push(`
+                <div class="event-detail">
+                    <i class="uil uil-calendar-alt"></i>
+                    <span>${formatModalEventDate(dateValue)}</span>
+                </div>
+            `);
+        }
+        if (timeValue) {
+            details.push(`
+                <div class="event-detail">
+                    <i class="uil uil-clock"></i>
+                    <span>${escapeHtml(String(timeValue))}</span>
+                </div>
+            `);
+        }
+        if (locationValue) {
+            details.push(`
+                <div class="event-detail">
+                    <i class="uil uil-map-marker"></i>
+                    <span>${escapeHtml(String(locationValue))}</span>
+                </div>
+            `);
+        }
+
+        const imageBlock = post?.image_url
+            ? `
+                <div class="photo post-image modal-type-image-wrap">
+                    <img class="modal-type-image" src="${escapeHtml(post.image_url)}" alt="Event image">
+                </div>
+            `
+            : '';
+
+        return {
+            mode: 'rich',
+            html: `
+                <div class="modal-post-content modal-post-event">
+                    <div class="event-content">
+                        <h3 class="event-title">${escapeHtml(title)}</h3>
+                        ${description ? `<p class="post-text modal-post-paragraph">${formatMultilineText(description)}</p>` : ''}
+                        ${details.length ? `<div class="event-details">${details.join('')}</div>` : ''}
+                    </div>
+                    ${imageBlock}
+                </div>
+            `,
+        };
+    }
+
+    function renderAssignmentPostMarkup(post, metadata) {
+        const title = (metadata?.title || 'Untitled Assignment').trim();
+        const description = (post?.content || '').trim();
+        const deadline = metadata?.deadline || '';
+        const points = metadata?.points;
+
+        const details = [];
+        if (deadline) {
+            details.push(`
+                <div class="assignment-detail deadline">
+                    <i class="uil uil-calendar-alt"></i>
+                    <span>Due: ${formatModalEventDate(deadline)}</span>
+                </div>
+            `);
+        }
+        if (points !== undefined && points !== null && points !== '') {
+            details.push(`
+                <div class="assignment-detail points">
+                    <i class="uil uil-star"></i>
+                    <span>${escapeHtml(String(points))} points</span>
+                </div>
+            `);
+        }
+
+        return {
+            mode: 'rich',
+            html: `
+                <div class="modal-post-content modal-post-assignment">
+                    <div class="assignment-content">
+                        <h3 class="assignment-title">${escapeHtml(title)}</h3>
+                        ${description ? `<p class="post-text modal-post-paragraph">${formatMultilineText(description)}</p>` : ''}
+                        ${details.length ? `<div class="assignment-details">${details.join('')}</div>` : ''}
+                    </div>
+                </div>
+            `,
+        };
+    }
+
+    function renderTypedPostContent(post) {
+        const metadata = normalizePostMetadata(post?.metadata);
+        const postType = resolveModalPostType(post);
+
+        switch (postType) {
+            case 'question':
+                return renderQuestionPostMarkup(post, metadata);
+            case 'resource':
+                return renderResourcePostMarkup(post, metadata);
+            case 'poll':
+                return renderPollPostMarkup(post, metadata);
+            case 'event':
+                return renderEventPostMarkup(post, metadata);
+            case 'assignment':
+                return renderAssignmentPostMarkup(post, metadata);
+            default:
+                return renderDiscussionPostMarkup(post);
+        }
     }
 
     function displayPost(index) {
         if (!currentPosts || index < 0 || index >= currentPosts.length) return;
         
         const post = currentPosts[index];
-        
-        // Handle image or text display
-        if (post.image_url) {
-            postViewImage.src = post.image_url;
+        if (!post || typeof post !== 'object') {
+            return;
+        }
+        syncPostViewMenu(post);
+
+        // Render type-specific content so selected posts keep their true structure (poll/event/question/etc).
+        const renderedPost = renderTypedPostContent(post);
+        if (renderedPost.mode === 'image-only') {
+            postViewImage.src = renderedPost.imageUrl || '';
             postViewImage.style.display = 'block';
             postViewTextContent.style.display = 'none';
-            postViewTextContent.classList.remove('active');
+            postViewTextContent.classList.remove('active', 'is-rich-post', 'is-simple-text');
+            postViewTextContent.innerHTML = '';
+        } else if (renderedPost.mode === 'simple-text') {
+            postViewImage.style.display = 'none';
+            postViewTextContent.innerHTML = renderedPost.html || '<p>No content available for this post.</p>';
+            postViewTextContent.style.display = 'flex';
+            postViewTextContent.classList.add('active', 'is-simple-text');
+            postViewTextContent.classList.remove('is-rich-post');
         } else {
             postViewImage.style.display = 'none';
-            postViewTextContent.textContent = post.content || '';
+            postViewTextContent.innerHTML = renderedPost.html || '<p>No content available for this post.</p>';
             postViewTextContent.style.display = 'flex';
-            postViewTextContent.classList.add('active');
+            postViewTextContent.classList.add('active', 'is-rich-post');
+            postViewTextContent.classList.remove('is-simple-text');
         }
         
         // Set user info
@@ -482,14 +1333,36 @@ document.addEventListener('DOMContentLoaded', () => {
         
         postViewDate.textContent = post.created_at || '';
         
-        // Set caption
-        postViewCaption.textContent = post.content || '';
+        // Set caption fallback based on content and metadata.
+        const postMetadata = normalizePostMetadata(post?.metadata);
+        postViewCaption.textContent = post.content
+            || postMetadata.description
+            || postMetadata.title
+            || post.event_title
+            || '';
 
         // Set vote and comment counts
         if (postViewUpvoteCount) postViewUpvoteCount.textContent = post.upvote_count ?? '0';
         if (postViewDownvoteCount) postViewDownvoteCount.textContent = post.downvote_count ?? '0';
         if (postViewCommentCount) postViewCommentCount.textContent = post.comment_count ?? '0';
         if (postViewCommentBadge) postViewCommentBadge.textContent = post.comment_count ?? '0';
+
+        const postId = Number(post.post_id || post.postId || 0);
+        const isBookmarked = Number(post.is_bookmarked ?? post.isBookmarked ?? 0) === 1 || post.isBookmarked === true;
+        if (postViewSaveBtn) {
+            postViewSaveBtn.dataset.postId = postId ? String(postId) : '';
+            postViewSaveBtn.classList.toggle('bookmarked', isBookmarked);
+            postViewSaveBtn.setAttribute('aria-pressed', isBookmarked ? 'true' : 'false');
+            const bookmarkIcon = postViewSaveBtn.querySelector('i');
+            if (bookmarkIcon) {
+                bookmarkIcon.classList.remove('uil', 'uil-bookmark', 'uis', 'uis-bookmark', 'bookmarked');
+                if (isBookmarked) {
+                    bookmarkIcon.classList.add('uis', 'uis-bookmark', 'bookmarked');
+                } else {
+                    bookmarkIcon.classList.add('uil', 'uil-bookmark');
+                }
+            }
+        }
 
         // Highlight previous vote
         updateModalVoteState(post.user_vote ? post.user_vote : null, 'init');
@@ -499,6 +1372,76 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Load modal comments for this post
         loadModalComments(post.post_id || post.postId);
+    }
+
+    function setModalSaveVisualState(isBookmarked) {
+        if (!postViewSaveBtn) return;
+        postViewSaveBtn.classList.toggle('bookmarked', !!isBookmarked);
+        postViewSaveBtn.setAttribute('aria-pressed', isBookmarked ? 'true' : 'false');
+        const bookmarkIcon = postViewSaveBtn.querySelector('i');
+        if (bookmarkIcon) {
+            bookmarkIcon.classList.remove('uil', 'uil-bookmark', 'uis', 'uis-bookmark', 'bookmarked');
+            if (isBookmarked) {
+                bookmarkIcon.classList.add('uis', 'uis-bookmark', 'bookmarked');
+            } else {
+                bookmarkIcon.classList.add('uil', 'uil-bookmark');
+            }
+        }
+    }
+
+    async function handleModalSaveToggle(event) {
+        if (event) {
+            event.preventDefault();
+            event.stopPropagation();
+        }
+        if (!postViewSaveBtn) return;
+        if (postViewSaveBtn.dataset.busy === '1') return;
+
+        const postId = Number(postViewSaveBtn.dataset.postId || postViewModal?.dataset.postId || 0);
+        if (!postId) {
+            window.showToast?.('Invalid post', 'error');
+            return;
+        }
+
+        const currentlyBookmarked = postViewSaveBtn.classList.contains('bookmarked');
+        const nextState = !currentlyBookmarked;
+        setModalSaveVisualState(nextState);
+        postViewSaveBtn.dataset.busy = '1';
+
+        try {
+            const formData = new FormData();
+            formData.append('post_id', String(postId));
+            formData.append('action', currentlyBookmarked ? 'remove' : 'add');
+
+            const response = await fetch(BASE_PATH + 'index.php?controller=Posts&action=bookmark', {
+                method: 'POST',
+                body: formData,
+            });
+
+            const data = await response.json();
+            if (!data.success) {
+                setModalSaveVisualState(currentlyBookmarked);
+                window.showToast?.(data.message || 'Unable to update bookmark', 'error');
+                return;
+            }
+
+            const bookmarked = !!data.bookmarked;
+            setModalSaveVisualState(bookmarked);
+            if (typeof window.__hanthanaSetBookmarkState === 'function') {
+                window.__hanthanaSetBookmarkState(postId, bookmarked);
+            }
+            if (currentPosts[currentPostIndex]) {
+                currentPosts[currentPostIndex].is_bookmarked = bookmarked ? 1 : 0;
+                currentPosts[currentPostIndex].isBookmarked = bookmarked;
+            }
+            window.showToast?.(data.message || (bookmarked ? 'Post saved' : 'Bookmark removed'), 'success');
+        } catch (error) {
+            console.error('Modal bookmark request failed:', error);
+            setModalSaveVisualState(currentlyBookmarked);
+            window.showToast?.('Unable to update bookmark', 'error');
+        } finally {
+            postViewSaveBtn.dataset.busy = '0';
+        }
     }
 
     function updateModalVoteState(voteType, action = '') {
@@ -573,7 +1516,11 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             if (data.success) {
-                postViewCommentsList.innerHTML = renderModalComments(data.comments || []);
+                modalCommentsMeta = {
+                    currentUserId: Number(data.currentUserId || 0),
+                    postOwnerId: Number(data.postOwnerId || 0),
+                };
+                postViewCommentsList.innerHTML = renderModalComments(data.comments || [], modalCommentsMeta);
                 updateCommentBadges(data.comment_count ?? (currentPosts[currentPostIndex]?.comment_count || 0));
             } else {
                 postViewCommentsList.innerHTML = `<div class="comments-loading">${data.message || 'No comments found'}</div>`;
@@ -590,47 +1537,137 @@ document.addEventListener('DOMContentLoaded', () => {
         if (postViewCommentBadge) postViewCommentBadge.textContent = formatted;
     }
 
-    function renderModalComments(comments) {
+    function canManageComment(comment, meta = {}) {
+        const currentUserId = Number(meta.currentUserId || 0);
+        const postOwnerId = Number(meta.postOwnerId || 0);
+        const commenterId = Number(comment?.commenter_id || comment?.commenterId || 0);
+        return currentUserId > 0 && (commenterId === currentUserId || postOwnerId === currentUserId);
+    }
+
+    function getCommentDisplayName(comment) {
+        const firstName = String(comment?.first_name || '').trim();
+        const lastName = String(comment?.last_name || '').trim();
+        const fullName = `${firstName} ${lastName}`.trim();
+        return fullName || String(comment?.username || comment?.author || 'Unknown User');
+    }
+
+    function getCommentProfileLink(comment) {
+        const userId = Number(comment?.commenter_id || comment?.user_id || 0);
+        if (!userId) return '#';
+        return `${BASE_PATH}index.php?controller=Profile&action=view&user_id=${userId}`;
+    }
+
+    function renderModalComments(comments, meta = {}) {
         if (!comments || comments.length === 0) {
             return '<div class="no-comments">No comments yet. Be the first to comment.</div>';
         }
 
         return comments.map(comment => {
-            const author = escapeHtml(comment.username || comment.author || 'Unknown');
+            const author = escapeHtml(getCommentDisplayName(comment));
             const body = escapeHtml(comment.content || comment.comment || '');
             const timestamp = escapeHtml(comment.created_at || '');
-            const repliesHtml = (comment.replies || []).map(renderModalReply).join('');
+            const profileLink = escapeHtml(getCommentProfileLink(comment));
+            const profilePicture = escapeHtml(comment.profile_picture || `${BASE_PATH}uploads/user_dp/default_user_dp.jpg`);
+            const canManage = canManageComment(comment, meta);
+            const repliesHtml = (comment.replies || []).map(reply => renderModalReply(reply, meta)).join('');
             const commentId = comment.comment_id ?? comment.commentId ?? '';
+            const actions = [
+                `<button type="button" class="comment-action-btn comment-reply-btn" data-comment-action="reply" data-parent-id="${commentId}">Reply</button>`
+            ];
+            if (canManage) {
+                actions.push(`<button type="button" class="comment-action-btn" data-comment-action="edit" data-comment-id="${commentId}">Edit</button>`);
+                actions.push(`<button type="button" class="comment-action-btn" data-comment-action="delete" data-comment-id="${commentId}">Delete</button>`);
+            }
             return `
                 <div class="modal-comment" data-comment-id="${commentId}">
                     <div class="comment-header">
-                        <span>${author}</span>
-                        <span>${timestamp}</span>
+                        <a class="comment-author-link" href="${profileLink}">
+                            <img src="${profilePicture}" alt="${author}" class="comment-avatar">
+                            <span class="comment-author">${author}</span>
+                        </a>
+                        <span class="comment-time">${timestamp}</span>
                     </div>
-                    <div class="comment-body">${body}</div>
-                    <button type="button" class="comment-reply-btn" data-parent-id="${commentId}">
-                        <i class="uil uil-reply"></i>
-                        <span>Reply</span>
-                    </button>
+                    <div class="comment-body" data-comment-content>${body}</div>
+                    <div class="modal-comment-actions">${actions.join('')}</div>
                     <div class="reply-list">${repliesHtml}</div>
                 </div>
             `;
         }).join('');
     }
 
-    function renderModalReply(reply) {
-        const author = escapeHtml(reply.username || reply.author || 'Unknown');
+    function renderModalReply(reply, meta = {}) {
+        const author = escapeHtml(getCommentDisplayName(reply));
         const body = escapeHtml(reply.content || reply.comment || '');
         const timestamp = escapeHtml(reply.created_at || '');
+        const profileLink = escapeHtml(getCommentProfileLink(reply));
+        const profilePicture = escapeHtml(reply.profile_picture || `${BASE_PATH}uploads/user_dp/default_user_dp.jpg`);
+        const replyId = reply.comment_id ?? reply.commentId ?? '';
+        const canManage = canManageComment(reply, meta);
         return `
-            <div class="modal-reply">
+            <div class="modal-reply" data-comment-id="${replyId}">
                 <div class="reply-header">
-                    <span>${author}</span>
-                    <span>${timestamp}</span>
+                    <a class="comment-author-link" href="${profileLink}">
+                        <img src="${profilePicture}" alt="${author}" class="comment-avatar">
+                        <span class="comment-author">${author}</span>
+                    </a>
+                    <span class="comment-time">${timestamp}</span>
                 </div>
-                <div class="reply-body">${body}</div>
+                <div class="reply-body" data-comment-content>${body}</div>
+                ${canManage ? `<div class="modal-comment-actions"><button type="button" class="comment-action-btn" data-comment-action="edit" data-comment-id="${replyId}">Edit</button><button type="button" class="comment-action-btn" data-comment-action="delete" data-comment-id="${replyId}">Delete</button></div>` : ''}
             </div>
         `;
+    }
+
+    async function editModalComment(commentId) {
+        const root = postViewCommentsList?.querySelector(`[data-comment-id="${commentId}"]`);
+        const contentElement = root ? root.querySelector('[data-comment-content]') : null;
+        const currentValue = (contentElement?.textContent || '').trim();
+        const newValue = window.prompt('Edit comment', currentValue);
+
+        if (newValue === null) return;
+        const trimmed = newValue.trim();
+        if (!trimmed) {
+            window.showToast?.('Comment cannot be empty', 'error');
+            return;
+        }
+
+        const formData = new FormData();
+        formData.append('sub_action', 'edit');
+        formData.append('comment_id', String(commentId));
+        formData.append('content', trimmed);
+
+        const response = await fetch(BASE_PATH + 'index.php?controller=Comment&action=handleAjax', {
+            method: 'POST',
+            body: formData,
+        });
+        const data = await response.json();
+        if (!data.success) {
+            throw new Error(data.message || 'Unable to update comment.');
+        }
+
+        if (contentElement) {
+            contentElement.textContent = trimmed;
+        }
+    }
+
+    async function deleteModalComment(commentId) {
+        const formData = new FormData();
+        formData.append('sub_action', 'delete');
+        formData.append('comment_id', String(commentId));
+
+        const response = await fetch(BASE_PATH + 'index.php?controller=Comment&action=handleAjax', {
+            method: 'POST',
+            body: formData,
+        });
+        const data = await response.json();
+        if (!data.success) {
+            throw new Error(data.message || 'Unable to delete comment.');
+        }
+
+        if (data.comment_count !== undefined) {
+            updateCommentBadges(Number(data.comment_count || 0));
+        }
+        await loadModalComments(postViewModal?.dataset.postId);
     }
 
     function escapeHtml(string) {
@@ -732,7 +1769,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         clearReplyForm();
         const form = document.createElement('form');
-        form.className = 'reply-form';
+        form.className = 'reply-form hf-form hf-inline';
         form.innerHTML = `
             <textarea placeholder="Write a reply..." rows="3"></textarea>
             <button type="button">Reply</button>
@@ -764,16 +1801,65 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (postViewCommentsList) {
         postViewCommentsList.addEventListener('click', (event) => {
-            console.log('Comment list clicked:', event.target);
+            const directReplyButton = event.target.closest('.comment-reply-btn');
+            if (directReplyButton) {
+                event.preventDefault();
+                event.stopPropagation();
+                const commentBlock = directReplyButton.closest('.modal-comment');
+                if (!commentBlock) return;
+                const parentId = directReplyButton.dataset.parentId || commentBlock.dataset.commentId;
+                if (!parentId) return;
+                const replyAnchor = commentBlock.querySelector('.reply-list') || commentBlock;
+                attachReplyForm(parentId, replyAnchor);
+                return;
+            }
+
+            const actionButton = event.target.closest('[data-comment-action]');
+            if (actionButton) {
+                event.preventDefault();
+                const action = actionButton.dataset.commentAction;
+
+                if (action === 'reply') {
+                    const parentId = actionButton.dataset.parentId;
+                    const commentBlock = actionButton.closest('.modal-comment');
+                    if (!commentBlock || !parentId) return;
+                    const replyAnchor = commentBlock.querySelector('.reply-list') || commentBlock;
+                    attachReplyForm(parentId, replyAnchor);
+                    return;
+                }
+
+                const commentId = Number(actionButton.dataset.commentId || 0);
+                if (!commentId) return;
+
+                if (action === 'edit') {
+                    editModalComment(commentId).catch((error) => {
+                        console.error('Edit modal comment failed:', error);
+                        window.showToast?.(error?.message || 'Unable to update comment', 'error');
+                    });
+                    return;
+                }
+
+                if (action === 'delete') {
+                    const confirmed = window.confirm('Delete this comment?');
+                    if (!confirmed) return;
+
+                    deleteModalComment(commentId).catch((error) => {
+                        console.error('Delete modal comment failed:', error);
+                        window.showToast?.(error?.message || 'Unable to delete comment', 'error');
+                    });
+                    return;
+                }
+            }
+
             const replyTrigger = event.target.closest('.comment-reply-btn');
-            console.log('Reply trigger found:', replyTrigger);
             if (!replyTrigger) return;
             event.preventDefault();
             event.stopPropagation();
             const parentId = replyTrigger.dataset.parentId;
             const commentBlock = replyTrigger.closest('.modal-comment');
-            console.log('Attaching reply form for comment:', parentId);
-            attachReplyForm(parentId, commentBlock);
+            if (!commentBlock || !parentId) return;
+            const replyAnchor = commentBlock.querySelector('.reply-list') || commentBlock;
+            attachReplyForm(parentId, replyAnchor);
         });
     }
 
@@ -843,10 +1929,90 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    if (postViewSaveBtn) {
+        postViewSaveBtn.addEventListener('click', handleModalSaveToggle);
+    }
+
+    if (postViewMenuTrigger && postViewMenuDropdown) {
+        postViewMenuTrigger.addEventListener('click', (event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            if (isPostViewMenuOpen()) closePostViewMenu();
+            else openPostViewMenu();
+        });
+    }
+
+    if (postViewMenuDropdown) {
+        postViewMenuDropdown.addEventListener('click', (event) => {
+            event.stopPropagation();
+            const menuButton = event.target.closest('.post-view-menu-item');
+            if (!menuButton) return;
+            if (menuButton.id !== 'postViewReportAction') {
+                event.preventDefault();
+            }
+
+            const post = currentPosts[currentPostIndex];
+            const postId = Number(post?.post_id || post?.postId || 0);
+            if (!postId) {
+                closePostViewMenu();
+                return;
+            }
+
+            if (menuButton.id === 'postViewEditAction') {
+                const currentText = String(post?.content || '').trim();
+                const edited = window.prompt('Edit post', currentText);
+                if (edited === null) {
+                    closePostViewMenu();
+                    return;
+                }
+                const cleaned = edited.trim();
+                if (!cleaned) {
+                    window.showToast?.('Post content cannot be empty', 'error');
+                    closePostViewMenu();
+                    return;
+                }
+
+                updateCurrentPostContent(cleaned)
+                    .then(() => {
+                        displayPost(currentPostIndex);
+                        window.showToast?.('Post updated', 'success');
+                    })
+                    .catch((error) => {
+                        console.error('Modal post update failed:', error);
+                        window.showToast?.(error?.message || 'Unable to update post', 'error');
+                    })
+                    .finally(closePostViewMenu);
+                return;
+            }
+
+            if (menuButton.id === 'postViewDeleteAction') {
+                const confirmed = window.confirm('Delete this post? This cannot be undone.');
+                if (!confirmed) {
+                    closePostViewMenu();
+                    return;
+                }
+
+                deleteCurrentPost()
+                    .then(() => {
+                        window.showToast?.('Post deleted', 'success');
+                    })
+                    .catch((error) => {
+                        console.error('Modal post delete failed:', error);
+                        window.showToast?.(error?.message || 'Unable to delete post', 'error');
+                    })
+                    .finally(closePostViewMenu);
+                return;
+            }
+
+            closePostViewMenu();
+        });
+    }
+
     // Keyboard navigation
     document.addEventListener('keydown', (e) => {
         if (postViewModal && postViewModal.classList.contains('active')) {
             if (e.key === 'Escape') {
+                closePostViewMenu();
                 closePostModal();
             } else if (e.key === 'ArrowLeft') {
                 showPrevPost();
@@ -858,11 +2024,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Click handlers for post grid items
     document.addEventListener('click', (e) => {
+        if (postViewMenu && !postViewMenu.contains(e.target)) {
+            closePostViewMenu();
+        }
+
         const postGridItem = e.target.closest('.post-grid-item');
         if (postGridItem && postGridItem.hasAttribute('data-post-index')) {
             e.preventDefault();
             e.stopPropagation();
-            const index = parseInt(postGridItem.getAttribute('data-post-index'));
+            const index = parseInt(postGridItem.getAttribute('data-post-index') || '', 10);
+            if (!Number.isInteger(index)) return;
             const type = postGridItem.getAttribute('data-post-type') || 'personal';
             openPostModal(index, type);
         }
@@ -876,10 +2047,12 @@ document.addEventListener('DOMContentLoaded', () => {
             hash = hash.replace(/-comments$/, '');
         }
 
-        if (hash.startsWith('personal-post-') || hash.startsWith('group-post-')) {
+        if (hash.startsWith('personal-post-') || hash.startsWith('group-post-') || hash.startsWith('saved-post-')) {
             const parts = hash.split('-');
             const postId = parseInt(parts[parts.length - 1], 10);
-            const postType = hash.startsWith('personal-post-') ? 'personal' : 'group';
+            const postType = hash.startsWith('group-post-')
+                ? 'group'
+                : (hash.startsWith('saved-post-') ? 'saved' : 'personal');
 
             setTimeout(() => {
                 openPostModalByPostId(postId, postType);

@@ -1,14 +1,17 @@
 <?php
 require_once __DIR__ . '/../models/CalendarReminderModel.php';
+require_once __DIR__ . '/../models/NotificationsModel.php';
 
 class CalendarController {
     private $calendarModel;
+    private $notificationsModel;
 
     public function __construct() {
         if (session_status() === PHP_SESSION_NONE) {
             session_start();
         }
         $this->calendarModel = new CalendarReminderModel();
+        $this->notificationsModel = new NotificationsModel();
     }
 
     public function handleAjax() {
@@ -38,6 +41,9 @@ class CalendarController {
             case 'delete':
                 $this->deleteReminder($userId, $input);
                 break;
+            case 'toggle_event':
+                $this->toggleEventReminder($userId, $input);
+                break;
             default:
                 echo json_encode(['success' => false, 'message' => 'Unknown calendar action']);
         }
@@ -46,6 +52,7 @@ class CalendarController {
     private function listReminders(int $userId): void {
         try {
             $reminders = $this->calendarModel->listReminders($userId);
+            $this->dispatchDueReminderNotifications($userId, $reminders);
             echo json_encode([
                 'success' => true,
                 'events' => array_map([$this, 'formatReminder'], $reminders)
@@ -75,6 +82,49 @@ class CalendarController {
         }
     }
 
+    private function toggleEventReminder(int $userId, array $input): void {
+        $postId = isset($input['post_id']) ? (int)$input['post_id'] : 0;
+        $groupId = isset($input['group_id']) ? (int)$input['group_id'] : 0;
+
+        if ($postId <= 0) {
+            echo json_encode(['success' => false, 'message' => 'Invalid event']);
+            return;
+        }
+
+        $existing = $this->calendarModel->getReminderForPost($userId, $postId);
+
+        if ($existing) {
+            $this->calendarModel->deleteReminder($userId, $postId);
+            echo json_encode([
+                'success' => true,
+                'interested' => false,
+                'message' => 'Removed from your calendar'
+            ]);
+            return;
+        }
+
+        $payload = [
+            'title' => trim((string)($input['event_title'] ?? $input['title'] ?? 'Untitled Event')),
+            'event_date' => !empty($input['event_date']) ? $input['event_date'] : null,
+            'event_time' => !empty($input['event_time']) ? $input['event_time'] : null,
+            'location' => !empty($input['event_location']) ? $input['event_location'] : ($input['location'] ?? null),
+            'description' => !empty($input['event_description']) ? $input['event_description'] : ($input['description'] ?? null),
+            'metadata' => [
+                'source' => 'events_page',
+                'post_id' => $postId,
+                'group_id' => $groupId ?: null
+            ]
+        ];
+
+        $saved = $this->calendarModel->upsertReminder($userId, $groupId ?: null, $postId, $payload);
+
+        echo json_encode([
+            'success' => (bool)$saved,
+            'interested' => (bool)$saved,
+            'message' => $saved ? 'Event saved to your calendar' : 'Failed to save reminder'
+        ]);
+    }
+
     private function formatReminder(array $reminder): array {
         return [
             'post_id' => (int)$reminder['post_id'],
@@ -87,5 +137,61 @@ class CalendarController {
             'metadata' => $reminder['metadata'] ?? [],
             'created_at' => $reminder['created_at'] ?? null
         ];
+    }
+
+    private function dispatchDueReminderNotifications(int $userId, array $reminders): void {
+        $now = new DateTime('now');
+
+        foreach ($reminders as $reminder) {
+            $postId = (int)($reminder['post_id'] ?? 0);
+            $eventDate = trim((string)($reminder['event_date'] ?? ''));
+            if ($postId <= 0 || $eventDate === '') {
+                continue;
+            }
+
+            $eventTime = trim((string)($reminder['event_time'] ?? ''));
+            if ($eventTime === '') {
+                $eventTime = '00:00:00';
+            }
+
+            $eventAt = DateTime::createFromFormat('Y-m-d H:i:s', $eventDate . ' ' . $eventTime);
+            if (!$eventAt) {
+                continue;
+            }
+
+            $secondsLeft = $eventAt->getTimestamp() - $now->getTimestamp();
+            if ($secondsLeft <= 0) {
+                continue;
+            }
+
+            $stage = null;
+            if ($secondsLeft <= 1800) {
+                $stage = '30m';
+            } elseif ($secondsLeft <= 86400) {
+                $stage = '24h';
+            }
+
+            if ($stage === null || $this->notificationsModel->hasEventReminderStageNotification($userId, $postId, $stage)) {
+                continue;
+            }
+
+            $title = $stage === '30m' ? 'Event reminder (30m)' : 'Event reminder (24h)';
+            $message = $stage === '30m'
+                ? 'Your event "' . ($reminder['title'] ?? 'Untitled Event') . '" starts in 30 minutes.'
+                : 'Your event "' . ($reminder['title'] ?? 'Untitled Event') . '" starts within 24 hours.';
+
+            $this->notificationsModel->createNotification(
+                $userId,
+                null,
+                'event_reminder',
+                $title,
+                $message,
+                BASE_PATH . 'index.php?controller=Events&action=index',
+                'high',
+                $postId,
+                'event',
+                $eventAt->format('Y-m-d H:i:s')
+            );
+        }
     }
 }

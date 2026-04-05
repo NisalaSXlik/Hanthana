@@ -9,6 +9,9 @@ const calender = document.querySelector(".calender"),
     dateInput = document.querySelector(".date-input"),
     calendarPopup = document.getElementById("calendarPopup");
 
+const navCalendarPopup = document.getElementById('calendar-popup');
+const calendarIcon = document.querySelector('.calendar-icon');
+
 let today = new Date();
 let activeDay;
 let month = today.getMonth();
@@ -134,6 +137,68 @@ function addDayClickListeners() {
     });
 }
 
+function hideEventPanel() {
+    if (calendarPopup) {
+        calendarPopup.style.display = 'none';
+    }
+}
+
+function hideNavCalendarPopup() {
+    if (navCalendarPopup) {
+        navCalendarPopup.style.display = 'none';
+    }
+}
+
+function ensureCalendarPanelCloseButton() {
+    const header = document.querySelector('#calendarPopup .calendar-popup-header');
+    if (!header) return;
+    if (header.querySelector('.calendar-panel-close')) return;
+
+    const closeBtn = document.createElement('button');
+    closeBtn.type = 'button';
+    closeBtn.className = 'calendar-panel-close';
+    closeBtn.setAttribute('aria-label', 'Close events panel');
+    closeBtn.innerHTML = '<i class="uil uil-times"></i>';
+    closeBtn.addEventListener('click', (event) => {
+        event.stopPropagation();
+        hideEventPanel();
+    });
+
+    header.appendChild(closeBtn);
+}
+
+function positionEventPanelNearCalendar() {
+    if (!calendarPopup) return;
+
+    const margin = 12;
+    const popupWidth = calendarPopup.offsetWidth || 320;
+    const sourceRect = navCalendarPopup?.getBoundingClientRect?.() || calendarIcon?.getBoundingClientRect?.();
+
+    let top = 108;
+    let left = window.innerWidth - popupWidth - margin;
+
+    if (sourceRect) {
+        top = Math.max(margin + 56, Math.round(sourceRect.top));
+
+        const rightSideLeft = Math.round(sourceRect.right + margin);
+        const leftSideLeft = Math.round(sourceRect.left - popupWidth - margin);
+        const canUseRightSide = rightSideLeft + popupWidth <= window.innerWidth - margin;
+        const canUseLeftSide = leftSideLeft >= margin;
+
+        if (canUseRightSide) {
+            left = rightSideLeft;
+        } else if (canUseLeftSide) {
+            left = leftSideLeft;
+        } else {
+            left = Math.max(margin, Math.min(window.innerWidth - popupWidth - margin, rightSideLeft));
+        }
+    }
+
+    calendarPopup.style.top = `${top}px`;
+    calendarPopup.style.left = `${left}px`;
+    calendarPopup.style.right = 'auto';
+}
+
 // Show events popup for a specific day
 function showEventsPopup(month, day, year, dateKey) {
     const popupDate = document.getElementById('popup-date');
@@ -151,29 +216,27 @@ function showEventsPopup(month, day, year, dateKey) {
     
     if (events.length > 0) {
         eventsContainer.classList.add('has-events');
-        
-        // Add close button
-        const closeBtn = document.createElement('div');
-        closeBtn.className = 'close-popup';
-        closeBtn.innerHTML = '<i class="uil uil-times"></i>';
-        closeBtn.addEventListener('click', () => {
-            if (calendarPopup) {
-                calendarPopup.style.display = 'none';
-            }
-        });
-        eventsContainer.appendChild(closeBtn);
-        
+
         events.forEach(event => {
             const eventElement = document.createElement('div');
             eventElement.className = 'event-item';
             const title = event.title || 'Scheduled event';
             const timeLabel = formatEventTimeLabel(event.event_time);
             const location = event.location ? `<div class="event-location"><i class="uil uil-location-point"></i> ${event.location}</div>` : '';
+            const eventId = Number(event.post_id || 0);
             eventElement.innerHTML = `
                 <div class="event-time">${timeLabel}</div>
                 <div class="event-title">${title}</div>
                 ${location}
             `;
+            if (eventId) {
+                eventElement.style.cursor = 'pointer';
+                eventElement.title = 'Open this event';
+                eventElement.addEventListener('click', () => {
+                    const basePath = (typeof BASE_PATH === 'string' ? BASE_PATH : '/').replace(/\/$/, '');
+                    window.location.href = `${basePath}/index.php?controller=Events&action=index&filter=added_to_calendar&target_event_id=${eventId}`;
+                });
+            }
             eventsContainer.appendChild(eventElement);
         });
     } else {
@@ -187,14 +250,30 @@ function showEventsPopup(month, day, year, dateKey) {
     }
     
     if (calendarPopup) {
+        positionEventPanelNearCalendar();
         calendarPopup.style.display = 'block';
     }
 }
-// Close popup when clicking outside
+
+// Close behavior:
+// 1) click outside calendar + side panel => close both
+// 2) click inside calendar but not on a date => close side panel only
 document.addEventListener('click', (e) => {
-    if (calendarPopup && !e.target.closest('.day') && !e.target.closest('#calendarPopup')) {
-        calendarPopup.style.display = 'none';
+    const clickedDateCell = !!e.target.closest('.day:not(.prev-date):not(.next-date)');
+    const insideNavCalendar = !!e.target.closest('#calendar-popup') || !!e.target.closest('.calendar-icon');
+    const insideEventPanel = !!e.target.closest('#calendarPopup');
+
+    if (clickedDateCell || insideEventPanel) {
+        return;
     }
+
+    if (insideNavCalendar) {
+        hideEventPanel();
+        return;
+    }
+
+    hideEventPanel();
+    hideNavCalendarPopup();
 });
 
 // Navigation functions
@@ -262,6 +341,7 @@ if (dateInput) {
 }
 
 // Initialize the calendar
+ensureCalendarPanelCloseButton();
 initCalendar();
 fetchCalendarEvents();
 document.addEventListener('calendar:refresh', fetchCalendarEvents);
@@ -287,38 +367,26 @@ if (notificationIcon && notificationPopup) {
     });
 }
 
-// Calendar popup toggle
-const calendarIcon = document.querySelector('.calendar-icon');
-const calendarPopupElement = document.querySelector('.calendar-popup');
-
-if (calendarIcon && calendarPopupElement) {
+// Calendar popup toggle (navbar month grid)
+if (calendarIcon && navCalendarPopup) {
     calendarIcon.addEventListener('click', (e) => {
         e.stopPropagation();
-        calendarPopupElement.style.display = calendarPopupElement.style.display === 'block' ? 'none' : 'block';
+        const isOpen = navCalendarPopup.style.display === 'block';
+        navCalendarPopup.style.display = isOpen ? 'none' : 'block';
+        if (isOpen) {
+            hideEventPanel();
+        } else {
+            positionEventPanelNearCalendar();
+        }
     });
 
-    // Close calendar popup when clicking outside
-    document.addEventListener('click', () => {
-        calendarPopupElement.style.display = 'none';
-    });
-
-    // Prevent calendar popup from closing when clicking inside it
-    calendarPopupElement.addEventListener('click', (e) => {
+    navCalendarPopup.addEventListener('click', (e) => {
         e.stopPropagation();
     });
 }
 
-// calendar.js - Handles calendar-related functionality
-document.addEventListener('DOMContentLoaded', function() {
-    const calendarIcon = document.querySelector('.calendar-icon');
-    
-    if (calendarIcon) {
-        calendarIcon.addEventListener('click', function(e) {
-            // Calendar functionality here
-            console.log("Calendar clicked");
-            // Implement calendar logic
-        });
+window.addEventListener('resize', () => {
+    if (calendarPopup && calendarPopup.style.display === 'block') {
+        positionEventPanelNearCalendar();
     }
-    
-    // Other calendar-related functions
 });

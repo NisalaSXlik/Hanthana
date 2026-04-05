@@ -2,6 +2,17 @@ class CommentSystem {
     constructor() {
         this.init();
     }
+
+    getThreadType(postId) {
+        const section = document.querySelector(`.comment-section[data-post-id="${postId}"]`);
+        return section?.dataset.threadLabel === 'answers' ? 'answers' : 'comments';
+    }
+
+    getThreadLabel(postId, plural = true) {
+        const type = this.getThreadType(postId);
+        if (type === 'answers') return plural ? 'answers' : 'answer';
+        return plural ? 'comments' : 'comment';
+    }
     
     init() {
         this.bindEvents();
@@ -121,6 +132,7 @@ class CommentSystem {
     async loadComments(postId) {
         const container = document.getElementById(`comments-container-${postId}`);
         if (!container) return;
+        const threadLabel = this.getThreadLabel(postId, true);
         
         try {
             const formData = new FormData();
@@ -149,7 +161,7 @@ class CommentSystem {
                 this.displayComments(container, data.comments || [], { 
                     currentUserId: data.currentUserId, 
                     postOwnerId: data.postOwnerId 
-                });
+                }, threadLabel);
             } else {
                 container.innerHTML = `<div class="comments-loading">${data.message || 'Failed to load comments'}</div>`;
             }
@@ -159,9 +171,10 @@ class CommentSystem {
         }
     }
     
-    displayComments(container, comments, meta = {}) {
+    displayComments(container, comments, meta = {}, threadLabel = 'comments') {
         if (comments.length === 0) {
-            container.innerHTML = '<div class="no-comments">No comments yet. Be the first to comment!</div>';
+            const emptyLabel = threadLabel === 'answers' ? 'No answers yet. Be the first to answer!' : 'No comments yet. Be the first to comment!';
+            container.innerHTML = `<div class="no-comments">${emptyLabel}</div>`;
             return;
         }
         
@@ -179,6 +192,10 @@ class CommentSystem {
         const currentUserId = meta.currentUserId;
         const postOwnerId = meta.postOwnerId;
         const canModerate = (Number(comment.commenter_id) === Number(currentUserId)) || (Number(postOwnerId) === Number(currentUserId));
+        const commenterId = Number(comment.commenter_id || comment.user_id || 0);
+        const commenterProfileUrl = commenterId > 0
+            ? `${BASE_PATH}index.php?controller=Profile&action=view&user_id=${commenterId}`
+            : '';
         
         // Profile picture is already resolved by MediaHelper on the server side
         const profilePic = comment.profile_picture || BASE_PATH + 'uploads/user_dp/default_user_dp.jpg';
@@ -188,6 +205,10 @@ class CommentSystem {
             repliesHtml = comment.replies.map(reply => {
                 reply.author = reply.username || 'Unknown';
                 const replyCanModerate = (Number(reply.commenter_id) === Number(currentUserId)) || (Number(postOwnerId) === Number(currentUserId));
+                const replyUserId = Number(reply.commenter_id || reply.user_id || 0);
+                const replyProfileUrl = replyUserId > 0
+                    ? `${BASE_PATH}index.php?controller=Profile&action=view&user_id=${replyUserId}`
+                    : '';
                 
                 // Profile picture is already resolved by MediaHelper on the server side
                 const replyProfilePic = reply.profile_picture || BASE_PATH + 'uploads/user_dp/default_user_dp.jpg';
@@ -195,8 +216,8 @@ class CommentSystem {
                 return `
                 <div class="comment reply" data-comment-id="${reply.comment_id}" style="margin-left: 40px;">
                     <div class="comment-header-info">
-                        <img src="${replyProfilePic}" alt="${reply.author}" class="comment-avatar">
-                        <span class="comment-author">${reply.author}</span>
+                        ${replyProfileUrl ? `<a href="${replyProfileUrl}" class="comment-author-link"><img src="${replyProfilePic}" alt="${reply.author}" class="comment-avatar"></a>` : `<img src="${replyProfilePic}" alt="${reply.author}" class="comment-avatar">`}
+                        ${replyProfileUrl ? `<a href="${replyProfileUrl}" class="comment-author comment-author-link">${reply.author}</a>` : `<span class="comment-author">${reply.author}</span>`}
                         <span class="comment-time">${this.getTimeAgo(reply.created_at)}</span>
                     </div>
                     <div class="comment-text" data-comment-content>${this.escapeHtml(reply.content)}</div>
@@ -212,8 +233,8 @@ class CommentSystem {
         return `
         <div class="comment" data-comment-id="${comment.comment_id}">
             <div class="comment-header-info">
-                <img src="${profilePic}" alt="${comment.author}" class="comment-avatar">
-                <span class="comment-author">${comment.author}</span>
+                ${commenterProfileUrl ? `<a href="${commenterProfileUrl}" class="comment-author-link"><img src="${profilePic}" alt="${comment.author}" class="comment-avatar"></a>` : `<img src="${profilePic}" alt="${comment.author}" class="comment-avatar">`}
+                ${commenterProfileUrl ? `<a href="${commenterProfileUrl}" class="comment-author comment-author-link">${comment.author}</a>` : `<span class="comment-author">${comment.author}</span>`}
                 <span class="comment-time">${timeAgo}</span>
             </div>
             <div class="comment-text" data-comment-content>${this.escapeHtml(comment.content)}</div>
@@ -333,10 +354,10 @@ class CommentSystem {
                 
                 // Update both the comment button text and the comment count display
                 if (data.comment_count !== undefined) {
-                    // Update "View all X comments" text
-                    const viewCommentsDiv = document.querySelector(`.comments.load-comments-btn[data-post-id="${postId}"]`);
+                    const threadLabel = this.getThreadLabel(postId, true);
+                    const viewCommentsDiv = document.querySelector(`.load-comments-btn[data-post-id="${postId}"]`);
                     if (viewCommentsDiv) {
-                        viewCommentsDiv.textContent = `View all ${data.comment_count} comments`;
+                        viewCommentsDiv.innerHTML = `<i class="uil uil-comment" aria-hidden="true"></i> ${data.comment_count} ${threadLabel}`;
                         // Make sure it's visible
                         viewCommentsDiv.style.display = 'block';
                     }
@@ -356,7 +377,7 @@ class CommentSystem {
                     }
                 }
                 
-                this.showToast('Comment added successfully!', 'success');
+                this.showToast(this.getThreadType(postId) === 'answers' ? 'Answer added successfully!' : 'Comment added successfully!', 'success');
             } else {
                 console.error('CommentSystem: Server error:', data.message);
                 this.showToast(data.message || 'Failed to add comment', 'error');
@@ -437,10 +458,10 @@ class CommentSystem {
                 
                 // Update both the comment button text and the comment count display
                 if (data.comment_count !== undefined) {
-                    // Update "View all X comments" text
-                    const viewCommentsDiv = document.querySelector(`.comments.load-comments-btn[data-post-id="${postId}"]`);
+                    const threadLabel = this.getThreadLabel(postId, true);
+                    const viewCommentsDiv = document.querySelector(`.load-comments-btn[data-post-id="${postId}"]`);
                     if (viewCommentsDiv) {
-                        viewCommentsDiv.textContent = `View all ${data.comment_count} comments`;
+                        viewCommentsDiv.innerHTML = `<i class="uil uil-comment" aria-hidden="true"></i> ${data.comment_count} ${threadLabel}`;
                         viewCommentsDiv.style.display = 'block';
                     }
                     
