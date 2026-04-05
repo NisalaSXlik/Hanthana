@@ -557,27 +557,64 @@ body.page-discover .friend-requests .request .info {
     text-decoration: none;
 }
 
-/*for the text posts to be image in grid*/
-.discover-item-text {
-    background: #ffffff;
-    display: flex;
-    align-items: center;      /* vertical centering */
-    justify-content: flex-start;
-    padding: 1rem;
-    min-height: 220px;
+/* Text-only Discover tiles */
+.discover-item.discover-item-text {
+    background: linear-gradient(160deg, #ffffff 0%, #f8fbff 100%);
+    border: 1px solid var(--gray-200);
+    box-shadow: 0 6px 18px rgba(15, 23, 42, 0.08);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
-.discover-text-card {
+.discover-item.discover-item-text:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 24px rgba(15, 23, 42, 0.14);
+}
+
+.discover-item.discover-item-text .discover-text-card {
     width: 100%;
     height: 100%;
+    padding: 0.95rem 1rem;
     display: flex;
-    align-items: center;      /* vertical centering */
+    flex-direction: column;
+    align-items: flex-start;
     justify-content: flex-start;
-    text-align: left;         /* left aligned text */
-    color: #000000;           /* black text */
+    gap: 0.65rem;
+    text-align: left;
+    background: radial-gradient(120% 120% at 0% 0%, rgba(7, 92, 230, 0.08) 0%, rgba(7, 92, 230, 0) 58%);
+}
+
+.discover-item.discover-item-text .discover-text-meta {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    color: var(--color-primary);
+}
+
+.discover-item.discover-item-text .discover-text-meta i {
     font-size: 0.95rem;
-    line-height: 1.4;
-    padding: 0.5rem 0.75rem;
+    line-height: 1;
+}
+
+.discover-item.discover-item-text .discover-text-meta span {
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--color-gray);
+}
+
+.discover-item.discover-item-text .discover-text-preview {
+    margin: 0;
+    color: var(--color-dark);
+    font-size: 1rem;
+    line-height: 1.55;
+    font-weight: 500;
+    word-break: break-word;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 7;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 

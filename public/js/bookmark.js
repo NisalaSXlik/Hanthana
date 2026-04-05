@@ -9,14 +9,64 @@ document.addEventListener('DOMContentLoaded', function () {
         const icon = button.querySelector('i');
 
         button.classList.toggle('bookmarked', !!isBookmarked);
+        button.setAttribute('aria-pressed', isBookmarked ? 'true' : 'false');
 
         if (icon) {
             icon.classList.toggle('bookmarked', !!isBookmarked);
-            icon.classList.toggle('uis', !!isBookmarked);
-            icon.classList.toggle('uis-bookmark', !!isBookmarked);
-            icon.classList.toggle('uil', !isBookmarked);
-            icon.classList.toggle('uil-bookmark', !isBookmarked);
+            icon.classList.remove('uil', 'uil-bookmark', 'uil-bookmark-full', 'uis', 'uis-bookmark');
+
+            if (isBookmarked) {
+                icon.classList.add('uis', 'uis-bookmark');
+            } else {
+                icon.classList.add('uil', 'uil-bookmark');
+            }
         }
+    };
+
+    const updateBookmarkStateInKnownLists = (postId, isBookmarked) => {
+        const collections = [
+            window.PERSONAL_POSTS,
+            window.GROUP_POSTS,
+            window.SAVED_POSTS,
+            window.POSTS,
+        ];
+
+        collections.forEach((collection) => {
+            if (!Array.isArray(collection)) return;
+
+            collection.forEach((post) => {
+                if (!post) return;
+                const candidateId = parseInt(post.post_id ?? post.postId ?? 0, 10);
+                if (candidateId !== postId) return;
+
+                post.is_bookmarked = isBookmarked ? 1 : 0;
+                post.isBookmarked = !!isBookmarked;
+            });
+        });
+    };
+
+    const syncBookmarkStateAcrossPage = (postId, isBookmarked) => {
+        if (!postId) return;
+
+        const selector = `.bookmark-btn[data-post-id="${postId}"]`;
+        document.querySelectorAll(selector).forEach((bookmarkButton) => {
+            setBookmarkVisualState(bookmarkButton, !!isBookmarked);
+        });
+
+        updateBookmarkStateInKnownLists(postId, !!isBookmarked);
+
+        window.dispatchEvent(new CustomEvent('hanthana:bookmark-changed', {
+            detail: {
+                postId,
+                bookmarked: !!isBookmarked,
+            },
+        }));
+    };
+
+    window.__hanthanaSetBookmarkState = (postId, isBookmarked) => {
+        const normalizedPostId = parseInt(postId, 10);
+        if (!normalizedPostId) return;
+        syncBookmarkStateAcrossPage(normalizedPostId, !!isBookmarked);
     };
 
     document.addEventListener('click', async function (event) {
@@ -56,7 +106,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 return;
             }
 
-            setBookmarkVisualState(button, !!data.bookmarked);
+            syncBookmarkStateAcrossPage(postId, !!data.bookmarked);
             window.showToast?.(data.message || (data.bookmarked ? 'Post saved' : 'Bookmark removed'), 'success');
         } catch (error) {
             console.error('Bookmark request failed:', error);

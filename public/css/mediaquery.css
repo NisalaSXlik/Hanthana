@@ -22,6 +22,10 @@
     main .container:not(.questions-layout) {
         grid-template-columns: 1fr;
     }
+
+    main .container > .middle {
+        padding-inline: 0.3rem;
+    }
     
     body:not(.page-questions) .left,
     body:not(.page-questions) .right {

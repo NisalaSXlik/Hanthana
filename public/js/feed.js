@@ -48,7 +48,7 @@ function createPostElement(post) {
                 <i class="uil uil-comment comment-btn"></i>
                 <i class="uil uil-share-alt share-btn"></i>
             </div>
-            <i class="uil uil-bookmark save-btn ${post.isSaved ? 'saved' : ''}"></i>
+            <i class="${post.isSaved ? 'uis uis-bookmark' : 'uil uil-bookmark'} save-btn ${post.isSaved ? 'saved' : ''}"></i>
         </div>
         <div class="liked-by">
             <p>Liked by <strong>${post.likes[0]?.name || 'user'}</strong> and <span>${post.likeCount} others</span></p>
@@ -81,6 +81,18 @@ function createPostElement(post) {
     `;
 
     return postElement;
+}
+
+function setSaveIconState(icon, isSaved) {
+    if (!icon) return;
+
+    icon.classList.toggle('saved', !!isSaved);
+    icon.classList.remove('uil-bookmark', 'uil-bookmark-full', 'uil', 'uis-bookmark', 'uis');
+    if (isSaved) {
+        icon.classList.add('uis', 'uis-bookmark');
+    } else {
+        icon.classList.add('uil', 'uil-bookmark');
+    }
 }
 
 // Initialize like/save/comment interactions
@@ -118,7 +130,7 @@ function initPostInteractions() {
 
             toggleSave(postId, isSaved).then(success => {
                 if (success) {
-                    this.classList.toggle('saved');
+                    setSaveIconState(this, !isSaved);
                 }
             });
         });

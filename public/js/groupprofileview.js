@@ -501,7 +501,7 @@
                     
                     const icon = button.querySelector('i');
                     if (icon) {
-                        icon.className = interested ? 'uil uil-check' : 'uil uil-star';
+                        icon.className = interested ? 'uis uis-bookmark' : 'uil uil-star';
                     }
                     
                     button.setAttribute('aria-pressed', interested ? 'true' : 'false');

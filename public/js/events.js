@@ -268,7 +268,7 @@ function createEventCard(event) {
     const isAdded = event.is_going == 1;
     const btnClass = isAdded ? 'btn-add-calendar added' : 'btn-add-calendar';
     const btnContent = isAdded
-        ? '<i class="uil uil-check"></i><span>Added</span>'
+        ? '<i class="uis uis-bookmark"></i><span>Added</span>'
         : '<i class="uil uil-calendar-alt"></i><span>Add Calendar</span>';
     
     return `
@@ -319,7 +319,7 @@ function createEventCard(event) {
                 </div>
                 <div class="event-card-footer">
                     <div class="event-stats">
-                        <span><i class="uil uil-check-circle"></i> ${event.going_count || 0} going</span>
+                        <span><i class="uil uil-users-alt"></i> ${event.going_count || 0} going</span>
                     </div>
                     <button class="${btnClass}" title="${isAdded ? 'Added to Calendar' : 'Add to Calendar'}" onclick="addToCalendar(this, ${eventId})">
                         ${btnContent}
@@ -436,7 +436,7 @@ async function addToCalendar(btn, eventId) {
         const isAdded = !!data.interested;
         btn.classList.toggle('added', isAdded);
         btn.innerHTML = isAdded
-            ? '<i class="uil uil-check"></i><span>Added</span>'
+            ? '<i class="uis uis-bookmark"></i><span>Added</span>'
             : '<i class="uil uil-calendar-alt"></i><span>Add Calendar</span>';
         btn.title = isAdded ? 'Added to Calendar' : 'Add to Calendar';
         btn.disabled = false;

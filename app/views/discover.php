@@ -77,7 +77,11 @@ $incomingFriendRequests = $friendModel->getIncomingRequests($currentUserId);
                                         <img src="<?php echo htmlspecialchars($imageUrl); ?>" alt="Post image">
                                     <?php else: ?>
                                         <div class="discover-text-card">
-                                            <p><?php echo htmlspecialchars($shortText); ?></p>
+                                            <div class="discover-text-meta">
+                                                <i class="uil uil-align-left" aria-hidden="true"></i>
+                                                <span>Text Post</span>
+                                            </div>
+                                            <p class="discover-text-preview"><?php echo htmlspecialchars($shortText); ?></p>
                                         </div>
                                     <?php endif; ?>
 
