@@ -6,11 +6,16 @@ class PostModel {
     private $db;
     private $hasGroupPostColumns = false;
     private $hasEventTimeColumn = false;
+    private $hasPostBookmarkTable = false;
 
     public function __construct() {
         $this->db = new Database();
         $this->hasGroupPostColumns = $this->columnExists('Post', 'group_post_type');
         $this->hasEventTimeColumn = $this->columnExists('Post', 'event_time');
+        $this->hasPostBookmarkTable = $this->tableExists('PostBookmark');
+        if (!$this->hasPostBookmarkTable) {
+            $this->ensurePostBookmarkTable();
+        }
     }
 
     private function columnExists(string $table, string $column): bool {
@@ -31,6 +36,41 @@ class PostModel {
         } catch (PDOException $e) {
             return false;
         }
+    }
+
+    private function ensurePostBookmarkTable(): void {
+        try {
+            $sql = "CREATE TABLE IF NOT EXISTS PostBookmark (
+                        bookmark_id INT AUTO_INCREMENT PRIMARY KEY,
+                        user_id INT NOT NULL,
+                        post_id INT NOT NULL,
+                        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                        UNIQUE KEY uniq_user_post (user_id, post_id),
+                        INDEX idx_bookmark_user_created (user_id, created_at),
+                        INDEX idx_bookmark_post (post_id),
+                        CONSTRAINT fk_postbookmark_user FOREIGN KEY (user_id) REFERENCES Users(user_id) ON DELETE CASCADE,
+                        CONSTRAINT fk_postbookmark_post FOREIGN KEY (post_id) REFERENCES Post(post_id) ON DELETE CASCADE
+                    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4";
+
+            $this->db->getConnection()->exec($sql);
+            $this->hasPostBookmarkTable = $this->tableExists('PostBookmark');
+        } catch (PDOException $e) {
+            error_log('ensurePostBookmarkTable error: ' . $e->getMessage());
+            $this->hasPostBookmarkTable = $this->tableExists('PostBookmark');
+        }
+    }
+
+    private function selectBookmarkColumn(int $userId, string $postAlias = 'p'): string {
+        if ($userId <= 0 || !$this->hasPostBookmarkTable) {
+            return ", 0 AS is_bookmarked";
+        }
+
+        return ", EXISTS(
+                    SELECT 1
+                    FROM PostBookmark pb
+                    WHERE pb.post_id = {$postAlias}.post_id
+                      AND pb.user_id = {$userId}
+                ) AS is_bookmarked";
     }
 
     private function selectGroupPostColumns(): string {
@@ -185,6 +225,7 @@ class PostModel {
 
     private function buildFeedBaseSelect(int $userId): string {
         $userVoteSql = ", (SELECT vote_type FROM Vote WHERE post_id = p.post_id AND user_id = {$userId} LIMIT 1) AS user_vote";
+        $bookmarkSql = $this->selectBookmarkColumn($userId, 'p');
         $groupColumns = $this->selectGroupPostColumns();
         
         $goingCountSql = ", (SELECT COUNT(*) FROM CalendarReminders cr WHERE cr.post_id = p.post_id) AS going_count";
@@ -215,6 +256,7 @@ class PostModel {
                 u.profile_picture,
                 pm.file_url AS image_url
                 {$userVoteSql}
+                {$bookmarkSql}
                 {$goingCountSql}
                 {$isGoingSql}
                 {$interestedCountSql}
@@ -351,6 +393,7 @@ class PostModel {
      */
     public function getTrendingPosts(int $limit = 10, int $userId = 0): array {
         $userVoteSql = $userId ? ", (SELECT vote_type FROM Vote WHERE post_id = p.post_id AND user_id = " . (int)$userId . " LIMIT 1) AS user_vote" : ", NULL AS user_vote";
+        $bookmarkSql = $this->selectBookmarkColumn((int)$userId, 'p');
 
         $sql = "
             SELECT
@@ -369,6 +412,7 @@ class PostModel {
                 pm.file_url AS image_url,
                 (COALESCE(vt_recent.upvotes, 0) * 2 + COALESCE(ct_recent.comment_count, 0)) AS engagement_score
                 {$userVoteSql}
+                {$bookmarkSql}
             FROM Post p
             JOIN Users u ON u.user_id = p.author_id
             LEFT JOIN GroupsTable g ON g.group_id = p.group_id
@@ -437,6 +481,206 @@ class PostModel {
             return $posts;
         } catch (PDOException $e) {
             error_log('getTrendingPosts error: ' . $e->getMessage());
+            return [];
+        }
+    }
+
+    public function setPostBookmark(int $userId, int $postId, string $action = 'toggle'): array {
+        if ($userId <= 0 || $postId <= 0) {
+            return ['success' => false, 'bookmarked' => false, 'message' => 'Invalid bookmark request'];
+        }
+
+        if (!$this->hasPostBookmarkTable) {
+            $this->ensurePostBookmarkTable();
+        }
+
+        if (!$this->hasPostBookmarkTable) {
+            return ['success' => false, 'bookmarked' => false, 'message' => 'Bookmarks are not available right now'];
+        }
+
+        try {
+            $existsStmt = $this->getConnection()->prepare("SELECT 1 FROM Post WHERE post_id = ? LIMIT 1");
+            $existsStmt->execute([$postId]);
+            if (!$existsStmt->fetchColumn()) {
+                return ['success' => false, 'bookmarked' => false, 'message' => 'Post not found'];
+            }
+
+            $normalizedAction = in_array($action, ['add', 'remove', 'toggle'], true) ? $action : 'toggle';
+            $isCurrentlyBookmarked = $this->isPostBookmarked($userId, $postId);
+
+            if ($normalizedAction === 'toggle') {
+                $normalizedAction = $isCurrentlyBookmarked ? 'remove' : 'add';
+            }
+
+            if ($normalizedAction === 'add') {
+                $stmt = $this->getConnection()->prepare("INSERT IGNORE INTO PostBookmark (user_id, post_id, created_at) VALUES (?, ?, NOW())");
+                $stmt->execute([$userId, $postId]);
+                return ['success' => true, 'bookmarked' => true, 'message' => 'Post saved'];
+            }
+
+            $stmt = $this->getConnection()->prepare("DELETE FROM PostBookmark WHERE user_id = ? AND post_id = ?");
+            $stmt->execute([$userId, $postId]);
+            return ['success' => true, 'bookmarked' => false, 'message' => 'Bookmark removed'];
+        } catch (PDOException $e) {
+            error_log('setPostBookmark error: ' . $e->getMessage());
+            return ['success' => false, 'bookmarked' => false, 'message' => 'Unable to update bookmark'];
+        }
+    }
+
+    public function isPostBookmarked(int $userId, int $postId): bool {
+        if ($userId <= 0 || $postId <= 0 || !$this->hasPostBookmarkTable) {
+            return false;
+        }
+
+        try {
+            $stmt = $this->getConnection()->prepare("SELECT 1 FROM PostBookmark WHERE user_id = ? AND post_id = ? LIMIT 1");
+            $stmt->execute([$userId, $postId]);
+            return (bool)$stmt->fetchColumn();
+        } catch (PDOException $e) {
+            return false;
+        }
+    }
+
+    public function appendBookmarkFlags(array &$posts, int $userId): void {
+        if ($userId <= 0) {
+            foreach ($posts as &$post) {
+                $post['is_bookmarked'] = false;
+            }
+            unset($post);
+            return;
+        }
+
+        if (!$this->hasPostBookmarkTable) {
+            $this->ensurePostBookmarkTable();
+        }
+
+        $postIds = array_values(array_unique(array_filter(array_map(static function ($post) {
+            return isset($post['post_id']) ? (int)$post['post_id'] : 0;
+        }, $posts))));
+
+        if (empty($postIds) || !$this->hasPostBookmarkTable) {
+            foreach ($posts as &$post) {
+                $post['is_bookmarked'] = false;
+            }
+            unset($post);
+            return;
+        }
+
+        $placeholders = implode(',', array_fill(0, count($postIds), '?'));
+        $params = array_merge([$userId], $postIds);
+        $bookmarkedMap = [];
+
+        try {
+            $stmt = $this->getConnection()->prepare(
+                "SELECT post_id FROM PostBookmark WHERE user_id = ? AND post_id IN ({$placeholders})"
+            );
+            $stmt->execute($params);
+
+            while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+                $bookmarkedMap[(int)$row['post_id']] = true;
+            }
+        } catch (PDOException $e) {
+            error_log('appendBookmarkFlags error: ' . $e->getMessage());
+        }
+
+        foreach ($posts as &$post) {
+            $id = isset($post['post_id']) ? (int)$post['post_id'] : 0;
+            $post['is_bookmarked'] = !empty($bookmarkedMap[$id]);
+        }
+        unset($post);
+    }
+
+    public function getUserSavedPosts(int $userId, int $viewerId = 0, int $limit = 200): array {
+        if ($userId <= 0) {
+            return [];
+        }
+
+        if (!$this->hasPostBookmarkTable) {
+            $this->ensurePostBookmarkTable();
+        }
+
+        if (!$this->hasPostBookmarkTable) {
+            return [];
+        }
+
+        $viewerId = (int)$viewerId;
+        $viewerVoteSql = $viewerId > 0
+            ? ", (SELECT vote_type FROM Vote WHERE post_id = p.post_id AND user_id = {$viewerId} LIMIT 1) AS user_vote"
+            : ", NULL AS user_vote";
+
+        $groupColumns = $this->selectGroupPostColumns();
+
+        $sql = "
+            SELECT
+                p.post_id,
+                p.content,
+                p.post_type,
+                p.visibility,
+                p.created_at,
+                p.upvote_count,
+                p.downvote_count,
+                p.comment_count,
+            {$groupColumns}
+                p.event_title,
+                p.event_date,
+                p.event_time,
+                p.event_location,
+                p.group_id,
+                g.name AS group_name,
+                u.user_id,
+                u.username,
+                u.first_name,
+                u.last_name,
+                u.profile_picture,
+                pm.file_url AS image_url,
+                pb.created_at AS saved_at,
+                1 AS is_bookmarked
+                {$viewerVoteSql}
+            FROM PostBookmark pb
+            INNER JOIN Post p ON p.post_id = pb.post_id
+            INNER JOIN Users u ON u.user_id = p.author_id
+            LEFT JOIN GroupsTable g ON g.group_id = p.group_id
+            LEFT JOIN (
+                SELECT pm1.post_id, pm1.file_url
+                FROM PostMedia pm1
+                INNER JOIN (
+                    SELECT post_id, MIN(postmedia_id) AS first_media_id
+                    FROM PostMedia
+                    WHERE file_type = 'image'
+                    GROUP BY post_id
+                ) x ON x.first_media_id = pm1.postmedia_id
+            ) pm ON pm.post_id = p.post_id
+            WHERE pb.user_id = :user_id
+              AND (p.group_id IS NULL OR COALESCE(g.is_active, 1) = 1)
+            ORDER BY pb.created_at DESC
+            LIMIT :result_limit
+        ";
+
+        try {
+            $stmt = $this->getConnection()->prepare($sql);
+            $stmt->bindValue(':user_id', $userId, PDO::PARAM_INT);
+            $stmt->bindValue(':result_limit', $limit, PDO::PARAM_INT);
+            $stmt->execute();
+            $posts = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            foreach ($posts as &$post) {
+                if (!empty($post['image_url'])) {
+                    $post['image_url'] = MediaHelper::resolveMediaPath($post['image_url'], 'images/default_post.png');
+                }
+                if (!empty($post['profile_picture'])) {
+                    $post['profile_picture'] = MediaHelper::resolveMediaPath($post['profile_picture'], 'images/avatars/defaultProfilePic.png');
+                }
+                $post['metadata'] = !empty($post['metadata']) ? json_decode($post['metadata'], true) : [];
+                if (!is_array($post['metadata'])) {
+                    $post['metadata'] = [];
+                }
+                $post['user_vote'] = $post['user_vote'] ?? null;
+            }
+            unset($post);
+
+            return $posts;
+        } catch (PDOException $e) {
+            error_log('getUserSavedPosts error: ' . $e->getMessage());
             return [];
         }
     }

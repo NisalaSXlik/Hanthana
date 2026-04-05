@@ -316,8 +316,8 @@ main {
 
 main .container {
     display: grid;
-    grid-template-columns: 20% 56% 20%;
-    gap: 1rem;
+    grid-template-columns: 22% 54% 22%;
+    gap: 0.75rem;
 }
 
 /* Left Sidebar */

@@ -133,6 +133,68 @@
     flex-shrink: 0;
 }
 
+.feed .bookmark-item {
+    order: 2;
+    align-self: center;
+    display: inline-flex;
+    align-items: center;
+    gap: 0;
+    margin-left: 0.25rem;
+}
+
+/* Keep bookmark comfortably inside card edge despite group feed overrides */
+body .middle .feed .action-buttons .interaction-buttons {
+    width: auto;
+    flex: 0 1 auto;
+    min-width: 0;
+}
+
+body .middle .feed .action-buttons .bookmark-item {
+    margin-right: 0.45rem;
+}
+
+.feed .bookmark-btn {
+    width: auto;
+    height: auto;
+    border: 0;
+    background: transparent;
+    border-radius: 0;
+    padding: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+    vertical-align: middle;
+    cursor: pointer;
+    transition: color 0.2s ease;
+}
+
+.feed .bookmark-btn i {
+    font-size: 1.25rem;
+    color: var(--color-gray);
+    display: block;
+    line-height: 1;
+}
+
+.feed .bookmark-btn:hover {
+    background: transparent;
+    border: 0;
+}
+
+.feed .bookmark-btn:hover i {
+    color: var(--color-primary);
+}
+
+.feed .bookmark-btn.bookmarked {
+    border: 0;
+    background: transparent;
+}
+
+.feed .bookmark-btn.bookmarked i,
+.feed .bookmark-btn i.bookmarked {
+    color: var(--color-primary);
+}
+
 .feed .action-buttons .interaction-item,
 .feed .action-buttons .comments-side {
     min-width: 0;

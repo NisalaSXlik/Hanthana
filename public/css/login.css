@@ -71,7 +71,7 @@
 body {
     margin: 0;
     background:
-        radial-gradient(circle at 14% 20%, rgba(14, 165, 233, 0.14), transparent 34%),
+        radial-gradient(circle at 14% 20%, rgba(7, 92, 230, 0.14), transparent 34%),
         radial-gradient(circle at 86% 82%, rgba(3, 105, 161, 0.11), transparent 36%),
         linear-gradient(180deg, #f8fbff 0%, #eef3f9 100%);
     font-family: 'Poppins', sans-serif;
@@ -194,8 +194,8 @@ body {
 }
 
 .form-group-l:focus-within {
-    border-color: rgba(14, 165, 233, 0.75);
-    box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.17);
+    border-color: rgba(7, 92, 230, 0.75);
+    box-shadow: 0 0 0 3px rgba(7, 92, 230, 0.17);
     background: #ffffff;
 }
 
@@ -237,7 +237,7 @@ input:-webkit-autofill {
 .btn-primary {
     background: linear-gradient(135deg, var(--color-primary), var(--color-secondary));
     color: var(--color-white);
-    box-shadow: 0 8px 18px rgba(14, 165, 233, 0.32);
+    box-shadow: 0 8px 18px rgba(7, 92, 230, 0.32);
     min-height: var(--auth-control-height);
     font-size: 1.06rem;
     font-weight: 700;
@@ -246,7 +246,7 @@ input:-webkit-autofill {
 
 .btn-primary:hover {
     transform: translateY(-1px);
-    box-shadow: 0 12px 22px rgba(14, 165, 233, 0.36);
+    box-shadow: 0 12px 22px rgba(7, 92, 230, 0.36);
 }
 
 .btn-block {
@@ -397,5 +397,6 @@ input:-webkit-autofill {
 }
 
 .btn-login:hover {
-    background: rgba(14, 165, 233, 0.1);
+    background: rgba(7, 92, 230, 0.1);
 }
+
