@@ -26,12 +26,13 @@ class PopularController {
         }
 
         $userId = $_SESSION['user_id'];
+        $sort = $_GET['sort'] ?? 'recent';
         $filters = [
-            'sort' => $_GET['sort'] ?? 'recent',
+            'sort' => $sort,
             'category' => $_GET['category'] ?? null,
             'topic' => $_GET['topic'] ?? null,
             'search' => $_GET['search'] ?? null,
-            'mine' => isset($_GET['mine']) && $_GET['mine'] === '1'
+            'mine' => (isset($_GET['mine']) && $_GET['mine'] === '1') || $sort === 'my_questions'
         ];
         
         $questions = $this->questionModel->getQuestionsFeed($userId, $filters);
