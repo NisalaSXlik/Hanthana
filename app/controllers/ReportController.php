@@ -3,18 +3,30 @@ require_once __DIR__ . '/../models/ReportModel.php';
 require_once __DIR__ . '/../models/PostModel.php';
 require_once __DIR__ . '/../models/UserModel.php';
 require_once __DIR__ . '/../models/GroupModel.php';
+require_once __DIR__ . '/../models/QuestionModel.php';
+require_once __DIR__ . '/../models/BinModel.php';
+require_once __DIR__ . '/../models/MessageModel.php';
+require_once __DIR__ . '/../models/ChannelModel.php';
 
 class ReportController {
     private ReportModel $reportModel;
     private PostModel $postModel;
     private UserModel $userModel;
     private GroupModel $groupModel;
+    private QuestionModel $questionModel;
+    private BinModel $binModel;
+    private MessageModel $messageModel;
+    private ChannelModel $channelModel;
 
     public function __construct() {
         $this->reportModel = new ReportModel();
         $this->postModel = new PostModel();
         $this->userModel = new UserModel();
         $this->groupModel = new GroupModel();
+        $this->questionModel = new QuestionModel();
+        $this->binModel = new BinModel();
+        $this->messageModel = new MessageModel();
+        $this->channelModel = new ChannelModel();
     }
 
     public function submit(): void {
@@ -38,7 +50,7 @@ class ReportController {
         $reportType = strtolower(trim($input['report_type'] ?? 'other'));
         $description = trim($input['description'] ?? '');
 
-        $allowedTargets = ['post', 'user', 'group'];
+        $allowedTargets = ['post', 'user', 'group', 'question', 'media', 'message', 'channel'];
         if (!in_array($targetType, $allowedTargets, true) || $targetId <= 0) {
             http_response_code(400);
             echo json_encode(['success' => false, 'message' => 'Invalid report target']);
@@ -61,21 +73,38 @@ class ReportController {
 
         $payload = [
             'reporter_id' => $reporterId,
+            'target_type' => $targetType === 'media' ? 'bin_media' : $targetType,
+            'target_id' => $targetId,
             'report_type' => $reportType,
             'description' => $description
         ];
 
         switch ($targetType) {
             case 'post':
-                $payload['reported_post_id'] = $targetId;
-                $payload['reported_user_id'] = (int)($targetRecord['user_id'] ?? 0) ?: null;
+                $payload['group_id'] = (int)($targetRecord['group_id'] ?? 0) ?: null;
+                $payload['reported_user_id'] = (int)($targetRecord['author_id'] ?? $targetRecord['user_id'] ?? 0) ?: null;
                 break;
             case 'group':
-                $payload['reported_group_id'] = $targetId;
+                $payload['group_id'] = $targetId;
                 $payload['reported_user_id'] = (int)($targetRecord['created_by'] ?? 0) ?: null;
                 break;
             case 'user':
                 $payload['reported_user_id'] = $targetId;
+                break;
+            case 'question':
+                $payload['reported_user_id'] = (int)($targetRecord['user_id'] ?? 0) ?: null;
+                break;
+            case 'media':
+                $payload['group_id'] = (int)($targetRecord['group_id'] ?? 0) ?: null;
+                $payload['reported_user_id'] = (int)($targetRecord['added_by'] ?? 0) ?: null;
+                break;
+            case 'message':
+                $payload['group_id'] = (int)($targetRecord['group_id'] ?? 0) ?: null;
+                $payload['reported_user_id'] = (int)($targetRecord['sender_id'] ?? 0) ?: null;
+                break;
+            case 'channel':
+                $payload['group_id'] = (int)($targetRecord['group_id'] ?? 0) ?: null;
+                $payload['reported_user_id'] = (int)($targetRecord['created_by'] ?? 0) ?: null;
                 break;
         }
 
@@ -117,6 +146,14 @@ class ReportController {
                 return $this->groupModel->getById($targetId);
             case 'user':
                 return $this->userModel->findById($targetId);
+            case 'question':
+                return $this->questionModel->getQuestion($targetId, (int)$_SESSION['user_id']);
+            case 'media':
+                return $this->binModel->getMediaById($targetId);
+            case 'message':
+                return $this->messageModel->getMessageForReport($targetId);
+            case 'channel':
+                return $this->channelModel->getChannelById($targetId);
             default:
                 return null;
         }

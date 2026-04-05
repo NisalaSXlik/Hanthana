@@ -1,18 +1,42 @@
+<?php
+class BaseController
+{
+    protected $data;
 
-2. BaseController.php
+    public function __construct()
+    {
+        $raw = file_get_contents('php://input');
+        $this->data = json_decode($raw, true) ?? [];
+    }
 
-This is a parent class for all your controllers (like DiscoverController, LoginController, etc.).
+    protected function requireAuth()
+    {
+        if (!isset($_SESSION['user_id']))
+        {
+            $this->redirect('Login');
+            exit;
+        }
+    }
 
-Its purpose is to provide common functionality that all controllers might need, so you don’t repeat code.
+    protected function response($data, $status = 200)
+    {
+        if (isset($data['redirect']))
+            $data['redirect'] = 'index.php?controller='. $data['redirect'] .'&action=index';
+        http_response_code($status);
+        header('Content-Type: application/json');
+        echo json_encode($data);
+        exit;
+    }
 
-Typical things in BaseController:
+    protected function render($view, $data = [])
+    {
+        extract($data);
+        require_once __DIR__ . '/../views/'. $view .'.php';
+    }
 
-Loading views/templates.
-
-Redirecting to another page.
-
-Sharing common data with views.
-
-Authentication checks or helper methods.
-
-Example in PHP:
+    protected function redirect($page)
+    {
+        header('Location: index.php?controller='. $page .'&action=index');
+        exit;
+    }
+}
