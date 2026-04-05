@@ -40,61 +40,27 @@ if (!isset($_SESSION['user_id'])) {
                     <div class="acd-card-head">
                         <h4>Academic Resources</h4>
                         <div class="acd-tabs" role="tablist" aria-label="Academic resource filters">
-                            <button type="button" class="acd-tab active" aria-selected="true">All</button>
-                            <button type="button" class="acd-tab" aria-selected="false">Recent Uploads</button>
-                            <button type="button" class="acd-tab" aria-selected="false">Top Downloads</button>
-                            <button type="button" class="acd-tab" aria-selected="false">My Saves</button>
+                            <button type="button" class="acd-tab active" data-tab="all" aria-selected="true">All</button>
+                            <button type="button" class="acd-tab" data-tab="recent_uploads" aria-selected="false">Recent Uploads</button>
+                            <button type="button" class="acd-tab" data-tab="top_downloads" aria-selected="false">Top Downloads</button>
+                            <button type="button" class="acd-tab" data-tab="my_saves" aria-selected="false">My Saves</button>
                         </div>
                     </div>
 
-                    <div class="acd-resource-list">
-                        <article class="acd-resource-item">
-                            <div class="acd-file-icon"><i class="uil uil-file-alt"></i></div>
-                            <div class="acd-resource-main">
-                                <h5>Data Structures - Week 07 Notes.pdf</h5>
-                                <p>CS2202 • Uploaded by Dr. Perera</p>
-                                <div class="acd-meta-row">
-                                    <span><i class="uil uil-star"></i> 4.8</span>
-                                    <span><i class="uil uil-download-alt"></i> 1.3k downloads</span>
-                                </div>
-                            </div>
-                            <div class="acd-actions">
-                                <button type="button" class="btn btn-primary acd-btn">Download</button>
-                                <button type="button" class="acd-btn-outline">Save</button>
-                            </div>
-                        </article>
+                    <div class="acd-breadcrumb" id="acdBreadcrumb"></div>
 
-                        <article class="acd-resource-item">
-                            <div class="acd-file-icon"><i class="uil uil-file-download-alt"></i></div>
-                            <div class="acd-resource-main">
-                                <h5>Thermodynamics Past Paper Set.zip</h5>
-                                <p>EN1104 • Uploaded by E-Library</p>
-                                <div class="acd-meta-row">
-                                    <span><i class="uil uil-star"></i> 4.6</span>
-                                    <span><i class="uil uil-download-alt"></i> 980 downloads</span>
-                                </div>
-                            </div>
-                            <div class="acd-actions">
-                                <button type="button" class="btn btn-primary acd-btn">Download</button>
-                                <button type="button" class="acd-btn-outline">Save</button>
-                            </div>
-                        </article>
+                    <div class="acd-resource-browser" id="acdResourceBrowser" data-base-path="<?php echo htmlspecialchars(BASE_PATH); ?>">
+                        <div class="acd-pane acd-groups-pane" id="acdGroupsPane">
+                            <div class="acd-pane-list" id="acdGroupsList"></div>
+                        </div>
 
-                        <article class="acd-resource-item">
-                            <div class="acd-file-icon"><i class="uil uil-file-bookmark-alt"></i></div>
-                            <div class="acd-resource-main">
-                                <h5>Linear Algebra Formula Sheet.pdf</h5>
-                                <p>MA1201 • Uploaded by Academic Support</p>
-                                <div class="acd-meta-row">
-                                    <span><i class="uil uil-star"></i> 4.9</span>
-                                    <span><i class="uil uil-download-alt"></i> 2.1k downloads</span>
-                                </div>
-                            </div>
-                            <div class="acd-actions">
-                                <button type="button" class="btn btn-primary acd-btn">Download</button>
-                                <button type="button" class="acd-btn-outline">Save</button>
-                            </div>
-                        </article>
+                        <div class="acd-pane acd-bins-pane" id="acdBinsPane" style="display:none;">
+                            <div class="acd-pane-list" id="acdBinsList"></div>
+                        </div>
+
+                        <div class="acd-pane acd-files-pane" id="acdFilesPane" style="display:none;">
+                            <div class="acd-resource-list" id="acdFilesList"></div>
+                        </div>
                     </div>
                 </section>
 
@@ -238,5 +204,6 @@ if (!isset($_SESSION['user_id'])) {
     <script src="./js/comment.js"></script>
     <script src="./js/poll.js"></script>
     <script src="./js/report.js"></script>
+    <script src="./js/acedemicdashboard.js"></script>
 </body>
 </html>
