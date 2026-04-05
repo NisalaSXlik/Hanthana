@@ -121,57 +121,50 @@ if (!isset($_SESSION['user_id'])) {
                         <h4>Priority Academic Alerts</h4>
                     </div>
                     <ul class="acd-alert-list">
-                        <li class="acd-alert-item danger">
-                            <div>
-                                <p>Assignment 03 deadline in 6 hours</p>
-                                <small>CS2202 • Due today 11:59 PM</small>
-                                <div class="acd-item-footer">
-                                    <button type="button" class="acd-open-btn">Open</button>
+                        <?php if (!empty($priorityAcademicAlerts)): ?>
+                            <?php foreach ($priorityAcademicAlerts as $alert): ?>
+                                <?php
+                                    $groupName = trim((string)($alert['group_name'] ?? 'Group'));
+                                    $title = trim((string)($alert['title'] ?? 'Assignment'));
+                                    $contentText = trim((string)($alert['content'] ?? ''));
+                                    if ($contentText !== '' && mb_strlen($contentText) > 56) {
+                                        $contentText = mb_substr($contentText, 0, 53) . '...';
+                                    }
+                                    $deadlineTs = isset($alert['deadline_ts']) ? (int)$alert['deadline_ts'] : 0;
+                                    $hasDeadline = $deadlineTs > 0;
+                                    $alertClass = '';
+                                    if ($hasDeadline) {
+                                        $secondsLeft = $deadlineTs - time();
+                                        if ($secondsLeft <= 86400) {
+                                            $alertClass = ' danger';
+                                        } elseif ($secondsLeft <= 259200) {
+                                            $alertClass = ' warning';
+                                        }
+                                    }
+                                    $metaLine = $hasDeadline
+                                        ? $groupName . ' • Due: ' . date('M j, g:i A', $deadlineTs)
+                                        : $groupName . ' • ' . ($contentText !== '' ? $contentText : 'Assignment update posted');
+                                    $openUrl = BASE_PATH . 'index.php?controller=Group&action=index&group_id=' . (int)($alert['group_id'] ?? 0) . '#post-' . (int)($alert['post_id'] ?? 0);
+                                ?>
+                                <li class="acd-alert-item<?php echo $alertClass; ?>">
+                                    <div>
+                                        <p><?php echo htmlspecialchars($title); ?></p>
+                                        <small><?php echo htmlspecialchars($metaLine); ?></small>
+                                        <div class="acd-item-footer">
+                                            <a class="acd-open-btn" href="<?php echo htmlspecialchars($openUrl); ?>">Open</a>
+                                        </div>
+                                    </div>
+                                </li>
+                            <?php endforeach; ?>
+                        <?php else: ?>
+                            <li class="acd-alert-item">
+                                <div>
+                                    <p>No assignment alerts yet</p>
+                                    <small>Assignment posts from your groups will appear here.</small>
                                 </div>
-                            </div>
-                        </li>
-                        <li class="acd-alert-item warning">
-                            <div>
-                                <p>Lecturer announcement posted</p>
-                                <small>MA1201 • Quiz scope updated</small>
-                                <div class="acd-item-footer">
-                                    <button type="button" class="acd-open-btn">Open</button>
-                                </div>
-                            </div>
-                        </li>
-                        <li class="acd-alert-item">
-                            <div>
-                                <p>Exam timetable released</p>
-                                <small>Faculty notice • Semester final</small>
-                                <div class="acd-item-footer">
-                                    <button type="button" class="acd-open-btn">Open</button>
-                                </div>
-                            </div>
-                        </li>
-                        <li class="acd-alert-item danger-soft">
-                            <div>
-                                <p>Urgent group message from Project Team</p>
-                                <small>SE3101 • Need slides before 5PM</small>
-                                <div class="acd-item-footer">
-                                    <button type="button" class="acd-open-btn">Open</button>
-                                </div>
-                            </div>
-                        </li>
+                            </li>
+                        <?php endif; ?>
                     </ul>
-                </section>
-
-                <section class="acd-card acd-updates-card">
-                    <div class="acd-section-title">
-                        <h4>Groups Latest Updates</h4>
-                    </div>
-                    <div class="acd-updates-list">
-                        <article class="acd-update-item"><strong>AI Study Circle</strong><p>Shared quick revision sheet for unit 4.</p><small>2m ago</small><div class="acd-item-footer"><span class="acd-chip">Resource</span><button type="button" class="acd-open-btn">Open</button></div></article>
-                        <article class="acd-update-item"><strong>Database Team</strong><p>ER diagram v3 uploaded to resources.</p><small>8m ago</small><div class="acd-item-footer"><span class="acd-chip">Thread</span><button type="button" class="acd-open-btn">Open</button></div></article>
-                        <article class="acd-update-item"><strong>Math Tutorial Group</strong><p>Tomorrow session moved to 10:00 AM.</p><small>15m ago</small><div class="acd-item-footer"><span class="acd-chip">Notice</span><button type="button" class="acd-open-btn">Open</button></div></article>
-                        <article class="acd-update-item"><strong>Project Phoenix</strong><p>UI feedback notes added in docs.</p><small>22m ago</small><div class="acd-item-footer"><span class="acd-chip">Update</span><button type="button" class="acd-open-btn">Open</button></div></article>
-                        <article class="acd-update-item"><strong>Cyber Club</strong><p>CTF prep tasks assigned to members.</p><small>30m ago</small><div class="acd-item-footer"><span class="acd-chip">Task</span><button type="button" class="acd-open-btn">Open</button></div></article>
-                        <article class="acd-update-item"><strong>English Speaking Club</strong><p>Topic list posted for next meetup.</p><small>43m ago</small><div class="acd-item-footer"><span class="acd-chip">Topic</span><button type="button" class="acd-open-btn">Open</button></div></article>
-                    </div>
                 </section>
             </aside>
         </div>

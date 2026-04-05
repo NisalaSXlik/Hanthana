@@ -3,11 +3,24 @@
 class AcedemicDashboardModel extends BaseModel
 {
     private bool $tablesEnsured = false;
+    private bool $hasGroupPostColumns = false;
 
     public function __construct()
     {
         parent::__construct();
+        $this->hasGroupPostColumns = $this->columnExists('Post', 'group_post_type') && $this->columnExists('Post', 'metadata');
         $this->ensureResourceTables();
+    }
+
+    private function columnExists(string $table, string $column): bool
+    {
+        try {
+            $stmt = $this->dbInstance->prepare("SHOW COLUMNS FROM {$table} LIKE ?");
+            $stmt->execute([$column]);
+            return (bool)$stmt->fetch(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            return false;
+        }
     }
 
     private function ensureResourceTables(): void
@@ -255,6 +268,88 @@ class AcedemicDashboardModel extends BaseModel
         $stmt = $this->dbInstance->prepare($sql);
         $stmt->execute([$userId, $userId]);
         return $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
+    }
+
+    public function getPriorityAcademicAlerts(int $userId, int $limit = 6): array
+    {
+        if (!$this->hasGroupPostColumns) {
+            return [];
+        }
+
+        $limit = max(1, min($limit, 20));
+
+        $sql = "SELECT
+                    p.post_id,
+                    p.group_id,
+                    p.content,
+                    p.metadata,
+                    p.created_at,
+                    g.name AS group_name
+                FROM Post p
+                INNER JOIN GroupsTable g ON g.group_id = p.group_id
+                INNER JOIN GroupMember gm ON gm.group_id = p.group_id
+                WHERE gm.user_id = ?
+                  AND gm.status = 'active'
+                  AND p.is_group_post = 1
+                  AND p.group_post_type = 'assignment'
+                  AND COALESCE(g.is_active, 1) = 1
+                ORDER BY p.created_at DESC
+                LIMIT {$limit}";
+
+        $stmt = $this->dbInstance->prepare($sql);
+        $stmt->execute([$userId]);
+        $rows = $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
+
+        $alerts = [];
+        foreach ($rows as $row) {
+            $metadata = !empty($row['metadata']) ? json_decode((string)$row['metadata'], true) : [];
+            if (!is_array($metadata)) {
+                $metadata = [];
+            }
+
+            $title = trim((string)($metadata['title'] ?? 'Assignment'));
+            if ($title === '') {
+                $title = 'Assignment';
+            }
+
+            $content = trim((string)($row['content'] ?? ''));
+            $content = preg_replace('/\s+/', ' ', $content) ?? '';
+            $deadline = trim((string)($metadata['deadline'] ?? ''));
+            $deadlineTs = $deadline !== '' ? strtotime($deadline) : false;
+
+            $alerts[] = [
+                'post_id' => (int)($row['post_id'] ?? 0),
+                'group_id' => (int)($row['group_id'] ?? 0),
+                'group_name' => (string)($row['group_name'] ?? 'Group'),
+                'title' => $title,
+                'content' => $content,
+                'deadline' => $deadline,
+                'deadline_ts' => $deadlineTs !== false ? (int)$deadlineTs : null,
+                'created_at' => (string)($row['created_at'] ?? ''),
+            ];
+        }
+
+        usort($alerts, static function (array $a, array $b): int {
+            $aHasDeadline = !empty($a['deadline_ts']);
+            $bHasDeadline = !empty($b['deadline_ts']);
+
+            if ($aHasDeadline && !$bHasDeadline) {
+                return -1;
+            }
+            if (!$aHasDeadline && $bHasDeadline) {
+                return 1;
+            }
+
+            if ($aHasDeadline && $bHasDeadline) {
+                return ((int)$a['deadline_ts']) <=> ((int)$b['deadline_ts']);
+            }
+
+            $aCreated = !empty($a['created_at']) ? strtotime((string)$a['created_at']) : 0;
+            $bCreated = !empty($b['created_at']) ? strtotime((string)$b['created_at']) : 0;
+            return $bCreated <=> $aCreated;
+        });
+
+        return array_slice($alerts, 0, $limit);
     }
 
     public function toggleFileSave(int $userId, int $mediaId): ?bool

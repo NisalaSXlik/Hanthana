@@ -5,6 +5,12 @@
     gap: 1rem;
 }
 
+.acd-right-panel {
+    position: static;
+    top: auto;
+    height: auto;
+}
+
 .acd-card {
     background: var(--color-white);
     border-radius: var(--card-border-radius);

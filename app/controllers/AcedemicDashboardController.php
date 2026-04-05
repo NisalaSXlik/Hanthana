@@ -12,8 +12,12 @@ class AcedemicDashboardController
             exit();
         }
 
+        $userId = (int)$_SESSION['user_id'];
         $questionModel = new QuestionModel();
-        $myQuestionAnswers = $questionModel->getMyQuestionsLatestAnswers((int)$_SESSION['user_id'], 5);
+        $myQuestionAnswers = $questionModel->getMyQuestionsLatestAnswers($userId, 5);
+
+        $dashboardModel = new AcedemicDashboardModel();
+        $priorityAcademicAlerts = $dashboardModel->getPriorityAcademicAlerts($userId, 8);
 
         require_once __DIR__ . '/../views/acedemicdashboard.php';
     }
