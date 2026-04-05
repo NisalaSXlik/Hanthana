@@ -10,7 +10,7 @@
 .feed {
     background: var(--color-white);
     border-radius: var(--card-border-radius);
-    padding: var(--card-padding);
+    padding: 0.9rem 1rem;
     font-size: 0.95rem;
 }
 
@@ -18,7 +18,7 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 1rem;
+    margin-bottom: 0.55rem;
     position: relative;
 }
 
@@ -37,7 +37,7 @@
 
 .feed .user {
     display: flex;
-    gap: 1rem;
+    gap: 0.65rem;
     align-items: center;
 }
 
@@ -53,10 +53,10 @@
 
 .feed .photo {
     width: 100%;
-    height: 400px; /* Fixed height for all posts */
+    height: 360px;
     overflow: hidden;
     border-radius: var(--card-border-radius);
-    margin: 0.7rem 0;
+    margin: 0 0 0.6rem;
 }
 
 .feed .photo img {
@@ -73,8 +73,8 @@
     align-items: center;
     gap: 0.8rem;
     flex-wrap: nowrap;
-    padding: 0.5rem 0;
-    margin: 0.5rem 0;
+    padding: 0.45rem 0 0.15rem;
+    margin: 0.2rem 0 0;
 }
 
 .feed .interaction-buttons {
@@ -195,8 +195,21 @@
     margin-bottom: 0.5rem;
 }
 
+.feed .caption.compact-caption {
+    margin-bottom: 0.55rem;
+}
+
+.feed .caption.compact-caption .post-text {
+    font-size: 1rem;
+    font-weight: 500;
+    line-height: 1.5;
+    color: var(--color-dark);
+}
+
 .feed .caption p {
-    font-size: 0.9rem;
+    font-size: 0.95rem;
+    line-height: 1.45;
+    color: var(--color-dark);
 }
 
 .feed .caption p b {
