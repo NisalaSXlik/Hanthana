@@ -278,6 +278,15 @@ input:-webkit-autofill {
     padding: 0 0.7rem;
 }
 
+.signup-card .auth-divider {
+    margin: 0.3rem 0 0.95rem;
+}
+
+.signup-card .auth-divider::before,
+.signup-card .auth-divider::after {
+    background: #dbe2ea;
+}
+
 .btn-google {
     display: inline-flex;
     align-items: center;
@@ -293,6 +302,14 @@ input:-webkit-autofill {
     font-weight: 600;
     letter-spacing: 0.01em;
     box-shadow: 0 6px 14px rgba(15, 23, 42, 0.08);
+}
+
+.signup-card .btn-google {
+    display: flex;
+    width: 100%;
+    padding: 0.92rem 1rem;
+    border-radius: 0.88rem;
+    margin-bottom: 0.15rem;
 }
 
 .btn-google:hover {

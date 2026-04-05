@@ -126,6 +126,15 @@ class PopularController {
             echo json_encode(['success' => false, 'message' => 'Title is required']);
             return;
         }
+
+        if (isset($_FILES['attachment_file']) && is_array($_FILES['attachment_file'])) {
+            $uploadResult = $this->handleQuestionAttachmentUpload($_FILES['attachment_file']);
+            if (!empty($uploadResult['errors'])) {
+                echo json_encode(['success' => false, 'message' => $uploadResult['errors'][0]]);
+                return;
+            }
+            $data = array_merge($data, $uploadResult);
+        }
         
         $questionId = $this->questionModel->createQuestion($userId, $data);
         echo json_encode([
@@ -133,6 +142,54 @@ class PopularController {
             'question_id' => $questionId,
             'message' => 'Question posted successfully'
         ]);
+    }
+
+    private function handleQuestionAttachmentUpload(array $file): array {
+        if (!isset($file['error'])) {
+            return ['errors' => ['Invalid attachment upload request.']];
+        }
+
+        if ((int)$file['error'] === UPLOAD_ERR_NO_FILE) {
+            return [];
+        }
+
+        if ((int)$file['error'] !== UPLOAD_ERR_OK) {
+            return ['errors' => ['Attachment upload failed.']];
+        }
+
+        if (!isset($file['tmp_name']) || !is_uploaded_file($file['tmp_name'])) {
+            return ['errors' => ['Invalid uploaded attachment.']];
+        }
+
+        $originalName = (string)($file['name'] ?? 'attachment.bin');
+        $ext = strtolower(pathinfo($originalName, PATHINFO_EXTENSION));
+        $allowedExtensions = ['pdf', 'doc', 'docx', 'txt', 'jpg', 'png', 'zip', 'xlsx'];
+
+        if ($ext === '' || !in_array($ext, $allowedExtensions, true)) {
+            return ['errors' => ['Unsupported file type. Allowed: PDF, DOC, DOCX, TXT, JPG, PNG, ZIP, XLSX.']];
+        }
+
+        $projectRoot = dirname(__DIR__, 2);
+        $targetDir = $projectRoot . '/public/uploads/questions';
+        if (!is_dir($targetDir) && !mkdir($targetDir, 0775, true) && !is_dir($targetDir)) {
+            return ['errors' => ['Could not prepare question upload directory.']];
+        }
+
+        $cleanOriginalName = preg_replace('/[^A-Za-z0-9._-]/', '_', $originalName);
+        $cleanOriginalName = $cleanOriginalName ?: ('attachment.' . $ext);
+        $storedName = uniqid('q_', true) . '_' . $cleanOriginalName;
+        $absolutePath = $targetDir . '/' . $storedName;
+
+        if (!move_uploaded_file($file['tmp_name'], $absolutePath)) {
+            return ['errors' => ['Could not save uploaded attachment.']];
+        }
+
+        return [
+            'attachment_name' => $originalName,
+            'attachment_path' => 'uploads/questions/' . $storedName,
+            'attachment_type' => $ext,
+            'attachment_size' => (int)($file['size'] ?? 0),
+        ];
     }
     
     private function createAnswer($userId) {

@@ -70,20 +70,6 @@ $currentUser = $userModel->findById($_SESSION['user_id']);
                             <?php if ($displayHandle !== ''): ?>
                                 <p class="profile-handle"><?php echo htmlspecialchars($displayHandle); ?></p>
                             <?php endif; ?>
-                            <div class="profile-stats">
-                                <button type="button" class="stat stat-link" data-tab-target="posts" aria-label="View posts section">
-                                    <strong><?php echo $totalPostsCount; ?></strong>
-                                    <span>Posts</span>
-                                </button>
-                                <button type="button" class="stat stat-link" data-friend-count-trigger>
-                                    <strong data-friend-count="<?php echo $friendsCount; ?>"><?php echo $friendsCount; ?></strong>
-                                    <span>Friends</span>
-                                </button>
-                                <button type="button" class="stat stat-link" data-tab-target="photos" aria-label="View photos section">
-                                    <strong><?php echo count($photoPosts); ?></strong>
-                                    <span>Photos</span>
-                                </button>
-                            </div>
                             <p class="profile-bio"><?php echo htmlspecialchars($bio); ?></p>
                             <div class="profile-meta">
                                 <span><i class="uil uil-location-point"></i> <?php echo htmlspecialchars($location); ?></span>
@@ -327,7 +313,6 @@ $currentUser = $userModel->findById($_SESSION['user_id']);
                         </div>
                     </div>
                 </div>
-
 
                 <div class="top-collaborators">
                     <div class="heading">

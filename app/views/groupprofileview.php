@@ -15,6 +15,23 @@ if (!isset($_SESSION['user_id'])) {
 $currentUserId = $_SESSION['user_id'];
 $userModel = new UserModel;
 $currentUser = $userModel->findById($_SESSION['user_id']);
+
+// Keep active group context in session for related pages like File Bank.
+$resolvedGroupId = 0;
+if (isset($groupId) && (int)$groupId > 0) {
+    $resolvedGroupId = (int)$groupId;
+} elseif (isset($group['group_id']) && (int)$group['group_id'] > 0) {
+    $resolvedGroupId = (int)$group['group_id'];
+} elseif (isset($_GET['group_id']) && (int)$_GET['group_id'] > 0) {
+    $resolvedGroupId = (int)$_GET['group_id'];
+} elseif (isset($_GET['id']) && (int)$_GET['id'] > 0) {
+    $resolvedGroupId = (int)$_GET['id'];
+}
+
+if ($resolvedGroupId > 0) {
+    $_SESSION['current_group_id'] = $resolvedGroupId;
+    $groupId = $resolvedGroupId;
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -45,96 +62,89 @@ $currentUser = $userModel->findById($_SESSION['user_id']);
                 <div class="profile-header">
                     <div class="profile-cover">
                         <img id="groupCoverImage" src="<?php echo htmlspecialchars(MediaHelper::resolveMediaPath($group['cover_image'] ?? '', 'uploads/group_cover/default.png')); ?>" alt="Profile Cover">
-                        <?php if ($isCreator || $isAdmin): ?>
+                        <?php if ($isAdmin): ?>
                         <button class="edit-cover-btn">
                             <i class="uil uil-camera"></i> Edit Cover
                         </button>
                         <?php endif; ?>
                     </div>
                     <div class="profile-info">
+                        <!-- DP positioned over cover (absolute) -->
                         <div class="profile-dp-container">
                             <div class="profile-dp">
                                 <img id="groupDpImage" src="<?php echo htmlspecialchars(MediaHelper::resolveMediaPath($group['display_picture'] ?? '', 'uploads/group_dp/default.png')); ?>" alt="Profile DP">
-                                <?php if ($isCreator || $isAdmin): ?>
+                                <?php if ($isAdmin): ?>
                                 <button class="edit-dp-btn">
                                     <i class="uil uil-camera"></i>
                                 </button>
                                 <?php endif; ?>
                             </div>
                         </div>
-                        <div class="profile-details">
-                            <p class="profile-name"><?php echo htmlspecialchars($group['name']); ?></p>
-                            <p class="profile-handle">@<?php echo htmlspecialchars($group['tag']); ?></p>
-                            <div class="profile-stats">
-                                <div class="stat">
-                                    <strong><?php echo htmlspecialchars($group['post_count'] ?? '0'); ?></strong>
-                                    <span>Posts</span>
-                                </div>
-                                <div class="stat">
-                                    <strong><?php echo htmlspecialchars($group['member_count'] ?? '0'); ?></strong>
-                                    <span>Members</span>
-                                </div>
+                        
+                        <!-- Header row: name on top, handle/actions below -->
+                        <div class="profile-header-row">
+                            <div class="profile-name-block">
+                                <p class="profile-name"><?php echo htmlspecialchars($group['name']); ?></p>
                             </div>
-                            <p class="profile-bio"><?php if (!empty($group['description'])) echo htmlspecialchars($group['description']); ?></p>
+
+                            <div class="profile-details">
+                                <p class="profile-handle">@<?php echo htmlspecialchars($group['tag']); ?></p>
+                            </div>
+
+                            <!-- Action buttons: three dots dropdown + join/leave/invite -->
                             <div class="profile-actions">
-                                <?php if (!$isCreator): ?>
-                                    <?php if ($isJoined): ?>
-                                        <button class="btn btn-danger leave-btn">Leave</button>
-                                    <?php else: ?>
-                                        <?php
-                                            $membershipState = $membershipState ?? 'none';
-                                            $joinLabel = 'Join';
-                                            $joinDisabledAttr = '';
-                                            $joinExtraClass = '';
-                                            $joinPendingFlag = '0';
-
-                                            if ($membershipState === 'pending' || !empty($hasPendingRequest)) {
-                                                $joinLabel = 'Request sent';
-                                                $joinDisabledAttr = 'disabled';
-                                                $joinExtraClass = ' request-sent';
-                                                $joinPendingFlag = '1';
-                                            }
-                                        ?>
-                                        <button
-                                            class="btn btn-primary join-btn<?php echo $joinExtraClass; ?>"
-                                            data-pending="<?php echo $joinPendingFlag; ?>"
-                                            data-membership="<?php echo htmlspecialchars($membershipState); ?>"
-                                            <?php if ($joinDisabledAttr) echo $joinDisabledAttr; ?>><?php echo $joinLabel; ?></button>
-                                    <?php endif; ?>
-                                <?php endif; ?>
-                                <button class="btn btn-secondary invite-btn">Invite</button>
-                                <button type="button"
-                                        class="report-trigger"
-                                        data-report-type="group"
-                                        data-target-id="<?php echo (int)$group['group_id']; ?>"
-                                        data-target-label="<?php echo htmlspecialchars('group ' . ($group['name'] ?? ''), ENT_QUOTES); ?>">
-                                    <i class="uil uil-exclamation-circle"></i>
-                                    Report Group
-                                </button>
-
-                                <?php if ($isCreator || $isAdmin): ?>
-                                <div class="dropdown-container">
-                                    <button class="btn btn-icon" id="groupOptionsBtn">
-                                        <i class="uil uil-ellipsis-h"></i>
+                                <?php if ($isJoined): ?>
+                                    <button class="btn btn-alert" id="leaveGroupBtn">
+                                        <i class="uil uil-sign-out-alt"></i>
+                                        <span>Leave</span>
                                     </button>
-                                    <div class="dropdown-menu" id="groupOptionsMenu" style="display: none;">
-                                        <a href="#" class="dropdown-item" id="editGroupOption">
-                                            <i class="uil uil-edit"></i>
-                                            <span>Edit Group</span>
-                                        </a>
-                                        <a href="#" class="dropdown-item" id="manageRequestsOption">
-                                            <i class="uil uil-user-check"></i>
-                                            <span>Manage Requests</span>
-                                        </a>
-                                        <?php if ($isCreator): ?>
-                                        <a href="#" class="dropdown-item delete-option" id="deleteGroupOption">
-                                            <i class="uil uil-trash-alt"></i>
-                                            <span>Delete Group</span>
-                                        </a>
-                                        <?php endif; ?>
+                                <?php elseif ($hasPendingRequest): ?>
+                                    <button class="btn btn-secondary" disabled>
+                                        <i class="uil uil-clock"></i>
+                                        <span>Pending</span>
+                                    </button>
+                                <?php else: ?>
+                                    <button class="btn btn-primary" id="joinGroupBtn">
+                                        <i class="uil uil-sign-in-alt"></i>
+                                        <span>Join</span>
+                                    </button>
+                                <?php endif; ?>
+
+                                <div class="dropdown-container">
+                                    <button class="btn-icon" id="groupMenuBtn" title="More options">
+                                        <i class="uil uil-ellipsis-v"></i>
+                                    </button>
+                                    <div class="dropdown-menu" id="groupDropdownMenu">
+                                        <button type="button" class="dropdown-item" id="aboutGroupBtn">
+                                            <i class="uil uil-info-circle"></i>
+                                            <span>About Group</span>
+                                        </button>
+                                        <button type="button" class="dropdown-item danger" data-report-type="group" data-target-id="<?php echo (int)$groupId; ?>" data-target-label="<?php echo htmlspecialchars('group ' . $group['name'], ENT_QUOTES); ?>">
+                                            <i class="uil uil-exclamation-circle"></i>
+                                            <span>Report Group</span>
+                                        </button>
                                     </div>
                                 </div>
-                                <?php endif; ?>
+                            </div>
+                        </div>
+                        
+                        <!-- Meta row: member count, created date, privacy, focus (2 rows) -->
+                        <div class="profile-meta">
+                            <div class="detail-item">
+                                <strong><?php echo htmlspecialchars($group['member_count'] ?? '0'); ?></strong>
+                                <span>Members</span>
+                            </div>
+                            <div class="detail-item">
+                                <strong><?php echo date('M j, Y', strtotime($group['created_at'] ?? date('Y-m-d'))); ?></strong>
+                                <span>Created</span>
+                            </div>
+                            <div class="detail-item">
+                                <strong><?php echo ucfirst(htmlspecialchars($group['privacy_status'] ?? 'public')); ?></strong>
+                                <span>Privacy</span>
+                            </div>
+                            <div class="detail-item">
+                                <strong><?php echo htmlspecialchars($group['focus'] ?? '-'); ?></strong>
+                                <span>Focus</span>
                             </div>
                         </div>
                     </div>
@@ -143,9 +153,6 @@ $currentUser = $userModel->findById($_SESSION['user_id']);
                         <ul>
                             <li class="active">
                                 <a href="#" data-tab="posts">Posts</a>
-                            </li>
-                            <li>
-                                <a href="#" data-tab="about">About</a>
                             </li>
                             <li>
                                 <a href="#" data-tab="files">Files</a>
@@ -556,6 +563,7 @@ $currentUser = $userModel->findById($_SESSION['user_id']);
                                                 <i class="uil <?php echo $icon; ?>"></i>
                                             </div>
                                             <div>
+
                                                 <p class="file-category-label"><?php echo htmlspecialchars($label); ?></p>
                                                 <small><?php echo $itemCount; ?> item<?php echo $itemCount === 1 ? '' : 's'; ?></small>
                                             </div>
@@ -675,6 +683,60 @@ $currentUser = $userModel->findById($_SESSION['user_id']);
                     <!-- Members tab -->
                     <div class="tab-content" id="members-content">
                         <div class="members-grid">
+                            <?php
+                                $adminMembers = [];
+                                $regularMembers = [];
+                                foreach (($groupMembers ?? []) as $gm) {
+                                    if (($gm['role'] ?? '') === 'admin') {
+                                        $adminMembers[] = $gm;
+                                    } else {
+                                        $regularMembers[] = $gm;
+                                    }
+                                }
+                            ?>
+
+                            <?php if ($isAdmin): ?>
+                                <div class="governance-panel">
+                                    <h4>Group Governance</h4>
+                                    <div class="governance-meta">
+                                        <?php
+                                            $approvedCount = (int)($deleteApprovalStatus['approved_count'] ?? 0);
+                                            $adminCount = (int)($deleteApprovalStatus['admin_count'] ?? 0);
+                                            $viewerApproved = !empty($deleteApprovalStatus['viewer_approved']);
+                                        ?>
+                                        <p class="muted">Delete approvals: <strong><?php echo $approvedCount; ?>/<?php echo $adminCount; ?></strong> admins</p>
+                                        <button class="btn btn-danger" id="approveDeleteGroupBtn" <?php echo $viewerApproved ? 'disabled' : ''; ?>>
+                                            <?php echo $viewerApproved ? 'Deletion Approval Sent' : 'Approve Group Deletion'; ?>
+                                        </button>
+                                    </div>
+                                    <?php if (!empty($roleChangeRequests)): ?>
+                                        <div class="role-vote-list">
+                                            <?php foreach ($roleChangeRequests as $voteReq): ?>
+                                                <div class="role-vote-item <?php echo ($voteReq['status'] ?? '') === 'pending' ? 'pending' : 'resolved'; ?>">
+                                                    <div>
+                                                        <strong><?php echo htmlspecialchars(trim(($voteReq['target_first_name'] ?? '') . ' ' . ($voteReq['target_last_name'] ?? ''))); ?></strong>
+                                                        <small>@<?php echo htmlspecialchars($voteReq['target_username'] ?? ''); ?></small>
+                                                        <p>Change role to <strong><?php echo htmlspecialchars(ucfirst($voteReq['requested_role'] ?? 'member')); ?></strong></p>
+                                                    </div>
+                                                    <div class="role-vote-actions">
+                                                        <span class="vote-count"><?php echo (int)($voteReq['vote_count'] ?? 0); ?>/<?php echo (int)($voteReq['votes_needed'] ?? 1); ?> votes</span>
+                                                        <?php if (($voteReq['status'] ?? '') === 'pending' && empty($voteReq['viewer_voted'])): ?>
+                                                            <button
+                                                                class="btn btn-primary vote-role-change-btn"
+                                                                data-request-id="<?php echo (int)$voteReq['request_id']; ?>">
+                                                                Approve
+                                                            </button>
+                                                        <?php else: ?>
+                                                            <span class="vote-status-chip"><?php echo htmlspecialchars(ucfirst((string)($voteReq['status'] ?? 'pending'))); ?></span>
+                                                        <?php endif; ?>
+                                                    </div>
+                                                </div>
+                                            <?php endforeach; ?>
+                                        </div>
+                                    <?php endif; ?>
+                                </div>
+                            <?php endif; ?>
+
                             <?php if ($isAdmin && !empty($pendingRequests)): ?>
                                 <div class="pending-requests">
                                     <h4>Pending Join Requests</h4>
@@ -685,7 +747,7 @@ $currentUser = $userModel->findById($_SESSION['user_id']);
                                                 <img src="<?php echo htmlspecialchars(MediaHelper::resolveMediaPath($req['profile_picture'] ?? '', 'uploads/user_dp/default.png')); ?>" alt="<?php echo htmlspecialchars($req['first_name'] . ' ' . $req['last_name']); ?>">
                                                 <div class="requester-info">
                                                     <strong><?php echo htmlspecialchars($req['first_name'] . ' ' . $req['last_name']); ?></strong>
-                                                    <small>@<?php echo htmlspecialchars($req['username']); ?> · <?php echo htmlspecialchars(date('M j, H:i', strtotime($req['requested_at']))); ?></small>
+                                                    <small>@<?php echo htmlspecialchars($req['username']); ?> · <?php echo !empty($req['requested_at']) ? htmlspecialchars(date('M j, H:i', strtotime($req['requested_at']))) : 'Recently'; ?></small>
                                                 </div>
                                             </div>
                                             <div class="request-actions">
@@ -698,26 +760,68 @@ $currentUser = $userModel->findById($_SESSION['user_id']);
                             <?php endif; ?>
 
                             <?php if (!empty($groupMembers)): ?>
-                                <?php foreach ($groupMembers as $member): ?>
+                                <div class="member-section-block">
+                                    <h4>Admins</h4>
+                                </div>
+                                <?php foreach ($adminMembers as $member): ?>
                                     <?php
                                         $memberId = isset($member['user_id']) ? (int)$member['user_id'] : (int)($member['id'] ?? 0);
                                         $profileUrl = rtrim(BASE_PATH, '/') . '/index.php?controller=Profile&action=view&user_id=' . $memberId;
                                         $dp = MediaHelper::resolveMediaPath($member['profile_picture'] ?? '', 'uploads/user_dp/default.png');
                                     ?>
-                                    <a class="member-link" href="<?php echo htmlspecialchars($profileUrl); ?>">
-                                        <div class="member-card">
+                                    <div class="member-link">
+                                        <div class="member-card" data-member-id="<?php echo $memberId; ?>" data-member-role="<?php echo htmlspecialchars($member['role'] ?? 'member'); ?>">
                                             <div class="member-dp">
-                                                <img src="<?php echo htmlspecialchars($dp); ?>" alt="<?php echo htmlspecialchars($member['first_name'] . ' ' . $member['last_name']); ?>">
+                                                <a href="<?php echo htmlspecialchars($profileUrl); ?>">
+                                                    <img src="<?php echo htmlspecialchars($dp); ?>" alt="<?php echo htmlspecialchars($member['first_name'] . ' ' . $member['last_name']); ?>">
+                                                </a>
                                             </div>
                                             <div class="member-info">
-                                                <p class="member-name"><?php echo htmlspecialchars($member['first_name'] . ' ' . $member['last_name']); ?></p>
+                                                <p class="member-name"><a href="<?php echo htmlspecialchars($profileUrl); ?>"><?php echo htmlspecialchars($member['first_name'] . ' ' . $member['last_name']); ?></a></p>
                                                 <small class="member-username">@<?php echo htmlspecialchars($member['username'] ?? ''); ?></small>
                                                 <?php if (!empty($member['role'])): ?>
                                                     <span class="member-role"><?php echo htmlspecialchars(ucfirst($member['role'])); ?></span>
                                                 <?php endif; ?>
                                             </div>
+                                            <?php if ($isAdmin && $memberId !== (int)$currentUserId): ?>
+                                                <div class="member-admin-actions">
+                                                    <button class="btn btn-secondary propose-role-change-btn" data-target-user-id="<?php echo $memberId; ?>" data-requested-role="member">Start Demotion Vote</button>
+                                                </div>
+                                            <?php endif; ?>
                                         </div>
-                                    </a>
+                                    </div>
+                                <?php endforeach; ?>
+
+                                <div class="member-section-block">
+                                    <h4>Members</h4>
+                                </div>
+                                <?php foreach ($regularMembers as $member): ?>
+                                    <?php
+                                        $memberId = isset($member['user_id']) ? (int)$member['user_id'] : (int)($member['id'] ?? 0);
+                                        $profileUrl = rtrim(BASE_PATH, '/') . '/index.php?controller=Profile&action=view&user_id=' . $memberId;
+                                        $dp = MediaHelper::resolveMediaPath($member['profile_picture'] ?? '', 'uploads/user_dp/default.png');
+                                    ?>
+                                    <div class="member-link">
+                                        <div class="member-card" data-member-id="<?php echo $memberId; ?>" data-member-role="<?php echo htmlspecialchars($member['role'] ?? 'member'); ?>">
+                                            <div class="member-dp">
+                                                <a href="<?php echo htmlspecialchars($profileUrl); ?>">
+                                                    <img src="<?php echo htmlspecialchars($dp); ?>" alt="<?php echo htmlspecialchars($member['first_name'] . ' ' . $member['last_name']); ?>">
+                                                </a>
+                                            </div>
+                                            <div class="member-info">
+                                                <p class="member-name"><a href="<?php echo htmlspecialchars($profileUrl); ?>"><?php echo htmlspecialchars($member['first_name'] . ' ' . $member['last_name']); ?></a></p>
+                                                <small class="member-username">@<?php echo htmlspecialchars($member['username'] ?? ''); ?></small>
+                                                <?php if (!empty($member['role'])): ?>
+                                                    <span class="member-role"><?php echo htmlspecialchars(ucfirst($member['role'])); ?></span>
+                                                <?php endif; ?>
+                                            </div>
+                                            <?php if ($isAdmin && $memberId !== (int)$currentUserId): ?>
+                                                <div class="member-admin-actions">
+                                                    <button class="btn btn-primary propose-role-change-btn" data-target-user-id="<?php echo $memberId; ?>" data-requested-role="admin">Start Promotion Vote</button>
+                                                </div>
+                                            <?php endif; ?>
+                                        </div>
+                                    </div>
                                 <?php endforeach; ?>
                             <?php else: ?>
                                 <div class="no-members-centered">
@@ -760,36 +864,68 @@ $currentUser = $userModel->findById($_SESSION['user_id']);
                 </div>
             </div>
 
-            <div class="right">
-                <div class="group-details">
-                    <h4>Group Details</h4>
-                    <div class="detail-list">
-                        <div class="detail-item">
-                            <i class="uil uil-user"></i>
-                            <span><?php echo ucfirst(htmlspecialchars($group['privacy_status'])) . ' Group'; ?></span>
+                <div id="aboutGroupModal" class="modal-overlay about-group-modal" style="display:none;">
+                    <div class="modal-content about-group-modal-content">
+                        <div class="modal-header about-group-modal-header">
+                            <h3>About Group</h3>
+                            <button class="modal-close" id="closeAboutGroupModal" aria-label="Close About Group popup">
+                                <i class="uil uil-times"></i>
+                            </button>
                         </div>
-                        <div class="detail-item">
-                            <i class="uil uil-compass"></i>
-                            <span><?php echo htmlspecialchars($group['focus'] ?? 'No focus'); ?></span>
-                        </div>
-                        <div class="detail-item">
-                            <i class="uil uil-home"></i>
-                            <span><?php echo htmlspecialchars($group['tag'] ?? 'No tag'); ?></span>
-                        </div>
-                        <div class="detail-item">
-                            <i class="uil uil-calendar-alt"></i>
-                            <span>Created <?php echo date('F Y', strtotime($group['created_at'])); ?></span>
+                        <div class="modal-body about-group-modal-body">
+                            <div class="about-grid about-group-grid">
+                                <div class="about-card about-overview">
+                                    <h3>About This Group</h3>
+                                    <p><?php echo htmlspecialchars($group['description'] ?? 'This group does not have a description yet.'); ?></p>
+                                </div>
+
+                                <div class="about-card about-details">
+                                    <h4>Key Details</h4>
+                                    <ul class="about-detail-list about-detail-list-compact">
+                                        <li>
+                                            <i class="uil uil-shield-check"></i>
+                                            <span>Privacy</span>
+                                            <strong><?php echo ucfirst(htmlspecialchars($group['privacy_status'] ?? 'public')); ?></strong>
+                                        </li>
+                                        <li>
+                                            <i class="uil uil-calendar-alt"></i>
+                                            <span>Created</span>
+                                            <strong><?php echo htmlspecialchars(date('F Y', strtotime($group['created_at'] ?? date('Y-m-d')))); ?></strong>
+                                        </li>
+                                        <li>
+                                            <i class="uil uil-users-alt"></i>
+                                            <span>Members</span>
+                                            <strong><?php echo (int)($group['member_count'] ?? 0); ?></strong>
+                                        </li>
+                                        <li>
+                                            <i class="uil uil-compass"></i>
+                                            <span>Focus</span>
+                                            <strong><?php echo htmlspecialchars($group['focus'] ?? 'General'); ?></strong>
+                                        </li>
+                                        <li>
+                                            <i class="uil uil-tag"></i>
+                                            <span>Group Tag</span>
+                                            <strong><?php echo htmlspecialchars($group['tag'] ?? 'N/A'); ?></strong>
+                                        </li>
+                                    </ul>
+                                </div>
+
+                                <?php if (!empty($groupRulesList)): ?>
+                                <div class="about-card about-rules">
+                                    <h4>Group Rules</h4>
+                                    <ul class="rules-list">
+                                        <?php foreach ($groupRulesList as $rule): ?>
+                                            <li><i class="uil uil-check-circle"></i><?php echo htmlspecialchars($rule); ?></li>
+                                        <?php endforeach; ?>
+                                    </ul>
+                                </div>
+                                <?php endif; ?>
+                            </div>
                         </div>
                     </div>
                 </div>
 
-                <?php
-                    $friendRequests = $incomingFriendRequests ?? [];
-                    include __DIR__ . '/templates/friend-requests.php';
-                ?>
-
-                <!-- Top Collaborators -->
-            </div>
+            <?php include __DIR__ . '/templates/group-right.php'; ?>
         </div>
 
         <!-- Instagram-style Post View Modal -->
@@ -1162,6 +1298,7 @@ $currentUser = $userModel->findById($_SESSION['user_id']);
     <script src="./js/group-post-interactions.js"></script>
     <script>
         const GROUP_ID = <?php echo $groupId; ?>;
+        window.CURRENT_GROUP_ID = <?php echo (int)($groupId ?? 0); ?>;
         const IS_CREATOR = <?php echo $isCreator ? 'true' : 'false'; ?>;
         const IS_ADMIN = <?php echo $isAdmin ? 'true' : 'false'; ?>;
         const HAS_PENDING_REQUEST = <?php echo !empty($hasPendingRequest) ? 'true' : 'false'; ?>;

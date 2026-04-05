@@ -4,6 +4,7 @@ require_once __DIR__ . '/../models/PostModel.php';
 require_once __DIR__ . '/../models/UserModel.php';
 require_once __DIR__ . '/../models/GroupModel.php';
 require_once __DIR__ . '/../models/QuestionModel.php';
+require_once __DIR__ . '/../models/BinModel.php';
 
 class ReportController {
     private ReportModel $reportModel;
@@ -11,6 +12,7 @@ class ReportController {
     private UserModel $userModel;
     private GroupModel $groupModel;
     private QuestionModel $questionModel;
+    private BinModel $binModel;
 
     public function __construct() {
         $this->reportModel = new ReportModel();
@@ -18,6 +20,7 @@ class ReportController {
         $this->userModel = new UserModel();
         $this->groupModel = new GroupModel();
         $this->questionModel = new QuestionModel();
+        $this->binModel = new BinModel();
     }
 
     public function submit(): void {
@@ -41,7 +44,7 @@ class ReportController {
         $reportType = strtolower(trim($input['report_type'] ?? 'other'));
         $description = trim($input['description'] ?? '');
 
-        $allowedTargets = ['post', 'user', 'group', 'question'];
+        $allowedTargets = ['post', 'user', 'group', 'question', 'media'];
         if (!in_array($targetType, $allowedTargets, true) || $targetId <= 0) {
             http_response_code(400);
             echo json_encode(['success' => false, 'message' => 'Invalid report target']);
@@ -83,6 +86,10 @@ class ReportController {
             case 'question':
                 $payload['reported_question_id'] = $targetId;
                 $payload['reported_user_id'] = (int)($targetRecord['user_id'] ?? 0) ?: null;
+                break;
+            case 'media':
+                $payload['reported_media_id'] = $targetId;
+                $payload['reported_user_id'] = (int)($targetRecord['added_by'] ?? 0) ?: null;
                 break;
         }
 
@@ -126,6 +133,8 @@ class ReportController {
                 return $this->userModel->findById($targetId);
             case 'question':
                 return $this->questionModel->getQuestion($targetId, (int)$_SESSION['user_id']);
+            case 'media':
+                return $this->binModel->getMediaById($targetId);
             default:
                 return null;
         }

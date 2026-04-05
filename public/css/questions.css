@@ -949,6 +949,10 @@ main .container.questions-layout .left {
     color: var(--color-gray);
 }
 
+.template-field input[type="file"] {
+    padding: 0.55rem;
+}
+
 .template-tips {
     background: var(--primary-50);
     border: 1px solid var(--primary-200);
@@ -1158,6 +1162,10 @@ main .container.questions-layout .left {
     min-height: 108px;
 }
 
+.question-template-modal .template-field input[type="file"] {
+    padding: 0.5rem;
+}
+
 .question-template-modal .char-count {
     margin-top: 0.28rem;
     font-size: 0.8rem;
@@ -1299,6 +1307,48 @@ main .container.questions-layout .left {
     line-height: 1.7;
     color: var(--color-dark);
     font-size: 1.05rem;
+}
+
+.question-attachment-block {
+    margin-top: 1rem;
+    padding: 0.85rem 1rem;
+    border: 1px solid var(--gray-200);
+    border-radius: 10px;
+    background: var(--gray-50);
+}
+
+.question-attachment-label {
+    display: block;
+    margin-bottom: 0.45rem;
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--color-gray);
+    font-weight: 700;
+}
+
+.question-attachment-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    color: var(--color-primary);
+    text-decoration: none;
+    font-weight: 600;
+    max-width: 100%;
+}
+
+.question-attachment-link i {
+    font-size: 1rem;
+}
+
+.question-attachment-link span {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.question-attachment-link:hover {
+    text-decoration: underline;
 }
 
 .question-structured-grid {

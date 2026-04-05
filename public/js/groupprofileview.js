@@ -19,55 +19,141 @@
     }
 
     // ===== DROPDOWN MENU =====
-    const optionsBtn = document.getElementById('groupOptionsBtn');
-    const optionsMenu = document.getElementById('groupOptionsMenu');
-    const editOption = document.getElementById('editGroupOption');
-    const manageRequestsOption = document.getElementById('manageRequestsOption');
-    const deleteOption = document.getElementById('deleteGroupOption');
+    const groupMenuBtn = document.getElementById('groupMenuBtn');
+    const groupDropdownMenu = document.getElementById('groupDropdownMenu');
+    const aboutGroupBtn = document.getElementById('aboutGroupBtn');
+    const editGroupBtn = document.getElementById('editGroupBtn');
+    const manageGroupBtn = document.getElementById('manageGroupBtn');
+    const deleteGroupBtn = document.getElementById('deleteGroupBtn');
+    const groupSettingsNavBtn = document.getElementById('groupSettingsNavBtn');
 
-    if (optionsBtn && optionsMenu) {
-        optionsBtn.addEventListener('click', (e) => {
+    // Dropdown toggle
+    if (groupMenuBtn && groupDropdownMenu) {
+        groupMenuBtn.addEventListener('click', (e) => {
             e.stopPropagation();
-            const isVisible = optionsMenu.style.display === 'block';
-            optionsMenu.style.display = isVisible ? 'none' : 'block';
+            groupDropdownMenu.classList.toggle('active');
         });
 
-        document.addEventListener('click', () => {
-            optionsMenu.style.display = 'none';
+        document.addEventListener('click', (e) => {
+            if (!groupMenuBtn.contains(e.target) && !groupDropdownMenu.contains(e.target)) {
+                groupDropdownMenu.classList.remove('active');
+            }
         });
 
-        optionsMenu.addEventListener('click', (e) => {
-            e.stopPropagation();
+        groupDropdownMenu.addEventListener('click', () => {
+            // Let clicks bubble so report.js document handler can catch report-trigger clicks.
         });
     }
 
-    // Handle Manage Requests option click
-    if (manageRequestsOption) {
-        manageRequestsOption.addEventListener('click', (e) => {
+    // Edit Group button
+    if (editGroupBtn) {
+        editGroupBtn.addEventListener('click', (e) => {
             e.preventDefault();
             e.stopPropagation();
-            console.log('Manage Requests clicked');
-            console.log('BASE_PATH:', BASE_PATH);
-            console.log('GROUP_ID:', GROUP_ID);
-            if (optionsMenu) optionsMenu.style.display = 'none';
+            openEditModal();
+            if (groupDropdownMenu) groupDropdownMenu.classList.remove('active');
+        });
+    }
+
+    if (groupSettingsNavBtn) {
+        groupSettingsNavBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            const settingsHref = groupSettingsNavBtn.getAttribute('href');
+            if (settingsHref) {
+                window.location.href = settingsHref;
+            }
+        });
+    }
+
+    // Manage Group button
+    if (manageGroupBtn) {
+        manageGroupBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            if (groupDropdownMenu) groupDropdownMenu.classList.remove('active');
             const url = BASE_PATH + 'index.php?controller=Group&action=manage&group_id=' + GROUP_ID;
-            console.log('Navigating to:', url);
             window.location.href = url;
         });
-    } else {
-        console.log('manageRequestsOption not found');
+    }
+
+    // Delete Group button
+    if (deleteGroupBtn) {
+        deleteGroupBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            if (groupDropdownMenu) groupDropdownMenu.classList.remove('active');
+            const deleteModal = document.getElementById('deleteGroupModal');
+            if (deleteModal) {
+                deleteModal.style.display = 'flex';
+                document.body.style.overflow = 'hidden';
+            }
+        });
+    }
+
+    // Action buttons: Join, Leave
+    const joinGroupBtn = document.getElementById('joinGroupBtn');
+    const leaveGroupBtn = document.getElementById('leaveGroupBtn');
+
+    if (joinGroupBtn) {
+        joinGroupBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            console.log('Join group clicked');
+            // TODO: Implement join group action
+        });
+    }
+
+    if (leaveGroupBtn) {
+        leaveGroupBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            console.log('Leave group clicked');
+            // TODO: Implement leave group action
+        });
     }
 
     // ===== EDIT GROUP MODAL =====
     const editModal = document.getElementById('editGroupModal');
     const closeEditModal = document.getElementById('closeEditGroupModal');
     const cancelEditBtn = document.getElementById('cancelEditGroupBtn');
+    const aboutGroupModal = document.getElementById('aboutGroupModal');
+    const closeAboutGroupModalBtn = document.getElementById('closeAboutGroupModal');
+
+    const openAboutGroupModal = () => {
+        if (!aboutGroupModal) return;
+        aboutGroupModal.style.display = 'flex';
+        document.body.style.overflow = 'hidden';
+        if (groupDropdownMenu) groupDropdownMenu.classList.remove('active');
+    };
+
+    const closeAboutGroupModal = () => {
+        if (!aboutGroupModal) return;
+        aboutGroupModal.style.display = 'none';
+        document.body.style.overflow = '';
+    };
+
+    if (aboutGroupBtn) {
+        aboutGroupBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            openAboutGroupModal();
+        });
+    }
+
+    if (closeAboutGroupModalBtn) {
+        closeAboutGroupModalBtn.addEventListener('click', closeAboutGroupModal);
+    }
+
+    if (aboutGroupModal) {
+        aboutGroupModal.addEventListener('click', (e) => {
+            if (e.target === aboutGroupModal) {
+                closeAboutGroupModal();
+            }
+        });
+    }
 
     const openEditModal = () => {
         if (editModal) {
             editModal.style.display = 'flex';
             document.body.style.overflow = 'hidden';
-            if (optionsMenu) optionsMenu.style.display = 'none';
+            if (groupDropdownMenu) groupDropdownMenu.classList.remove('active');
         }
     };
 
@@ -77,11 +163,6 @@
             document.body.style.overflow = '';
         }
     };
-
-    if (editOption) editOption.addEventListener('click', (e) => {
-        e.preventDefault();
-        openEditModal();
-    });
 
     // Header quick actions: Edit Cover / Edit DP
     const headerEditCoverBtn = document.querySelector('.edit-cover-btn');
@@ -125,7 +206,7 @@
         if (deleteModal) {
             deleteModal.classList.add('active');
             document.body.style.overflow = 'hidden';
-            if (optionsMenu) optionsMenu.style.display = 'none';
+            if (groupDropdownMenu) groupDropdownMenu.classList.remove('active');
         }
     };
 
@@ -135,11 +216,6 @@
             document.body.style.overflow = '';
         }
     };
-
-    if (deleteOption) deleteOption.addEventListener('click', (e) => {
-        e.preventDefault();
-        openDeleteModal();
-    });
 
     if (cancelDeleteBtn) cancelDeleteBtn.addEventListener('click', closeDeleteModal);
 
@@ -162,8 +238,15 @@
                 });
                 const result = await response.json();
                 if (result.success) {
-                    window.showToast('Group deleted successfully', 'success');
-                    window.location.href = BASE_PATH + 'index.php?controller=Feed&action=index';
+                    if (result.deleted) {
+                        window.showToast(result.message || 'Group deleted successfully', 'success');
+                        window.location.href = BASE_PATH + 'index.php?controller=Feed&action=index';
+                    } else {
+                        const status = result.status || {};
+                        const progress = `${status.approved_count || 0}/${status.admin_count || 0}`;
+                        window.showToast((result.message || 'Delete approval recorded') + ` (${progress})`, 'info');
+                        window.location.reload();
+                    }
                 } else {
                     window.showToast(result.message || 'Failed to delete group', 'error');
                 }
@@ -172,6 +255,48 @@
                 console.error(err);
             }
             closeDeleteModal();
+        });
+    }
+
+    async function postFormEncoded(payload) {
+        const body = Object.keys(payload)
+            .map((k) => `${encodeURIComponent(k)}=${encodeURIComponent(payload[k])}`)
+            .join('&');
+
+        const response = await fetch(BASE_PATH + 'index.php?controller=Group&action=handleAjax', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body
+        });
+        return response.json();
+    }
+
+    const approveDeleteGroupBtn = document.getElementById('approveDeleteGroupBtn');
+    if (approveDeleteGroupBtn) {
+        approveDeleteGroupBtn.addEventListener('click', async () => {
+            if (!confirm('Approve group deletion? The group is deleted only after all admins approve.')) return;
+
+            approveDeleteGroupBtn.disabled = true;
+            const result = await postFormEncoded({
+                sub_action: 'approve_delete_group',
+                group_id: GROUP_ID
+            });
+
+            if (result.success) {
+                if (result.deleted) {
+                    window.showToast(result.message || 'Group deleted successfully', 'success');
+                    window.location.href = BASE_PATH + 'index.php?controller=Feed&action=index';
+                    return;
+                }
+
+                const status = result.status || {};
+                window.showToast((result.message || 'Delete approval recorded') + ` (${status.approved_count || 0}/${status.admin_count || 0})`, 'info');
+                window.location.reload();
+                return;
+            }
+
+            approveDeleteGroupBtn.disabled = false;
+            window.showToast(result.message || 'Failed to record delete approval', 'error');
         });
     }
 
@@ -513,6 +638,62 @@
 
     // Approve / Reject pending join requests (admin actions) - Use event delegation
     document.addEventListener('click', async (e) => {
+        if (e.target.classList.contains('propose-role-change-btn') || e.target.closest('.propose-role-change-btn')) {
+            e.preventDefault();
+            const btn = e.target.classList.contains('propose-role-change-btn') ? e.target : e.target.closest('.propose-role-change-btn');
+            const targetUserId = btn.dataset.targetUserId;
+            const requestedRole = btn.dataset.requestedRole;
+
+            if (!targetUserId || !requestedRole) {
+                window.showToast('Missing role vote data', 'error');
+                return;
+            }
+
+            btn.disabled = true;
+            const result = await postFormEncoded({
+                sub_action: 'propose_role_change',
+                group_id: GROUP_ID,
+                target_user_id: targetUserId,
+                requested_role: requestedRole
+            });
+
+            if (result.success) {
+                window.showToast(result.message || 'Role change vote started', 'success');
+                window.location.reload();
+            } else {
+                btn.disabled = false;
+                window.showToast(result.message || 'Failed to start role vote', 'error');
+            }
+            return;
+        }
+
+        if (e.target.classList.contains('vote-role-change-btn') || e.target.closest('.vote-role-change-btn')) {
+            e.preventDefault();
+            const btn = e.target.classList.contains('vote-role-change-btn') ? e.target : e.target.closest('.vote-role-change-btn');
+            const requestId = btn.dataset.requestId;
+
+            if (!requestId) {
+                window.showToast('Missing request id', 'error');
+                return;
+            }
+
+            btn.disabled = true;
+            const result = await postFormEncoded({
+                sub_action: 'vote_role_change',
+                group_id: GROUP_ID,
+                request_id: requestId
+            });
+
+            if (result.success) {
+                window.showToast(result.message || 'Vote recorded', 'success');
+                window.location.reload();
+            } else {
+                btn.disabled = false;
+                window.showToast(result.message || 'Failed to vote', 'error');
+            }
+            return;
+        }
+
         // Approve request handler
         if (e.target.classList.contains('approve-request') || e.target.closest('.approve-request')) {
             e.preventDefault();
