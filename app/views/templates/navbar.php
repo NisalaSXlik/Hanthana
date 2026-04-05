@@ -121,9 +121,9 @@ if (isset($_SESSION['user_id'])) {
                                     </div>
                                     
                                     <div class="form-group">
-                                        <label for="postTags">Tags (minimum 5, separated by commas)</label>
-                                        <input type="text" id="postTags" placeholder="e.g., travel, srilanka, beach, vacation, sunset">
-                                        <small class="tag-count">0/5 tags</small>
+                                        <label for="postTags">Tags (optional, separated by commas)</label>
+                                        <input type="text" id="postTags" placeholder="e.g., travel, srilanka, beach">
+                                        <small class="tag-count">0 tags</small>
                                     </div>
                                 </div>
                             </div>

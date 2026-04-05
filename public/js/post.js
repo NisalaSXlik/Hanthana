@@ -180,7 +180,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Tag validation
     postTagsInput.addEventListener('input', function() {
         const tags = this.value.split(',').map(tag => tag.trim()).filter(tag => tag.length > 0);
-        tagCount.textContent = `${tags.length}/5 tags`;
+        tagCount.textContent = `${tags.length} tags`;
     });
 
     // Share/Submit
@@ -204,7 +204,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
         let errors = [];
         if (!caption) errors.push({ field: 'postCaption', message: 'Caption is required.' });
-        if (tagArray.length < 5) errors.push({ field: 'postTags', message: 'At least 5 tags are required.' });
 
         if (errors.length > 0) {
             showFormErrors(errors);
@@ -347,7 +346,7 @@ document.addEventListener('DOMContentLoaded', function() {
         // General
         document.getElementById('postCaption').value = '';
         document.getElementById('postTags').value = '';
-        tagCount.textContent = '0/5 tags';
+        tagCount.textContent = '0 tags';
         postImageInput.value = '';
         imageUpload.innerHTML = `
             <i class="uil uil-image-upload"></i>

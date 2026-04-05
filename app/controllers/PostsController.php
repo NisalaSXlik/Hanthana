@@ -71,8 +71,7 @@ class PostsController {
         // Validate requisites
         $errors = [];
         if (empty($caption)) $errors[] = 'Caption required.';
-        $tagArray = array_filter(array_map('trim', explode(',', $tags)));
-        if (count($tagArray) < 5) $errors[] = 'At least 5 tags required.';
+        $tagArray = array_filter(array_map('trim', explode(',', $tags))); // optional tags
         if ($postType === 'event' && (empty($eventTitle) || empty($eventDate))) $errors[] = 'Event details required.';
 
         // Check foreign key for group_id if set
