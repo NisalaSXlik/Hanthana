@@ -73,7 +73,7 @@
     color: white;
     font-weight: 600;
     border-color: var(--color-primary);
-    box-shadow: 0 4px 12px rgba(14, 165, 233, 0.3);
+    box-shadow: 0 4px 12px rgba(7, 92, 230, 0.3);
 }
 
 .filter-tab i {
@@ -101,7 +101,7 @@
 .btn-ask-question:hover {
     background: var(--primary-600);
     transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(14, 165, 233, 0.3);
+    box-shadow: 0 4px 12px rgba(7, 92, 230, 0.3);
 }
 
 .event-create-modal {
@@ -204,7 +204,7 @@
 .event-create-grid input:focus {
     outline: none;
     border-color: var(--color-primary);
-    box-shadow: 0 0 0 2px rgba(14, 165, 233, 0.15);
+    box-shadow: 0 0 0 2px rgba(7, 92, 230, 0.15);
 }
 
 .event-create-modal-footer {
@@ -274,12 +274,12 @@
     gap: 6px;
     font-size: 0.85rem;
     font-weight: 600;
-    box-shadow: 0 6px 14px rgba(14, 165, 233, 0.35);
+    box-shadow: 0 6px 14px rgba(7, 92, 230, 0.35);
 }
 
 .btn-add-calendar:hover {
     transform: translateY(-1px);
-    box-shadow: 0 10px 18px rgba(14, 165, 233, 0.45);
+    box-shadow: 0 10px 18px rgba(7, 92, 230, 0.45);
 }
 
 .btn-add-calendar.added {
@@ -528,7 +528,7 @@
 }
 
 .event-stats span:hover {
-    background: rgba(14, 165, 233, 0.1);
+    background: rgba(7, 92, 230, 0.1);
     transform: translateY(-2px);
 }
 
@@ -577,13 +577,13 @@
     border-color: var(--color-primary);
     background: var(--color-primary);
     color: white;
-    box-shadow: 0 2px 8px rgba(14, 165, 233, 0.3);
+    box-shadow: 0 2px 8px rgba(7, 92, 230, 0.3);
 }
 
 .btn-rsvp.interested:hover:not(:disabled) {
     background: var(--color-secondary);
     border-color: var(--color-secondary);
-    box-shadow: 0 4px 12px rgba(14, 165, 233, 0.5);
+    box-shadow: 0 4px 12px rgba(7, 92, 230, 0.5);
 }
 
 .btn-rsvp.going {
@@ -746,7 +746,7 @@
 .form-group textarea:focus {
     outline: none;
     border-color: var(--color-primary);
-    box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.1);
+    box-shadow: 0 0 0 3px rgba(7, 92, 230, 0.1);
 }
 
 .form-group textarea {
@@ -780,7 +780,7 @@
 .btn-primary:hover {
     background: var(--color-secondary);
     transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(14, 165, 233, 0.3);
+    box-shadow: 0 4px 12px rgba(7, 92, 230, 0.3);
 }
 
 .btn-secondary {
@@ -861,13 +861,13 @@
     gap: 6px; /* icon right in front of text */
     font-size: 0.85rem;
     font-weight: 600;
-    box-shadow: 0 6px 14px rgba(14, 165, 233, 0.35);
+    box-shadow: 0 6px 14px rgba(7, 92, 230, 0.35);
     transition: all 0.3s ease;
 }
 
 .btn-add-trending:hover:not(:disabled) {
     transform: translateY(-1px);
-    box-shadow: 0 10px 18px rgba(14, 165, 233, 0.45);
+    box-shadow: 0 10px 18px rgba(7, 92, 230, 0.45);
 }
 
 .btn-add-trending.added {
@@ -982,3 +982,4 @@
         justify-content: center;
     }
 }
+

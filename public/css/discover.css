@@ -8,8 +8,8 @@ body.page-discover {
 
 body.page-discover main .container {
     display: grid !important;
-    grid-template-columns: 20% 56% 20% !important;
-    gap: 1rem !important;
+    grid-template-columns: 22% 54% 22% !important;
+    gap: 0.75rem !important;
     align-items: flex-start;
     padding: 0 !important;
 }
@@ -187,7 +187,7 @@ body.page-discover .friend-requests .request .info {
 }
 
 .trending-item:hover {
-    background: rgba(14, 165, 233, 0.05);
+    background: rgba(7, 92, 230, 0.05);
 }
 
 .trending-icon {
@@ -579,5 +579,6 @@ body.page-discover .friend-requests .request .info {
     line-height: 1.4;
     padding: 0.5rem 0.75rem;
 }
+
 
 

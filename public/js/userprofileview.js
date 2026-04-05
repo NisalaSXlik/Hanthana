@@ -1,5 +1,5 @@
 const postsPayloadElement = document.getElementById('profilePostPayload');
-let parsedPostsData = { personal: [], group: [] };
+let parsedPostsData = { personal: [], group: [], saved: [] };
 if (postsPayloadElement) {
     try {
         parsedPostsData = JSON.parse(postsPayloadElement.textContent || '{}');
@@ -10,6 +10,7 @@ if (postsPayloadElement) {
 
 window.PERSONAL_POSTS = parsedPostsData.personal || [];
 window.GROUP_POSTS = parsedPostsData.group || [];
+window.SAVED_POSTS = parsedPostsData.saved || [];
 
 document.addEventListener('DOMContentLoaded', () => {
     const tabLinks = document.querySelectorAll('.profile-tabs a');
@@ -321,9 +322,12 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     const friendListModal = document.getElementById('friendListModal');
+    const groupListModal = document.getElementById('groupListModal');
     let lastFriendTrigger = null;
+    let lastGroupTrigger = null;
 
     const friendTriggers = document.querySelectorAll('[data-friend-count-trigger]');
+    const groupTriggers = document.querySelectorAll('[data-group-count-trigger]');
 
     const openFriendListModal = (trigger) => {
         if (!friendListModal) return;
@@ -345,6 +349,26 @@ document.addEventListener('DOMContentLoaded', () => {
         lastFriendTrigger = null;
     };
 
+    const openGroupListModal = (trigger) => {
+        if (!groupListModal) return;
+        lastGroupTrigger = trigger || null;
+        groupListModal.classList.add('active');
+        groupListModal.setAttribute('aria-hidden', 'false');
+        document.body.style.overflow = 'hidden';
+        const closeButton = groupListModal.querySelector('[data-close-groups-modal]');
+        if (closeButton) setTimeout(() => closeButton.focus(), 10);
+    };
+
+    const closeGroupListModal = () => {
+        if (!groupListModal) return;
+        groupListModal.classList.remove('active');
+        groupListModal.setAttribute('aria-hidden', 'true');
+        const editModalIsOpen = document.querySelector('.profile-edit-modal.active');
+        if (!editModalIsOpen) document.body.style.overflow = '';
+        if (lastGroupTrigger && typeof lastGroupTrigger.focus === 'function') lastGroupTrigger.focus();
+        lastGroupTrigger = null;
+    };
+
     if (friendListModal) {
         const closeTargets = friendListModal.querySelectorAll('[data-close-friends-modal]');
         closeTargets.forEach((element) => {
@@ -357,6 +381,18 @@ document.addEventListener('DOMContentLoaded', () => {
         document.addEventListener('keydown', (event) => { if (event.key === 'Escape' && friendListModal.classList.contains('active')) closeFriendListModal(); });
     }
 
+    if (groupListModal) {
+        const closeTargets = groupListModal.querySelectorAll('[data-close-groups-modal]');
+        closeTargets.forEach((element) => {
+            element.addEventListener('click', (event) => {
+                event.preventDefault();
+                closeGroupListModal();
+            });
+        });
+        groupListModal.addEventListener('click', (event) => { if (event.target === groupListModal) closeGroupListModal(); });
+        document.addEventListener('keydown', (event) => { if (event.key === 'Escape' && groupListModal.classList.contains('active')) closeGroupListModal(); });
+    }
+
     if (friendTriggers.length) {
         friendTriggers.forEach((trigger) => {
             trigger.addEventListener('click', (event) => {
@@ -367,6 +403,21 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (event.key === 'Enter' || event.key === ' ') {
                     event.preventDefault();
                     openFriendListModal(trigger);
+                }
+            });
+        });
+    }
+
+    if (groupTriggers.length) {
+        groupTriggers.forEach((trigger) => {
+            trigger.addEventListener('click', (event) => {
+                event.preventDefault();
+                openGroupListModal(trigger);
+            });
+            trigger.addEventListener('keydown', (event) => {
+                if (event.key === 'Enter' || event.key === ' ') {
+                    event.preventDefault();
+                    openGroupListModal(trigger);
                 }
             });
         });
@@ -416,7 +467,13 @@ document.addEventListener('DOMContentLoaded', () => {
     function openPostModal(index, type) {
         currentPostIndex = index;
         currentPostType = type;
-        currentPosts = type === 'personal' ? (window.PERSONAL_POSTS || []) : (window.GROUP_POSTS || []);
+        if (type === 'group') {
+            currentPosts = window.GROUP_POSTS || [];
+        } else if (type === 'saved') {
+            currentPosts = window.SAVED_POSTS || [];
+        } else {
+            currentPosts = window.PERSONAL_POSTS || [];
+        }
         
         if (!currentPosts || currentPosts.length === 0) return;
         
@@ -430,12 +487,19 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function openPostModalByPostId(postId, type) {
-        const posts = type === 'personal' ? (window.PERSONAL_POSTS || []) : (window.GROUP_POSTS || []);
+        let posts = [];
+        if (type === 'group') {
+            posts = window.GROUP_POSTS || [];
+        } else if (type === 'saved') {
+            posts = window.SAVED_POSTS || [];
+        } else {
+            posts = window.PERSONAL_POSTS || [];
+        }
         const index = posts.findIndex(post => parseInt(post.post_id) === postId);
         
         if (index !== -1) {
             // Switch to appropriate tab first
-            const targetTab = type === 'personal' ? 'posts' : 'group-posts';
+            const targetTab = type === 'group' ? 'group-posts' : (type === 'saved' ? 'saved' : 'posts');
             setActiveTab(targetTab);
             
             // Small delay to ensure tab content is rendered
@@ -876,10 +940,12 @@ document.addEventListener('DOMContentLoaded', () => {
             hash = hash.replace(/-comments$/, '');
         }
 
-        if (hash.startsWith('personal-post-') || hash.startsWith('group-post-')) {
+        if (hash.startsWith('personal-post-') || hash.startsWith('group-post-') || hash.startsWith('saved-post-')) {
             const parts = hash.split('-');
             const postId = parseInt(parts[parts.length - 1], 10);
-            const postType = hash.startsWith('personal-post-') ? 'personal' : 'group';
+            const postType = hash.startsWith('group-post-')
+                ? 'group'
+                : (hash.startsWith('saved-post-') ? 'saved' : 'personal');
 
             setTimeout(() => {
                 openPostModalByPostId(postId, postType);

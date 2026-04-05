@@ -24,9 +24,40 @@ class PostsController {
             case 'create': $this->createPost($input); break;
             case 'update': $this->updatePost($input); break;
             case 'delete': $this->deletePost($input); break;
+            case 'bookmark': $this->bookmarkFromHandleAjax($input); break;
             default: echo json_encode(['success' => false, 'message' => 'Invalid action']);
         }
         exit;
+    }
+
+    public function bookmark() {
+        header('Content-Type: application/json');
+        if (!isset($_SESSION['user_id'])) {
+            echo json_encode(['success' => false, 'message' => 'Not authenticated']);
+            return;
+        }
+
+        $postId = isset($_POST['post_id']) ? (int)$_POST['post_id'] : 0;
+        $action = isset($_POST['action']) ? trim((string)$_POST['action']) : 'toggle';
+
+        if ($postId <= 0) {
+            http_response_code(400);
+            echo json_encode(['success' => false, 'message' => 'Invalid post ID']);
+            return;
+        }
+
+        $model = new PostModel();
+        $result = $model->setPostBookmark((int)$_SESSION['user_id'], $postId, $action);
+
+        if (empty($result['success'])) {
+            http_response_code(400);
+        }
+
+        echo json_encode([
+            'success' => !empty($result['success']),
+            'bookmarked' => !empty($result['bookmarked']),
+            'message' => $result['message'] ?? (!empty($result['bookmarked']) ? 'Post saved' : 'Bookmark removed')
+        ]);
     }
 
     private function createPost($data) {
@@ -181,5 +212,29 @@ class PostsController {
             http_response_code(403);
             echo json_encode(['success' => false, 'message' => 'Delete failed or not allowed']);
         }
+    }
+
+    private function bookmarkFromHandleAjax($data) {
+        $postId = (int)($data['post_id'] ?? 0);
+        $action = trim((string)($data['action'] ?? 'toggle'));
+
+        if ($postId <= 0) {
+            http_response_code(400);
+            echo json_encode(['success' => false, 'message' => 'Invalid post ID']);
+            return;
+        }
+
+        $model = new PostModel();
+        $result = $model->setPostBookmark((int)$_SESSION['user_id'], $postId, $action);
+
+        if (empty($result['success'])) {
+            http_response_code(400);
+        }
+
+        echo json_encode([
+            'success' => !empty($result['success']),
+            'bookmarked' => !empty($result['bookmarked']),
+            'message' => $result['message'] ?? (!empty($result['bookmarked']) ? 'Post saved' : 'Bookmark removed')
+        ]);
     }
 }

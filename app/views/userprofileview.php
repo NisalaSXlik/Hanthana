@@ -45,9 +45,10 @@ $currentUser = $userModel->findById($_SESSION['user_id']);
             <?php include __DIR__ . '/templates/left-sidebar.php'; ?>
 
             <div class="middle">
-                <div class="profile-header">
+                <div class="profile-header professional-profile">
                     <div class="profile-cover">
                         <img src="<?php echo htmlspecialchars(MediaHelper::resolveMediaPath($profileUser['cover_photo'] ?? '', 'uploads/user_cover/default.png')); ?>" alt="Profile Cover" id="profileCoverImage">
+                        
                         <?php if ($isOwner): ?>
                         <button type="button" class="btn btn-primary edit-cover-btn" id="triggerEditCover">
                             <i class="uil uil-camera"></i> Edit Cover
@@ -66,46 +67,52 @@ $currentUser = $userModel->findById($_SESSION['user_id']);
                             </div>
                         </div>
                         <div class="profile-details">
-                            <p class="profile-name"><?php echo htmlspecialchars($displayName !== '' ? $displayName : 'Unknown User'); ?></p>
                             <?php if ($displayHandle !== ''): ?>
-                                <p class="profile-handle"><?php echo htmlspecialchars($displayHandle); ?></p>
+                                <h2 class="profile-handle-large"><?php echo htmlspecialchars($displayHandle); ?></h2>
+                            <?php else: ?>
+                                <h2 class="profile-handle-large"><?php echo htmlspecialchars($displayName); ?></h2>
                             <?php endif; ?>
                             <p class="profile-bio"><?php echo htmlspecialchars($bio); ?></p>
+                            
                             <div class="profile-meta">
-                                <span><i class="uil uil-location-point"></i> <?php echo htmlspecialchars($location); ?></span>
-                                <span><i class="uil uil-university"></i> <?php echo htmlspecialchars($university); ?></span>
-                                <span><i class="uil uil-calendar-alt"></i> Joined <?php echo htmlspecialchars($joinedAt); ?></span>
+                                <span class="meta-location"><?php echo htmlspecialchars($location !== '' ? $location : 'Location not set'); ?></span>
+                                <a href="#" class="meta-contact-link">Contact info</a>
                             </div>
+
                             <div class="profile-actions">
                                 <?php if ($isOwner): ?>
                                     <button type="button" class="btn btn-primary" id="editProfileBtn"><i class="uil uil-edit"></i> Edit Profile</button>
+                                    <button type="button" class="btn btn-outline profile-friends-btn" data-friend-count-trigger>
+                                        <i class="uil uil-users-alt"></i>
+                                        Friends
+                                    </button>
+                                    <button type="button" class="btn btn-outline profile-groups-btn" data-group-count-trigger>
+                                        <i class="uil uil-users-alt"></i>
+                                        Groups
+                                    </button>
                                 <?php else: ?>
                                     <button
                                         type="button"
-                                        class="btn <?php echo $friendButtonVariant; ?> add-friend-btn"
+                                        class="btn add-friend-btn <?php echo $friendButtonVariant; ?>"
                                         data-user-id="<?php echo $profileUserId; ?>"
                                         data-state="<?php echo htmlspecialchars($friendButtonState); ?>"
                                         <?php echo $friendButtonDisabled ? 'disabled' : ''; ?>
                                     >
-                                        <i class="<?php echo htmlspecialchars($friendButtonIcon); ?>"></i>
-                                        <span><?php echo htmlspecialchars($friendButtonLabel); ?></span>
+                                        <span><?php echo htmlspecialchars($friendButtonState === 'none' ? '+ Follow' : $friendButtonLabel); ?></span>
                                     </button>
-                                    <button class="btn btn-secondary" type="button"><i class="uil uil-message"></i> Message</button>
-                                    <button
-                                        type="button"
-                                        class="btn report-trigger"
+                                    <button class="btn btn-outline" type="button">Message</button>
+                                    <button class="btn btn-outline btn-more report-trigger" type="button"
                                         data-report-type="user"
                                         data-target-id="<?php echo (int)$profileUserId; ?>"
                                         data-target-label="<?php echo htmlspecialchars('user ' . ($displayName !== '' ? $displayName : $displayHandle), ENT_QUOTES); ?>">
-                                        <i class="uil uil-exclamation-circle"></i>
-                                        Report User
+                                        More
                                     </button>
                                 <?php endif; ?>
                             </div>
-                            
+
                             <!-- Privacy Indicator -->
                             <?php if (!$isOwner): ?>
-                            <div class="privacy-indicator" style="margin-top: 1rem; text-align: center;">
+                            <div class="privacy-indicator" style="margin-top: 1rem; text-align: left;">
                                 <?php if ($profileVisibility === 'only_me'): ?>
                                     <div class="privacy-badge" style="display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.5rem 1rem; background: var(--color-light); border-radius: 2rem; color: var(--color-gray);">
                                         <i class="uil uil-lock"></i>
@@ -127,7 +134,7 @@ $currentUser = $userModel->findById($_SESSION['user_id']);
                             <li class="active"><a href="#" data-tab="posts">Personal Posts</a></li>
                             <li><a href="#" data-tab="group-posts">Group Posts</a></li>
                             <li><a href="#" data-tab="about">About</a></li>
-                            <li><a href="#" data-tab="photos">Photos</a></li>
+                            <li><a href="#" data-tab="saved">Saved</a></li>
                         </ul>
                     </div>
                 </div>
@@ -258,39 +265,31 @@ $currentUser = $userModel->findById($_SESSION['user_id']);
                         <?php endif; ?>
                     </div>
 
-                    <!-- Photos Tab -->
-                    <div class="tab-content" id="tab-photos">
-                        <?php if ($postsArePrivate && !$isOwner): ?>
+                    <!-- Saved Tab -->
+                    <div class="tab-content" id="tab-saved">
+                        <?php if (!$isOwner): ?>
                             <div class="private-posts-message" style="text-align: center; padding: 3rem; background: var(--color-light); border-radius: 1rem; margin: 2rem 0;">
                                 <i class="uil uil-lock" style="font-size: 3rem; color: var(--color-gray); margin-bottom: 1rem;"></i>
-                                <h3 style="color: var(--color-dark); margin-bottom: 0.5rem;">
-                                    <?php if ($postVisibility === 'only_me'): ?>
-                                        Photos are private
-                                    <?php else: ?>
-                                        Photos are for friends only
-                                    <?php endif; ?>
-                                </h3>
-                                <p style="color: var(--color-gray);">
-                                    <?php if ($postVisibility === 'only_me'): ?>
-                                        This user's photos are set to private. You cannot view their photos.
-                                    <?php else: ?>
-                                        You need to be friends with this user to view their photos.
-                                    <?php endif; ?>
-                                </p>
+                                <h3 style="color: var(--color-dark); margin-bottom: 0.5rem;">Saved posts are private</h3>
+                                <p style="color: var(--color-gray);">Only the profile owner can view saved posts.</p>
                             </div>
-                        <?php elseif (!empty($photoPosts)): ?>
-                            <div class="photo-grid">
-                                <?php foreach ($photoPosts as $post): ?>
-                                    <div class="photo-item">
-                                        <img src="<?php echo htmlspecialchars($post['image_url']); ?>" alt="Photo from post <?php echo (int)$post['post_id']; ?>">
-                                        <?php if (!empty($post['created_at'])): ?>
-                                            <span><?php echo htmlspecialchars(date('M j, Y', strtotime($post['created_at']))); ?></span>
+                        <?php elseif (!empty($savedPosts)): ?>
+                            <div class="posts-grid" aria-hidden="false">
+                                <?php foreach ($savedPosts as $index => $post): ?>
+                                    <a href="#" class="post-grid-item" data-post-index="<?php echo $index; ?>" data-post-type="saved" title="View saved post">
+                                        <?php if (!empty($post['image_url'])): ?>
+                                            <img src="<?php echo htmlspecialchars($post['image_url']); ?>" alt="Saved post <?php echo (int)$post['post_id']; ?>">
+                                        <?php else: ?>
+                                            <div class="post-placeholder">
+                                                <i class="uil uil-bookmark"></i>
+                                                <span><?php echo htmlspecialchars(mb_strimwidth(strip_tags($post['content'] ?? ''), 0, 80, '...')); ?></span>
+                                            </div>
                                         <?php endif; ?>
-                                    </div>
+                                    </a>
                                 <?php endforeach; ?>
                             </div>
                         <?php else: ?>
-                            <p class="empty-message">No photos yet.</p>
+                            <p class="empty-message">No saved posts yet.</p>
                         <?php endif; ?>
                     </div>
                 </div>
@@ -444,10 +443,10 @@ $currentUser = $userModel->findById($_SESSION['user_id']);
                 </button>
             </div>
             <div class="friends-modal__body">
-                <?php if ($hasMoreFriends && !empty($friendList)): ?>
-                    <p class="friends-modal__note" data-friends-note>Showing first <?php echo count($friendList); ?> friends.</p>
+                <?php if (!empty($friendList)): ?>
+                    <p class="friends-modal__note" data-friends-note><?php echo $friendListCount; ?> friend<?php echo $friendListCount === 1 ? '' : 's'; ?></p>
                 <?php else: ?>
-                    <p class="friends-modal__note" data-friends-note style="display:none;">Showing first <?php echo count($friendList); ?> friends.</p>
+                    <p class="friends-modal__note" data-friends-note style="display:none;">No friends yet.</p>
                 <?php endif; ?>
 
                 <ul class="friends-modal__list" data-friends-list data-friend-list-limit="<?php echo $friendListLimit; ?>">
@@ -477,6 +476,41 @@ $currentUser = $userModel->findById($_SESSION['user_id']);
                 </ul>
 
                 <p class="friends-modal__empty" data-friends-empty style="<?php echo empty($friendList) ? '' : 'display:none;'; ?>">No friends to show yet.</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="friends-modal" id="groupListModal" aria-hidden="true">
+        <div class="friends-modal__content" role="dialog" aria-modal="true" aria-labelledby="groupListTitle">
+            <div class="friends-modal__header">
+                <h2 id="groupListTitle">Groups <span>(<?php echo (int)($groupListCount ?? count($userGroups)); ?>)</span></h2>
+                <button type="button" class="friends-modal__close" data-close-groups-modal aria-label="Close groups list">
+                    <i class="uil uil-times"></i>
+                </button>
+            </div>
+            <div class="friends-modal__body">
+                <ul class="friends-modal__list">
+                    <?php foreach ($userGroups as $group): ?>
+                        <?php
+                            $groupId = (int)($group['group_id'] ?? 0);
+                            $groupName = $group['group_name'] ?? 'Unnamed Group';
+                            $groupPhoto = MediaHelper::resolveMediaPath($group['group_photo'] ?? '', 'images/default_group.png');
+                            $groupMembers = (int)($group['member_count'] ?? 0);
+                            $groupUrl = rtrim(BASE_PATH, '/') . '/index.php?controller=Group&action=index&group_id=' . $groupId;
+                        ?>
+                        <li class="friends-modal__item" data-group-id="<?php echo $groupId; ?>">
+                            <a class="friends-modal__link" href="<?php echo htmlspecialchars($groupUrl); ?>">
+                                <img class="friends-modal__avatar" src="<?php echo htmlspecialchars($groupPhoto); ?>" alt="<?php echo htmlspecialchars($groupName); ?>">
+                                <div class="friends-modal__info">
+                                    <span class="friends-modal__name"><?php echo htmlspecialchars($groupName); ?></span>
+                                    <span class="friends-modal__handle"><?php echo $groupMembers; ?> member<?php echo $groupMembers === 1 ? '' : 's'; ?></span>
+                                </div>
+                            </a>
+                        </li>
+                    <?php endforeach; ?>
+                </ul>
+
+                <p class="friends-modal__empty" style="<?php echo empty($userGroups) ? '' : 'display:none;'; ?>">No groups to show yet.</p>
             </div>
         </div>
     </div>
@@ -557,11 +591,13 @@ $currentUser = $userModel->findById($_SESSION['user_id']);
         const IS_OWNER = <?php echo $isOwner ? 'true' : 'false'; ?>;
         window.PERSONAL_POSTS = <?php echo json_encode($personalPosts ?? []); ?>;
         window.GROUP_POSTS = <?php echo json_encode($groupPosts ?? []); ?>;
+        window.SAVED_POSTS = <?php echo json_encode($savedPosts ?? []); ?>;
     </script>
     <script id="profilePostPayload" type="application/json">
         <?php echo json_encode([
             'personal' => $personalPosts ?? [],
-            'group' => $groupPosts ?? []
+            'group' => $groupPosts ?? [],
+            'saved' => $savedPosts ?? []
         ], JSON_UNESCAPED_SLASHES); ?>
     </script>
     <script src="./js/calender.js?v=20250209_syntax"></script>

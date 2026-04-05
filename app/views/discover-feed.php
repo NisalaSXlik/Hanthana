@@ -38,6 +38,7 @@ if (!isset($posts)) {
     <link rel="stylesheet" href="./css/notificationpopup.css">
     <link rel="stylesheet" href="./css/report.css">
     <link rel="stylesheet" href="https://unicons.iconscout.com/release/v4.0.8/css/line.css">
+    <link rel="stylesheet" href="https://unicons.iconscout.com/release/v4.0.8/css/solid.css">
 </head>
 <body>
     <?php include __DIR__ . '/templates/navbar.php'; ?>
@@ -342,6 +343,11 @@ if (!isset($posts)) {
                                             <?php echo (int)($post['comment_count'] ?? 0); ?> comments
                                         </button>
                                     </div>
+                                    <div class="interaction-item bookmark-item">
+                                        <button type="button" class="bookmark-btn <?php echo !empty($post['is_bookmarked']) ? 'bookmarked' : ''; ?>" data-post-id="<?php echo (int)$post['post_id']; ?>" aria-label="Save post">
+                                            <i class="<?php echo !empty($post['is_bookmarked']) ? 'uis uis-bookmark bookmarked' : 'uil uil-bookmark'; ?>" aria-hidden="true"></i>
+                                        </button>
+                                    </div>
                                     <?php if (!$isOwner): ?>
                                         <div class="interaction-item report-item">
                                             <button type="button"
@@ -486,6 +492,7 @@ if (!isset($posts)) {
     <script src="./js/post.js"></script>
     <script src="./js/comment.js"></script>
     <script src="./js/poll.js"></script>
+    <script src="./js/bookmark.js"></script>
     <script src="./js/report.js"></script>
 
 </body>
