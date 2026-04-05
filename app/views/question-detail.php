@@ -200,28 +200,6 @@ function renderAnswerNode(array $answer, int $currentUserId, int $questionOwnerI
                                     </button>
                                     <span class="interaction-count"><?php echo (int)$question['downvote_count']; ?></span>
                                 </div>
-                            <?php endif; ?>
-
-                            <?php if (!empty($question['attachment_path'])): ?>
-                                <div class="question-attachment-block">
-                                    <span class="question-attachment-label">Attachment</span>
-                                    <a class="question-attachment-link"
-                                       href="<?php echo BASE_PATH . ltrim((string)$question['attachment_path'], '/'); ?>"
-                                       download="<?php echo htmlspecialchars((string)($question['attachment_name'] ?? 'question-attachment')); ?>">
-                                        <i class="uil uil-download-alt"></i>
-                                        <span><?php echo htmlspecialchars((string)($question['attachment_name'] ?? 'Download attachment')); ?></span>
-                                    </a>
-                                </div>
-                            <?php endif; ?>
-                        </div>
-
-                        <div class="question-actions">
-                            <div class="interaction-item">
-                                <button class="vote-btn inline upvote <?php echo $question['user_vote'] === 'upvote' ? 'active' : ''; ?>" 
-                                        data-question-id="<?php echo $question['question_id']; ?>">
-                                    <i class="uil uil-arrow-up"></i>
-                                </button>
-                                <span class="interaction-count" aria-label="Upvotes"><?php echo (int) $question['upvote_count']; ?></span>
                             </div>
 
                             <div class="question-card-stats">
