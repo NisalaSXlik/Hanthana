@@ -25,6 +25,8 @@ if (!isset($_SESSION['user_id'])) {
     <link rel="stylesheet" href="./css/notificationpopup.css">
     <link rel="stylesheet" href="./css/acedemicdashboard.css">
     <link rel="stylesheet" href="https://unicons.iconscout.com/release/v4.0.8/css/line.css">
+    <link rel="stylesheet" href="./css/report.css">
+    <link rel="stylesheet" href="./css/forms.css">
 </head>
 <body>
     <?php include __DIR__ . '/templates/navbar.php'; ?>
@@ -208,6 +210,22 @@ if (!isset($_SESSION['user_id'])) {
             </aside>
         </div>
     </main>
+
+    <div class="calendar-popup" id="calendarPopup">
+        <div class="calendar-popup-header">
+            <h4>Events</h4>
+            <span id="popup-date">--</span>
+        </div>
+        <div class="calendar-popup-body" id="calendarEvents">
+            <div class="no-events">
+                <i class="uil uil-calendar-slash"></i>
+                <p>No events scheduled</p>
+            </div>
+        </div>
+    </div>
+
+    <?php include __DIR__ . '/templates/chat-clean.php'; ?>
+    <?php include __DIR__ . '/templates/report-modal.php'; ?>
 
     <script src="./js/calender.js?v=20250209_syntax"></script>
     <script src="./js/feed.js"></script>
