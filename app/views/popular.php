@@ -69,14 +69,14 @@ function timeAgo($timestamp) {
                             </div>
                             <div class="questions-header-actions">
                                 <div class="filter-tabs questions-filter-tabs">
-                                    <a href="?controller=QnA&action=index&sort=recent" class="filter-tab questions-filter-tab <?php echo ($_GET['sort'] ?? 'recent') === 'recent' ? 'active' : ''; ?>">
+                                    <a href="?controller=QnA&action=index&sort=recent" class="filter-tab questions-filter-tab <?php echo (($_GET['sort'] ?? 'recent') === 'recent' && (($_GET['mine'] ?? '') !== '1')) ? 'active' : ''; ?>">
                                         <i class="uil uil-clock"></i> Recent
                                     </a>
                                     <a href="?controller=QnA&action=index&sort=popular" class="filter-tab questions-filter-tab <?php echo ($_GET['sort'] ?? '') === 'popular' ? 'active' : ''; ?>">
                                         <i class="uil uil-fire"></i> Popular
                                     </a>
-                                    <a href="?controller=QnA&action=index&sort=unanswered" class="filter-tab questions-filter-tab <?php echo ($_GET['sort'] ?? '') === 'unanswered' ? 'active' : ''; ?>">
-                                        <i class="uil uil-comment-slash"></i> Unanswered
+                                    <a href="?controller=QnA&action=index&sort=my_questions" class="filter-tab questions-filter-tab <?php echo (($_GET['sort'] ?? '') === 'my_questions' || (isset($_GET['mine']) && $_GET['mine'] === '1')) ? 'active' : ''; ?>">
+                                        <i class="uil uil-user"></i> My Questions
                                     </a>
                                 </div>
                             </div>

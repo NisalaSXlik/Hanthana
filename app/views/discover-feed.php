@@ -77,15 +77,15 @@ if (!isset($posts)) {
                                 $postUrl = BASE_PATH . 'index.php?controller=Profile&action=view&user_id=' . $authorUserId . '#personal-post-' . $postId;
                             }
                             ?>
-                            <div class="feed" data-post-id="<?php echo (int)$post['post_id']; ?>" data-post-content="<?php echo $postContentForAttr; ?>" data-navigate-url="<?php echo htmlspecialchars($postUrl, ENT_QUOTES); ?>" style="cursor: pointer;">
+                            <div class="feed" data-post-id="<?php echo (int)$post['post_id']; ?>" data-post-content="<?php echo $postContentForAttr; ?>">
                                 <div class="head">
                                     <div class="user">
-                                        <div class="profile-picture">
+                                        <a class="profile-picture" href="<?php echo BASE_PATH; ?>index.php?controller=Profile&action=view&user_id=<?php echo (int)($post['author_id'] ?? $post['user_id']); ?>">
                                             <img src="<?php echo htmlspecialchars($avatarUrl); ?>" alt="Profile">
-                                        </div>
+                                        </a>
                                         <div class="info">
                                             <h3>
-                                                <?php echo htmlspecialchars($displayName); ?>
+                                                <a href="<?php echo BASE_PATH; ?>index.php?controller=Profile&action=view&user_id=<?php echo (int)($post['author_id'] ?? $post['user_id']); ?>" style="color: inherit; text-decoration: none;" onclick="event.stopPropagation();"><?php echo htmlspecialchars($displayName); ?></a>
                                                 <?php if (!empty($post['group_id']) && !empty($post['group_name'])): ?>
                                                     <span class="group-indicator" style="font-weight: normal; color: var(--color-gray); font-size: 0.9em;">
                                                         <i class="uil uil-angle-right"></i>
@@ -307,6 +307,12 @@ if (!isset($posts)) {
                                         <?php endif; ?>
                                     </div>
                                 <?php else: ?>
+                                    <?php if (!empty($post['content'])): ?>
+                                        <div class="caption compact-caption">
+                                            <p class="post-text"><?php echo nl2br(htmlspecialchars($post['content'])); ?></p>
+                                        </div>
+                                    <?php endif; ?>
+
                                     <?php if (!empty($post['image_url'])): ?>
                                         <?php $postImage = MediaHelper::resolveMediaPath($post['image_url'], ''); ?>
                                         <div class="photo post-image">
@@ -350,11 +356,7 @@ if (!isset($posts)) {
                                     <?php endif; ?>
                                 </div>
 
-                                <?php if (!$isGroupPost && !empty($post['content'])): ?>
-                                    <div class="caption">
-                                        <p><b><?php echo htmlspecialchars($post['username'] ?? ''); ?></b> <?php echo htmlspecialchars($post['content']); ?></p>
-                                    </div>
-                                <?php endif; ?>
+
 
                                 <div id="comments-post-<?php echo (int)$post['post_id']; ?>" class="comment-section" data-post-id="<?php echo (int)$post['post_id']; ?>">
                                     <div class="comment-header">
@@ -376,7 +378,7 @@ if (!isset($posts)) {
                                             <img src="<?php echo htmlspecialchars($currentUserAvatar); ?>" alt="Your Avatar" class="current-user-avatar">
                                             <div class="comment-input-wrapper">
                                                 <textarea class="comment-input" placeholder="Write a comment..." data-post-id="<?php echo (int)$post['post_id']; ?>"></textarea>
-                                                <button class="comment-submit-btn" data-post-id="<?php echo (int)$post['post_id']; ?>">Post Comment</button>
+                                                <button type="button" class="comment-submit-btn" data-post-id="<?php echo (int)$post['post_id']; ?>">Post Comment</button>
                                             </div>
                                         </div>
                                     </div>
@@ -485,44 +487,6 @@ if (!isset($posts)) {
     <script src="./js/comment.js"></script>
     <script src="./js/poll.js"></script>
     <script src="./js/report.js"></script>
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            document.querySelectorAll('.feed[data-navigate-url]').forEach(feedCard => {
-                const navigateUrl = feedCard.dataset.navigateUrl;
-                if (!navigateUrl) return;
 
-                feedCard.addEventListener('click', function(event) {
-                    if (event.defaultPrevented) return;
-                    if (
-                        event.target.closest('.action-buttons') ||
-                        event.target.closest('.interaction-buttons') ||
-                        event.target.closest('.comment-section') ||
-                        event.target.closest('.add-comment-form') ||
-                        event.target.closest('.load-comments-btn') ||
-                        event.target.closest('.poll-content') ||
-                        event.target.closest('.poll-option') ||
-                        event.target.closest('.poll-total-votes') ||
-                        event.target.closest('.poll-voters-panel') ||
-                        event.target.closest('.post-menu') ||
-                        event.target.closest('.menu') ||
-                        event.target.closest('.resource-actions') ||
-                        event.target.closest('button') ||
-                        event.target.closest('textarea') ||
-                        event.target.closest('input') ||
-                        event.target.closest('select') ||
-                        event.target.closest('.comment-input-wrapper')
-                    ) {
-                        return;
-                    }
-
-                    if (event.target.closest('a')) {
-                        return;
-                    }
-
-                    window.location.href = navigateUrl;
-                });
-            });
-        });
-    </script>
 </body>
 </html>

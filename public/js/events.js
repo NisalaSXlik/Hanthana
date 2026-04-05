@@ -192,25 +192,35 @@ async function loadEvents(filter) {
             <p>Loading events...</p>
         </div>
     `;
-    
+
     try {
         const response = await fetch(getApiUrl(`?controller=Events&ajax_action=getEvents&filter=${filter}`));
         const data = await response.json();
-        
+
         if (data.success && data.events && data.events.length > 0) {
-            // Store events in global map
             window.eventsMap = {};
             data.events.forEach(e => window.eventsMap[e.post_id || e.event_id] = e);
-            
+
             container.innerHTML = data.events.map(event => createEventCard(event)).join('');
             initializeEventCardActions();
-            
         } else {
+            const titleMap = {
+                upcoming: 'Upcoming',
+                my_events: 'My',
+                added_to_calendar: 'Added to Calendar'
+            };
+
+            const bodyMap = {
+                upcoming: 'No upcoming events at the moment',
+                my_events: 'You have not created any events yet',
+                added_to_calendar: 'You have not added any events to calendar yet'
+            };
+
             container.innerHTML = `
                 <div class="empty-state" style="grid-column: 1 / -1;">
                     <i class="uil uil-calendar-alt"></i>
-                    <h3>No ${filter === 'upcoming' ? 'Upcoming' : filter === 'my_events' ? 'Your' : 'Past'} Events</h3>
-                    <p>${filter === 'upcoming' ? 'No upcoming events at the moment' : filter === 'my_events' ? 'You haven\'t joined any events yet' : 'No past events'}</p>
+                    <h3>No ${titleMap[filter] || 'Events'} Events</h3>
+                    <p>${bodyMap[filter] || 'No events found'}</p>
                 </div>
             `;
         }

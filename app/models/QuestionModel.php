@@ -53,7 +53,7 @@ class QuestionModel {
             $params[] = $filters['search'];
         }
 
-        if (!empty($filters['mine'])) {
+        if (!empty($filters['mine']) || (($filters['sort'] ?? '') === 'my_questions')) {
             $sql .= " AND q.user_id = ?";
             $params[] = (int)$userId;
         }
@@ -65,6 +65,9 @@ class QuestionModel {
         switch ($sortBy) {
             case 'popular':
                 $sql .= " ORDER BY upvote_count DESC, views DESC";
+                break;
+            case 'my_questions':
+                $sql .= " ORDER BY q.created_at DESC";
                 break;
             case 'answered':
                 $sql .= " ORDER BY answer_count DESC";

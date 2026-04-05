@@ -58,8 +58,8 @@ $incomingFriendRequests = $friendModel->getIncomingRequests($currentUserId);
                             <button class="filter-tab" data-filter="my_events">
                                 <i class="uil uil-user"></i> My Events
                             </button>
-                            <button class="filter-tab" data-filter="past">
-                                <i class="uil uil-history"></i> Past
+                            <button class="filter-tab" data-filter="added_to_calendar">
+                                <i class="uil uil-calendar-plus"></i> Added to Calendar
                             </button>
                         </div>
                     </div>
