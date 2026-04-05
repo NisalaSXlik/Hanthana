@@ -315,8 +315,8 @@ document.addEventListener('DOMContentLoaded', function() {
             const card = btn.closest('.question-card');
             if (!questionId || !card) return;
 
-            const currentTitle = (card.querySelector('.question-title a')?.textContent || '').trim();
-            const currentContent = (card.querySelector('.question-excerpt')?.textContent || '').trim();
+            const currentTitle = (card.querySelector('.question-title a, .question-title')?.textContent || '').trim();
+            const currentContent = (card.querySelector('.question-excerpt, .question-body')?.textContent || '').trim();
 
             const newTitle = window.prompt('Edit question title:', currentTitle);
             if (newTitle === null) return;

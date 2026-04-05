@@ -2,29 +2,29 @@
 .post-creation-layout {
   max-width: 600px;
   margin: 0 auto;
-  padding: 20px;
+  padding: 12px;
   font-family: 'Poppins', sans-serif;
 }
 
 .header h1 {
-  font-size: 24px;
-  margin-bottom: 20px;
+  font-size: 20px;
+  margin-bottom: 12px;
 }
 
 .section {
-  margin-bottom: 25px;
-  padding-bottom: 15px;
+  margin-bottom: 15px;
+  padding-bottom: 10px;
   border-bottom: 1px solid var(--color-light);
 }
 
 h2, h3, h4 {
-  margin: 10px 0;
+  margin: 6px 0;
   color: var(--color-dark);
 }
 
 .post-type-options button {
-  padding: 8px 15px;
-  margin-right: 10px;
+  padding: 6px 12px;
+  margin-right: 8px;
   border-radius: 0.5rem;
   border: 1px solid var(--color-light);
   background: var(--gray-50, #f8fafc);
@@ -130,7 +130,7 @@ textarea, input[type="text"] {
 }
 
 .modal-header {
-    padding: 1.25rem 1.5rem;
+    padding: 1rem 1.25rem;
     border-bottom: 1px solid var(--color-light);
     display: flex;
     justify-content: space-between;
@@ -139,7 +139,7 @@ textarea, input[type="text"] {
 
 .modal-header h3 {
     margin: 0;
-    font-size: 1.25rem;
+    font-size: 1.15rem;
     font-weight: 600;
     color: var(--color-dark);
 }
@@ -147,11 +147,11 @@ textarea, input[type="text"] {
 .close-modal {
     background: transparent;
     border: none;
-    font-size: 1.5rem;
+    font-size: 1.25rem;
     cursor: pointer;
     color: var(--color-gray);
-    width: 2.5rem;
-    height: 2.5rem;
+    width: 2rem;
+    height: 2rem;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -178,7 +178,7 @@ textarea, input[type="text"] {
 
 .post-type-btn {
     flex: 1;
-    padding: 1rem;
+    padding: 0.75rem;
     background: none;
     border: none;
     cursor: pointer;

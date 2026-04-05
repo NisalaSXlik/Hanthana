@@ -117,6 +117,7 @@ function renderAnswerNode(array $answer, int $currentUserId, int $questionOwnerI
     <link rel="stylesheet" href="./css/questions.css">
     <link rel="stylesheet" href="./css/forms.css">
     <link rel="stylesheet" href="https://unicons.iconscout.com/release/v4.0.8/css/line.css">
+    <link rel="stylesheet" href="./css/report.css">
 </head>
 <body class="page-questions">
     <?php include __DIR__ . '/templates/navbar.php'; ?>
@@ -133,50 +134,71 @@ function renderAnswerNode(array $answer, int $currentUserId, int $questionOwnerI
             <div class="middle">
                 <?php $structuredSections = parseStructuredQuestionContent($question['content'] ?? ''); ?>
                 <div class="question-detail-container">
-                    <!-- Back button -->
                     <a href="<?php echo BASE_PATH; ?>index.php?controller=QnA&action=index" class="back-link">
                         <i class="uil uil-arrow-left"></i> Back to Questions
                     </a>
-                    
-                    <!-- Question -->
-                    <div class="question-detail-card">
-                        <div class="question-header">
-                            <div class="question-owner">
-                                <img src="<?php echo BASE_PATH . ($question['profile_picture'] ?: 'public/images/default-avatar.png'); ?>" 
-                                     alt="<?php echo htmlspecialchars($question['first_name']); ?>">
-                                <div>
-                                    <strong><?php echo htmlspecialchars($question['first_name'] . ' ' . $question['last_name']); ?></strong>
-                                    <span>Asked <?php echo timeAgo($question['created_at']); ?></span>
-                                </div>
+
+                    <article id="question-card-<?php echo (int)$question['question_id']; ?>" class="question-card" data-question-id="<?php echo (int)$question['question_id']; ?>">
+                        <div class="question-card-head">
+                            <div class="question-author">
+                                <a href="<?php echo BASE_PATH; ?>index.php?controller=Profile&action=view&user_id=<?php echo (int)$question['user_id']; ?>" class="question-author-link">
+                                    <img src="<?php echo BASE_PATH . ($question['profile_picture'] ?: 'public/images/default-avatar.png'); ?>" alt="<?php echo htmlspecialchars($question['first_name']); ?>">
+                                    <div>
+                                        <span class="author-name"><?php echo htmlspecialchars($question['first_name'] . ' ' . $question['last_name']); ?></span>
+                                        <small class="question-time"><?php echo timeAgo($question['created_at']); ?></small>
+                                    </div>
+                                </a>
                             </div>
-                            <div class="question-meta-stats">
-                                <span><i class="uil uil-eye"></i> <?php echo $question['views']; ?> views</span>
+
+                            <div class="question-card-meta">
+                                <span><i class="uil uil-eye"></i> <?php echo (int)$question['views']; ?> views</span>
+                                <div class="question-menu-wrap">
+                                    <button type="button" class="question-menu-trigger" aria-label="Question menu">
+                                        <i class="uil uil-ellipsis-h"></i>
+                                    </button>
+                                    <div class="question-menu">
+                                        <?php $isOwner = (int)$question['user_id'] === (int)$userId; ?>
+                                        <?php $answerCount = is_array($answers) ? count($answers) : 0; ?>
+
+                                        <?php if ($isOwner): ?>
+                                            <button type="button" class="question-menu-item edit-question" data-question-id="<?php echo (int)$question['question_id']; ?>">
+                                                <i class="uil uil-edit"></i> Edit
+                                            </button>
+                                            <button type="button" class="question-menu-item delete-question" data-question-id="<?php echo (int)$question['question_id']; ?>">
+                                                <i class="uil uil-trash-alt"></i> Delete
+                                            </button>
+                                        <?php else: ?>
+                                            <button type="button" class="question-menu-item report-trigger"
+                                                    data-report-type="question"
+                                                    data-target-id="<?php echo (int)$question['question_id']; ?>"
+                                                    data-target-label="<?php echo htmlspecialchars($question['title'], ENT_QUOTES); ?>">
+                                                <i class="uil uil-exclamation-circle"></i> Report
+                                            </button>
+                                        <?php endif; ?>
+                                    </div>
+                                </div>
                             </div>
                         </div>
 
-                        <div class="question-content-block">
-                            <h1><?php echo htmlspecialchars($question['title']); ?></h1>
+                        <h2 class="question-title"><?php echo htmlspecialchars($question['title']); ?></h2>
 
-                            <?php if (!empty($question['topics'])): ?>
-                                <div class="question-topics">
-                                    <?php foreach (explode(',', $question['topics']) as $topic): ?>
-                                        <span class="topic-tag"><?php echo htmlspecialchars($topic); ?></span>
-                                    <?php endforeach; ?>
-                                </div>
-                            <?php endif; ?>
+                        <?php if (!empty($question['content'])): ?>
+                            <p class="question-excerpt"><?php echo nl2br(htmlspecialchars($question['content'])); ?></p>
+                        <?php endif; ?>
 
-                            <?php if (!empty($structuredSections)): ?>
-                                <div class="question-structured-grid">
-                                    <?php foreach ($structuredSections as $section): ?>
-                                        <div class="question-structured-card">
-                                            <span class="section-label"><?php echo htmlspecialchars($section['label']); ?></span>
-                                            <p><?php echo nl2br(htmlspecialchars($section['value'])); ?></p>
-                                        </div>
-                                    <?php endforeach; ?>
+                        <div class="question-card-footer">
+                            <div class="question-card-actions">
+                                <div class="interaction-item">
+                                    <button class="vote-btn inline upvote <?php echo $question['user_vote'] === 'upvote' ? 'active' : ''; ?>" data-question-id="<?php echo (int)$question['question_id']; ?>">
+                                        <i class="uil uil-arrow-up"></i>
+                                    </button>
+                                    <span class="interaction-count"><?php echo (int)$question['upvote_count']; ?></span>
                                 </div>
-                            <?php elseif (!empty($question['content'])): ?>
-                                <div class="question-body">
-                                    <?php echo nl2br(htmlspecialchars($question['content'])); ?>
+                                <div class="interaction-item">
+                                    <button class="vote-btn inline downvote <?php echo $question['user_vote'] === 'downvote' ? 'active' : ''; ?>" data-question-id="<?php echo (int)$question['question_id']; ?>">
+                                        <i class="uil uil-arrow-down"></i>
+                                    </button>
+                                    <span class="interaction-count"><?php echo (int)$question['downvote_count']; ?></span>
                                 </div>
                             <?php endif; ?>
 
@@ -201,39 +223,30 @@ function renderAnswerNode(array $answer, int $currentUserId, int $questionOwnerI
                                 </button>
                                 <span class="interaction-count" aria-label="Upvotes"><?php echo (int) $question['upvote_count']; ?></span>
                             </div>
-                            <div class="interaction-item">
-                                <button class="vote-btn inline downvote <?php echo $question['user_vote'] === 'downvote' ? 'active' : ''; ?>"
-                                        data-question-id="<?php echo $question['question_id']; ?>">
-                                    <i class="uil uil-arrow-down"></i>
+
+                            <div class="question-card-stats">
+                                <button type="button"
+                                        class="question-answer-link question-answer-link-btn toggle-inline-answers"
+                                        data-question-id="<?php echo (int)$question['question_id']; ?>"
+                                        data-target="inlineAnswers-<?php echo (int)$question['question_id']; ?>"
+                                        aria-expanded="true">
+                                    <i class="uil uil-comment"></i> <?php echo (int)$answerCount; ?> answers
                                 </button>
-                                <span class="interaction-count" aria-label="Downvotes"><?php echo (int) $question['downvote_count']; ?></span>
                             </div>
                         </div>
-                    </div>
-                    
-                    <!-- Answers Section -->
-                    <?php 
-                        $answerCount = count($answers);
-                    ?>
-                    <div class="answers-section" id="answersSection">
-                        <button class="toggle-answers-btn"
-                                type="button"
-                                data-targets="answersPanel"
-                                aria-expanded="false"
-                                data-label-show="View all <?php echo $answerCount; ?> answers"
-                                data-label-hide="Hide answers">
-                            <span>View all <?php echo $answerCount; ?> answers</span>
-                        </button>
 
-                        <div id="answersPanel" class="comment-section collapsed">
-                            <div class="comment-header">
-                                <h3>Answers</h3>
-                                <button class="close-comments" type="button" id="closeAnswersBtn">
-                                    <i class="fas fa-times"></i>
+                        <div id="inlineAnswers-<?php echo (int)$question['question_id']; ?>"
+                             class="inline-answers-panel active"
+                             data-question-id="<?php echo (int)$question['question_id']; ?>"
+                             aria-hidden="false">
+                            <div class="inline-answers-header">
+                                <h4>Answers</h4>
+                                <button type="button" class="close-inline-answers" aria-label="Close answers">
+                                    <i class="uil uil-times"></i>
                                 </button>
                             </div>
 
-                            <div class="comments-container">
+                            <div class="inline-answers-list comments-container">
                                 <?php if (empty($answers)): ?>
                                     <div class="no-comments">No answers yet. Be the first to answer!</div>
                                 <?php else: ?>
@@ -243,9 +256,9 @@ function renderAnswerNode(array $answer, int $currentUserId, int $questionOwnerI
                                 <?php endif; ?>
                             </div>
 
-                            <div class="add-comment-form">
-                                <form id="answerForm">
-                                    <input type="hidden" name="question_id" value="<?php echo $question['question_id']; ?>">
+                            <div class="add-comment-form inline-answer-form-wrap">
+                                <form class="inline-answer-form">
+                                    <input type="hidden" name="question_id" value="<?php echo (int)$question['question_id']; ?>">
                                     <input type="hidden" name="parent_answer_id" value="">
                                     <div class="comment-input-wrapper">
                                         <textarea name="content" class="comment-input" rows="3" placeholder="Write your answer..." required></textarea>
@@ -254,17 +267,7 @@ function renderAnswerNode(array $answer, int $currentUserId, int $questionOwnerI
                                 </form>
                             </div>
                         </div>
-                    </div>
-                    
-                    <!-- Answer Form -->
-                    <div class="answer-form-section <?php echo $shouldCollapse ? 'collapsed' : ''; ?>" id="answerFormSection">
-                        <h3>Your Answer</h3>
-                        <form id="answerForm" class="hf-form">
-                            <input type="hidden" name="question_id" value="<?php echo $question['question_id']; ?>">
-                            <textarea name="content" rows="8" placeholder="Write your answer here..." required></textarea>
-                            <button type="submit" class="btn-primary">Post Answer</button>
-                        </form>
-                    </div>
+                    </article>
                 </div>
             </div>
 
@@ -294,6 +297,7 @@ function renderAnswerNode(array $answer, int $currentUserId, int $questionOwnerI
     
     <?php include __DIR__ . '/templates/question-ask-modal.php'; ?>
     <?php include __DIR__ . '/templates/chat-clean.php'; ?>
+    <?php include __DIR__ . '/templates/report-modal.php'; ?>
 
     <script>
         const BASE_PATH = '<?php echo rtrim(BASE_PATH, '/'); ?>';
@@ -306,5 +310,6 @@ function renderAnswerNode(array $answer, int $currentUserId, int $questionOwnerI
     <script src="./js/notificationpopup.js"></script>
     <script src="./js/questions.js"></script>
     <script src="./js/answers.js"></script>
+    <script src="./js/report.js"></script>
 </body>
 </html>

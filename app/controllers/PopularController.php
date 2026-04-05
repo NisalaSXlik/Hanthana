@@ -30,7 +30,8 @@ class PopularController {
             'sort' => $_GET['sort'] ?? 'recent',
             'category' => $_GET['category'] ?? null,
             'topic' => $_GET['topic'] ?? null,
-            'search' => $_GET['search'] ?? null
+            'search' => $_GET['search'] ?? null,
+            'mine' => isset($_GET['mine']) && $_GET['mine'] === '1'
         ];
         
         $questions = $this->questionModel->getQuestionsFeed($userId, $filters);
@@ -62,7 +63,7 @@ class PopularController {
             header('Location: ' . BASE_PATH . 'index.php?controller=QnA&action=index');
             exit();
         }
-        
+
         $answers = $this->questionModel->getAnswers($questionId, $userId);
         $categories = $this->questionModel->getCategories();
         

@@ -68,14 +68,14 @@ function timeAgo($timestamp) {
                                 </form>
                             </div>
                             <div class="questions-header-actions">
-                                <div class="filter-tabs">
-                                    <a href="?controller=QnA&action=index&sort=recent" class="filter-tab <?php echo ($_GET['sort'] ?? 'recent') === 'recent' ? 'active' : ''; ?>">
+                                <div class="filter-tabs questions-filter-tabs">
+                                    <a href="?controller=QnA&action=index&sort=recent" class="filter-tab questions-filter-tab <?php echo ($_GET['sort'] ?? 'recent') === 'recent' ? 'active' : ''; ?>">
                                         <i class="uil uil-clock"></i> Recent
                                     </a>
-                                    <a href="?controller=QnA&action=index&sort=popular" class="filter-tab <?php echo ($_GET['sort'] ?? '') === 'popular' ? 'active' : ''; ?>">
+                                    <a href="?controller=QnA&action=index&sort=popular" class="filter-tab questions-filter-tab <?php echo ($_GET['sort'] ?? '') === 'popular' ? 'active' : ''; ?>">
                                         <i class="uil uil-fire"></i> Popular
                                     </a>
-                                    <a href="?controller=QnA&action=index&sort=unanswered" class="filter-tab <?php echo ($_GET['sort'] ?? '') === 'unanswered' ? 'active' : ''; ?>">
+                                    <a href="?controller=QnA&action=index&sort=unanswered" class="filter-tab questions-filter-tab <?php echo ($_GET['sort'] ?? '') === 'unanswered' ? 'active' : ''; ?>">
                                         <i class="uil uil-comment-slash"></i> Unanswered
                                     </a>
                                 </div>
@@ -103,7 +103,7 @@ function timeAgo($timestamp) {
                                             : strtolower($searchBlob);
                                     ?>
                                     <?php $isOwner = (int)$q['user_id'] === (int)$currentUserId; ?>
-                                    <article class="question-card" data-question-id="<?php echo (int)$q['question_id']; ?>" data-search-text="<?php echo htmlspecialchars($normalizedSearchBlob, ENT_QUOTES, 'UTF-8'); ?>">
+                                    <article id="question-card-<?php echo (int)$q['question_id']; ?>" class="question-card" data-question-id="<?php echo (int)$q['question_id']; ?>" data-search-text="<?php echo htmlspecialchars($normalizedSearchBlob, ENT_QUOTES, 'UTF-8'); ?>">
                                         <div class="question-card-head">
                                             <div class="question-author">
                                                 <a href="<?php echo BASE_PATH; ?>index.php?controller=Profile&action=view&user_id=<?php echo (int)$q['user_id']; ?>" class="question-author-link">
@@ -291,6 +291,25 @@ function timeAgo($timestamp) {
 
     <script>
         const USER_ID = <?php echo $currentUserId; ?>;
+
+        (function focusQuestionCardFromQuery() {
+            const params = new URLSearchParams(window.location.search);
+            const focusQuestionId = params.get('focus_question');
+            if (!focusQuestionId) return;
+
+            const targetCard = document.getElementById('question-card-' + focusQuestionId);
+            if (!targetCard) return;
+
+            targetCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            targetCard.style.transition = 'box-shadow 0.25s ease, border-color 0.25s ease';
+            targetCard.style.borderColor = 'rgba(14, 165, 233, 0.4)';
+            targetCard.style.boxShadow = '0 0 0 2px rgba(14, 165, 233, 0.15)';
+
+            setTimeout(() => {
+                targetCard.style.borderColor = '';
+                targetCard.style.boxShadow = '';
+            }, 2200);
+        })();
     </script>
     <script src="./js/calender.js?v=20250209_syntax"></script>
     <script src="./js/general.js"></script>
