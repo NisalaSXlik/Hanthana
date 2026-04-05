@@ -767,9 +767,16 @@ class GroupController {
 
             $groupId = (int)$post['group_id'];
             $isMember = $this->groupModel->isMember($groupId, $userId);
-            error_log("votePollOption: isMember = " . ($isMember ? 'true' : 'false'));
+            $group = $this->groupModel->getById($groupId);
+            $isPublicGroup = $group && strtolower(trim((string)($group['privacy_status'] ?? 'public'))) === 'public';
+            error_log("votePollOption: isMember = " . ($isMember ? 'true' : 'false') . ", isPublicGroup = " . ($isPublicGroup ? 'true' : 'false'));
+
+            if (!$group) {
+                echo json_encode(['success' => false, 'message' => 'Group not found']);
+                return;
+            }
             
-            if (!$isMember) {
+            if (!$isMember && !$isPublicGroup) {
                 echo json_encode(['success' => false, 'message' => 'Join the group to vote']);
                 return;
             }
@@ -820,7 +827,16 @@ class GroupController {
             }
 
             $groupId = (int)$post['group_id'];
-            if (!$this->groupModel->isMember($groupId, $userId)) {
+            $isMember = $this->groupModel->isMember($groupId, $userId);
+            $group = $this->groupModel->getById($groupId);
+            $isPublicGroup = $group && strtolower(trim((string)($group['privacy_status'] ?? 'public'))) === 'public';
+
+            if (!$group) {
+                echo json_encode(['success' => false, 'message' => 'Group not found']);
+                return;
+            }
+
+            if (!$isMember && !$isPublicGroup) {
                 echo json_encode(['success' => false, 'message' => 'Join the group to view poll votes']);
                 return;
             }

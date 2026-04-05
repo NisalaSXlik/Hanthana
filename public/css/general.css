@@ -1,3 +1,5 @@
+@import url('https://unicons.iconscout.com/release/v4.0.8/css/solid.css');
+
 /* Custom Scrollbar Styles */
 ::-webkit-scrollbar {
     width: 8px;
@@ -185,8 +187,8 @@ body {
 }
 
 .container {
-    width: 96%;
-    max-width: 1200px;
+    width: 97.5%;
+    max-width: 1360px;
     margin: 0 auto;
 }
 
@@ -318,6 +320,12 @@ main .container {
     display: grid;
     grid-template-columns: 22% 54% 22%;
     gap: 0.75rem;
+}
+
+/* Add breathing room inside center column across pages */
+main .container > .middle {
+    min-width: 0;
+    padding-inline: 0.55rem;
 }
 
 /* Left Sidebar */

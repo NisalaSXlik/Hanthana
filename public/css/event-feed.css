@@ -33,7 +33,8 @@
 }
 
 .event-image {
-    height: 150px;
+    width: 100%;
+    aspect-ratio: 5 / 4;
     overflow: hidden;
 }
 

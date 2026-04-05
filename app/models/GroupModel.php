@@ -3,9 +3,74 @@ require_once __DIR__ . '/../core/Database.php';
 
 class GroupModel {
     private $db;
+    private $hasRoleChangeTables = false;
+    private $hasDeleteApprovalTable = false;
 
     public function __construct() {
         $this->db = (new Database())->getConnection();
+        $this->ensureGroupGovernanceTables();
+    }
+
+    private function tableExists(string $tableName): bool {
+        try {
+            $stmt = $this->db->prepare("SHOW TABLES LIKE ?");
+            $stmt->execute([$tableName]);
+            return (bool)$stmt->fetchColumn();
+        } catch (Throwable $e) {
+            return false;
+        }
+    }
+
+    private function ensureGroupGovernanceTables(): void {
+        try {
+            $this->db->exec(
+                "CREATE TABLE IF NOT EXISTS GroupRoleChangeRequests (
+                    request_id INT AUTO_INCREMENT PRIMARY KEY,
+                    group_id INT NOT NULL,
+                    target_user_id INT NOT NULL,
+                    requested_role ENUM('admin', 'member') NOT NULL,
+                    current_role ENUM('admin', 'member') NOT NULL,
+                    proposed_by INT NOT NULL,
+                    status ENUM('pending', 'approved', 'rejected') NOT NULL DEFAULT 'pending',
+                    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                    resolved_at DATETIME NULL,
+                    INDEX idx_grcr_group_status (group_id, status),
+                    INDEX idx_grcr_target (target_user_id),
+                    CONSTRAINT fk_grcr_group FOREIGN KEY (group_id) REFERENCES GroupsTable(group_id) ON DELETE CASCADE,
+                    CONSTRAINT fk_grcr_target_user FOREIGN KEY (target_user_id) REFERENCES Users(user_id) ON DELETE CASCADE,
+                    CONSTRAINT fk_grcr_proposer FOREIGN KEY (proposed_by) REFERENCES Users(user_id) ON DELETE CASCADE
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4"
+            );
+
+            $this->db->exec(
+                "CREATE TABLE IF NOT EXISTS GroupRoleChangeVotes (
+                    request_id INT NOT NULL,
+                    admin_user_id INT NOT NULL,
+                    voted_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                    PRIMARY KEY (request_id, admin_user_id),
+                    INDEX idx_grcv_admin (admin_user_id),
+                    CONSTRAINT fk_grcv_request FOREIGN KEY (request_id) REFERENCES GroupRoleChangeRequests(request_id) ON DELETE CASCADE,
+                    CONSTRAINT fk_grcv_admin FOREIGN KEY (admin_user_id) REFERENCES Users(user_id) ON DELETE CASCADE
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4"
+            );
+
+            $this->db->exec(
+                "CREATE TABLE IF NOT EXISTS GroupDeleteApprovals (
+                    group_id INT NOT NULL,
+                    admin_user_id INT NOT NULL,
+                    approved_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                    PRIMARY KEY (group_id, admin_user_id),
+                    INDEX idx_gda_admin (admin_user_id),
+                    CONSTRAINT fk_gda_group FOREIGN KEY (group_id) REFERENCES GroupsTable(group_id) ON DELETE CASCADE,
+                    CONSTRAINT fk_gda_admin FOREIGN KEY (admin_user_id) REFERENCES Users(user_id) ON DELETE CASCADE
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4"
+            );
+        } catch (Throwable $e) {
+            error_log('ensureGroupGovernanceTables error: ' . $e->getMessage());
+        }
+
+        $this->hasRoleChangeTables = $this->tableExists('GroupRoleChangeRequests') && $this->tableExists('GroupRoleChangeVotes');
+        $this->hasDeleteApprovalTable = $this->tableExists('GroupDeleteApprovals');
     }
 
     /**
@@ -693,7 +758,20 @@ class GroupModel {
     }
 
     public function getDeleteApprovalStatus(int $groupId, int $viewerId = 0): array {
+        if (!$this->hasDeleteApprovalTable) {
+            $this->ensureGroupGovernanceTables();
+        }
+
         $adminCount = $this->getActiveAdminCount($groupId);
+
+        if (!$this->hasDeleteApprovalTable) {
+            return [
+                'admin_count' => $adminCount,
+                'approved_count' => 0,
+                'viewer_approved' => false,
+                'all_approved' => false
+            ];
+        }
 
         $stmt = $this->db->prepare("SELECT COUNT(*) AS c FROM GroupDeleteApprovals WHERE group_id = ?");
         $stmt->execute([$groupId]);
@@ -716,6 +794,14 @@ class GroupModel {
     }
 
     public function approveGroupDeletion(int $groupId, int $adminId): array {
+        if (!$this->hasDeleteApprovalTable) {
+            $this->ensureGroupGovernanceTables();
+        }
+
+        if (!$this->hasDeleteApprovalTable) {
+            return ['success' => false, 'message' => 'Group deletion approvals are unavailable until database migrations are applied.'];
+        }
+
         if (!$this->isGroupAdmin($groupId, $adminId)) {
             return ['success' => false, 'message' => 'Only group admins can approve deletion.'];
         }
@@ -751,6 +837,14 @@ class GroupModel {
     }
 
     public function createRoleChangeRequest(int $groupId, int $targetUserId, string $requestedRole, int $adminId): array {
+        if (!$this->hasRoleChangeTables) {
+            $this->ensureGroupGovernanceTables();
+        }
+
+        if (!$this->hasRoleChangeTables) {
+            return ['success' => false, 'message' => 'Role change voting is unavailable until database migrations are applied.'];
+        }
+
         $requestedRole = strtolower(trim($requestedRole));
         if (!in_array($requestedRole, ['admin', 'member'], true)) {
             return ['success' => false, 'message' => 'Invalid target role.'];
@@ -812,6 +906,14 @@ class GroupModel {
     }
 
     public function approveRoleChangeRequest(int $groupId, int $requestId, int $adminId, bool $alreadyVoted = false): array {
+        if (!$this->hasRoleChangeTables) {
+            $this->ensureGroupGovernanceTables();
+        }
+
+        if (!$this->hasRoleChangeTables) {
+            return ['success' => false, 'message' => 'Role change voting is unavailable until database migrations are applied.'];
+        }
+
         if (!$this->isGroupAdmin($groupId, $adminId)) {
             return ['success' => false, 'message' => 'Only group admins can vote on role changes.'];
         }
@@ -893,6 +995,14 @@ class GroupModel {
     }
 
     public function getRoleChangeRequests(int $groupId, int $viewerId = 0): array {
+        if (!$this->hasRoleChangeTables) {
+            $this->ensureGroupGovernanceTables();
+        }
+
+        if (!$this->hasRoleChangeTables) {
+            return [];
+        }
+
         $sql = "SELECT
                     r.request_id,
                     r.group_id,
