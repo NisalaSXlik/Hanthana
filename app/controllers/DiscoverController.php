@@ -126,8 +126,8 @@ class DiscoverController {
             $posts = $allRankedPosts;
         }
 
-        $trendingHashtags = $this->postModel->getTrendingHashtags(10, 7);
         $popularGroups = $this->groupModel->getPopularGroups(8, $userId);
+        $recentUsers = $this->userModel->getRecentUsers(5);
 
         // Get joined groups for sidebar display
         $joinedGroups = $this->groupModel->getGroupsJoinedBy((int)$userId);
@@ -146,6 +146,21 @@ class DiscoverController {
             $group['is_member'] = !empty($joinedMap[$groupId]);
         }
         unset($group);
+
+        foreach ($recentUsers as &$recentUser) {
+            $recentUser['profile_picture'] = !empty($recentUser['profile_picture'])
+                ? MediaHelper::resolveMediaPath($recentUser['profile_picture'], 'uploads/user_dp/default.png')
+                : MediaHelper::resolveMediaPath('', 'uploads/user_dp/default.png');
+
+            $recentUserId = (int)($recentUser['user_id'] ?? 0);
+            if ($recentUserId > 0 && $recentUserId !== (int)$userId) {
+                $rawFriendState = $this->friendModel->getFriendshipStatus((int)$userId, $recentUserId);
+                $recentUser['friend_state'] = $this->mapFriendshipStateForButton($rawFriendState);
+            } else {
+                $recentUser['friend_state'] = 'self';
+            }
+        }
+        unset($recentUser);
 
         require_once __DIR__ . '/../views/discover-feed.php';
     }

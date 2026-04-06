@@ -51,12 +51,6 @@ $incomingFriendRequests = $friendModel->getIncomingRequests($currentUserId);
                                 <h2><i class="uil uil-compass"></i> Discover</h2>
                                 <p>Find trending posts, people, and groups across Hanthana</p>
                             </div>
-                            <form class="hf-form hf-inline" onsubmit="return false;">
-                                <div class="search-bar">
-                                    <i class="uil uil-search"></i>
-                                    <input type="search" placeholder="Search discover..." id="discoverSearchInput">
-                                </div>
-                            </form>
                         </div>
                     </div>
 

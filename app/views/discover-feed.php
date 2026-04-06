@@ -48,6 +48,15 @@ if (!isset($posts)) {
             <?php $activeSidebar = 'discover'; include __DIR__ . '/templates/left-sidebar.php'; ?>
 
             <div class="middle">
+                <div class="discover-header">
+                    <div class="discover-header-top">
+                        <div class="discover-title-block">
+                            <h2><i class="uil uil-compass"></i> Discover</h2>
+                            <p>Find trending posts, people, and groups across Hanthana</p>
+                        </div>
+                    </div>
+                </div>
+
                 <div class="feeds">
                     <?php if (!empty($posts)): ?>
                         <?php foreach ($posts as $post): ?>
@@ -395,31 +404,6 @@ if (!isset($posts)) {
             </div>
 
             <div class="right">
-                <!-- Trending Hashtags Section -->
-                <div class="trending-section">
-                    <div class="section-header">
-                        <h4>Trending Hashtags</h4>
-                    </div>
-                    <div class="trending-list">
-                        <?php if (!empty($trendingHashtags)): ?>
-                            <?php foreach ($trendingHashtags as $tag): ?>
-                                <div class="trending-item">
-                                    <div class="trending-content">
-                                        <span class="trending-rank"><?php echo $tag['rank']; ?></span>
-                                        <div class="trending-details">
-                                            <h5>#<?php echo htmlspecialchars($tag['hashtag']); ?></h5>
-                                            <p class="post-count"><?php echo $tag['count']; ?> posts</p>
-                                        </div>
-                                    </div>
-                                </div>
-                            <?php endforeach; ?>
-                        <?php else: ?>
-                            <p>No trending hashtags.</p>
-                        <?php endif; ?>
-                    </div>
-                </div>
-        
-                <!-- Popular Groups Section -->
                 <div class="suggested-section">
                     <div class="section-header">
                         <h4>Popular Groups</h4>
@@ -453,6 +437,46 @@ if (!isset($posts)) {
                         <?php endif; ?>
                     </div>
                 </div>
+
+                <div class="suggested-section" style="margin-top: 1rem;">
+                    <div class="section-header">
+                        <h4>Recently Joined</h4>
+                    </div>
+                    <div class="creator-list">
+                        <?php if (!empty($recentUsers)): ?>
+                            <?php foreach ($recentUsers as $recentUser): ?>
+                                <div class="creator-card">
+                                    <a href="<?php echo BASE_PATH; ?>index.php?controller=Profile&action=view&user_id=<?php echo (int)$recentUser['user_id']; ?>"
+                                       class="creator-info" style="text-decoration:none;color:inherit;">
+                                        <img src="<?php echo htmlspecialchars($recentUser['profile_picture'] ?? BASE_PATH . 'uploads/user_dp/default.png'); ?>"
+                                             class="creator-avatar" alt="<?php echo htmlspecialchars($recentUser['username'] ?? 'User'); ?>">
+                                        <div class="creator-details">
+                                            <h5><?php echo htmlspecialchars(trim(($recentUser['first_name'] ?? '') . ' ' . ($recentUser['last_name'] ?? '')) ?: ($recentUser['username'] ?? 'User')); ?></h5>
+                                        </div>
+                                    </a>
+
+                                    <?php if (($recentUser['friend_state'] ?? 'none') !== 'self'): ?>
+                                        <button
+                                            class="follow-btn add-friend-btn"
+                                            data-user-id="<?php echo (int)$recentUser['user_id']; ?>"
+                                            data-state="<?php echo htmlspecialchars($recentUser['friend_state'] ?? 'none'); ?>"
+                                            data-label-friends="Friend"
+                                            type="button"
+                                        >
+                                            <span>Add Friend</span>
+                                        </button>
+                                    <?php else: ?>
+                                        <button class="follow-btn" type="button" disabled>
+                                            You
+                                        </button>
+                                    <?php endif; ?>
+                                </div>
+                            <?php endforeach; ?>
+                        <?php else: ?>
+                            <p>No recent users found.</p>
+                        <?php endif; ?>
+                    </div>
+                </div>
             </div>
         </div>
     </main>
@@ -481,6 +505,7 @@ if (!isset($posts)) {
 
     <script src="./js/calender.js"></script>
     <script src="./js/general.js"></script>
+    <script src="./js/friends.js"></script>
     <script src="./js/vote.js"></script>
     <script src="./js/notificationpopup.js"></script>
     <script src="./js/navbar.js"></script>
