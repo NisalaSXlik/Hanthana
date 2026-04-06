@@ -7,12 +7,14 @@ class PostModel {
     private $hasGroupPostColumns = false;
     private $hasEventTimeColumn = false;
     private $hasPostBookmarkTable = false;
+    private $hasPollVoteTable = false;
 
     public function __construct() {
         $this->db = new Database();
         $this->hasGroupPostColumns = $this->columnExists('Post', 'group_post_type');
         $this->hasEventTimeColumn = $this->columnExists('Post', 'event_time');
         $this->hasPostBookmarkTable = $this->tableExists('PostBookmark');
+        $this->hasPollVoteTable = $this->tableExists('GroupPostPollVote');
         if (!$this->hasPostBookmarkTable) {
             $this->ensurePostBookmarkTable();
         }
@@ -32,7 +34,16 @@ class PostModel {
         try {
             $stmt = $this->db->getConnection()->prepare("SHOW TABLES LIKE ?");
             $stmt->execute([$table]);
-            return (bool)$stmt->fetch(PDO::FETCH_ASSOC);
+            $exists = (bool)$stmt->fetch(PDO::FETCH_ASSOC);
+            if (!$exists) {
+                return false;
+            }
+
+            if ($table === 'GroupPostPollVote') {
+                return $this->columnExists('GroupPostPollVote', 'option_index');
+            }
+
+            return true;
         } catch (PDOException $e) {
             return false;
         }
@@ -80,6 +91,179 @@ class PostModel {
 
         return "                'discussion' AS group_post_type,\n                NULL AS metadata,";
     }
+
+    private function selectPollVoteColumn(int $userId, string $postAlias = 'p'): string {
+        if ($userId <= 0 || !$this->hasPollVoteTable || !$this->hasGroupPostColumns) {
+            return ", NULL AS user_poll_vote";
+        }
+
+        return ", (SELECT option_index
+                    FROM GroupPostPollVote
+                    WHERE post_id = {$postAlias}.post_id
+                      AND user_id = {$userId}
+                    LIMIT 1) AS user_poll_vote";
+    }
+
+    private function getPollVoteCounts(int $postId, int $optionCount): array {
+        if (!$this->hasPollVoteTable || $optionCount <= 0) {
+            return array_fill(0, max($optionCount, 0), 0);
+        }
+
+        $counts = array_fill(0, $optionCount, 0);
+        try {
+            $stmt = $this->db->getConnection()->prepare(
+                "SELECT option_index, COUNT(*) AS total
+                 FROM GroupPostPollVote
+                 WHERE post_id = ?
+                 GROUP BY option_index"
+            );
+            $stmt->execute([$postId]);
+
+            while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+                $idx = (int)$row['option_index'];
+                if ($idx >= 0 && $idx < $optionCount) {
+                    $counts[$idx] = (int)$row['total'];
+                }
+            }
+        } catch (PDOException $e) {
+            error_log('PostModel getPollVoteCounts error: ' . $e->getMessage());
+        }
+
+        return $counts;
+    }
+
+    private function getUserPollVoteFromTable(int $postId, int $userId): ?int {
+        if (!$this->hasPollVoteTable || $postId <= 0 || $userId <= 0) {
+            return null;
+        }
+
+        try {
+            $stmt = $this->db->getConnection()->prepare(
+                "SELECT option_index
+                 FROM GroupPostPollVote
+                 WHERE post_id = ? AND user_id = ?
+                 LIMIT 1"
+            );
+            $stmt->execute([$postId, $userId]);
+            $value = $stmt->fetchColumn();
+            if ($value === false || $value === null || $value === '') {
+                return null;
+            }
+            return (int)$value;
+        } catch (PDOException $e) {
+            error_log('PostModel getUserPollVoteFromTable error: ' . $e->getMessage());
+            return null;
+        }
+    }
+
+    private function extractUserPollVoteFromMetadata(array $metadata, int $viewerId, int $optionCount): ?int {
+        if ($viewerId <= 0 || $optionCount <= 0) {
+            return null;
+        }
+
+        $userVotes = $metadata['user_votes'] ?? [];
+        if (!is_array($userVotes)) {
+            return null;
+        }
+
+        $value = null;
+        if (isset($userVotes[$viewerId])) {
+            $value = $userVotes[$viewerId];
+        } elseif (isset($userVotes[(string)$viewerId])) {
+            $value = $userVotes[(string)$viewerId];
+        }
+
+        if ($value === null || $value === '') {
+            return null;
+        }
+
+        $voteIndex = (int)$value;
+        if ($voteIndex < 0 || $voteIndex >= $optionCount) {
+            return null;
+        }
+
+        return $voteIndex;
+    }
+
+    private function normalizePollPost(array &$post, int $viewerId): void {
+        if (($post['group_post_type'] ?? '') !== 'poll') {
+            if (!array_key_exists('user_poll_vote', $post)) {
+                $post['user_poll_vote'] = null;
+            }
+            return;
+        }
+
+        $metadata = $post['metadata'] ?? [];
+        if (!is_array($metadata)) {
+            $metadata = [];
+        }
+
+        $options = $metadata['options'] ?? [];
+        if (!is_array($options)) {
+            $options = [];
+        }
+        $optionCount = count($options);
+
+        if ($optionCount <= 0) {
+            $metadata['votes'] = [];
+            $post['metadata'] = $metadata;
+            $post['user_poll_vote'] = null;
+            return;
+        }
+
+        if ($this->hasPollVoteTable) {
+            $metadata['votes'] = $this->getPollVoteCounts((int)$post['post_id'], $optionCount);
+        } else {
+            $votes = $metadata['votes'] ?? [];
+            $normalizedVotes = array_fill(0, $optionCount, 0);
+
+            if (is_array($votes)) {
+                foreach ($votes as $idx => $count) {
+                    $slot = (int)$idx;
+                    if ($slot >= 0 && $slot < $optionCount) {
+                        $normalizedVotes[$slot] = max(0, (int)$count);
+                    }
+                }
+            }
+
+            $userVotes = $metadata['user_votes'] ?? [];
+            if (is_array($userVotes) && !empty($userVotes)) {
+                $normalizedVotes = array_fill(0, $optionCount, 0);
+                foreach ($userVotes as $voteIdx) {
+                    $idx = (int)$voteIdx;
+                    if ($idx >= 0 && $idx < $optionCount) {
+                        $normalizedVotes[$idx]++;
+                    }
+                }
+            }
+
+            $metadata['votes'] = $normalizedVotes;
+        }
+
+        $post['metadata'] = $metadata;
+
+        if ($viewerId <= 0) {
+            $post['user_poll_vote'] = null;
+            return;
+        }
+
+        $userVote = null;
+        if (isset($post['user_poll_vote']) && $post['user_poll_vote'] !== null && $post['user_poll_vote'] !== '') {
+            $userVote = (int)$post['user_poll_vote'];
+        } elseif ($this->hasPollVoteTable) {
+            $userVote = $this->getUserPollVoteFromTable((int)$post['post_id'], $viewerId);
+        }
+
+        if ($userVote === null) {
+            $userVote = $this->extractUserPollVoteFromMetadata($metadata, $viewerId, $optionCount);
+        }
+
+        if ($userVote !== null && ($userVote < 0 || $userVote >= $optionCount)) {
+            $userVote = null;
+        }
+
+        $post['user_poll_vote'] = $userVote;
+    }
     
     public function getConnection() {
         return $this->db->getConnection();
@@ -109,8 +293,8 @@ class PostModel {
         $groupEventFilter = "";
         if ($excludeEvents) {
             $groupEventFilter = $this->hasGroupPostColumns 
-                ? "AND (p.group_post_type != 'event' OR p.group_post_type IS NULL)" 
-                : "AND (p.post_type != 'event' OR p.post_type IS NULL)";
+                ? "AND (p.group_post_type NOT IN ('event', 'assignment') OR p.group_post_type IS NULL)" 
+                : "AND (p.post_type NOT IN ('event', 'assignment') OR p.post_type IS NULL)";
         }
 
         $groupWhere = "(
@@ -181,6 +365,7 @@ class PostModel {
                 $post['metadata'] = [];
             }
             $post['user_vote'] = $post['user_vote'] ?? null;
+            $this->normalizePollPost($post, $userId);
         }
         
         return $filteredPosts;
@@ -225,6 +410,7 @@ class PostModel {
 
     private function buildFeedBaseSelect(int $userId): string {
         $userVoteSql = ", (SELECT vote_type FROM Vote WHERE post_id = p.post_id AND user_id = {$userId} LIMIT 1) AS user_vote";
+        $pollVoteSql = $this->selectPollVoteColumn($userId, 'p');
         $bookmarkSql = $this->selectBookmarkColumn($userId, 'p');
         $groupColumns = $this->selectGroupPostColumns();
         
@@ -256,6 +442,7 @@ class PostModel {
                 u.profile_picture,
                 pm.file_url AS image_url
                 {$userVoteSql}
+                {$pollVoteSql}
                 {$bookmarkSql}
                 {$goingCountSql}
                 {$isGoingSql}
@@ -393,17 +580,27 @@ class PostModel {
      */
     public function getTrendingPosts(int $limit = 10, int $userId = 0): array {
         $userVoteSql = $userId ? ", (SELECT vote_type FROM Vote WHERE post_id = p.post_id AND user_id = " . (int)$userId . " LIMIT 1) AS user_vote" : ", NULL AS user_vote";
+        $pollVoteSql = $this->selectPollVoteColumn((int)$userId, 'p');
+        $groupColumns = $this->selectGroupPostColumns();
         $bookmarkSql = $this->selectBookmarkColumn((int)$userId, 'p');
 
         $sql = "
             SELECT
                 p.post_id,
                 p.content,
+                p.post_type,
+                p.visibility,
                 p.created_at,
-                g.name AS group_name,
                 COALESCE(vt_total.upvotes, 0) AS upvote_count,
                 COALESCE(vt_total.downvotes, 0) AS downvote_count,
                 COALESCE(ct_total.comment_count, 0) AS comment_count,
+            {$groupColumns}
+                p.event_title,
+                p.event_date,
+                p.event_time,
+                p.event_location,
+                p.group_id,
+                g.name AS group_name,
                 u.user_id,
                 u.username,
                 u.first_name,
@@ -412,6 +609,7 @@ class PostModel {
                 pm.file_url AS image_url,
                 (COALESCE(vt_recent.upvotes, 0) * 2 + COALESCE(ct_recent.comment_count, 0)) AS engagement_score
                 {$userVoteSql}
+                {$pollVoteSql}
                 {$bookmarkSql}
             FROM Post p
             JOIN Users u ON u.user_id = p.author_id
@@ -475,7 +673,12 @@ class PostModel {
                 if (!empty($post['profile_picture'])) {
                     $post['profile_picture'] = MediaHelper::resolveMediaPath($post['profile_picture'], 'images/avatars/defaultProfilePic.png');
                 }
+                $post['metadata'] = !empty($post['metadata']) ? json_decode($post['metadata'], true) : [];
+                if (!is_array($post['metadata'])) {
+                    $post['metadata'] = [];
+                }
                 $post['user_vote'] = $post['user_vote'] ?? null;
+                $this->normalizePollPost($post, (int)$userId);
             }
 
             return $posts;
@@ -607,6 +810,7 @@ class PostModel {
         $viewerVoteSql = $viewerId > 0
             ? ", (SELECT vote_type FROM Vote WHERE post_id = p.post_id AND user_id = {$viewerId} LIMIT 1) AS user_vote"
             : ", NULL AS user_vote";
+        $pollVoteSql = $this->selectPollVoteColumn($viewerId, 'p');
 
         $groupColumns = $this->selectGroupPostColumns();
 
@@ -636,6 +840,7 @@ class PostModel {
                 pb.created_at AS saved_at,
                 1 AS is_bookmarked
                 {$viewerVoteSql}
+                {$pollVoteSql}
             FROM PostBookmark pb
             INNER JOIN Post p ON p.post_id = pb.post_id
             INNER JOIN Users u ON u.user_id = p.author_id
@@ -675,6 +880,7 @@ class PostModel {
                     $post['metadata'] = [];
                 }
                 $post['user_vote'] = $post['user_vote'] ?? null;
+                $this->normalizePollPost($post, $viewerId);
             }
             unset($post);
 
@@ -804,6 +1010,7 @@ class PostModel {
     public function getPostsByAuthor(int $authorId, int $viewerId = 0): array {
         try {
             $userVoteSql = $viewerId ? ", (SELECT vote_type FROM Vote WHERE post_id = p.post_id AND user_id = " . (int)$viewerId . " LIMIT 1) AS user_vote" : ", NULL AS user_vote";
+            $pollVoteSql = $this->selectPollVoteColumn((int)$viewerId, 'p');
             $groupColumns = $this->selectGroupPostColumns();
 
             $sql = "
@@ -830,6 +1037,7 @@ class PostModel {
                     u.profile_picture,
                     pm.file_url AS image_url
                     {$userVoteSql}
+                    {$pollVoteSql}
                 FROM Post p
                 JOIN Users u ON u.user_id = p.author_id
                 LEFT JOIN (
@@ -862,6 +1070,7 @@ class PostModel {
                 $post['metadata'] = !empty($post['metadata']) ? json_decode($post['metadata'], true) : [];
                 if (!is_array($post['metadata'])) $post['metadata'] = [];
                 $post['user_vote'] = $post['user_vote'] ?? null;
+                $this->normalizePollPost($post, (int)$viewerId);
             }
 
             return $posts;
@@ -874,7 +1083,7 @@ class PostModel {
     public function getUserPosts(int $userId): array {
         try {
             $groupColumns = $this->selectGroupPostColumns();
-            $sql = "SELECT p.post_id, p.content, p.post_type, p.visibility, p.created_at, p.updated_at, p.upvote_count, p.downvote_count, p.comment_count, p.share_count, p.is_edited, p.edited_at, {$groupColumns} p.event_title, p.event_date, p.event_location, p.is_group_post, p.author_id, u.user_id, u.username, u.first_name, u.last_name, u.profile_picture, pm.file_url AS image_url FROM Post p JOIN Users u ON u.user_id = p.author_id LEFT JOIN (SELECT pm1.post_id, pm1.file_url FROM PostMedia pm1 INNER JOIN (SELECT post_id, MIN(postmedia_id) AS first_media_id FROM PostMedia WHERE file_type = 'image' GROUP BY post_id) x ON x.first_media_id = pm1.postmedia_id) pm ON pm.post_id = p.post_id LEFT JOIN GroupsTable g ON g.group_id = p.group_id WHERE p.author_id = ? AND COALESCE(p.is_group_post, 0) = 0 ORDER BY p.created_at DESC";
+            $sql = "SELECT p.post_id, p.content, p.post_type, p.visibility, p.created_at, p.updated_at, p.upvote_count, p.downvote_count, p.comment_count, p.share_count, p.is_edited, p.edited_at, {$groupColumns} p.event_title, p.event_date, p.event_time, p.event_location, p.is_group_post, p.author_id, u.user_id, u.username, u.first_name, u.last_name, u.profile_picture, pm.file_url AS image_url FROM Post p JOIN Users u ON u.user_id = p.author_id LEFT JOIN (SELECT pm1.post_id, pm1.file_url FROM PostMedia pm1 INNER JOIN (SELECT post_id, MIN(postmedia_id) AS first_media_id FROM PostMedia WHERE file_type = 'image' GROUP BY post_id) x ON x.first_media_id = pm1.postmedia_id) pm ON pm.post_id = p.post_id LEFT JOIN GroupsTable g ON g.group_id = p.group_id WHERE p.author_id = ? AND COALESCE(p.is_group_post, 0) = 0 ORDER BY p.created_at DESC";
             $stmt = $this->getConnection()->prepare($sql);
             $stmt->execute([$userId]);
             $posts = $stmt->fetchAll(PDO::FETCH_ASSOC);
