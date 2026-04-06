@@ -58,13 +58,10 @@ $incomingFriendRequests = $friendModel->getIncomingRequests($currentUserId);
                             <button class="filter-tab" data-filter="my_events">
                                 <i class="uil uil-user"></i> My Events
                             </button>
-                            <button class="filter-tab" data-filter="past">
-                                <i class="uil uil-history"></i> Past
+                            <button class="filter-tab" data-filter="added_to_calendar">
+                                <i class="uil uil-calendar-plus"></i> Added to Calendar
                             </button>
                         </div>
-                        <button class="btn-create-event" id="createEventBtn">
-                            <i class="uil uil-plus"></i> Create Event
-                        </button>
                     </div>
                 </div>
 
@@ -78,28 +75,20 @@ $incomingFriendRequests = $friendModel->getIncomingRequests($currentUserId);
             </div>
 
             <div class="right">
-                <div class="messages">
+                <button class="btn-ask-question" id="createEventBtn">
+                    <i class="uil uil-plus"></i> Create Event
+                </button>
+                <div class="friend-requests">
                     <div class="heading">
-                        <h4>Messages</h4>
-                        <i class="uil uil-edit" id="openChatWidget" style="cursor: pointer;"></i>
+                        <h4><i class="uil uil-fire"></i> Most Going</h4>
                     </div>
-                    <div class="search-bar">
-                        <i class="uil uil-search"></i>
-                        <input type="search" placeholder="Search messages" id="sidebarChatSearch">
-                    </div>
-                    <div class="message-list" id="sidebarMessageList">
-                        <div class="loading-messages" style="text-align: center; padding: 1rem; color: #888;">
+                    <div class="trending-events-list" id="trendingEventsList">
+                        <div class="loading-events" style="text-align: center; padding: 1rem; color: #888;">
                             <i class="uil uil-spinner-alt" style="animation: spin 1s linear infinite;"></i>
-                            <p style="font-size: 0.9rem; margin-top: 0.5rem;">Loading messages...</p>
+                            <p style="font-size: 0.9rem; margin-top: 0.5rem;">Loading events...</p>
                         </div>
                     </div>
                 </div>
-
-                <?php
-                $friendRequests = $incomingFriendRequests ?? [];
-                include __DIR__ . '/templates/friend-requests.php';
-                ?>
-
                 <div class="toast-container" id="toastContainer"></div>
             </div>
         </div>
@@ -119,43 +108,55 @@ $incomingFriendRequests = $friendModel->getIncomingRequests($currentUserId);
     </div>
     <?php include __DIR__ . '/templates/chat-clean.php'; ?>
 
-    <!-- Create Event Modal (placeholder) -->
-    <div id="createEventModal" class="modal-overlay" style="display: none;">
-        <div class="modal-content" style="max-width: 600px;">
-            <div class="modal-header">
-                <h3>Create New Event</h3>
-                <button class="modal-close" id="closeEventModal">
+    <div id="eventsCreateModal" class="event-create-modal" aria-hidden="true">
+        <div class="event-create-modal-content" role="dialog" aria-modal="true" aria-labelledby="eventsCreateTitle">
+            <div class="event-create-modal-header">
+                <h3 id="eventsCreateTitle"><i class="uil uil-calendar-alt"></i> Create Event</h3>
+                <button type="button" class="event-create-close" id="eventsCreateClose" aria-label="Close">
                     <i class="uil uil-times"></i>
                 </button>
             </div>
-            <form id="createEventForm" class="modal-body">
-                <div class="form-group">
-                    <label for="createEventTitle">Event Title <span class="required">*</span></label>
-                    <input type="text" id="createEventTitle" required placeholder="Enter event title">
+
+            <form id="eventsCreateForm" class="event-create-form">
+                <div class="event-create-grid">
+                    <div class="form-group event-create-field-full">
+                        <label for="epEventTitle">Event Title <span class="required">*</span></label>
+                        <input type="text" id="epEventTitle" placeholder="Enter event title" required>
+                    </div>
+
+                    <div class="form-group event-create-field-full">
+                        <label>Event Image</label>
+                        <div class="event-image-upload" id="epEventImageUpload">
+                            <i class="uil uil-image-upload"></i>
+                            <p id="epEventImageLabel">Click to add event image</p>
+                            <img class="event-image-preview" id="epEventImagePreview" alt="Event preview" style="display:none;">
+                        </div>
+                        <input type="file" id="epEventImage" accept="image/*" style="display: none;">
+                    </div>
+
+                    <div class="form-group event-create-field-full">
+                        <label for="epEventDescription">Description</label>
+                        <textarea id="epEventDescription" rows="5" placeholder="Describe your event..."></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="epEventDate">Date <span class="required">*</span></label>
+                        <input type="date" id="epEventDate" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="epEventTime">Time</label>
+                        <input type="time" id="epEventTime">
+                    </div>
+
+                    <div class="form-group event-create-field-full">
+                        <label for="epEventLocation">Location</label>
+                        <input type="text" id="epEventLocation" placeholder="Enter location">
+                    </div>
                 </div>
 
-                <div class="form-group">
-                    <label for="createEventDescription">Description</label>
-                    <textarea id="createEventDescription" rows="4" placeholder="Describe your event..."></textarea>
-                </div>
-
-                <div class="form-group">
-                    <label for="createEventDate">Date <span class="required">*</span></label>
-                    <input type="date" id="createEventDate" required>
-                </div>
-
-                <div class="form-group">
-                    <label for="createEventTime">Time</label>
-                    <input type="time" id="createEventTime">
-                </div>
-
-                <div class="form-group">
-                    <label for="createEventLocation">Location</label>
-                    <input type="text" id="createEventLocation" placeholder="Enter location">
-                </div>
-
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" id="cancelEventBtn">Cancel</button>
+                <div class="event-create-modal-footer">
+                    <button type="button" class="btn btn-secondary" id="eventsCreateCancel">Cancel</button>
                     <button type="submit" class="btn btn-primary">Create Event</button>
                 </div>
             </form>
@@ -177,6 +178,7 @@ $incomingFriendRequests = $friendModel->getIncomingRequests($currentUserId);
     <script src="./js/poll.js"></script>
     <script src="./js/report.js"></script>
     <script src="./js/events.js"></script>
+    <script src="./js/event-trending.js"></script>
     <script>
         // Load top 3 conversations for sidebar
         (async function loadSidebarMessages() {

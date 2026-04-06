@@ -1,5 +1,5 @@
 const postsPayloadElement = document.getElementById('profilePostPayload');
-let parsedPostsData = { personal: [], group: [] };
+let parsedPostsData = { personal: [], group: [], saved: [] };
 if (postsPayloadElement) {
     try {
         parsedPostsData = JSON.parse(postsPayloadElement.textContent || '{}');
@@ -10,6 +10,7 @@ if (postsPayloadElement) {
 
 window.PERSONAL_POSTS = parsedPostsData.personal || [];
 window.GROUP_POSTS = parsedPostsData.group || [];
+window.SAVED_POSTS = parsedPostsData.saved || [];
 
 document.addEventListener('DOMContentLoaded', () => {
     const tabLinks = document.querySelectorAll('.profile-tabs a');
@@ -132,6 +133,128 @@ document.addEventListener('DOMContentLoaded', () => {
         toast.innerHTML = `<i class="uil ${icons[type] || icons.success}"></i> ${message}`;
         toastContainer.appendChild(toast);
         setTimeout(() => { toast.classList.add('fade-out'); setTimeout(() => toast.remove(), 300); }, 3000);
+    }
+
+    const profileMore = document.querySelector('[data-profile-more]');
+    const profileMoreTrigger = profileMore ? profileMore.querySelector('[data-profile-more-trigger]') : null;
+    const profileMoreMenu = profileMore ? profileMore.querySelector('[data-profile-more-menu]') : null;
+    const blockUserBtn = profileMore ? profileMore.querySelector('[data-profile-block-user]') : null;
+
+    const closeProfileMoreMenu = () => {
+        if (!profileMoreTrigger || !profileMoreMenu) return;
+        profileMoreMenu.hidden = true;
+        profileMoreTrigger.setAttribute('aria-expanded', 'false');
+    };
+
+    const openProfileMoreMenu = () => {
+        if (!profileMoreTrigger || !profileMoreMenu) return;
+        profileMoreMenu.hidden = false;
+        profileMoreTrigger.setAttribute('aria-expanded', 'true');
+    };
+
+    if (profileMoreTrigger && profileMoreMenu) {
+        profileMoreTrigger.addEventListener('click', (event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            const isOpen = profileMoreTrigger.getAttribute('aria-expanded') === 'true';
+            if (isOpen) {
+                closeProfileMoreMenu();
+            } else {
+                openProfileMoreMenu();
+            }
+        });
+
+        profileMoreMenu.addEventListener('click', (event) => {
+            if (event.target.closest('.profile-more-item')) {
+                closeProfileMoreMenu();
+            }
+        });
+
+        document.addEventListener('click', (event) => {
+            if (!profileMore.contains(event.target)) {
+                closeProfileMoreMenu();
+            }
+        });
+
+        document.addEventListener('keydown', (event) => {
+            if (event.key === 'Escape') {
+                closeProfileMoreMenu();
+            }
+        });
+    }
+
+    const setBlockedStateOnFriendButtons = (targetUserId) => {
+        if (!targetUserId) return;
+
+        if (typeof window.__hanthanaUpdateFriendButtonState === 'function') {
+            window.__hanthanaUpdateFriendButtonState(targetUserId, 'blocked');
+            return;
+        }
+
+        const selectors = `.add-friend-btn[data-user-id="${targetUserId}"]`;
+        document.querySelectorAll(selectors).forEach((button) => {
+            button.dataset.state = 'blocked';
+            button.disabled = true;
+            const textElement = button.querySelector('span');
+            if (textElement) {
+                textElement.textContent = 'Unavailable';
+            } else {
+                button.textContent = 'Unavailable';
+            }
+        });
+    };
+
+    if (blockUserBtn) {
+        blockUserBtn.addEventListener('click', async (event) => {
+            event.preventDefault();
+
+            const targetUserId = parseInt(blockUserBtn.dataset.userId || '0', 10);
+            const targetLabel = (blockUserBtn.dataset.userLabel || 'this user').trim();
+            if (!targetUserId) {
+                showToast('Unable to block this user right now.', 'error');
+                return;
+            }
+
+            if (!window.confirm(`Block ${targetLabel}? You will no longer interact with this account.`)) {
+                return;
+            }
+
+            const originalHtml = blockUserBtn.innerHTML;
+            blockUserBtn.disabled = true;
+            blockUserBtn.innerHTML = '<i class="uil uil-spinner-alt"></i><span>Blocking...</span>';
+
+            try {
+                const response = await fetch(BASE_PATH + 'index.php?controller=Settings&action=blockUser', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: `user_id=${encodeURIComponent(targetUserId)}`,
+                });
+
+                const responseText = await response.text();
+                let data = null;
+                try {
+                    data = JSON.parse(responseText);
+                } catch (parseError) {
+                    console.error('Block user parse error:', parseError, responseText);
+                }
+
+                if (!response.ok || !data || !data.success) {
+                    throw new Error((data && data.message) ? data.message : 'Unable to block this user right now.');
+                }
+
+                setBlockedStateOnFriendButtons(targetUserId);
+                blockUserBtn.innerHTML = '<i class="uil uil-ban"></i><span>Blocked</span>';
+                blockUserBtn.disabled = true;
+                showToast(data.message || 'User blocked successfully.', 'success');
+            } catch (error) {
+                console.error('Block user failed:', error);
+                blockUserBtn.innerHTML = originalHtml;
+                blockUserBtn.disabled = false;
+                showToast(error?.message || 'Unable to block this user right now.', 'error');
+            }
+        });
     }
 
     const updatePreview = (input, preview, displayTarget) => {
@@ -314,16 +437,19 @@ document.addEventListener('DOMContentLoaded', () => {
             fileField: 'cover',
             trigger: triggerEditCover,
             loadingContent: '<i class="uil uil-cloud-upload"></i> Uploading...',
-            successContent: '<i class="uil uil-check"></i> Saved',
+            successContent: '<i class="uis uis-bookmark"></i> Saved',
             responseKey: 'image_url',
             previewTargets: [coverDisplay, coverPreview]
         });
     }
 
     const friendListModal = document.getElementById('friendListModal');
+    const groupListModal = document.getElementById('groupListModal');
     let lastFriendTrigger = null;
+    let lastGroupTrigger = null;
 
     const friendTriggers = document.querySelectorAll('[data-friend-count-trigger]');
+    const groupTriggers = document.querySelectorAll('[data-group-count-trigger]');
 
     const openFriendListModal = (trigger) => {
         if (!friendListModal) return;
@@ -345,6 +471,26 @@ document.addEventListener('DOMContentLoaded', () => {
         lastFriendTrigger = null;
     };
 
+    const openGroupListModal = (trigger) => {
+        if (!groupListModal) return;
+        lastGroupTrigger = trigger || null;
+        groupListModal.classList.add('active');
+        groupListModal.setAttribute('aria-hidden', 'false');
+        document.body.style.overflow = 'hidden';
+        const closeButton = groupListModal.querySelector('[data-close-groups-modal]');
+        if (closeButton) setTimeout(() => closeButton.focus(), 10);
+    };
+
+    const closeGroupListModal = () => {
+        if (!groupListModal) return;
+        groupListModal.classList.remove('active');
+        groupListModal.setAttribute('aria-hidden', 'true');
+        const editModalIsOpen = document.querySelector('.profile-edit-modal.active');
+        if (!editModalIsOpen) document.body.style.overflow = '';
+        if (lastGroupTrigger && typeof lastGroupTrigger.focus === 'function') lastGroupTrigger.focus();
+        lastGroupTrigger = null;
+    };
+
     if (friendListModal) {
         const closeTargets = friendListModal.querySelectorAll('[data-close-friends-modal]');
         closeTargets.forEach((element) => {
@@ -357,6 +503,18 @@ document.addEventListener('DOMContentLoaded', () => {
         document.addEventListener('keydown', (event) => { if (event.key === 'Escape' && friendListModal.classList.contains('active')) closeFriendListModal(); });
     }
 
+    if (groupListModal) {
+        const closeTargets = groupListModal.querySelectorAll('[data-close-groups-modal]');
+        closeTargets.forEach((element) => {
+            element.addEventListener('click', (event) => {
+                event.preventDefault();
+                closeGroupListModal();
+            });
+        });
+        groupListModal.addEventListener('click', (event) => { if (event.target === groupListModal) closeGroupListModal(); });
+        document.addEventListener('keydown', (event) => { if (event.key === 'Escape' && groupListModal.classList.contains('active')) closeGroupListModal(); });
+    }
+
     if (friendTriggers.length) {
         friendTriggers.forEach((trigger) => {
             trigger.addEventListener('click', (event) => {
@@ -367,6 +525,21 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (event.key === 'Enter' || event.key === ' ') {
                     event.preventDefault();
                     openFriendListModal(trigger);
+                }
+            });
+        });
+    }
+
+    if (groupTriggers.length) {
+        groupTriggers.forEach((trigger) => {
+            trigger.addEventListener('click', (event) => {
+                event.preventDefault();
+                openGroupListModal(trigger);
+            });
+            trigger.addEventListener('keydown', (event) => {
+                if (event.key === 'Enter' || event.key === ' ') {
+                    event.preventDefault();
+                    openGroupListModal(trigger);
                 }
             });
         });
@@ -416,7 +589,13 @@ document.addEventListener('DOMContentLoaded', () => {
     function openPostModal(index, type) {
         currentPostIndex = index;
         currentPostType = type;
-        currentPosts = type === 'personal' ? (window.PERSONAL_POSTS || []) : (window.GROUP_POSTS || []);
+        if (type === 'group') {
+            currentPosts = window.GROUP_POSTS || [];
+        } else if (type === 'saved') {
+            currentPosts = window.SAVED_POSTS || [];
+        } else {
+            currentPosts = window.PERSONAL_POSTS || [];
+        }
         
         if (!currentPosts || currentPosts.length === 0) return;
         
@@ -430,12 +609,19 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function openPostModalByPostId(postId, type) {
-        const posts = type === 'personal' ? (window.PERSONAL_POSTS || []) : (window.GROUP_POSTS || []);
+        let posts = [];
+        if (type === 'group') {
+            posts = window.GROUP_POSTS || [];
+        } else if (type === 'saved') {
+            posts = window.SAVED_POSTS || [];
+        } else {
+            posts = window.PERSONAL_POSTS || [];
+        }
         const index = posts.findIndex(post => parseInt(post.post_id) === postId);
         
         if (index !== -1) {
             // Switch to appropriate tab first
-            const targetTab = type === 'personal' ? 'posts' : 'group-posts';
+            const targetTab = type === 'group' ? 'group-posts' : (type === 'saved' ? 'saved' : 'posts');
             setActiveTab(targetTab);
             
             // Small delay to ensure tab content is rendered
@@ -454,22 +640,407 @@ document.addEventListener('DOMContentLoaded', () => {
         document.body.style.overflow = '';
     }
 
+    function normalizePostMetadata(metadata) {
+        if (!metadata) {
+            return {};
+        }
+
+        if (typeof metadata === 'string') {
+            try {
+                const parsed = JSON.parse(metadata);
+                return parsed && typeof parsed === 'object' ? parsed : {};
+            } catch (error) {
+                return {};
+            }
+        }
+
+        return typeof metadata === 'object' ? metadata : {};
+    }
+
+    function resolveModalPostType(post) {
+        const isGroupPost = Number(post?.is_group_post || 0) === 1 || !!post?.group_id;
+        const rawType = isGroupPost
+            ? (post?.group_post_type || post?.post_type || 'discussion')
+            : (post?.post_type || post?.group_post_type || 'discussion');
+
+        const normalized = String(rawType || '').toLowerCase();
+        if (!normalized || normalized === 'text' || normalized === 'image' || normalized === 'general') {
+            return 'discussion';
+        }
+        return normalized;
+    }
+
+    function formatMultilineText(value) {
+        if (!value) {
+            return '';
+        }
+        return escapeHtml(String(value)).replace(/\n/g, '<br>');
+    }
+
+    function formatModalEventDate(dateValue) {
+        if (!dateValue) {
+            return '';
+        }
+        const parsed = new Date(dateValue);
+        if (Number.isNaN(parsed.getTime())) {
+            return escapeHtml(String(dateValue));
+        }
+        return parsed.toLocaleDateString(undefined, {
+            weekday: 'long',
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+        });
+    }
+
+    function resolveResourceDownloadUrl(pathValue) {
+        if (!pathValue) {
+            return '';
+        }
+
+        const raw = String(pathValue).trim();
+        if (!raw) {
+            return '';
+        }
+
+        if (/^https?:\/\//i.test(raw)) {
+            return raw;
+        }
+
+        const basePath = BASE_PATH.endsWith('/') ? BASE_PATH : `${BASE_PATH}/`;
+        return `${basePath}${raw.replace(/^\/+/, '')}`;
+    }
+
+    function renderDiscussionPostMarkup(post) {
+        const content = (post?.content || '').trim();
+        const imageUrl = post?.image_url || '';
+
+        if (!imageUrl && content) {
+            return {
+                mode: 'simple-text',
+                html: `<p>${formatMultilineText(content)}</p>`,
+            };
+        }
+
+        if (imageUrl && !content) {
+            return {
+                mode: 'image-only',
+                html: '',
+                imageUrl,
+            };
+        }
+
+        const textBlock = content
+            ? `<p class="post-text modal-post-paragraph">${formatMultilineText(content)}</p>`
+            : '';
+
+        const imageBlock = imageUrl
+            ? `
+                <div class="photo post-image modal-type-image-wrap">
+                    <img class="modal-type-image" src="${escapeHtml(imageUrl)}" alt="Post image">
+                </div>
+            `
+            : '';
+
+        return {
+            mode: 'rich',
+            html: `
+                <div class="modal-post-content modal-post-discussion">
+                    ${textBlock || '<p class="modal-post-empty">No content available for this post.</p>'}
+                    ${imageBlock}
+                </div>
+            `,
+        };
+    }
+
+    function renderQuestionPostMarkup(post, metadata) {
+        const content = (post?.content || '').trim();
+        const category = (metadata?.category || '').trim();
+        const tags = Array.isArray(metadata?.tags)
+            ? metadata.tags
+            : (typeof metadata?.tags === 'string' ? metadata.tags.split(',').map(tag => tag.trim()).filter(Boolean) : []);
+
+        const categoryBlock = category
+            ? `<span class="question-category">${escapeHtml(category)}</span>`
+            : '';
+
+        const textBlock = content
+            ? `<p class="post-text modal-post-paragraph">${formatMultilineText(content)}</p>`
+            : '<p class="modal-post-empty">Question details are unavailable.</p>';
+
+        const tagsBlock = tags.length
+            ? `<div class="question-tags">${tags.map(tag => `<span class="tag">${escapeHtml(tag)}</span>`).join('')}</div>`
+            : '';
+
+        const imageBlock = post?.image_url
+            ? `
+                <div class="photo post-image modal-type-image-wrap">
+                    <img class="modal-type-image" src="${escapeHtml(post.image_url)}" alt="Question image">
+                </div>
+            `
+            : '';
+
+        return {
+            mode: 'rich',
+            html: `
+                <div class="modal-post-content modal-post-question">
+                    <div class="question-content">
+                        ${categoryBlock}
+                        ${textBlock}
+                        ${tagsBlock}
+                    </div>
+                    ${imageBlock}
+                </div>
+            `,
+        };
+    }
+
+    function renderResourcePostMarkup(post, metadata) {
+        const title = (metadata?.title || 'Untitled Resource').trim();
+        const resourceType = (metadata?.resource_type || metadata?.type || '').trim();
+        const resourceLink = (metadata?.resource_link || metadata?.link || '').trim();
+        const downloadUrl = resolveResourceDownloadUrl(metadata?.file_path || '');
+        const content = (post?.content || '').trim();
+
+        const typeBlock = resourceType
+            ? `<span class="resource-type-label">${escapeHtml(resourceType)}</span>`
+            : '';
+
+        const descriptionBlock = content
+            ? `<p class="post-text modal-post-paragraph">${formatMultilineText(content)}</p>`
+            : '';
+
+        const actions = [];
+        if (downloadUrl) {
+            actions.push(`
+                <a href="${escapeHtml(downloadUrl)}" class="resource-download" download target="_blank" rel="noopener noreferrer">
+                    <i class="uil uil-download-alt"></i>
+                    <span>Download</span>
+                </a>
+            `);
+        }
+        if (resourceLink) {
+            actions.push(`
+                <a href="${escapeHtml(resourceLink)}" class="resource-link" target="_blank" rel="noopener noreferrer">
+                    <i class="uil uil-external-link-alt"></i>
+                    <span>Open Link</span>
+                </a>
+            `);
+        }
+
+        return {
+            mode: 'rich',
+            html: `
+                <div class="modal-post-content modal-post-resource">
+                    <div class="resource-content">
+                        <h3 class="resource-title">${escapeHtml(title)}</h3>
+                        ${typeBlock}
+                        ${descriptionBlock || '<p class="modal-post-empty">No description provided for this resource.</p>'}
+                        ${actions.length ? `<div class="resource-actions">${actions.join('')}</div>` : ''}
+                    </div>
+                </div>
+            `,
+        };
+    }
+
+    function renderPollPostMarkup(post, metadata) {
+        const isGroupPoll = Number(post?.is_group_post || 0) === 1 || !!post?.group_id;
+        const options = Array.isArray(metadata?.options) ? metadata.options : [];
+        const votesRaw = Array.isArray(metadata?.votes) ? metadata.votes : [];
+        const votes = options.map((_, index) => Number(votesRaw[index] || 0));
+        const totalVotes = votes.reduce((sum, value) => sum + value, 0);
+        const selectedVote = Number.isInteger(Number(post?.user_poll_vote)) ? Number(post.user_poll_vote) : -1;
+        const hasVoted = selectedVote >= 0;
+
+        const optionsMarkup = options.length
+            ? options.map((optionText, index) => {
+                const voteCount = Number(votes[index] || 0);
+                const percentage = totalVotes > 0 ? Math.round((voteCount / totalVotes) * 100) : 0;
+                const selectedClass = hasVoted && selectedVote === index ? 'selected' : '';
+                return `
+                    <div class="poll-option ${selectedClass}" data-option-index="${index}">
+                        <button class="poll-option-btn" type="button" aria-label="Vote for ${escapeHtml(String(optionText))}" ${isGroupPoll ? '' : 'disabled'}>
+                            <span class="option-text">${escapeHtml(String(optionText))}</span>
+                            <div class="option-stats">
+                                <span class="option-percentage">${percentage}%</span>
+                                <span class="option-votes">${voteCount} vote${voteCount === 1 ? '' : 's'}</span>
+                            </div>
+                            <div class="option-progress" style="width: ${percentage}%"></div>
+                        </button>
+                    </div>
+                `;
+            }).join('')
+            : '<p class="modal-post-empty">Poll options are unavailable for this post.</p>';
+
+        const durationMarkup = metadata?.duration
+            ? `<span class="poll-duration">Ends in ${escapeHtml(String(metadata.duration))} days</span>`
+            : '';
+
+        const pollMetaNote = isGroupPoll
+            ? durationMarkup
+            : '<span class="poll-duration">Voting is available from the group post view.</span>';
+
+        return {
+            mode: 'rich',
+            html: `
+                <div class="modal-post-content modal-post-poll">
+                    <div class="poll-content">
+                        ${post?.content ? `<p class="post-text poll-question">${formatMultilineText(post.content)}</p>` : ''}
+                        <div class="poll-options" data-post-id="${escapeHtml(String(post?.post_id || ''))}">
+                            ${optionsMarkup}
+                        </div>
+                        <div class="poll-footer" data-post-id="${escapeHtml(String(post?.post_id || ''))}">
+                            <button type="button" class="poll-total-votes" data-post-id="${escapeHtml(String(post?.post_id || ''))}">
+                                <i class="uil uil-users-alt"></i>
+                                <span>${totalVotes} total vote${totalVotes === 1 ? '' : 's'}</span>
+                            </button>
+                            ${pollMetaNote}
+                        </div>
+                    </div>
+                </div>
+            `,
+        };
+    }
+
+    function renderEventPostMarkup(post, metadata) {
+        const title = (metadata?.title || post?.event_title || 'Untitled Event').trim();
+        const description = (post?.content || metadata?.description || '').trim();
+        const dateValue = metadata?.date || post?.event_date || '';
+        const timeValue = metadata?.time || post?.event_time || '';
+        const locationValue = metadata?.location || post?.event_location || '';
+
+        const details = [];
+        if (dateValue) {
+            details.push(`
+                <div class="event-detail">
+                    <i class="uil uil-calendar-alt"></i>
+                    <span>${formatModalEventDate(dateValue)}</span>
+                </div>
+            `);
+        }
+        if (timeValue) {
+            details.push(`
+                <div class="event-detail">
+                    <i class="uil uil-clock"></i>
+                    <span>${escapeHtml(String(timeValue))}</span>
+                </div>
+            `);
+        }
+        if (locationValue) {
+            details.push(`
+                <div class="event-detail">
+                    <i class="uil uil-map-marker"></i>
+                    <span>${escapeHtml(String(locationValue))}</span>
+                </div>
+            `);
+        }
+
+        const imageBlock = post?.image_url
+            ? `
+                <div class="photo post-image modal-type-image-wrap">
+                    <img class="modal-type-image" src="${escapeHtml(post.image_url)}" alt="Event image">
+                </div>
+            `
+            : '';
+
+        return {
+            mode: 'rich',
+            html: `
+                <div class="modal-post-content modal-post-event">
+                    <div class="event-content">
+                        <h3 class="event-title">${escapeHtml(title)}</h3>
+                        ${description ? `<p class="post-text modal-post-paragraph">${formatMultilineText(description)}</p>` : ''}
+                        ${details.length ? `<div class="event-details">${details.join('')}</div>` : ''}
+                    </div>
+                    ${imageBlock}
+                </div>
+            `,
+        };
+    }
+
+    function renderAssignmentPostMarkup(post, metadata) {
+        const title = (metadata?.title || 'Untitled Assignment').trim();
+        const description = (post?.content || '').trim();
+        const deadline = metadata?.deadline || '';
+        const points = metadata?.points;
+
+        const details = [];
+        if (deadline) {
+            details.push(`
+                <div class="assignment-detail deadline">
+                    <i class="uil uil-calendar-alt"></i>
+                    <span>Due: ${formatModalEventDate(deadline)}</span>
+                </div>
+            `);
+        }
+        if (points !== undefined && points !== null && points !== '') {
+            details.push(`
+                <div class="assignment-detail points">
+                    <i class="uil uil-star"></i>
+                    <span>${escapeHtml(String(points))} points</span>
+                </div>
+            `);
+        }
+
+        return {
+            mode: 'rich',
+            html: `
+                <div class="modal-post-content modal-post-assignment">
+                    <div class="assignment-content">
+                        <h3 class="assignment-title">${escapeHtml(title)}</h3>
+                        ${description ? `<p class="post-text modal-post-paragraph">${formatMultilineText(description)}</p>` : ''}
+                        ${details.length ? `<div class="assignment-details">${details.join('')}</div>` : ''}
+                    </div>
+                </div>
+            `,
+        };
+    }
+
+    function renderTypedPostContent(post) {
+        const metadata = normalizePostMetadata(post?.metadata);
+        const postType = resolveModalPostType(post);
+
+        switch (postType) {
+            case 'question':
+                return renderQuestionPostMarkup(post, metadata);
+            case 'resource':
+                return renderResourcePostMarkup(post, metadata);
+            case 'poll':
+                return renderPollPostMarkup(post, metadata);
+            case 'event':
+                return renderEventPostMarkup(post, metadata);
+            case 'assignment':
+                return renderAssignmentPostMarkup(post, metadata);
+            default:
+                return renderDiscussionPostMarkup(post);
+        }
+    }
+
     function displayPost(index) {
         if (!currentPosts || index < 0 || index >= currentPosts.length) return;
         
         const post = currentPosts[index];
-        
-        // Handle image or text display
-        if (post.image_url) {
-            postViewImage.src = post.image_url;
+
+        // Render type-specific content so selected posts keep their true structure (poll/event/question/etc).
+        const renderedPost = renderTypedPostContent(post);
+        if (renderedPost.mode === 'image-only') {
+            postViewImage.src = renderedPost.imageUrl || '';
             postViewImage.style.display = 'block';
             postViewTextContent.style.display = 'none';
-            postViewTextContent.classList.remove('active');
+            postViewTextContent.classList.remove('active', 'is-rich-post', 'is-simple-text');
+            postViewTextContent.innerHTML = '';
+        } else if (renderedPost.mode === 'simple-text') {
+            postViewImage.style.display = 'none';
+            postViewTextContent.innerHTML = renderedPost.html || '<p>No content available for this post.</p>';
+            postViewTextContent.style.display = 'flex';
+            postViewTextContent.classList.add('active', 'is-simple-text');
+            postViewTextContent.classList.remove('is-rich-post');
         } else {
             postViewImage.style.display = 'none';
-            postViewTextContent.textContent = post.content || '';
+            postViewTextContent.innerHTML = renderedPost.html || '<p>No content available for this post.</p>';
             postViewTextContent.style.display = 'flex';
-            postViewTextContent.classList.add('active');
+            postViewTextContent.classList.add('active', 'is-rich-post');
+            postViewTextContent.classList.remove('is-simple-text');
         }
         
         // Set user info
@@ -482,8 +1053,13 @@ document.addEventListener('DOMContentLoaded', () => {
         
         postViewDate.textContent = post.created_at || '';
         
-        // Set caption
-        postViewCaption.textContent = post.content || '';
+        // Set caption fallback based on content and metadata.
+        const postMetadata = normalizePostMetadata(post.metadata);
+        postViewCaption.textContent = post.content
+            || postMetadata.description
+            || postMetadata.title
+            || post.event_title
+            || '';
 
         // Set vote and comment counts
         if (postViewUpvoteCount) postViewUpvoteCount.textContent = post.upvote_count ?? '0';
@@ -732,7 +1308,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         clearReplyForm();
         const form = document.createElement('form');
-        form.className = 'reply-form';
+        form.className = 'reply-form hf-form hf-inline';
         form.innerHTML = `
             <textarea placeholder="Write a reply..." rows="3"></textarea>
             <button type="button">Reply</button>
@@ -876,10 +1452,12 @@ document.addEventListener('DOMContentLoaded', () => {
             hash = hash.replace(/-comments$/, '');
         }
 
-        if (hash.startsWith('personal-post-') || hash.startsWith('group-post-')) {
+        if (hash.startsWith('personal-post-') || hash.startsWith('group-post-') || hash.startsWith('saved-post-')) {
             const parts = hash.split('-');
             const postId = parseInt(parts[parts.length - 1], 10);
-            const postType = hash.startsWith('personal-post-') ? 'personal' : 'group';
+            const postType = hash.startsWith('group-post-')
+                ? 'group'
+                : (hash.startsWith('saved-post-') ? 'saved' : 'personal');
 
             setTimeout(() => {
                 openPostModalByPostId(postId, postType);

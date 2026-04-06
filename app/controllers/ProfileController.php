@@ -86,10 +86,10 @@ class ProfileController {
 
         // Get friend information
         $friendsCount = $this->friendModel->getFriendsCount($profileUserId);
-        $friendListLimit = 10;
+        $friendListLimit = max(50, $friendsCount);
         $friendList = $this->friendModel->getAcceptedFriends($profileUserId, $friendListLimit);
         $friendListCount = count($friendList);
-        $hasMoreFriends = $friendsCount > $friendListLimit;
+        $hasMoreFriends = false;
 
         // Friend relationship status for non-owners
         $friendButtonState = 'none';
@@ -184,12 +184,20 @@ class ProfileController {
             $photoPosts = $this->postModel->getUserPhotoPosts($profileUserId);
         }
 
+        // Saved posts are private to the owner profile view.
+        $savedPosts = [];
+        if ($isOwner) {
+            $savedPosts = $this->postModel->getUserSavedPosts($profileUserId, $viewerId);
+        }
+
         // Get incoming friend requests for the viewer (for navbar)
         $incomingFriendRequests = $this->friendModel->getIncomingRequests($viewerId);
 
         // GET REAL GROUP DATA - NO MORE DUMMY DATA
         $joinedGroupsCount = $this->groupModel->getUserJoinedGroupsCount($profileUserId);
-        $userGroups = $this->groupModel->getUserGroupsWithDetails($profileUserId, 5);
+        $groupListLimit = max(5, $joinedGroupsCount);
+        $userGroups = $this->groupModel->getUserGroupsWithDetails($profileUserId, $groupListLimit);
+        $groupListCount = count($userGroups);
 
         // Pass all variables to view
         require __DIR__ . '/../views/userprofileview.php';

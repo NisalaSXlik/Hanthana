@@ -1,4 +1,3 @@
-
 // Generate random posts on page load
 document.addEventListener('DOMContentLoaded', function() {
     // Generate random likes and comments for existing posts
@@ -273,7 +272,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Tag validation
     postTagsInput.addEventListener('input', function() {
         const tags = this.value.split(',').map(tag => tag.trim()).filter(tag => tag.length > 0);
-        tagCount.textContent = `${tags.length}/5 tags`;
+        tagCount.textContent = `${tags.length} tags`;
         
         // Enable share button only if there are at least 5 tags and an image is selected
         const hasImage = postImageInput.files && postImageInput.files.length > 0;
@@ -311,7 +310,7 @@ document.addEventListener('DOMContentLoaded', function() {
     function resetForm() {
         document.getElementById('postCaption').value = '';
         document.getElementById('postTags').value = '';
-        tagCount.textContent = '0/5 tags';
+        tagCount.textContent = '0 tags';
         postImageInput.value = '';
         document.querySelector('.image-upload').innerHTML = `
             <i class="uil uil-image-upload"></i>

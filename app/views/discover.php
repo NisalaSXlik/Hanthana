@@ -36,7 +36,7 @@ $incomingFriendRequests = $friendModel->getIncomingRequests($currentUserId);
     <link rel="stylesheet" href="./css/notificationpopup.css">
     <link rel="stylesheet" href="https://unicons.iconscout.com/release/v4.0.8/css/line.css">
 </head>
-<body>
+<body class="page-discover">
     
 <?php include __DIR__ . '/templates/navbar.php'; ?>
     
@@ -46,19 +46,45 @@ $incomingFriendRequests = $friendModel->getIncomingRequests($currentUserId);
             <div class="middle">
                 <div class="middle-feed">
                     <div class="discover-header">
-                        <h2>Discover</h2>
-                        <div class="search-bar">
-                            <i class="uil uil-search"></i>
-                            <input type="search" placeholder="Search...">
+                        <div class="discover-header-top">
+                            <div class="discover-title-block">
+                                <h2><i class="uil uil-compass"></i> Discover</h2>
+                                <p>Find trending posts, people, and groups across Hanthana</p>
+                            </div>
+                            <form class="hf-form hf-inline" onsubmit="return false;">
+                                <div class="search-bar">
+                                    <i class="uil uil-search"></i>
+                                    <input type="search" placeholder="Search discover..." id="discoverSearchInput">
+                                </div>
+                            </form>
                         </div>
                     </div>
 
+                    
                     <div class="discover-grid">
                         <?php if (!empty($allPosts)): ?>
-                            <?php foreach (array_slice($allPosts, 0, 12) as $post): ?>  
-                                <a href="<?php echo BASE_PATH; ?>index.php?controller=Discover&action=feed&post_id=<?php echo $post['post_id']; ?>" class="discover-item">
-                                    <img src="<?php echo htmlspecialchars($post['image_url'] ?? BASE_PATH . 'images/default_post.png'); ?>" 
-                                        alt="Post image">
+                            <?php foreach (array_slice($allPosts, 0, 12) as $post): ?>
+                                <?php
+                                    $postId = (int)($post['post_id'] ?? 0);
+                                    $imageUrl = trim((string)($post['image_url'] ?? ''));
+                                    $caption = trim((string)($post['content'] ?? ''));
+                                    $shortText = $caption !== '' ? mb_strimwidth($caption, 0, 110, '...') : 'No preview available';
+                                ?>
+                                <a href="<?php echo BASE_PATH; ?>index.php?controller=Discover&action=feed&post_id=<?php echo $postId; ?>"
+                                class="discover-item <?php echo empty($imageUrl) ? 'discover-item-text' : ''; ?>">
+
+                                    <?php if (!empty($imageUrl)): ?>
+                                        <img src="<?php echo htmlspecialchars($imageUrl); ?>" alt="Post image">
+                                    <?php else: ?>
+                                        <div class="discover-text-card">
+                                            <div class="discover-text-meta">
+                                                <i class="uil uil-align-left" aria-hidden="true"></i>
+                                                <span>Text Post</span>
+                                            </div>
+                                            <p class="discover-text-preview"><?php echo htmlspecialchars($shortText); ?></p>
+                                        </div>
+                                    <?php endif; ?>
+
                                     <div class="item-overlay">
                                         <span><i class="uil uil-heart"></i> <?php echo $post['upvote_count'] ?? 0; ?></span>
                                         <span><i class="uil uil-comment"></i> <?php echo $post['comment_count'] ?? 0; ?></span>
@@ -79,59 +105,61 @@ $incomingFriendRequests = $friendModel->getIncomingRequests($currentUserId);
             </div>
 
             <div class="right">
-            <!-- Trending Hashtags Section -->
-                <div class="trending-section">
-                    <div class="section-header">
+                <div class="friend-requests">
+                    <div class="heading">
                         <h4>Trending Hashtags</h4>
                     </div>
-                    <div class="trending-list">
-                        <?php if (!empty($trendingHashtags)): ?>
-                            <?php foreach ($trendingHashtags as $tag): ?>
-                                <div class="trending-item">
-                                    <div class="trending-content">
-                                        <span class="trending-rank"><?php echo $tag['rank']; ?></span>
-                                        <div class="trending-details">
-                                            <h5><?php echo htmlspecialchars($tag['hashtag']); ?></h5>
-                                            <p class="post-count"><?php echo $tag['count']; ?> posts</p>
-                                        </div>
+                    <?php if (!empty($trendingHashtags)): ?>
+                        <?php foreach ($trendingHashtags as $tag): ?>
+                            <div class="request">
+                                <div class="info">
+                                    <div>
+                                        <h5><?php echo htmlspecialchars($tag['hashtag']); ?></h5>
+                                        <p>#<?php echo (int)$tag['rank']; ?> • <?php echo (int)$tag['count']; ?> posts</p>
                                     </div>
                                 </div>
-                            <?php endforeach; ?>
-                        <?php else: ?>
-                            <p>No trending hashtags.</p>
-                        <?php endif; ?>
-                    </div>
+                            </div>
+                        <?php endforeach; ?>
+                    <?php else: ?>
+                        <div class="friend-requests-empty">No trending hashtags.</div>
+                    <?php endif; ?>
                 </div>
-        
-                
-                <!-- Popular Groups Section -->
-                <div class="suggested-section">
-                    <div class="section-header">
+
+                <div class="friend-requests">
+                    <div class="heading">
                         <h4>Popular Groups</h4>
                     </div>
-                    <div class="creator-list">
-                        <?php if (!empty($popularGroups)): ?>
-                            <?php foreach ($popularGroups as $group): ?>
-                                <div class="creator-card">
-                                    <div class="creator-info">
-                                        <img src="<?php echo htmlspecialchars($group['display_picture'] ?? BASE_PATH . 'images/default_group.png'); ?>" 
-                                             class="creator-avatar" alt="<?php echo htmlspecialchars($group['name']); ?>">
-                                        <div class="creator-details">
-                                            <h5><?php echo htmlspecialchars($group['name']); ?></h5>
-                                            <p class="creator-bio"><?php echo $group['member_count']; ?> members</p>
+                    <?php if (!empty($popularGroups)): ?>
+                        <?php foreach ($popularGroups as $group): ?>
+                            <div class="request" data-group-id="<?php echo (int)$group['group_id']; ?>">
+                                <div class="info">
+                                    <a href="<?php echo BASE_PATH; ?>index.php?controller=Group&action=index&group_id=<?php echo (int)$group['group_id']; ?>" class="discover-group-link">
+                                        <div class="profile-picture discover-group-avatar-wrap">
+                                            <img src="<?php echo htmlspecialchars($group['display_picture'] ?? BASE_PATH . 'images/default_group.png'); ?>" alt="<?php echo htmlspecialchars($group['name']); ?>">
                                         </div>
+                                    </a>
+                                    <div>
+                                        <a href="<?php echo BASE_PATH; ?>index.php?controller=Group&action=index&group_id=<?php echo (int)$group['group_id']; ?>" class="discover-group-link">
+                                            <h5><?php echo htmlspecialchars($group['name']); ?></h5>
+                                        </a>
+                                        <p><?php echo (int)$group['member_count']; ?> members</p>
                                     </div>
-                                    <?php if ($group['is_member']): ?>
-                                        <button class="follow-btn followed" disabled>Joined</button>
-                                    <?php else: ?>
-                                        <button class="follow-btn" data-group-id="<?php echo $group['group_id']; ?>">Join</button>
-                                    <?php endif; ?>
                                 </div>
-                            <?php endforeach; ?>
-                        <?php else: ?>
-                            <p>No popular groups found.</p>
-                        <?php endif; ?>
-                    </div>
+                                <div class="action">
+                                    <?php $isMember = !empty($group['is_member']); ?>
+                                    <button
+                                        class="btn btn-primary follow-btn <?php echo $isMember ? 'followed' : ''; ?>"
+                                        data-group-id="<?php echo (int)$group['group_id']; ?>"
+                                        data-state="<?php echo $isMember ? 'joined' : 'idle'; ?>"
+                                    >
+                                        <?php echo $isMember ? 'Joined' : 'Join'; ?>
+                                    </button>
+                                </div>
+                            </div>
+                        <?php endforeach; ?>
+                    <?php else: ?>
+                        <div class="friend-requests-empty">No popular groups found.</div>
+                    <?php endif; ?>
                 </div>
             </div>
         </div>
@@ -139,7 +167,7 @@ $incomingFriendRequests = $friendModel->getIncomingRequests($currentUserId);
 
     <?php include __DIR__ . '/templates/chat-clean.php'; ?>
 
-    <script src="./js/all.js"></script>
+
     <script src="./js/navbar.js"></script>
     <script src="./js/calender.js"></script>
     <script src="./js/notificationpopup.js"></script>

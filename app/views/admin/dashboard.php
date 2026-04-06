@@ -53,8 +53,9 @@ $complaintTypeCounts = array_map(fn($row) => (int)($row['count'] ?? 0), $complai
     <link rel="stylesheet" href="./css/general.css">
     <link rel="stylesheet" href="./css/navbar.css">
     <link rel="stylesheet" href="./css/notificationpopup.css">
-    <link rel="stylesheet" href="./css/calender.css">
+    <link rel="stylesheet" href="./css/calender.css?v=20250209_zindex">
     <link rel="stylesheet" href="./css/admin.css">
+    <link rel="stylesheet" href="./css/forms.css">
     <link rel="stylesheet" href="https://unicons.iconscout.com/release/v4.0.8/css/line.css">
     <script>const BASE_PATH = '<?php echo BASE_PATH; ?>';</script>
 </head>
@@ -305,7 +306,7 @@ $complaintTypeCounts = array_map(fn($row) => (int)($row['count'] ?? 0), $complai
                             <h4>Trending posts</h4>
                             <p class="muted">Top content past 7 days, sorted by engagement.</p>
                         </div>
-                        <a class="text-link" href="<?php echo BASE_PATH; ?>index.php?controller=Popular&action=index">Review feed</a>
+                        <a class="text-link" href="<?php echo BASE_PATH; ?>index.php?controller=QnA&action=index">Review feed</a>
                     </header>
                     <?php 
                         $moderation = $moderationSnapshot ?? [];
@@ -498,7 +499,7 @@ $complaintTypeCounts = array_map(fn($row) => (int)($row['count'] ?? 0), $complai
                     <h3>Most trending posts</h3>
                     <p class="muted">High engagement across the network.</p>
                 </div>
-                <a class="text-link" href="<?php echo BASE_PATH; ?>index.php?controller=Popular&action=index">View feed</a>
+                <a class="text-link" href="<?php echo BASE_PATH; ?>index.php?controller=QnA&action=index">View feed</a>
             </div>
             <?php $topTrendingPosts = array_slice($trendingPosts ?? [], 0, 3); ?>
             <?php if (!empty($topTrendingPosts)): ?>
@@ -758,11 +759,11 @@ $renderComplaintItems = function(array $items, string $emptyMessage) {
             </div>
             <div class="ban-target" data-ban-target-label>—</div>
         </header>
-        <form id="banUserForm" class="ban-form">
+        <form id="banUserForm" class="ban-form hf-form">
             <input type="hidden" name="user_id" data-ban-user-id>
             <label>
                 <span>Duration</span>
-                <div class="ban-duration-options">
+                <div class="ban-duration-options hf-radio-grid">
                     <label><input type="radio" name="duration" value="24h" required checked>24 hours</label>
                     <label><input type="radio" name="duration" value="72h">3 days</label>
                     <label><input type="radio" name="duration" value="1w">1 week</label>
@@ -805,12 +806,12 @@ $renderComplaintItems = function(array $items, string $emptyMessage) {
             </div>
             <div class="ban-target" data-disable-target-label>—</div>
         </header>
-        <form id="disableGroupForm" class="ban-form">
+        <form id="disableGroupForm" class="ban-form hf-form">
             <input type="hidden" name="group_id" data-disable-group-id>
             <input type="hidden" name="report_id" data-disable-report-id>
             <label>
                 <span>Duration</span>
-                <div class="ban-duration-options">
+                <div class="ban-duration-options hf-radio-grid">
                     <label><input type="radio" name="duration" value="24h" required checked>24 hours</label>
                     <label><input type="radio" name="duration" value="72h">3 days</label>
                     <label><input type="radio" name="duration" value="1w">1 week</label>
@@ -853,7 +854,7 @@ $renderComplaintItems = function(array $items, string $emptyMessage) {
 
 <script src="./js/navbar.js"></script>
 <script src="./js/notificationpopup.js"></script>
-<script src="./js/calender.js"></script>
+    <script src="./js/calender.js?v=20250209_syntax"></script>
 <script src="./js/general.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script>

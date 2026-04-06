@@ -97,6 +97,7 @@ class ReportModel {
                     r.reported_post_id,
                     r.reported_comment_id,
                     r.reported_group_id,
+                    r.reported_media_id,
                     r.reported_user_id,
                     u.username AS reporter_username,
                     reported.username AS reported_username,
@@ -104,6 +105,7 @@ class ReportModel {
                         WHEN r.reported_post_id IS NOT NULL THEN CONCAT('Post #', r.reported_post_id)
                         WHEN r.reported_comment_id IS NOT NULL THEN CONCAT('Comment #', r.reported_comment_id)
                         WHEN r.reported_group_id IS NOT NULL THEN CONCAT('Group #', r.reported_group_id)
+                        WHEN r.reported_media_id IS NOT NULL THEN CONCAT('File #', r.reported_media_id)
                         WHEN r.reported_user_id IS NOT NULL THEN CONCAT('User #', r.reported_user_id)
                         ELSE 'General'
                     END AS target_label
@@ -132,6 +134,7 @@ class ReportModel {
                     r.reported_post_id,
                     r.reported_comment_id,
                     r.reported_group_id,
+                    r.reported_media_id,
                     r.reported_user_id,
                     u.user_id AS reporter_id,
                     u.username AS reporter_username,
@@ -141,6 +144,7 @@ class ReportModel {
                         WHEN r.reported_post_id IS NOT NULL THEN CONCAT('Post #', r.reported_post_id)
                         WHEN r.reported_comment_id IS NOT NULL THEN CONCAT('Comment #', r.reported_comment_id)
                         WHEN r.reported_group_id IS NOT NULL THEN CONCAT('Group #', r.reported_group_id)
+                        WHEN r.reported_media_id IS NOT NULL THEN CONCAT('File #', r.reported_media_id)
                         WHEN r.reported_user_id IS NOT NULL THEN CONCAT('User #', r.reported_user_id)
                         ELSE 'General'
                     END AS target_label
@@ -222,8 +226,8 @@ class ReportModel {
 
         $connection = $this->db->getConnection();
         $sql = "INSERT INTO {$this->table} 
-                (reporter_id, report_type, description, reported_post_id, reported_comment_id, reported_group_id, reported_user_id)
-                VALUES (:reporter_id, :report_type, :description, :reported_post_id, :reported_comment_id, :reported_group_id, :reported_user_id)";
+            (reporter_id, report_type, description, reported_post_id, reported_comment_id, reported_group_id, reported_media_id, reported_user_id, reported_question_id)
+            VALUES (:reporter_id, :report_type, :description, :reported_post_id, :reported_comment_id, :reported_group_id, :reported_media_id, :reported_user_id, :reported_question_id)";
 
         $params = [
             ':reporter_id' => $reporterId,
@@ -232,7 +236,9 @@ class ReportModel {
             ':reported_post_id' => $payload['reported_post_id'] ?? null,
             ':reported_comment_id' => $payload['reported_comment_id'] ?? null,
             ':reported_group_id' => $payload['reported_group_id'] ?? null,
-            ':reported_user_id' => $payload['reported_user_id'] ?? null
+            ':reported_media_id' => $payload['reported_media_id'] ?? null,
+            ':reported_user_id' => $payload['reported_user_id'] ?? null,
+            ':reported_question_id' => $payload['reported_question_id'] ?? null
         ];
 
         try {

@@ -1103,6 +1103,13 @@
         const content = document.createElement('div');
         content.className = 'message-content';
 
+        const sender = document.createElement('div');
+        sender.className = 'message-sender';
+        sender.textContent = message.is_own
+            ? 'You'
+            : (message.sender_name || 'Unknown');
+        content.appendChild(sender);
+
         if (message.content) {
             const text = document.createElement('div');
             text.className = 'message-text';

@@ -2,7 +2,25 @@
 require_once __DIR__ . '/../../../config/config.php';
 require_once __DIR__ . '/../../helpers/MediaHelper.php';
 
-$currentUserAvatar = MediaHelper::resolveMediaPath($currentUser['profile_picture'], 'uploads/user_dp/default.png');
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+
+if (!isset($currentUser) || !is_array($currentUser)) {
+    $currentUser = null;
+    if (isset($_SESSION['user_id'])) {
+        require_once __DIR__ . '/../../models/UserModel.php';
+        $userModel = new UserModel();
+        $resolvedUser = $userModel->findById((int)$_SESSION['user_id']);
+        if (is_array($resolvedUser)) {
+            $currentUser = $resolvedUser;
+        }
+    }
+}
+
+$currentUser = is_array($currentUser) ? $currentUser : [];
+
+$currentUserAvatar = MediaHelper::resolveMediaPath($currentUser['profile_picture'] ?? '', 'uploads/user_dp/default.png');
 $showPostModal = !isset($hidePostModal) || !$hidePostModal;
 // Load notifications for logged in user
 $notifications = [];
@@ -21,6 +39,7 @@ if (isset($_SESSION['user_id'])) {
         </div>
         <div class="nav-center">
             <div class="nav-search">
+                <form class="hf-form hf-inline" onsubmit="return false;">
                 <div class="search-bar">
                     <i class="uil uil-search"></i>
                     <input
@@ -31,6 +50,7 @@ if (isset($_SESSION['user_id'])) {
                         autocomplete="off"
                     >
                 </div>
+                </form>
                 <div class="nav-search-results hidden" id="navSearchResults"></div>
             </div>
         </div>
@@ -79,12 +99,15 @@ if (isset($_SESSION['user_id'])) {
                             <button class="close-modal">&times;</button>
                         </div>
                         <div class="modal-body">
+                            <!-- Tab buttons -->
                             <div class="post-type-selector">
                                 <button class="post-type-btn active" data-type="general">General Post</button>
                                 <button class="post-type-btn" data-type="event">Event Post</button>
+                                <button class="post-type-btn" data-type="question">Question Post</button>
                             </div>
                             
-                            <div class="post-content">
+                            <!-- ===== GENERAL POST FIELDS ===== -->
+                            <div id="generalFields" style="display: block;">
                                 <div class="image-upload">
                                     <i class="uil uil-image-upload"></i>
                                     <p>Drag photos and videos here or click to browse</p>
@@ -98,28 +121,103 @@ if (isset($_SESSION['user_id'])) {
                                     </div>
                                     
                                     <div class="form-group">
-                                        <label for="postTags">Tags (minimum 5, separated by commas)</label>
-                                        <input type="text" id="postTags" placeholder="e.g., travel, srilanka, beach, vacation, sunset">
-                                        <small class="tag-count">0/5 tags</small>
-                                    </div>
-                                    
-                                    <div class="event-details" id="eventDetails" style="display: none;">
-                                        <div class="form-group">
-                                            <label for="eventTitle">Event Title</label>
-                                            <input type="text" id="eventTitle" placeholder="Event name">
-                                        </div>
-                                        <div class="form-group">
-                                            <label for="eventDate">Date & Time</label>
-                                            <input type="datetime-local" id="eventDate">
-                                        </div>
-                                        <div class="form-group">
-                                            <label for="eventLocation">Location</label>
-                                            <input type="text" id="eventLocation" placeholder="Where is the event?">
-                                        </div>
+                                        <label for="postTags">Tags (optional, separated by commas)</label>
+                                        <input type="text" id="postTags" placeholder="e.g., travel, srilanka, beach">
+                                        <small class="tag-count">0 tags</small>
                                     </div>
                                 </div>
                             </div>
+                            
+                            <!-- ===== EVENT POST FIELDS ===== -->
+                            <div id="eventFields" style="display: none;">
+                                <div class="form-group">
+                                    <label for="createEventTitle">Event Title <span class="required">*</span></label>
+                                    <input type="text" id="createEventTitle" placeholder="Enter event title">
+                                </div>
+
+                                <div class="form-group">
+                                    <label>Event Image</label>
+                                    <div class="event-image-upload" id="eventImageUpload">
+                                        <i class="uil uil-image-upload"></i>
+                                        <p id="eventImageLabel">Click to add event image</p>
+                                    </div>
+                                    <input type="file" id="eventPostImage" accept="image/*" style="display: none;">
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="createEventDescription">Description</label>
+                                    <textarea id="createEventDescription" rows="4" placeholder="Describe your event..."></textarea>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="createEventDate">Date <span class="required">*</span></label>
+                                    <input type="date" id="createEventDate">
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="createEventTime">Time</label>
+                                    <input type="time" id="createEventTime">
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="createEventLocation">Location</label>
+                                    <input type="text" id="createEventLocation" placeholder="Enter location">
+                                </div>
+                            </div>
+                            
+                            <!-- ===== QUESTION POST FIELDS ===== -->
+                            <div id="questionFields" style="display: none;">
+                                <section class="template-section">
+                                    <div class="template-label-row">
+                                        <label>Question style</label>
+                                        <small>Select one to pre-fill your title</small>
+                                    </div>
+                                    <div class="question-type-grid" role="list">
+                                        <button type="button" class="template-chip active" data-template-prefix="How do I">How do I...</button>
+                                        <button type="button" class="template-chip" data-template-prefix="Why does">Why does...</button>
+                                        <button type="button" class="template-chip" data-template-prefix="What is">What is...</button>
+                                        <button type="button" class="template-chip" data-template-prefix="Best way to">Best way to...</button>
+                                        <button type="button" class="template-chip" data-template-prefix="Troubleshooting">Troubleshooting...</button>
+                                    </div>
+                                </section>
+
+                                <div class="form-group">
+                                    <label>Question title <span class="required">*</span></label>
+                                    <input type="text" name="title" id="questionTitleInput" placeholder="Summarize your question in one sentence">
+                                    <small>Example: "How do I create a modal popup in PHP?"</small>
+                                </div>
+
+                                <div class="form-group">
+                                    <label>Category</label>
+                                    <select name="category" id="questionCategory">
+                                        <option value="General">General</option>
+                                        <option value="Technology">Technology</option>
+                                        <option value="Science">Science</option>
+                                        <option value="Education">Education</option>
+                                        <option value="Health">Health</option>
+                                        <option value="Finance">Finance</option>
+                                        <option value="Career">Career</option>
+                                        <option value="Lifestyle">Lifestyle</option>
+                                        <option value="Travel">Travel</option>
+                                        <option value="Entertainment">Entertainment</option>
+                                        <option value="Sports">Sports</option>
+                                        <option value="Other">Other</option>
+                                    </select>
+                                </div>
+
+                                <div class="form-group">
+                                    <label>What problem are you facing? <span class="required">*</span></label>
+                                    <textarea name="problem_statement" id="problemStatement" maxlength="400" placeholder="Describe the exact issue, error messages, or blockers."></textarea>
+                                    <div class="char-count" data-for="problem_statement">0 / 400</div>
+                                </div>
+
+                                <div class="form-group">
+                                    <label>Topics (comma separated)</label>
+                                    <input type="text" name="topics" id="questionTopics" placeholder="e.g., php, mysql, async">
+                                </div>
+                            </div>
                         </div>
+                        
                         <div class="modal-footer">
                             <button class="btn btn-secondary cancel-btn">Cancel</button>
                             <button class="btn btn-primary share-btn">Share</button>

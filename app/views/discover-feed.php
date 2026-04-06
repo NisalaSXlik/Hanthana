@@ -38,6 +38,7 @@ if (!isset($posts)) {
     <link rel="stylesheet" href="./css/notificationpopup.css">
     <link rel="stylesheet" href="./css/report.css">
     <link rel="stylesheet" href="https://unicons.iconscout.com/release/v4.0.8/css/line.css">
+    <link rel="stylesheet" href="https://unicons.iconscout.com/release/v4.0.8/css/solid.css">
 </head>
 <body>
     <?php include __DIR__ . '/templates/navbar.php'; ?>
@@ -77,15 +78,15 @@ if (!isset($posts)) {
                                 $postUrl = BASE_PATH . 'index.php?controller=Profile&action=view&user_id=' . $authorUserId . '#personal-post-' . $postId;
                             }
                             ?>
-                            <div class="feed" data-post-id="<?php echo (int)$post['post_id']; ?>" data-post-content="<?php echo $postContentForAttr; ?>" data-navigate-url="<?php echo htmlspecialchars($postUrl, ENT_QUOTES); ?>" style="cursor: pointer;">
+                            <div class="feed" data-post-id="<?php echo (int)$post['post_id']; ?>" data-post-content="<?php echo $postContentForAttr; ?>">
                                 <div class="head">
                                     <div class="user">
-                                        <div class="profile-picture">
+                                        <a class="profile-picture" href="<?php echo BASE_PATH; ?>index.php?controller=Profile&action=view&user_id=<?php echo (int)($post['author_id'] ?? $post['user_id']); ?>">
                                             <img src="<?php echo htmlspecialchars($avatarUrl); ?>" alt="Profile">
-                                        </div>
+                                        </a>
                                         <div class="info">
                                             <h3>
-                                                <?php echo htmlspecialchars($displayName); ?>
+                                                <a href="<?php echo BASE_PATH; ?>index.php?controller=Profile&action=view&user_id=<?php echo (int)($post['author_id'] ?? $post['user_id']); ?>" style="color: inherit; text-decoration: none;" onclick="event.stopPropagation();"><?php echo htmlspecialchars($displayName); ?></a>
                                                 <?php if (!empty($post['group_id']) && !empty($post['group_name'])): ?>
                                                     <span class="group-indicator" style="font-weight: normal; color: var(--color-gray); font-size: 0.9em;">
                                                         <i class="uil uil-angle-right"></i>
@@ -214,7 +215,6 @@ if (!isset($posts)) {
                                                                 <span class="option-text"><?php echo htmlspecialchars($optionText); ?></span>
                                                                 <div class="option-stats">
                                                                     <span class="option-percentage"><?php echo $percentage; ?>%</span>
-                                                                    <span class="option-votes"><?php echo $voteCount; ?> vote<?php echo $voteCount === 1 ? '' : 's'; ?></span>
                                                                 </div>
                                                                 <div class="option-progress" style="width: <?php echo $percentage; ?>%"></div>
                                                             </button>
@@ -243,8 +243,11 @@ if (!isset($posts)) {
                                             <!-- Event Post -->
                                             <div class="event-content">
                                                 <h3 class="event-title"><?php echo htmlspecialchars($postMetadata['title'] ?? ($post['event_title'] ?? 'Untitled Event')); ?></h3>
-                                                <?php if (!empty($post['content'])): ?>
-                                                    <p class="post-text"><?php echo nl2br(htmlspecialchars($post['content'])); ?></p>
+                                                <?php
+                                                    $eventDescription = trim((string)($postMetadata['description'] ?? ($post['content'] ?? '')));
+                                                ?>
+                                                <?php if ($eventDescription !== ''): ?>
+                                                    <p class="post-text"><?php echo nl2br(htmlspecialchars($eventDescription)); ?></p>
                                                 <?php endif; ?>
                                                 <div class="event-details">
                                                     <?php if (!empty($postMetadata['date']) || !empty($post['event_date'])): ?>
@@ -266,6 +269,13 @@ if (!isset($posts)) {
                                                         </div>
                                                     <?php endif; ?>
                                                 </div>
+
+                                                <?php $eventImage = !empty($post['image_url']) ? MediaHelper::resolveMediaPath($post['image_url'], '') : ''; ?>
+                                                <?php if (!empty($eventImage)): ?>
+                                                    <div class="photo post-image">
+                                                        <img src="<?php echo htmlspecialchars($eventImage); ?>" alt="Event image">
+                                                    </div>
+                                                <?php endif; ?>
                                             </div>
 
                                         <?php elseif ($postType === 'assignment'): ?>
@@ -293,6 +303,12 @@ if (!isset($posts)) {
                                         <?php endif; ?>
                                     </div>
                                 <?php else: ?>
+                                    <?php if (!empty($post['content'])): ?>
+                                        <div class="caption compact-caption">
+                                            <p class="post-text"><?php echo nl2br(htmlspecialchars($post['content'])); ?></p>
+                                        </div>
+                                    <?php endif; ?>
+
                                     <?php if (!empty($post['image_url'])): ?>
                                         <?php $postImage = MediaHelper::resolveMediaPath($post['image_url'], ''); ?>
                                         <div class="photo post-image">
@@ -315,13 +331,17 @@ if (!isset($posts)) {
                                             <i class="uil uil-arrow-down <?php echo $downClass; ?>" data-vote-type="downvote"></i>
                                             <span class="interaction-count"><?php echo (int)($post['downvote_count'] ?? 0); ?></span>
                                         </div>
-                                        <div class="interaction-item load-comments-btn" data-post-id="<?php echo (int)$post['post_id']; ?>">
+                                    </div>
+                                    <div class="comments-side">
+                                        <button type="button" class="question-answer-link-btn load-comments-btn" data-post-id="<?php echo (int)$post['post_id']; ?>">
                                             <i class="uil uil-comment"></i>
-                                            <span class="interaction-count"><?php echo (int)($post['comment_count'] ?? 0); ?></span>
-                                        </div>
+                                            <?php echo (int)($post['comment_count'] ?? 0); ?> comments
+                                        </button>
                                     </div>
                                     <div class="interaction-item bookmark-item">
-                                        <i class="uil uil-bookmark"></i>
+                                        <button type="button" class="bookmark-btn <?php echo !empty($post['is_bookmarked']) ? 'bookmarked' : ''; ?>" data-post-id="<?php echo (int)$post['post_id']; ?>" aria-label="Save post">
+                                            <i class="<?php echo !empty($post['is_bookmarked']) ? 'uis uis-bookmark bookmarked' : 'uil uil-bookmark'; ?>" aria-hidden="true"></i>
+                                        </button>
                                     </div>
                                     <?php if (!$isOwner): ?>
                                         <div class="interaction-item report-item">
@@ -337,21 +357,7 @@ if (!isset($posts)) {
                                     <?php endif; ?>
                                 </div>
 
-                                <?php if (!$isGroupPost && !empty($post['content'])): ?>
-                                    <div class="caption">
-                                        <p><b><?php echo htmlspecialchars($post['username'] ?? ''); ?></b> <?php echo htmlspecialchars($post['content']); ?></p>
-                                    </div>
-                                <?php endif; ?>
 
-                                <?php if (!empty($post['comment_count'])): ?>
-                                    <div class="comments load-comments-btn" data-post-id="<?php echo (int)$post['post_id']; ?>">
-                                        View all <?php echo (int)$post['comment_count']; ?> comments
-                                    </div>
-                                <?php else: ?>
-                                    <div class="comments load-comments-btn" data-post-id="<?php echo (int)$post['post_id']; ?>" style="display:none;">
-                                        View all 0 comments
-                                    </div>
-                                <?php endif; ?>
 
                                 <div id="comments-post-<?php echo (int)$post['post_id']; ?>" class="comment-section" data-post-id="<?php echo (int)$post['post_id']; ?>">
                                     <div class="comment-header">
@@ -373,7 +379,7 @@ if (!isset($posts)) {
                                             <img src="<?php echo htmlspecialchars($currentUserAvatar); ?>" alt="Your Avatar" class="current-user-avatar">
                                             <div class="comment-input-wrapper">
                                                 <textarea class="comment-input" placeholder="Write a comment..." data-post-id="<?php echo (int)$post['post_id']; ?>"></textarea>
-                                                <button class="comment-submit-btn" data-post-id="<?php echo (int)$post['post_id']; ?>">Post Comment</button>
+                                                <button type="button" class="comment-submit-btn" data-post-id="<?php echo (int)$post['post_id']; ?>">Post Comment</button>
                                             </div>
                                         </div>
                                     </div>
@@ -421,20 +427,25 @@ if (!isset($posts)) {
                     <div class="creator-list">
                         <?php if (!empty($popularGroups)): ?>
                             <?php foreach ($popularGroups as $group): ?>
-                                <div class="creator-card">
-                                    <div class="creator-info">
+                                <div class="creator-card" data-group-id="<?php echo (int)$group['group_id']; ?>">
+                                    <a href="<?php echo BASE_PATH; ?>index.php?controller=Group&action=index&group_id=<?php echo (int)$group['group_id']; ?>" 
+                                       class="creator-info" style="text-decoration:none;color:inherit;">
                                         <img src="<?php echo htmlspecialchars($group['display_picture'] ?? BASE_PATH . 'images/default_group.png'); ?>" 
                                              class="creator-avatar" alt="<?php echo htmlspecialchars($group['name']); ?>">
                                         <div class="creator-details">
                                             <h5><?php echo htmlspecialchars($group['name']); ?></h5>
-                                            <p class="creator-bio"><?php echo $group['member_count']; ?> members</p>
+                                            <p class="creator-bio"><?php echo (int)$group['member_count']; ?> members</p>
                                         </div>
-                                    </div>
-                                    <?php if ($group['is_member']): ?>
-                                        <button class="follow-btn followed" disabled>Joined</button>
-                                    <?php else: ?>
-                                        <button class="follow-btn" data-group-id="<?php echo $group['group_id']; ?>">Join</button>
-                                    <?php endif; ?>
+                                    </a>
+
+                                    <?php $isMember = !empty($group['is_member']); ?>
+                                    <button
+                                        class="follow-btn <?php echo $isMember ? 'followed' : ''; ?>"
+                                        data-group-id="<?php echo (int)$group['group_id']; ?>"
+                                        data-state="<?php echo $isMember ? 'joined' : 'idle'; ?>"
+                                    >
+                                        <?php echo $isMember ? 'Joined' : 'Join'; ?>
+                                    </button>
                                 </div>
                             <?php endforeach; ?>
                         <?php else: ?>
@@ -476,45 +487,8 @@ if (!isset($posts)) {
     <script src="./js/post.js"></script>
     <script src="./js/comment.js"></script>
     <script src="./js/poll.js"></script>
+    <script src="./js/bookmark.js"></script>
     <script src="./js/report.js"></script>
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            document.querySelectorAll('.feed[data-navigate-url]').forEach(feedCard => {
-                const navigateUrl = feedCard.dataset.navigateUrl;
-                if (!navigateUrl) return;
 
-                feedCard.addEventListener('click', function(event) {
-                    if (event.defaultPrevented) return;
-                    if (
-                        event.target.closest('.action-buttons') ||
-                        event.target.closest('.interaction-buttons') ||
-                        event.target.closest('.comment-section') ||
-                        event.target.closest('.add-comment-form') ||
-                        event.target.closest('.load-comments-btn') ||
-                        event.target.closest('.poll-content') ||
-                        event.target.closest('.poll-option') ||
-                        event.target.closest('.poll-total-votes') ||
-                        event.target.closest('.poll-voters-panel') ||
-                        event.target.closest('.post-menu') ||
-                        event.target.closest('.menu') ||
-                        event.target.closest('.resource-actions') ||
-                        event.target.closest('button') ||
-                        event.target.closest('textarea') ||
-                        event.target.closest('input') ||
-                        event.target.closest('select') ||
-                        event.target.closest('.comment-input-wrapper')
-                    ) {
-                        return;
-                    }
-
-                    if (event.target.closest('a')) {
-                        return;
-                    }
-
-                    window.location.href = navigateUrl;
-                });
-            });
-        });
-    </script>
 </body>
 </html>

@@ -82,10 +82,12 @@ $avatarPath = $currentUser['profile_picture'] ?? 'uploads/user_dp/default.png';
                 </div>
             </div>
             <div class="chat-search-section">
+                <form class="hf-form hf-inline" onsubmit="return false;">
                 <div class="chat-search-bar">
                     <i class="uil uil-search"></i>
                     <input type="text" placeholder="Search conversations or friends..." id="chatSearchInput">
                 </div>
+                </form>
                 <div class="chat-search-results" id="chat-search-results" aria-live="polite"></div>
             </div>
 
@@ -132,7 +134,7 @@ $avatarPath = $currentUser['profile_picture'] ?? 'uploads/user_dp/default.png';
                 </div>
             </div>
 
-            <div class="input-section">
+            <form class="input-section hf-form hf-inline" onsubmit="return false;">
                 <div class="input-wrapper">
                     <button class="attach-btn" id="attachFileButton" type="button" aria-label="Attach file">
                         <i class="uil uil-paperclip"></i>
@@ -143,7 +145,7 @@ $avatarPath = $currentUser['profile_picture'] ?? 'uploads/user_dp/default.png';
                     </button>
                 </div>
                 <div class="attachment-preview" id="chat-attachment-preview" hidden></div>
-            </div>
+            </form>
         </div>
 
         <div class="maximized-view" id="maximized-view">
@@ -202,6 +204,7 @@ $avatarPath = $currentUser['profile_picture'] ?? 'uploads/user_dp/default.png';
                         <div class="media-toolbar">
                             <div class="toolbar-left"></div>
                             <div class="toolbar-right">
+                                <form class="hf-form hf-inline" onsubmit="return false;">
                                 <div class="search-bar">
                                     <i class="uil uil-search"></i>
                                     <input type="text" placeholder="Search photos, videos, files..." id="mediaSearch">
@@ -209,6 +212,7 @@ $avatarPath = $currentUser['profile_picture'] ?? 'uploads/user_dp/default.png';
                                         <i class="uil uil-times"></i>
                                     </button>
                                 </div>
+                                </form>
                             </div>
                         </div>
                         <div class="media-grid" id="media-grid">
@@ -277,10 +281,12 @@ $avatarPath = $currentUser['profile_picture'] ?? 'uploads/user_dp/default.png';
                             <p class="text-muted">Select a chat to view messages and media</p>
                         </div>
                         <div class="search-section-max">
+                            <form class="hf-form hf-inline" onsubmit="return false;">
                             <div class="search-bar">
                                 <i class="uil uil-search"></i>
                                 <input type="text" placeholder="Search conversations..." id="chatSearchInputMax">
                             </div>
+                            </form>
                         </div>
                     </div>
                     <div class="users-list-maximized" id="chat-user-list-max">
@@ -324,7 +330,7 @@ $avatarPath = $currentUser['profile_picture'] ?? 'uploads/user_dp/default.png';
                             <p>Choose a chat to load messages.</p>
                         </div>
                     </div>
-                    <div class="message-input-area-max">
+                    <form class="message-input-area-max hf-form hf-inline" onsubmit="return false;">
                         <div class="input-wrapper">
                             <textarea class="message-input" id="maximized-message-input" placeholder="Type a message..." rows="1"></textarea>
                             <div class="input-actions">
@@ -339,7 +345,7 @@ $avatarPath = $currentUser['profile_picture'] ?? 'uploads/user_dp/default.png';
                             </div>
                         </div>
                         <div class="attachment-preview" id="chat-attachment-preview-max" hidden></div>
-                    </div>
+                    </form>
                 </div>
             </div>
         </div>
