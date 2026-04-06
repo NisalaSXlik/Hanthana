@@ -32,6 +32,9 @@ class DiscoverController {
             $post['is_group_post'] = !empty($post['group_id']);
         }
 
+        // Filter to show only user-created general image/text posts (exclude events, questions, group posts)
+        $allPosts = $this->filterDiscoverPosts($allPosts);
+
         // Sidebar data
         $trendingHashtags = $this->postModel->getTrendingHashtags(10, 7);
         $popularGroups = $this->groupModel->getPopularGroups(8, $userId);
@@ -70,6 +73,12 @@ class DiscoverController {
         // Get all ranked posts
         $allRankedPosts = $this->postModel->getTrendingPosts(60, $userId);
 
+        // Mark group posts and filter to show only user-created general image/text posts
+        foreach ($allRankedPosts as &$post) {
+            $post['is_group_post'] = !empty($post['group_id']);
+        }
+        $allRankedPosts = $this->filterDiscoverPosts($allRankedPosts);
+
         $posts = [];
 
         if ($clickedPostId > 0) {
@@ -96,12 +105,15 @@ class DiscoverController {
             $posts = $allRankedPosts;
         }
 
-        foreach ($posts as &$post) {
-            $post['is_group_post'] = !empty($post['group_id']);
-        }
-
         $trendingHashtags = $this->postModel->getTrendingHashtags(10, 7);
         $popularGroups = $this->groupModel->getPopularGroups(8, $userId);
+
+        // Get joined groups for sidebar display
+        $joinedGroups = $this->groupModel->getGroupsJoinedBy((int)$userId);
+        $joinedMap = [];
+        foreach ($joinedGroups as $joinedGroup) {
+            $joinedMap[(int)($joinedGroup['group_id'] ?? 0)] = true;
+        }
 
         require_once __DIR__ . '/../helpers/MediaHelper.php';
         foreach ($popularGroups as &$group) {
@@ -117,6 +129,30 @@ class DiscoverController {
         require_once __DIR__ . '/../views/discover-feed.php';
     }
 
+    /**
+     * Filter posts to show user-created general posts and group discussion posts
+     * Excludes: events, questions, polls, assignments, resources from groups
+     */
+    private function filterDiscoverPosts($posts) {
+        return array_values(array_filter($posts, function ($post) {
+            $isGroupPost = (int)($post['is_group_post'] ?? 0) === 1;
+            $postType = strtolower((string)($post['post_type'] ?? ''));
+            $groupPostType = strtolower((string)($post['group_post_type'] ?? ''));
+            
+            // Allow: User-created general posts (post_type='image', is_group_post=0)
+            if (!$isGroupPost && $postType === 'image') {
+                return true;
+            }
+            
+            // Allow: Group discussion posts (image/text based)
+            if ($isGroupPost && $groupPostType === 'discussion') {
+                return true;
+            }
+            
+            return false;
+        }));
+    }
+
     // AJAX endpoint to load more posts
     public function loadMorePosts() {
         if (!isset($_SESSION['user_id'])) {
@@ -129,6 +165,12 @@ class DiscoverController {
         $limit = 20;
 
         $posts = $this->postModel->getTrendingPosts($limit, $userId);
+        
+        // Mark group posts and apply filter
+        foreach ($posts as &$post) {
+            $post['is_group_post'] = !empty($post['group_id']);
+        }
+        $posts = $this->filterDiscoverPosts($posts);
         
         echo json_encode(['success' => true, 'posts' => $posts]);
         exit();
@@ -147,11 +189,11 @@ class DiscoverController {
 
         $posts = $this->postModel->getTrendingPosts($limit, $userId);
 
-
+        // Mark group posts and apply filter
         foreach ($posts as &$post) {
             $post['is_group_post'] = !empty($post['group_id']);
-
         }
+        $posts = $this->filterDiscoverPosts($posts);
 
         echo json_encode(['success' => true, 'posts' => $posts, 'count' => count($posts)]);
         exit();
