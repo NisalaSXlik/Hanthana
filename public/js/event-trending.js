@@ -28,7 +28,7 @@ function renderTrendingButton(event) {
     const isGoing = Number(event.is_going || 0) === 1;
     const buttonClass = `btn btn-primary btn-add-trending btn-icon-only${isGoing ? ' added' : ''}`;
     const buttonLabel = isGoing
-        ? '<i class="uil uil-check-circle"></i>'
+        ? '<i class="uis uis-bookmark"></i>'
         : '<i class="uil uil-calendar-alt"></i>';
 
     return `
@@ -117,7 +117,7 @@ async function loadTrendingEvents() {
                     const nowAdded = !!result.interested;
                     button.classList.toggle('added', nowAdded);
                     button.innerHTML = nowAdded
-                        ? '<i class="uil uil-check-circle"></i>'
+                        ? '<i class="uis uis-bookmark"></i>'
                         : '<i class="uil uil-calendar-alt"></i>';
 
                     notifyTrending(

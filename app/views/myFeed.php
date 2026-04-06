@@ -144,7 +144,7 @@ if (!isset($posts)) {
 
 								<?php if ($isGroupPost): ?>
 									<!-- Group Post Rendering Logic -->
-									<div class="group-post-content" style="margin-bottom: 1rem;">
+									<div class="group-post-content" style="margin-bottom: 0.35rem;">
 										<?php if ($postType === 'discussion'): ?>
 											<?php if (!empty($post['content'])): ?>
 												<div class="caption" style="margin-bottom: 1rem;">
@@ -225,7 +225,6 @@ if (!isset($posts)) {
 																<span class="option-text"><?php echo htmlspecialchars($optionText); ?></span>
 																<div class="option-stats">
 																	<span class="option-percentage"><?php echo $percentage; ?>%</span>
-																	<span class="option-votes"><?php echo $voteCount; ?> vote<?php echo $voteCount === 1 ? '' : 's'; ?></span>
 																</div>
 																<div class="option-progress" style="width: <?php echo $percentage; ?>%"></div>
 															</button>
@@ -277,6 +276,12 @@ if (!isset($posts)) {
 														</div>
 													<?php endif; ?>
 												</div>
+												<?php $eventImage = !empty($post['image_url']) ? MediaHelper::resolveMediaPath($post['image_url'], '') : ''; ?>
+												<?php if (!empty($eventImage)): ?>
+													<div class="photo post-image">
+														<img src="<?php echo htmlspecialchars($eventImage); ?>" alt="Event image">
+													</div>
+												<?php endif; ?>
 											</div>
 
 										<?php elseif ($postType === 'assignment'): ?>

@@ -41,7 +41,7 @@
 }
 
 .acd-tab {
-    border: 1px solid rgba(14, 165, 233, 0.2);
+    border: 1px solid rgba(7, 92, 230, 0.2);
     background: var(--color-light);
     color: var(--color-gray);
     border-radius: 999px;
@@ -448,7 +448,7 @@
     width: 2.15rem;
     height: 2.15rem;
     border-radius: 0.6rem;
-    background: rgba(14, 165, 233, 0.12);
+    background: rgba(7, 92, 230, 0.12);
     color: var(--color-primary);
     display: inline-flex;
     align-items: center;
@@ -526,7 +526,7 @@
 }
 
 .acd-btn-outline {
-    border: 1px solid rgba(14, 165, 233, 0.25);
+    border: 1px solid rgba(7, 92, 230, 0.25);
     border-radius: 0.6rem;
     background: var(--color-white);
     color: var(--color-primary);
@@ -538,7 +538,7 @@
 }
 
 .acd-answers-card {
-    border-color: rgba(14, 165, 233, 0.14);
+    border-color: rgba(7, 92, 230, 0.14);
 }
 
 .acd-thread-list {
@@ -599,7 +599,7 @@
     display: inline-flex;
     align-items: center;
     border-radius: 999px;
-    background: rgba(14, 165, 233, 0.12);
+    background: rgba(7, 92, 230, 0.12);
     color: var(--color-primary);
     font-size: 0.66rem;
     font-weight: 600;
@@ -621,7 +621,7 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    border: 1px solid rgba(14, 165, 233, 0.28);
+    border: 1px solid rgba(7, 92, 230, 0.28);
     background: var(--color-white);
     color: var(--color-primary);
     border-radius: 0.58rem;
@@ -634,7 +634,7 @@
 }
 
 .acd-open-btn:hover {
-    background: rgba(14, 165, 233, 0.08);
+    background: rgba(7, 92, 230, 0.08);
 }
 
 .acd-thread-card .acd-item-footer {
@@ -648,7 +648,7 @@
 }
 
 .acd-my-questions-btn {
-    border: 1px solid rgba(14, 165, 233, 0.28);
+    border: 1px solid rgba(7, 92, 230, 0.28);
     background: var(--color-white);
     color: var(--color-primary);
     border-radius: 0.55rem;
@@ -661,12 +661,12 @@
 }
 
 .acd-my-questions-btn:hover {
-    background: rgba(14, 165, 233, 0.08);
+    background: rgba(7, 92, 230, 0.08);
 }
 
 .acd-alert-card {
     background: var(--color-white);
-    border: 1px solid rgba(14, 165, 233, 0.12);
+    border: 1px solid rgba(7, 92, 230, 0.12);
     border-radius: var(--card-border-radius);
     margin-bottom: 1rem;
 }
@@ -683,7 +683,7 @@
     align-items: flex-start;
     gap: 0.5rem;
     border: 1px solid var(--color-light);
-    border-left: 3px solid rgba(14, 165, 233, 0.2);
+    border-left: 3px solid rgba(7, 92, 230, 0.2);
     border-radius: 0;
     background: var(--color-white);
     padding: 0.56rem 0.62rem;
@@ -711,7 +711,7 @@
 .acd-alert-item.danger,
 .acd-alert-item.warning,
 .acd-alert-item.danger-soft {
-    border-left-color: rgba(14, 165, 233, 0.2);
+    border-left-color: rgba(7, 92, 230, 0.2);
 }
 
 .acd-updates-list {
@@ -791,3 +791,4 @@
         width: 100%;
     }
 }
+

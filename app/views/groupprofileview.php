@@ -204,15 +204,12 @@ if ($resolvedGroupId > 0) {
                                         $postType = $post['group_post_type'] ?? 'discussion';
                                         $postMetadata = is_array($post['metadata']) ? $post['metadata'] : [];
                                         $postId = (int)$post['post_id'];
+                                        $isPostOwner = (int)($_SESSION['user_id'] ?? 0) === (int)($post['author_id'] ?? $post['user_id'] ?? 0);
+                                        $postReportLabel = 'post in ' . ($group['name'] ?? 'group');
                                         $badgeIcons = ['discussion' => '💬', 'question' => '❓', 'resource' => '📚', 'poll' => '📊', 'event' => '📅', 'assignment' => '📋'];
                                         $badgeLabels = ['discussion' => 'Discussion', 'question' => 'Question', 'resource' => 'Resource', 'poll' => 'Poll', 'event' => 'Event', 'assignment' => 'Assignment'];
                                     ?>
                                     <div class="feed group-post-card <?php echo $postType; ?>-post group-post-clickable" id="post-<?php echo $postId; ?>" data-post-id="<?php echo $postId; ?>" data-post-index="<?php echo $index; ?>">
-                                        <!-- Post Type Badge -->
-                                        <div class="post-type-badge <?php echo $postType; ?>-badge">
-                                            <?php echo $badgeIcons[$postType] . ' ' . $badgeLabels[$postType]; ?>
-                                        </div>
-
                                         <div class="head">
                                             <div class="user">
                                                 <div class="profile-picture">
@@ -223,7 +220,32 @@ if ($resolvedGroupId > 0) {
                                                     <small><?php echo htmlspecialchars($post['created_at'] ?? ''); ?></small>
                                                 </div>
                                             </div>
-                                            <i class="uil uil-ellipsis-h"></i>
+                                            <div class="post-head-right">
+                                                <div class="post-type-badge post-type-badge-inline <?php echo $postType; ?>-badge">
+                                                    <?php echo $badgeIcons[$postType] . ' ' . $badgeLabels[$postType]; ?>
+                                                </div>
+                                                <div class="post-menu">
+                                                    <button type="button" class="menu-trigger" aria-label="Post menu">
+                                                        <i class="uil uil-ellipsis-h"></i>
+                                                    </button>
+                                                    <div class="menu">
+                                                        <?php if ($isPostOwner || !empty($isAdmin)): ?>
+                                                            <button type="button" class="menu-item delete-post" data-post-id="<?php echo $postId; ?>">
+                                                                <i class="uil uil-trash-alt"></i>
+                                                                <span>Delete</span>
+                                                            </button>
+                                                        <?php endif; ?>
+                                                        <button type="button"
+                                                                class="menu-item report-trigger"
+                                                                data-report-type="post"
+                                                                data-target-id="<?php echo $postId; ?>"
+                                                                data-target-label="<?php echo htmlspecialchars($postReportLabel, ENT_QUOTES); ?>">
+                                                            <i class="uil uil-exclamation-circle"></i>
+                                                            <span>Report</span>
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </div>
                                         </div>
 
                                         <!-- Post Content -->
@@ -310,7 +332,6 @@ if ($resolvedGroupId > 0) {
                                                                     <span class="option-text"><?php echo htmlspecialchars($optionText); ?></span>
                                                                     <div class="option-stats">
                                                                         <span class="option-percentage"><?php echo $percentage; ?>%</span>
-                                                                        <span class="option-votes"><?php echo $voteCount; ?> vote<?php echo $voteCount === 1 ? '' : 's'; ?></span>
                                                                     </div>
                                                                     <div class="option-progress" style="width: <?php echo $percentage; ?>%"></div>
                                                                 </button>
@@ -362,6 +383,12 @@ if ($resolvedGroupId > 0) {
                                                             </div>
                                                         <?php endif; ?>
                                                     </div>
+
+                                                    <?php if (!empty($post['image_url'])): ?>
+                                                        <div class="photo post-image">
+                                                            <img src="<?php echo htmlspecialchars($post['image_url']); ?>" alt="Event image">
+                                                        </div>
+                                                    <?php endif; ?>
                                                 </div>
 
                                             <?php elseif ($postType === 'assignment'): ?>
@@ -400,33 +427,21 @@ if ($resolvedGroupId > 0) {
                                                     <i class="uil uil-arrow-down <?php echo (isset($post['user_vote']) && $post['user_vote'] === 'downvote') ? 'liked' : ''; ?>" aria-hidden="true"></i>
                                                     <span class="action-count"><?php echo (int)($post['downvote_count'] ?? 0); ?></span>
                                                 </button>
-                                                <button class="action-button compact comment-btn load-comments-btn" data-post-id="<?php echo $postId; ?>">
-                                                    <i class="uil uil-comment" aria-hidden="true"></i>
-                                                    <span class="action-count"><?php echo (int)($post['comment_count'] ?? 0); ?></span>
-                                                </button>
                                             </div>
-                                            <button class="action-button compact bookmark-btn" data-post-id="<?php echo $postId; ?>" aria-label="Bookmark post">
-                                                <i class="uil <?php echo (!empty($post['is_bookmarked'])) ? 'uil-bookmark-full bookmarked' : 'uil-bookmark'; ?>" aria-hidden="true"></i>
-                                            </button>
-                                            <button type="button"
-                                                    class="action-button compact report-trigger"
-                                                    data-report-type="post"
-                                                    data-target-id="<?php echo $postId; ?>"
-                                                    data-target-label="<?php echo htmlspecialchars('post in ' . ($group['name'] ?? 'group'), ENT_QUOTES); ?>">
-                                                <i class="uil uil-exclamation-circle" aria-hidden="true"></i>
-                                                <span>Report</span>
-                                            </button>
+                                            <div class="post-actions-right">
+                                                <div class="comments-side">
+                                                    <button type="button" class="question-answer-link-btn load-comments-btn" data-post-id="<?php echo $postId; ?>">
+                                                        <i class="uil uil-comment" aria-hidden="true"></i>
+                                                        <?php echo (int)($post['comment_count'] ?? 0); ?> comments
+                                                    </button>
+                                                </div>
+                                                <div class="interaction-item bookmark-item">
+                                                    <button type="button" class="action-button compact bookmark-btn" data-post-id="<?php echo $postId; ?>" aria-label="Bookmark post">
+                                                        <i class="<?php echo (!empty($post['is_bookmarked'])) ? 'uis uis-bookmark bookmarked' : 'uil uil-bookmark'; ?>" aria-hidden="true"></i>
+                                                    </button>
+                                                </div>
+                                            </div>
                                         </div>
-
-                                        <?php if (!empty($post['comment_count'])): ?>
-                                            <div class="comments load-comments-btn" data-post-id="<?php echo (int)$post['post_id']; ?>">
-                                                View all <?php echo (int)$post['comment_count']; ?> comments
-                                            </div>
-                                        <?php else: ?>
-                                            <div class="comments load-comments-btn" data-post-id="<?php echo (int)$post['post_id']; ?>" style="display:none;">
-                                                View all 0 comments
-                                            </div>
-                                        <?php endif; ?>
 
                                         <div id="comments-post-<?php echo (int)$post['post_id']; ?>" class="comment-section" data-post-id="<?php echo (int)$post['post_id']; ?>">
                                             <div class="comment-header">
@@ -649,7 +664,7 @@ if ($resolvedGroupId > 0) {
                                         <div class="event-actions">
                                             <?php
                                                 $isInterested = !empty($event['interested']);
-                                                $buttonIcon = $isInterested ? 'uil-check' : 'uil-star';
+                                                $buttonIcon = $isInterested ? 'uis-bookmark' : 'uil-star';
                                                 $buttonClass = 'btn btn-primary event-interest-btn' . ($isInterested ? ' interested' : '');
                                             ?>
                                             <button

@@ -107,6 +107,35 @@ $currentUser = $userModel->findById($_SESSION['user_id']);
                                         data-target-label="<?php echo htmlspecialchars('user ' . ($displayName !== '' ? $displayName : $displayHandle), ENT_QUOTES); ?>">
                                         More
                                     </button>
+                                    <button class="btn btn-outline" type="button">Message</button>
+                                    <div class="profile-more" data-profile-more>
+                                        <button class="btn btn-outline btn-more" type="button" data-profile-more-trigger aria-haspopup="true" aria-expanded="false" aria-controls="profileMoreMenu">
+                                            More
+                                            <i class="uil uil-angle-down" aria-hidden="true"></i>
+                                        </button>
+                                        <div class="profile-more-menu" id="profileMoreMenu" data-profile-more-menu role="menu" hidden>
+                                            <button
+                                                class="profile-more-item report-trigger"
+                                                type="button"
+                                                role="menuitem"
+                                                data-report-type="user"
+                                                data-target-id="<?php echo (int)$profileUserId; ?>"
+                                                data-target-label="<?php echo htmlspecialchars('user ' . ($displayName !== '' ? $displayName : $displayHandle), ENT_QUOTES); ?>">
+                                                <i class="uil uil-exclamation-triangle" aria-hidden="true"></i>
+                                                <span>Report user</span>
+                                            </button>
+                                            <button
+                                                class="profile-more-item block-user-btn"
+                                                type="button"
+                                                role="menuitem"
+                                                data-profile-block-user
+                                                data-user-id="<?php echo (int)$profileUserId; ?>"
+                                                data-user-label="<?php echo htmlspecialchars($displayName !== '' ? $displayName : $displayHandle, ENT_QUOTES); ?>">
+                                                <i class="uil uil-ban" aria-hidden="true"></i>
+                                                <span>Block user</span>
+                                            </button>
+                                        </div>
+                                    </div>
                                 <?php endif; ?>
                             </div>
 
@@ -609,6 +638,7 @@ $currentUser = $userModel->findById($_SESSION['user_id']);
     <script src="./js/post.js"></script>
     <script src="./js/vote.js"></script>
     <script src="./js/comment.js"></script>
+    <script src="./js/poll.js"></script>
     <script src="./js/report.js"></script>
     <script src="./js/userprofileview.js"></script>
 </body>

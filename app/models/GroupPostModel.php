@@ -9,11 +9,13 @@ class GroupPostModel {
     private Database $db;
     private bool $hasGroupPostColumns = false;
     private bool $hasPollVoteTable = false;
+    private bool $hasPostBookmarkTable = false;
 
     public function __construct() {
         $this->db = new Database();
         $this->hasGroupPostColumns = $this->columnExists('Post', 'group_post_type');
         $this->hasPollVoteTable = $this->tableExists('GroupPostPollVote');
+        $this->hasPostBookmarkTable = $this->tableExists('PostBookmark');
     }
 
     private function tableExists(string $table): bool {
@@ -51,6 +53,22 @@ class GroupPostModel {
         }
 
         return "                'discussion' AS group_post_type,\n                NULL AS metadata,";
+    }
+
+    private function selectBookmarkColumn(int $userId): string {
+        if ($userId <= 0 || !$this->hasPostBookmarkTable) {
+            return ", 0 AS is_bookmarked";
+        }
+
+        $safeUserId = (int)$userId;
+
+        return ", EXISTS (
+                    SELECT 1
+                    FROM PostBookmark pb
+                    WHERE pb.user_id = {$safeUserId}
+                      AND pb.post_id = p.post_id
+                    LIMIT 1
+                ) AS is_bookmarked";
     }
 
     private function formatMediaAndMetadata(array &$posts, int $viewerId = 0): void {
@@ -405,6 +423,7 @@ class GroupPostModel {
     public function getGroupPosts(int $groupId, int $userId = 0): array {
         $userVoteSql = $userId ? ", (SELECT vote_type FROM Vote WHERE post_id = p.post_id AND user_id = " . (int)$userId . " LIMIT 1) AS user_vote" : ", NULL AS user_vote";
         $pollVoteSql = ($userId && $this->hasPollVoteTable) ? ", (SELECT option_index FROM GroupPostPollVote WHERE post_id = p.post_id AND user_id = " . (int)$userId . " LIMIT 1) AS user_poll_vote" : ", NULL AS user_poll_vote";
+        $bookmarkSql = $this->selectBookmarkColumn($userId);
         $groupColumns = $this->selectGroupPostColumns();
         $sql = "
             SELECT
@@ -425,6 +444,7 @@ class GroupPostModel {
                 u.last_name,
                 u.profile_picture,
                 pm.file_url AS image_url
+                {$bookmarkSql}
                 {$userVoteSql}
                 {$pollVoteSql}
             FROM Post p
@@ -452,6 +472,7 @@ class GroupPostModel {
     public function getGroupPostById(int $postId, int $userId = 0): ?array {
         $userVoteSql = $userId ? ", (SELECT vote_type FROM Vote WHERE post_id = p.post_id AND user_id = " . (int)$userId . " LIMIT 1) AS user_vote" : ", NULL AS user_vote";
         $pollVoteSql = ($userId && $this->hasPollVoteTable) ? ", (SELECT option_index FROM GroupPostPollVote WHERE post_id = p.post_id AND user_id = " . (int)$userId . " LIMIT 1) AS user_poll_vote" : ", NULL AS user_poll_vote";
+        $bookmarkSql = $this->selectBookmarkColumn($userId);
         $groupColumns = $this->selectGroupPostColumns();
         $sql = "
             SELECT
@@ -474,6 +495,7 @@ class GroupPostModel {
                 u.last_name,
                 u.profile_picture,
                 pm.file_url AS image_url
+                {$bookmarkSql}
                 {$userVoteSql}
                 {$pollVoteSql}
             FROM Post p
@@ -513,6 +535,8 @@ class GroupPostModel {
      * Get all group posts by a specific user
      */
     public function getUserGroupPosts(int $userId): array {
+        $viewerId = $this->getCurrentUserId();
+        $bookmarkSql = $this->selectBookmarkColumn($viewerId);
         $groupColumns = $this->selectGroupPostColumns();
         $sql = "
             SELECT
@@ -537,6 +561,7 @@ class GroupPostModel {
                 g.name AS group_name,
                 g.display_picture AS group_photo,
                 pm.file_url AS image_url
+                {$bookmarkSql}
             FROM Post p
             JOIN Users u ON u.user_id = p.author_id
             LEFT JOIN GroupsTable g ON g.group_id = p.group_id
@@ -583,6 +608,7 @@ class GroupPostModel {
      */
     public function getPopularPublicGroupPosts(int $limit = 10, int $userId = 0, int $days = 14): array {
         $userVoteSql = $userId ? ", (SELECT vote_type FROM Vote WHERE post_id = p.post_id AND user_id = " . (int)$userId . " LIMIT 1) AS user_vote" : ", NULL AS user_vote";
+        $bookmarkSql = $this->selectBookmarkColumn($userId);
         
         $groupColumns = $this->selectGroupPostColumns();
         
@@ -606,7 +632,9 @@ class GroupPostModel {
                 u.first_name,
                 u.last_name,
                 u.profile_picture,
-                pm.file_url AS image_url,
+                pm.file_url AS image_url
+                {$bookmarkSql}
+                ,
                 (COALESCE(vt_recent.upvotes, 0) * 2 + COALESCE(ct_recent.comment_count, 0)) AS engagement_score
                 {$userVoteSql}
             FROM Post p

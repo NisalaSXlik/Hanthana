@@ -18,10 +18,10 @@ document.addEventListener('DOMContentLoaded', function() {
         if (!pollOptionsContainer) return;
 
         // Get IDs
-        const postId = pollOptionsContainer.dataset.postId;
-        const optionIndex = optionContainer.dataset.optionIndex;
+        const postId = parseInt(pollOptionsContainer.dataset.postId || '', 10);
+        const optionIndex = parseInt(optionContainer.dataset.optionIndex || '', 10);
 
-        if (!postId || optionIndex === undefined) return;
+        if (!Number.isInteger(postId) || !Number.isInteger(optionIndex)) return;
 
         // Disable all buttons in this poll to prevent multiple votes
         const allButtons = pollOptionsContainer.querySelectorAll('.poll-option-btn');
@@ -41,7 +41,19 @@ document.addEventListener('DOMContentLoaded', function() {
             const data = await response.json();
 
             if (data.success) {
-                updatePollUI(pollOptionsContainer, data.votes, data.selected);
+                const votes = Array.isArray(data.votes) ? data.votes : [];
+                const selectedIndex = Number.isInteger(parseInt(data.selected, 10))
+                    ? parseInt(data.selected, 10)
+                    : optionIndex;
+
+                updatePollUI(postId, votes, selectedIndex);
+                window.dispatchEvent(new CustomEvent('hanthana:poll-vote-changed', {
+                    detail: {
+                        postId,
+                        votes,
+                        selected: selectedIndex
+                    }
+                }));
             } else {
                 // Re-enable buttons if failed
                 allButtons.forEach(b => b.disabled = false);
@@ -60,16 +72,34 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    function updatePollUI(container, votes, selectedIndex) {
-        const totalVotes = votes.reduce((a, b) => a + parseInt(b), 0);
+    window.addEventListener('hanthana:poll-vote-changed', function(event) {
+        const detail = event.detail || {};
+        const postId = parseInt(detail.postId, 10);
+        if (!Number.isInteger(postId)) return;
+
+        const votes = Array.isArray(detail.votes) ? detail.votes : [];
+        const selectedIndex = Number.isInteger(parseInt(detail.selected, 10))
+            ? parseInt(detail.selected, 10)
+            : -1;
+
+        updatePollUI(postId, votes, selectedIndex);
+    });
+
+    function updatePollUI(postId, votes, selectedIndex) {
+        const containers = document.querySelectorAll(`.poll-options[data-post-id="${postId}"]`);
+        containers.forEach(container => updatePollContainer(container, votes, selectedIndex));
+    }
+
+    function updatePollContainer(container, votes, selectedIndex) {
+        const totalVotes = votes.reduce((a, b) => a + parseInt(b || 0, 10), 0);
         const options = container.querySelectorAll('.poll-option');
 
         options.forEach((option, index) => {
-            const voteCount = parseInt(votes[index] || 0);
+            const voteCount = parseInt(votes[index] || 0, 10);
             const percentage = totalVotes > 0 ? Math.round((voteCount / totalVotes) * 100) : 0;
             
             // Update selection state
-            if (index === parseInt(selectedIndex)) {
+            if (index === selectedIndex) {
                 option.classList.add('selected');
             } else {
                 option.classList.remove('selected');
@@ -85,14 +115,17 @@ document.addEventListener('DOMContentLoaded', function() {
             if (progressEl) progressEl.style.width = percentage + '%';
         });
 
-        // Update total votes in footer if exists
-        const footer = container.nextElementSibling;
-        if (footer && footer.classList.contains('poll-footer')) {
-            const totalSpan = footer.querySelector('.poll-total-votes span');
-            if (totalSpan) {
-                totalSpan.textContent = totalVotes + ' total vote' + (totalVotes !== 1 ? 's' : '');
-            }
+        const pollContent = container.closest('.poll-content');
+        const totalVotesLabel = totalVotes + ' total vote' + (totalVotes !== 1 ? 's' : '');
+        const totalVotesButton = pollContent ? pollContent.querySelector('.poll-total-votes') : null;
+        const totalSpan = totalVotesButton ? totalVotesButton.querySelector('span') : null;
+        if (totalSpan) {
+            totalSpan.textContent = totalVotesLabel;
+        } else if (totalVotesButton) {
+            totalVotesButton.textContent = totalVotesLabel;
         }
+
+        container.dataset.userVote = String(selectedIndex);
         
         // Re-enable buttons to allow changing vote
         const allButtons = container.querySelectorAll('.poll-option-btn');
