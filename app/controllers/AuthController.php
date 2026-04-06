@@ -779,8 +779,13 @@ class AuthController {
     public function checkAvailability() {
         header('Content-Type: application/json; charset=utf-8');
 
+        $this->startSession();
+
         $field = strtolower(trim($_GET['field'] ?? $_POST['field'] ?? ''));
         $value = trim($_GET['value'] ?? $_POST['value'] ?? '');
+        $excludeCurrentRaw = strtolower(trim((string)($_GET['exclude_current'] ?? $_POST['exclude_current'] ?? '')));
+        $excludeCurrent = in_array($excludeCurrentRaw, ['1', 'true', 'yes'], true);
+        $excludeUserId = ($excludeCurrent && isset($_SESSION['user_id'])) ? (int)$_SESSION['user_id'] : null;
 
         if ($field === '' || $value === '') {
             echo json_encode([
@@ -801,7 +806,7 @@ class AuthController {
                 return;
             }
 
-            $exists = $this->userModel->usernameExists($value);
+            $exists = $this->userModel->usernameExists($value, $excludeUserId);
             echo json_encode([
                 'success' => true,
                 'available' => !$exists,
@@ -829,7 +834,7 @@ class AuthController {
                 return;
             }
 
-            $exists = $this->userModel->emailExists($value);
+            $exists = $this->userModel->emailExists($value, $excludeUserId);
             echo json_encode([
                 'success' => true,
                 'available' => !$exists,
@@ -848,7 +853,7 @@ class AuthController {
                 return;
             }
 
-            $exists = $this->userModel->phoneExists($value);
+            $exists = $this->userModel->phoneExists($value, $excludeUserId);
             echo json_encode([
                 'success' => true,
                 'available' => !$exists,
