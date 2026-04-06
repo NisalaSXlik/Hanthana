@@ -34,11 +34,13 @@ if (!isset($posts)) {
 	<link rel="stylesheet" href="./css/general.css">
 	<link rel="stylesheet" href="./css/navbar.css">
 	<link rel="stylesheet" href="./css/mediaquery.css">
-	<link rel="stylesheet" href="./css/calender.css">
+	<link rel="stylesheet" href="./css/calender.css?v=20250209_zindex">
 	<link rel="stylesheet" href="./css/post.css">
 	<link rel="stylesheet" href="./css/notificationpopup.css">
 	<link rel="stylesheet" href="./css/report.css">
+	<link rel="stylesheet" href="./css/forms.css">
 	<link rel="stylesheet" href="https://unicons.iconscout.com/release/v4.0.8/css/line.css">
+	<link rel="stylesheet" href="https://unicons.iconscout.com/release/v4.0.8/css/solid.css">
 </head>
 <body>
 	<?php include __DIR__ . '/templates/navbar.php'; ?>
@@ -80,15 +82,15 @@ if (!isset($posts)) {
 								$postUrl = BASE_PATH . 'index.php?controller=Profile&action=view&user_id=' . $authorUserId . '#personal-post-' . $postId;
 							}
 							?>
-							<div class="feed" data-post-id="<?php echo (int)$post['post_id']; ?>" data-post-content="<?php echo $postContentForAttr; ?>" data-navigate-url="<?php echo htmlspecialchars($postUrl, ENT_QUOTES); ?>" style="cursor: pointer;">
+							<div class="feed" data-post-id="<?php echo (int)$post['post_id']; ?>" data-post-content="<?php echo $postContentForAttr; ?>">
 								<div class="head">
 									<div class="user">
-										<div class="profile-picture">
+										<a class="profile-picture" href="<?php echo BASE_PATH; ?>index.php?controller=Profile&action=view&user_id=<?php echo (int)($post['author_id'] ?? $post['user_id']); ?>">
 											<img src="<?php echo htmlspecialchars($avatarUrl); ?>" alt="Profile">
-										</div>
+										</a>
 										<div class="info">
 											<h3>
-												<?php echo htmlspecialchars($displayName); ?>
+												<a href="<?php echo BASE_PATH; ?>index.php?controller=Profile&action=view&user_id=<?php echo (int)($post['author_id'] ?? $post['user_id']); ?>" style="color: inherit; text-decoration: none;" onclick="event.stopPropagation();"><?php echo htmlspecialchars($displayName); ?></a>
 												<?php if (!empty($post['group_id']) && !empty($post['group_name'])): ?>
 													<span class="group-indicator" style="font-weight: normal; color: var(--color-gray); font-size: 0.9em;">
 														<i class="uil uil-angle-right"></i>
@@ -111,21 +113,27 @@ if (!isset($posts)) {
 											</small>
 										</div>
 									</div>
-									<?php if ($isOwner): ?>
-										<div class="post-menu">
-											<button class="menu-trigger" aria-label="Post menu"><i class="uil uil-ellipsis-h"></i></button>
-											<div class="menu">
+									<div class="post-menu">
+										<button class="menu-trigger" aria-label="Post menu"><i class="uil uil-ellipsis-h"></i></button>
+										<div class="menu">
+											<?php if ($isOwner): ?>
 												<button class="menu-item edit-post" data-post-id="<?php echo (int)$post['post_id']; ?>">
 													<i class="uil uil-edit"></i> Edit
 												</button>
 												<button class="menu-item delete-post" data-post-id="<?php echo (int)$post['post_id']; ?>">
 													<i class="uil uil-trash-alt"></i> Delete
 												</button>
-											</div>
+											<?php else: ?>
+												<button type="button"
+													class="menu-item report-trigger"
+													data-report-type="post"
+													data-target-id="<?php echo (int)$post['post_id']; ?>"
+													data-target-label="<?php echo htmlspecialchars($reportLabel, ENT_QUOTES); ?>">
+													<i class="uil uil-exclamation-circle"></i> Report
+												</button>
+											<?php endif; ?>
 										</div>
-									<?php else: ?>
-										<i class="uil uil-ellipsis-h"></i>
-									<?php endif; ?>
+									</div>
 								</div>
 
 								<?php
@@ -136,7 +144,7 @@ if (!isset($posts)) {
 
 								<?php if ($isGroupPost): ?>
 									<!-- Group Post Rendering Logic -->
-									<div class="group-post-content" style="margin-bottom: 1rem;">
+									<div class="group-post-content" style="margin-bottom: 0.35rem;">
 										<?php if ($postType === 'discussion'): ?>
 											<?php if (!empty($post['content'])): ?>
 												<div class="caption" style="margin-bottom: 1rem;">
@@ -217,7 +225,6 @@ if (!isset($posts)) {
 																<span class="option-text"><?php echo htmlspecialchars($optionText); ?></span>
 																<div class="option-stats">
 																	<span class="option-percentage"><?php echo $percentage; ?>%</span>
-																	<span class="option-votes"><?php echo $voteCount; ?> vote<?php echo $voteCount === 1 ? '' : 's'; ?></span>
 																</div>
 																<div class="option-progress" style="width: <?php echo $percentage; ?>%"></div>
 															</button>
@@ -269,6 +276,12 @@ if (!isset($posts)) {
 														</div>
 													<?php endif; ?>
 												</div>
+												<?php $eventImage = !empty($post['image_url']) ? MediaHelper::resolveMediaPath($post['image_url'], '') : ''; ?>
+												<?php if (!empty($eventImage)): ?>
+													<div class="photo post-image">
+														<img src="<?php echo htmlspecialchars($eventImage); ?>" alt="Event image">
+													</div>
+												<?php endif; ?>
 											</div>
 
 										<?php elseif ($postType === 'assignment'): ?>
@@ -296,6 +309,12 @@ if (!isset($posts)) {
 										<?php endif; ?>
 									</div>
 								<?php else: ?>
+									<?php if (!empty($post['content'])): ?>
+										<div class="caption compact-caption">
+											<p class="post-text"><?php echo nl2br(htmlspecialchars($post['content'])); ?></p>
+										</div>
+									<?php endif; ?>
+
 									<?php if (!empty($post['image_url'])): ?>
 										<?php $postImage = MediaHelper::resolveMediaPath($post['image_url'], ''); ?>
 										<div class="photo post-image">
@@ -318,41 +337,21 @@ if (!isset($posts)) {
 											<i class="uil uil-arrow-down <?php echo $downClass; ?>" data-vote-type="downvote"></i>
 											<span class="interaction-count"><?php echo (int)($post['downvote_count'] ?? 0); ?></span>
 										</div>
-										<div class="interaction-item load-comments-btn" data-post-id="<?php echo (int)$post['post_id']; ?>">
+									</div>
+									<div class="comments-side">
+										<button type="button" class="question-answer-link-btn load-comments-btn" data-post-id="<?php echo (int)$post['post_id']; ?>">
 											<i class="uil uil-comment"></i>
-											<span class="interaction-count"><?php echo (int)($post['comment_count'] ?? 0); ?></span>
-										</div>
+											<?php echo (int)($post['comment_count'] ?? 0); ?> comments
+										</button>
 									</div>
 									<div class="interaction-item bookmark-item">
-										<i class="uil uil-bookmark"></i>
+										<button type="button" class="bookmark-btn <?php echo !empty($post['is_bookmarked']) ? 'bookmarked' : ''; ?>" data-post-id="<?php echo (int)$post['post_id']; ?>" aria-label="Save post">
+											<i class="<?php echo !empty($post['is_bookmarked']) ? 'uis uis-bookmark bookmarked' : 'uil uil-bookmark'; ?>" aria-hidden="true"></i>
+										</button>
 									</div>
-									<?php if (!$isOwner): ?>
-										<div class="interaction-item report-item">
-											<button type="button"
-												class="report-trigger"
-												data-report-type="post"
-												data-target-id="<?php echo (int)$post['post_id']; ?>"
-												data-target-label="<?php echo htmlspecialchars($reportLabel, ENT_QUOTES); ?>">
-												<i class="uil uil-exclamation-circle"></i>
-												<span>Report</span>
-											</button>
-										</div>
-									<?php endif; ?>
-								</div> <?php if (!$isGroupPost && !empty($post['content'])): ?>
-									<div class="caption">
-										<p><b><?php echo htmlspecialchars($post['username'] ?? ''); ?></b> <?php echo htmlspecialchars($post['content']); ?></p>
+									
 									</div>
-								<?php endif; ?>
 
-								<?php if (!empty($post['comment_count'])): ?>
-									<div class="comments load-comments-btn" data-post-id="<?php echo (int)$post['post_id']; ?>">
-										View all <?php echo (int)$post['comment_count']; ?> comments
-									</div>
-								<?php else: ?>
-									<div class="comments load-comments-btn" data-post-id="<?php echo (int)$post['post_id']; ?>" style="display:none;">
-										View all 0 comments
-									</div>
-								<?php endif; ?>
 
 								<div id="comments-post-<?php echo (int)$post['post_id']; ?>" class="comment-section" data-post-id="<?php echo (int)$post['post_id']; ?>">
 									<div class="comment-header">
@@ -366,7 +365,7 @@ if (!isset($posts)) {
 										<div class="comments-loading">Click to load comments</div>
 									</div>
 
-									<div class="add-comment-form">
+									<form class="add-comment-form hf-form hf-inline" onsubmit="return false;">
 										<div class="comment-input-container">
 											<?php
 											$currentUserAvatar = MediaHelper::resolveMediaPath($currentUser['profile_picture'] ?? '', 'uploads/user_dp/default.png');
@@ -374,10 +373,10 @@ if (!isset($posts)) {
 											<img src="<?php echo htmlspecialchars($currentUserAvatar); ?>" alt="Your Avatar" class="current-user-avatar">
 											<div class="comment-input-wrapper">
 												<textarea class="comment-input" placeholder="Write a comment..." data-post-id="<?php echo (int)$post['post_id']; ?>"></textarea>
-												<button class="comment-submit-btn" data-post-id="<?php echo (int)$post['post_id']; ?>">Post Comment</button>
+												<button type="button" class="comment-submit-btn" data-post-id="<?php echo (int)$post['post_id']; ?>">Post Comment</button>
 											</div>
 										</div>
-									</div>
+									</form>
 								</div>
 							</div>
 						<?php endforeach; ?>
@@ -397,10 +396,12 @@ if (!isset($posts)) {
 						<h4>Messages</h4>
 						<i class="uil uil-edit" id="openChatWidget" style="cursor: pointer;"></i>
 					</div>
+					<form class="hf-form hf-inline" onsubmit="return false;">
 					<div class="search-bar">
 						<i class="uil uil-search"></i>
 						<input type="search" placeholder="Search messages" id="sidebarChatSearch">
 					</div>
+					</form>
 					<div class="message-list" id="sidebarMessageList">
 						<div class="loading-messages" style="text-align: center; padding: 1rem; color: #888;">
 							<i class="uil uil-spinner-alt" style="animation: spin 1s linear infinite;"></i>
@@ -440,6 +441,7 @@ if (!isset($posts)) {
 				<h3 id="editPostTitle">Edit Post</h3>
 				<button class="close-modal edit-close" aria-label="Close">&times;</button>
 			</div>
+			<form class="hf-form" onsubmit="return false;">
 			<div class="modal-body">
 				<div class="form-group">
 					<label for="editPostContent">Content</label>
@@ -450,10 +452,11 @@ if (!isset($posts)) {
 				<button class="btn btn-secondary cancel-edit">Cancel</button>
 				<button class="btn btn-primary save-edit" disabled>Save</button>
 			</div>
+			</form>
 		</div>
 	</div>
 
-	<script src="./js/calender.js"></script>
+	<script src="./js/calender.js?v=20250209_syntax"></script>
 	<script src="./js/feed.js"></script>
 	<script src="./js/friends.js"></script>
 	<script src="./js/general.js"></script>
@@ -463,47 +466,9 @@ if (!isset($posts)) {
 	<script src="./js/post.js"></script>
 	<script src="./js/comment.js"></script>
     <script src="./js/poll.js"></script>
+	<script src="./js/bookmark.js"></script>
 	<script src="./js/report.js"></script>
-	<script>
-		document.addEventListener('DOMContentLoaded', function() {
-			document.querySelectorAll('.feed[data-navigate-url]').forEach(feedCard => {
-				const navigateUrl = feedCard.dataset.navigateUrl;
-				if (!navigateUrl) return;
 
-				feedCard.addEventListener('click', function(event) {
-					if (event.defaultPrevented) return;
-					if (
-						event.target.closest('.action-buttons') ||
-						event.target.closest('.interaction-buttons') ||
-						event.target.closest('.comment-section') ||
-						event.target.closest('.add-comment-form') ||
-						event.target.closest('.load-comments-btn') ||
-						event.target.closest('.poll-content') ||
-						event.target.closest('.poll-option') ||
-						event.target.closest('.poll-total-votes') ||
-						event.target.closest('.poll-voters-panel') ||
-						event.target.closest('.post-menu') ||
-						event.target.closest('.menu') ||
-						event.target.closest('.resource-actions') ||
-						event.target.closest('button') ||
-						event.target.closest('textarea') ||
-						event.target.closest('input') ||
-						event.target.closest('select') ||
-						event.target.closest('.comment-input-wrapper')
-					) {
-						return;
-					}
-
-					if (event.target.closest('a')) {
-						return;
-					}
-
-					window.location.href = navigateUrl;
-				});
-			});
-		});
-	</script>
-	
 	<script>
 		// Load top 3 conversations for sidebar
 		(async function loadSidebarMessages() {

@@ -13,7 +13,7 @@
 /* Responsive */
 @media (max-width: 992px) {
     main .container:not(.questions-layout) {
-        grid-template-columns: 25% 50% 23%;
+        grid-template-columns: 22% 54% 22%;
         gap: 1%;
     }
 }
@@ -21,6 +21,10 @@
 @media (max-width: 768px) {
     main .container:not(.questions-layout) {
         grid-template-columns: 1fr;
+    }
+
+    main .container > .middle {
+        padding-inline: 0.3rem;
     }
     
     body:not(.page-questions) .left,

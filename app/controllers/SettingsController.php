@@ -271,6 +271,44 @@ class SettingsController {
             'users' => $blockedUsers
         ]);
     }
+
+    public function blockUser() {
+        if (session_status() === PHP_SESSION_NONE) {
+            session_start();
+        }
+
+        header('Content-Type: application/json');
+
+        if (!isset($_SESSION['user_id'])) {
+            echo json_encode(['success' => false, 'message' => 'Not authenticated']);
+            exit();
+        }
+
+        $userId = (int)$_SESSION['user_id'];
+        $blockedUserId = isset($_POST['user_id']) ? (int)$_POST['user_id'] : 0;
+
+        if ($blockedUserId <= 0) {
+            echo json_encode(['success' => false, 'message' => 'User ID is required']);
+            exit();
+        }
+
+        if ($blockedUserId === $userId) {
+            echo json_encode(['success' => false, 'message' => 'You cannot block yourself']);
+            exit();
+        }
+
+        try {
+            $result = $this->settingsModel->blockUser($userId, $blockedUserId);
+
+            if ($result) {
+                echo json_encode(['success' => true, 'message' => 'User blocked successfully']);
+            } else {
+                echo json_encode(['success' => false, 'message' => 'Failed to block user']);
+            }
+        } catch (Exception $e) {
+            echo json_encode(['success' => false, 'message' => 'Error: ' . $e->getMessage()]);
+        }
+    }
     
     public function unblockUser() {
         if (session_status() === PHP_SESSION_NONE) {

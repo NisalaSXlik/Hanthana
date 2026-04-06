@@ -1,22 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
-
-:root {
-    --color-dark: #1e293b;
-    --color-light: #f1f5f9;
-    --color-white: #ffffff;
-    --color-primary: #0ea5e9;
-    --color-secondary: #0369a1;
-    --color-success: #10b981;
-    --color-danger: #ef4444;
-    --color-gray: #64748b;
-    
-    --border-radius: 1rem;
-    --card-border-radius: 0.5rem;
-    --btn-padding: 0.5rem 1.5rem;
-    --card-padding: 1rem;
-}
-
-
+/* Uses global :root variables from general.css */
 
 /* Navbar */
 nav {
@@ -66,7 +48,7 @@ nav .container {
     min-width: 250px;
     width: 100%;
     max-width: 500px;
-    background: rgba(14, 165, 233, 0.08);
+    background: rgba(7, 92, 230, 0.08);
     transition: all 0.3s ease;
 }
 
@@ -82,7 +64,7 @@ nav .container {
 
 /* Focus effects */
 .search-bar:focus-within {
-    box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.2);
+    box-shadow: 0 0 0 3px rgba(7, 92, 230, 0.2);
 }
 
 /* Animation for search icon */
@@ -102,6 +84,25 @@ nav .container {
     width: 100%;
     max-width: 520px;
     margin: 0 auto;
+}
+
+.nav-search .hf-form {
+    gap: 0;
+}
+
+.nav-search .search-bar input[type="search"] {
+    border: none;
+    background: transparent;
+    width: 100%;
+    padding: 0.2rem 0;
+    border-radius: 0;
+    box-shadow: none;
+    line-height: 1.2;
+}
+
+.nav-search .search-bar input[type="search"]:focus {
+    border: none;
+    box-shadow: none;
 }
 
 .nav-search-results {
@@ -138,7 +139,7 @@ nav .container {
 }
 
 .nav-search-results li a:hover {
-    background: rgba(14, 165, 233, 0.12);
+    background: rgba(7, 92, 230, 0.12);
 }
 
 .nav-search-results img {
@@ -199,7 +200,7 @@ nav .container {
 }
 
 .nav-search-results li.nav-search-result--group:hover {
-    background: rgba(14, 165, 233, 0.12);
+    background: rgba(7, 92, 230, 0.12);
 }
 
 .nav-search-results li.nav-search-result--group > a:hover {
@@ -278,3 +279,4 @@ nav .container {
     max-height: 420px;
     overflow-y: auto;
 }
+

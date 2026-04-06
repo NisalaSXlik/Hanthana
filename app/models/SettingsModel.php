@@ -325,21 +325,105 @@ class SettingsModel {
     }
 
     public function getBlockedUsers($userId) {
-        $sql = "SELECT u.user_id, u.username, u.first_name, u.last_name, u.profile_picture
-                FROM Users u
-                INNER JOIN BlockedUsers bu ON bu.blocked_user_id = u.user_id
-                WHERE bu.user_id = ? AND u.is_active = TRUE
-                ORDER BY u.username ASC";
-        
-        $stmt = $this->db->getConnection()->prepare($sql);
-        $stmt->execute([$userId]);
-        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        $queries = [
+            "SELECT u.user_id AS id, u.user_id, u.username, u.first_name, u.last_name,
+                    u.profile_picture AS avatar, u.profile_picture
+             FROM Users u
+             INNER JOIN BlockedUsers bu ON bu.blocked_user_id = u.user_id
+             WHERE bu.user_id = ? AND u.is_active = TRUE
+             ORDER BY u.username ASC",
+            "SELECT u.user_id AS id, u.user_id, u.username, u.first_name, u.last_name,
+                    u.profile_picture AS avatar, u.profile_picture
+             FROM Users u
+             INNER JOIN BlockedUsers bu ON bu.blocked_id = u.user_id
+             WHERE bu.blocker_id = ? AND u.is_active = TRUE
+             ORDER BY u.username ASC"
+        ];
+
+        foreach ($queries as $sql) {
+            try {
+                $stmt = $this->db->getConnection()->prepare($sql);
+                $stmt->execute([$userId]);
+                return $stmt->fetchAll(PDO::FETCH_ASSOC);
+            } catch (PDOException $e) {
+                continue;
+            }
+        }
+
+        return [];
+    }
+
+    public function blockUser($userId, $blockedUserId) {
+        $userId = (int)$userId;
+        $blockedUserId = (int)$blockedUserId;
+
+        if ($userId <= 0 || $blockedUserId <= 0 || $userId === $blockedUserId) {
+            return false;
+        }
+
+        $pdo = $this->db->getConnection();
+
+        try {
+            $pdo->beginTransaction();
+
+            try {
+                $removeFriendSql = "DELETE FROM Friends
+                                    WHERE (user_id = ? AND friend_id = ?)
+                                       OR (user_id = ? AND friend_id = ?)";
+                $removeFriendStmt = $pdo->prepare($removeFriendSql);
+                $removeFriendStmt->execute([$userId, $blockedUserId, $blockedUserId, $userId]);
+            } catch (PDOException $e) {
+                // Keep block flow working even if friendship cleanup schema differs.
+            }
+
+            $insertQueries = [
+                "INSERT IGNORE INTO BlockedUsers (user_id, blocked_user_id) VALUES (?, ?)",
+                "INSERT IGNORE INTO BlockedUsers (blocker_id, blocked_id) VALUES (?, ?)"
+            ];
+
+            $inserted = false;
+            foreach ($insertQueries as $sql) {
+                try {
+                    $stmt = $pdo->prepare($sql);
+                    $stmt->execute([$userId, $blockedUserId]);
+                    $inserted = true;
+                    break;
+                } catch (PDOException $e) {
+                    continue;
+                }
+            }
+
+            if (!$inserted) {
+                $pdo->rollBack();
+                return false;
+            }
+
+            $pdo->commit();
+            return true;
+        } catch (Exception $e) {
+            if ($pdo->inTransaction()) {
+                $pdo->rollBack();
+            }
+            return false;
+        }
     }
 
     public function unblockUser($userId, $blockedUserId) {
-        $sql = "DELETE FROM BlockedUsers WHERE user_id = ? AND blocked_user_id = ?";
-        $stmt = $this->db->getConnection()->prepare($sql);
-        return $stmt->execute([$userId, $blockedUserId]);
+        $queries = [
+            "DELETE FROM BlockedUsers WHERE user_id = ? AND blocked_user_id = ?",
+            "DELETE FROM BlockedUsers WHERE blocker_id = ? AND blocked_id = ?"
+        ];
+
+        foreach ($queries as $sql) {
+            try {
+                $stmt = $this->db->getConnection()->prepare($sql);
+                return $stmt->execute([$userId, $blockedUserId]);
+            } catch (PDOException $e) {
+                continue;
+            }
+        }
+
+        return false;
     }
 }
 ?>

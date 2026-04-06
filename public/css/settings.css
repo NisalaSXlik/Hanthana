@@ -201,7 +201,7 @@ main .container {
 .setting-input {
     width: 100%;
     padding: 0.6rem 0.8rem; /* Reduced padding */
-    border: 1px solid rgba(14, 165, 233, 0.3);
+    border: 1px solid rgba(7, 92, 230, 0.3);
     border-radius: var(--border-radius);
     background: var(--color-white);
     font-size: 0.85rem; /* Slightly smaller */
@@ -212,13 +212,13 @@ main .container {
 .setting-input:focus {
     outline: none;
     border-color: var(--color-primary);
-    box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.1);
+    box-shadow: 0 0 0 3px rgba(7, 92, 230, 0.1);
 }
 
 .setting-select {
     width: 180px; /* Slightly smaller */
     padding: 0.6rem 0.8rem; /* Reduced padding */
-    border: 1px solid rgba(14, 165, 233, 0.3);
+    border: 1px solid rgba(7, 92, 230, 0.3);
     border-radius: var(--border-radius);
     background: var(--color-white);
     font-size: 0.85rem; /* Slightly smaller */
@@ -230,7 +230,7 @@ main .container {
 .setting-select:focus {
     outline: none;
     border-color: var(--color-primary);
-    box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.1);
+    box-shadow: 0 0 0 3px rgba(7, 92, 230, 0.1);
 }
 
 /* Toggle Switch */
@@ -253,7 +253,7 @@ main .container {
     left: 0;
     right: 0;
     bottom: 0;
-    background-color: #ccc;
+    background-color: var(--gray-300);
     transition: background 0.2s;
     border-radius: 22px;
 }
@@ -343,7 +343,7 @@ main .container {
 }
 
 .password-toggle:hover {
-    background: rgba(14, 165, 233, 0.1);
+    background: rgba(7, 92, 230, 0.1);
     color: var(--color-primary);
 }
 
@@ -826,3 +826,4 @@ main .container {
     font-size: 0.875rem;
     margin-top: 0.25rem;
 }
+

@@ -152,6 +152,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 
+
 // Helper function to show login modal
 function showLoginModal() {
     const signupModal = document.getElementById('signupModal');
@@ -164,18 +165,87 @@ function showLoginModal() {
 // Helper function to update sidebar group member count
 window.updateSidebarGroupMemberCount = function(groupId, delta = 0) {
     const groupElement = document.querySelector(`.group[data-group-id="${groupId}"]`);
-    if (!groupElement) return;
-    
-    const memberCountElement = groupElement.querySelector('.group-member-count');
-    if (!memberCountElement) return;
-    
-    // Extract current count from text like "5 members"
-    const currentText = memberCountElement.textContent.trim();
-    const currentCount = parseInt(currentText.match(/\d+/)?.[0] || '0');
-    
-    // Calculate new count
-    const newCount = Math.max(0, currentCount + delta);
-    
-    // Update display
-    memberCountElement.textContent = `${newCount} member${newCount !== 1 ? 's' : ''}`;
+    if (groupElement) {
+        const memberCountElement = groupElement.querySelector('.group-member-count');
+        if (memberCountElement) {
+            const currentText = memberCountElement.textContent.trim();
+            const currentCount = parseInt(currentText.match(/\d+/)?.[0] || '0');
+            const newCount = Math.max(0, currentCount + delta);
+            memberCountElement.textContent = `${newCount} member${newCount !== 1 ? 's' : ''}`;
+        }
+    }
+
+    const popularCard = document.querySelector(`.creator-card[data-group-id="${groupId}"]`);
+    if (popularCard) {
+        const bio = popularCard.querySelector('.creator-bio');
+        if (bio) {
+            const currentText = bio.textContent.trim();
+            const currentCount = parseInt(currentText.match(/\d+/)?.[0] || '0');
+            const newCount = Math.max(0, currentCount + delta);
+            bio.textContent = `${newCount} member${newCount !== 1 ? 's' : ''}`;
+        }
+    }
 };
+
+//popular group join button in cards 
+document.addEventListener('click', async function (e) {
+    const btn = e.target.closest('.follow-btn[data-group-id]');
+    if (!btn) return;
+    if (btn.dataset.busy === '1') return;
+    if (btn.dataset.state === 'pending') return;
+
+    const groupId = btn.dataset.groupId;
+    const isJoined = (btn.dataset.state === 'joined') || btn.classList.contains('followed');
+    const subAction = isJoined ? 'leave' : 'join';
+
+    const originalText = btn.textContent.trim();
+    btn.dataset.busy = '1';
+    btn.textContent = isJoined ? 'Leaving...' : 'Joining...';
+
+    try {
+        const response = await fetch(BASE_PATH + 'index.php?controller=Group&action=handleAjax', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: `sub_action=${encodeURIComponent(subAction)}&group_id=${encodeURIComponent(groupId)}`
+        });
+
+        const data = await response.json();
+        const message = (data && data.message) ? String(data.message) : '';
+        if ((!data || !data.success) && subAction === 'join' && /already joined/i.test(message)) {
+            btn.dataset.state = 'joined';
+            btn.classList.add('followed');
+            btn.textContent = 'Joined';
+            btn.dataset.busy = '0';
+            return;
+        }
+
+        if (subAction === 'join') {
+            if (data.membership_state === 'pending' || data.pending) {
+                btn.dataset.state = 'pending';
+                btn.textContent = 'Requested';
+                btn.disabled = true;
+            } else {
+                btn.dataset.state = 'joined';
+                btn.classList.add('followed');
+                btn.textContent = 'Joined';
+                if (window.updateSidebarGroupMemberCount) window.updateSidebarGroupMemberCount(groupId, 1);
+            }
+        } else {
+            btn.dataset.state = 'idle';
+            btn.classList.remove('followed');
+            btn.textContent = 'Join';
+            if (window.updateSidebarGroupMemberCount) window.updateSidebarGroupMemberCount(groupId, -1);
+        }
+
+        if (typeof showToast === 'function') {
+            showToast(data.message || 'Updated successfully', 'success');
+        }
+    } catch (err) {
+        btn.textContent = originalText;
+        if (typeof showToast === 'function') {
+            showToast(err.message || 'Failed', 'error');
+        }
+    } finally {
+        btn.dataset.busy = '0';
+    }
+});

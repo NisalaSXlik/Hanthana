@@ -1,5 +1,73 @@
 // Group Post Interactions - Upvote, Downvote, Bookmark
 document.addEventListener('DOMContentLoaded', function() {
+    const getCountElement = (button) => {
+        if (!button) return null;
+        return button.querySelector('.action-count, .interaction-count, small');
+    };
+
+    const setBookmarkVisualState = (button, isBookmarked) => {
+        if (!button) return;
+
+        const icon = button.querySelector('i');
+        button.classList.toggle('bookmarked', !!isBookmarked);
+        button.setAttribute('aria-pressed', isBookmarked ? 'true' : 'false');
+
+        if (!icon) return;
+
+        icon.classList.toggle('bookmarked', !!isBookmarked);
+        icon.classList.remove('uil-bookmark', 'uil-bookmark-full', 'uis-bookmark', 'uil', 'uis');
+
+        if (isBookmarked) {
+            icon.classList.add('uis', 'uis-bookmark');
+        } else {
+            icon.classList.add('uil', 'uil-bookmark');
+        }
+    };
+
+    const updateBookmarkStateInKnownLists = (postId, isBookmarked) => {
+        const collections = [
+            window.PERSONAL_POSTS,
+            window.GROUP_POSTS,
+            window.SAVED_POSTS,
+            window.POSTS,
+        ];
+
+        collections.forEach((collection) => {
+            if (!Array.isArray(collection)) return;
+            collection.forEach((post) => {
+                if (!post) return;
+                const candidateId = parseInt(post.post_id ?? post.postId ?? 0, 10);
+                if (candidateId !== postId) return;
+
+                post.is_bookmarked = isBookmarked ? 1 : 0;
+                post.isBookmarked = !!isBookmarked;
+            });
+        });
+    };
+
+    const syncBookmarkStateAcrossPage = (postId, isBookmarked) => {
+        const normalizedPostId = parseInt(postId, 10);
+        if (!normalizedPostId) return;
+
+        if (typeof window.__hanthanaSetBookmarkState === 'function') {
+            window.__hanthanaSetBookmarkState(normalizedPostId, !!isBookmarked);
+            return;
+        }
+
+        const selector = `.bookmark-btn[data-post-id="${normalizedPostId}"]`;
+        document.querySelectorAll(selector).forEach((button) => {
+            setBookmarkVisualState(button, !!isBookmarked);
+        });
+
+        updateBookmarkStateInKnownLists(normalizedPostId, !!isBookmarked);
+
+        window.dispatchEvent(new CustomEvent('hanthana:bookmark-changed', {
+            detail: {
+                postId: normalizedPostId,
+                bookmarked: !!isBookmarked,
+            },
+        }));
+    };
     
     // ===== UPVOTE & DOWNVOTE FUNCTIONALITY =====
     document.addEventListener('click', async function(e) {
@@ -22,8 +90,8 @@ document.addEventListener('DOMContentLoaded', function() {
         // Get both vote buttons and their counts
         const upvoteBtn = postCard.querySelector('.upvote-btn');
         const downvoteBtn = postCard.querySelector('.downvote-btn');
-        const upvoteCount = upvoteBtn?.querySelector('small');
-        const downvoteCount = downvoteBtn?.querySelector('small');
+        const upvoteCount = getCountElement(upvoteBtn);
+        const downvoteCount = getCountElement(downvoteBtn);
 
         // Visual feedback - disable during request
         voteBtn.style.opacity = '0.6';
@@ -114,13 +182,10 @@ document.addEventListener('DOMContentLoaded', function() {
         // Visual feedback
         const icon = bookmarkBtn.querySelector('i');
         const wasBookmarked = icon?.classList.contains('bookmarked') || bookmarkBtn.classList.contains('bookmarked');
+        const nextState = !wasBookmarked;
 
-        // Optimistic UI update
-        if (icon) {
-            icon.classList.toggle('bookmarked');
-            icon.classList.toggle('uil-bookmark');
-            icon.classList.toggle('uil-bookmark-full');
-        }
+        // Optimistic UI update across all visible copies.
+        syncBookmarkStateAcrossPage(postId, nextState);
 
         try {
             const formData = new FormData();
@@ -135,17 +200,14 @@ document.addEventListener('DOMContentLoaded', function() {
             const data = await response.json();
 
             if (data.success) {
+                syncBookmarkStateAcrossPage(postId, !!data.bookmarked);
                 if (window.showToast) {
-                    const message = wasBookmarked ? 'Bookmark removed' : '✓ Post bookmarked';
+                    const message = data.bookmarked ? '✓ Post bookmarked' : 'Bookmark removed';
                     window.showToast(message, 'success');
                 }
             } else {
                 // Revert on failure
-                if (icon) {
-                    icon.classList.toggle('bookmarked');
-                    icon.classList.toggle('uil-bookmark');
-                    icon.classList.toggle('uil-bookmark-full');
-                }
+                syncBookmarkStateAcrossPage(postId, wasBookmarked);
                 if (window.showToast) {
                     window.showToast(data.message || '✗ Bookmark failed', 'error');
                 }
@@ -153,11 +215,7 @@ document.addEventListener('DOMContentLoaded', function() {
         } catch (error) {
             console.error('Bookmark error:', error);
             // Revert on error
-            if (icon) {
-                icon.classList.toggle('bookmarked');
-                icon.classList.toggle('uil-bookmark');
-                icon.classList.toggle('uil-bookmark-full');
-            }
+            syncBookmarkStateAcrossPage(postId, wasBookmarked);
             if (window.showToast) {
                 window.showToast('✗ Network error', 'error');
             }

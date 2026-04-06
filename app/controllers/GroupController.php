@@ -36,6 +36,9 @@ class GroupController {
             exit();
         }
 
+        // Persist active group context for cross-page navigation (e.g. File Bank).
+        $_SESSION['current_group_id'] = (int)$group['group_id'];
+
         $isCreator = (int)$group['created_by'] === $userId;
         $isAdmin = $this->groupModel->isGroupAdmin($groupId, $userId);
         $joinedGroups = $this->groupModel->getGroupsJoinedBy($userId);
@@ -80,8 +83,12 @@ class GroupController {
 
         // If admin, load pending join requests to surface in view
         $pendingRequests = [];
+        $roleChangeRequests = [];
+        $deleteApprovalStatus = null;
         if ($isAdmin) {
             $pendingRequests = $this->groupModel->getPendingRequests($groupId);
+            $roleChangeRequests = $this->groupModel->getRoleChangeRequests($groupId, $userId);
+            $deleteApprovalStatus = $this->groupModel->getDeleteApprovalStatus($groupId, $userId);
         }
 
         $groupResourceBuckets = $groupPostModel->getGroupResourceLibrary($groupId);
@@ -118,6 +125,8 @@ class GroupController {
             header('Location: ' . BASE_PATH . 'index.php?controller=Feed&action=index&error=group_not_found');
             exit();
         }
+
+        $_SESSION['current_group_id'] = (int)$group['group_id'];
 
         $isAdmin = $this->groupModel->isGroupAdmin($groupId, $userId);
         if (!$isAdmin) {
@@ -163,6 +172,9 @@ class GroupController {
                 case 'votePollOption': $this->votePollOption(); break;
                 case 'fetchPollVotes': $this->fetchPollVotes(); break;
                 case 'toggleEventReminder': $this->toggleEventReminder($input); break;
+                case 'propose_role_change': $this->proposeRoleChange(); break;
+                case 'vote_role_change': $this->voteRoleChange(); break;
+                case 'approve_delete_group': $this->approveDeleteGroup(); break;
                 default: echo json_encode(['success' => false, 'message' => 'Invalid action']);
         }
         exit;
@@ -180,9 +192,9 @@ class GroupController {
                 return;
             }
             $group = $this->groupModel->getById($groupId);
-            if (!$group || $group['created_by'] != $userId) {
+            if (!$group || !$this->groupModel->isGroupAdmin($groupId, $userId)) {
                 error_log('DEBUG: Permission denied for user ' . $userId . ' on group ' . $groupId);
-                echo json_encode(['success' => false, 'message' => 'Permission denied.']);
+                echo json_encode(['success' => false, 'message' => 'Only group admins can edit this group.']);
                 return;
             }
 
@@ -339,18 +351,13 @@ class GroupController {
                 return;
             }
 
-            // Check if user is creator
-            $group = $this->groupModel->getById($groupId);
-            if (!$group || $group['created_by'] != $userId) {
-                echo json_encode(['success' => false, 'message' => 'Unauthorized']);
+            if (!$this->groupModel->isGroupAdmin((int)$groupId, (int)$userId)) {
+                echo json_encode(['success' => false, 'message' => 'Only admins can approve group deletion']);
                 return;
             }
 
-            if ($this->groupModel->deleteGroup($groupId)) {
-                echo json_encode(['success' => true, 'message' => 'Group deleted successfully']);
-            } else {
-                echo json_encode(['success' => false, 'message' => 'Failed to delete group']);
-            }
+            $result = $this->groupModel->approveGroupDeletion((int)$groupId, (int)$userId);
+            echo json_encode($result);
         } catch (Exception $e) {
             echo json_encode(['success' => false, 'message' => 'Error: ' . $e->getMessage()]);
         }
@@ -664,7 +671,7 @@ class GroupController {
             // Check if user is a member of the group
             $membershipState = $this->groupModel->getUserMembershipState($groupId, $userId);
             
-            if ($membershipState !== 'joined') {
+            if ($membershipState !== 'active') {
                 echo json_encode(['success' => false, 'message' => 'You must be a member to post']);
                 return;
             }
@@ -760,9 +767,16 @@ class GroupController {
 
             $groupId = (int)$post['group_id'];
             $isMember = $this->groupModel->isMember($groupId, $userId);
-            error_log("votePollOption: isMember = " . ($isMember ? 'true' : 'false'));
+            $group = $this->groupModel->getById($groupId);
+            $isPublicGroup = $group && strtolower(trim((string)($group['privacy_status'] ?? 'public'))) === 'public';
+            error_log("votePollOption: isMember = " . ($isMember ? 'true' : 'false') . ", isPublicGroup = " . ($isPublicGroup ? 'true' : 'false'));
+
+            if (!$group) {
+                echo json_encode(['success' => false, 'message' => 'Group not found']);
+                return;
+            }
             
-            if (!$isMember) {
+            if (!$isMember && !$isPublicGroup) {
                 echo json_encode(['success' => false, 'message' => 'Join the group to vote']);
                 return;
             }
@@ -813,7 +827,16 @@ class GroupController {
             }
 
             $groupId = (int)$post['group_id'];
-            if (!$this->groupModel->isMember($groupId, $userId)) {
+            $isMember = $this->groupModel->isMember($groupId, $userId);
+            $group = $this->groupModel->getById($groupId);
+            $isPublicGroup = $group && strtolower(trim((string)($group['privacy_status'] ?? 'public'))) === 'public';
+
+            if (!$group) {
+                echo json_encode(['success' => false, 'message' => 'Group not found']);
+                return;
+            }
+
+            if (!$isMember && !$isPublicGroup) {
                 echo json_encode(['success' => false, 'message' => 'Join the group to view poll votes']);
                 return;
             }
@@ -846,6 +869,54 @@ class GroupController {
 
         $pending = $this->groupModel->getPendingRequests($groupId);
         echo json_encode(['success' => true, 'requests' => $pending]);
+    }
+
+    private function proposeRoleChange() {
+        $adminId = (int)($_SESSION['user_id'] ?? 0);
+        $groupId = isset($_POST['group_id']) ? (int)$_POST['group_id'] : 0;
+        $targetUserId = isset($_POST['target_user_id']) ? (int)$_POST['target_user_id'] : 0;
+        $requestedRole = isset($_POST['requested_role']) ? trim((string)$_POST['requested_role']) : '';
+
+        if ($groupId <= 0 || $targetUserId <= 0 || $requestedRole === '') {
+            echo json_encode(['success' => false, 'message' => 'Missing required parameters.']);
+            return;
+        }
+
+        $result = $this->groupModel->createRoleChangeRequest($groupId, $targetUserId, $requestedRole, $adminId);
+        if (!empty($result['success'])) {
+            $result['requests'] = $this->groupModel->getRoleChangeRequests($groupId, $adminId);
+        }
+        echo json_encode($result);
+    }
+
+    private function voteRoleChange() {
+        $adminId = (int)($_SESSION['user_id'] ?? 0);
+        $groupId = isset($_POST['group_id']) ? (int)$_POST['group_id'] : 0;
+        $requestId = isset($_POST['request_id']) ? (int)$_POST['request_id'] : 0;
+
+        if ($groupId <= 0 || $requestId <= 0) {
+            echo json_encode(['success' => false, 'message' => 'Missing required parameters.']);
+            return;
+        }
+
+        $result = $this->groupModel->approveRoleChangeRequest($groupId, $requestId, $adminId);
+        if (!empty($result['success'])) {
+            $result['requests'] = $this->groupModel->getRoleChangeRequests($groupId, $adminId);
+        }
+        echo json_encode($result);
+    }
+
+    private function approveDeleteGroup() {
+        $adminId = (int)($_SESSION['user_id'] ?? 0);
+        $groupId = isset($_POST['group_id']) ? (int)$_POST['group_id'] : 0;
+
+        if ($groupId <= 0) {
+            echo json_encode(['success' => false, 'message' => 'Group ID required']);
+            return;
+        }
+
+        $result = $this->groupModel->approveGroupDeletion($groupId, $adminId);
+        echo json_encode($result);
     }
 
 }

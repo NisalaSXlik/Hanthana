@@ -8,7 +8,7 @@ $questionCategories = isset($categories) && is_array($categories) ? $categories 
             <h2>Craft Your Question</h2>
             <button class="modal-close" id="closeModal"><i class="uil uil-times"></i></button>
         </div>
-        <form id="askQuestionForm" class="question-template-form">
+        <form id="askQuestionForm" class="question-template-form hf-form" enctype="multipart/form-data">
             <section class="template-section">
                 <div class="template-label-row">
                     <label>Question style</label>
@@ -45,24 +45,6 @@ $questionCategories = isset($categories) && is_array($categories) ? $categories 
                 <div class="char-count" data-for="problem_statement">0 / 400</div>
             </div>
 
-            <div class="template-field">
-                <label>Context / environment</label>
-                <textarea name="context_details" data-maxlength="400" maxlength="400" placeholder="Share stack, versions, constraints, or relevant background."></textarea>
-                <div class="char-count" data-for="context_details">0 / 400</div>
-            </div>
-
-            <div class="template-field">
-                <label>What have you tried?</label>
-                <textarea name="attempts" data-maxlength="400" maxlength="400" placeholder="List approaches, code snippets, or research already done."></textarea>
-                <div class="char-count" data-for="attempts">0 / 400</div>
-            </div>
-
-            <div class="template-field">
-                <label>Expected outcome</label>
-                <textarea name="expected_outcome" data-maxlength="300" maxlength="300" placeholder="Clarify the goal or result you're aiming for."></textarea>
-                <div class="char-count" data-for="expected_outcome">0 / 300</div>
-            </div>
-
             <div class="template-columns">
                 <div class="template-field">
                     <label>Topics (comma separated)</label>
@@ -72,10 +54,15 @@ $questionCategories = isset($categories) && is_array($categories) ? $categories 
                     <h4>Quick tips</h4>
                     <ul>
                         <li>Share reproducible details.</li>
-                        <li>Highlight expected vs. actual output.</li>
                         <li>Add tags so the right folks find it.</li>
                     </ul>
                 </div>
+            </div>
+
+            <div class="template-field">
+                <label>Attachment (optional)</label>
+                <input type="file" name="attachment_file" accept=".pdf,.doc,.docx,.txt,.jpg,.png,.zip,.xlsx">
+                <small>Allowed types: PDF, DOC, DOCX, TXT, JPG, PNG, ZIP, XLSX.</small>
             </div>
 
             <div class="template-actions">

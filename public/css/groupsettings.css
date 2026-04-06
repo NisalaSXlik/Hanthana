@@ -1,0 +1,193 @@
+/* Group settings page: events-like header + groupreports-like cards */
+
+.group-settings-page .middle {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.group-settings-header {
+    background: var(--color-white);
+    border: 1px solid var(--gray-200, var(--color-light));
+    border-radius: 12px;
+    padding: 1.25rem 1.5rem;
+    box-shadow: 0 2px 10px rgba(15, 23, 42, 0.06);
+}
+
+.group-settings-header h1 {
+    margin: 0 0 0.45rem;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    color: var(--color-dark);
+    font-size: 1.75rem;
+    font-weight: 600;
+}
+
+.group-settings-header h1 i {
+    font-size: 2rem;
+    color: var(--color-primary);
+}
+
+.group-settings-header p {
+    margin: 0;
+    color: var(--color-gray);
+    font-size: 0.95rem;
+}
+
+.gs-card {
+    background: var(--color-white);
+    border: 1px solid var(--gray-200, var(--color-light));
+    border-radius: 12px;
+    padding: 1rem;
+    box-shadow: 0 1px 6px rgba(15, 23, 42, 0.05);
+}
+
+.gs-card h3 {
+    margin-bottom: 0.25rem;
+}
+
+.gs-card p {
+    color: var(--color-gray);
+    margin-bottom: 1rem;
+}
+
+.gs-section {
+    background: var(--color-white);
+    border: 1px solid var(--color-light);
+    border-radius: 10px;
+    padding: 1rem;
+    margin-bottom: 0.9rem;
+}
+
+.gs-section-media {
+    background: #f9fcfa;
+}
+
+.gs-section-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.75rem;
+    padding-bottom: 0.55rem;
+    border-bottom: 1px dashed var(--color-light);
+}
+
+.gs-section-head h4 {
+    margin: 0;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    font-size: 0.98rem;
+    color: var(--color-dark);
+}
+
+.gs-section-tag {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--color-primary);
+    background: rgba(14, 165, 233, 0.12);
+    border-radius: 999px;
+    padding: 0.2rem 0.55rem;
+}
+
+.gs-form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    align-items: start;
+}
+
+.gs-form-grid .form-group {
+    margin: 0;
+}
+
+.gs-form-grid input[type="text"],
+.gs-form-grid textarea,
+.gs-form-grid select,
+.gs-form-grid input[type="file"] {
+    width: 100%;
+}
+
+.gs-full {
+    grid-column: 1 / -1;
+}
+
+.gs-media-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.8rem;
+}
+
+.gs-preview {
+    margin-top: 0.5rem;
+    width: 100%;
+    max-height: 220px;
+    object-fit: cover;
+    border-radius: 0.6rem;
+    border: 1px solid var(--color-light);
+}
+
+.gs-preview.dp {
+    width: 132px;
+    height: 132px;
+    border-radius: 999px;
+    margin-left: 0;
+}
+
+.gs-message {
+    display: none;
+    margin-bottom: 0.85rem;
+    padding: 0.75rem 0.9rem;
+    border-radius: 0.5rem;
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+
+.gs-message.success {
+    display: block;
+    color: #0b4f2e;
+    background: #d8f4e4;
+    border: 1px solid #9fd9ba;
+}
+
+.gs-message.error {
+    display: block;
+    color: #8a1f2a;
+    background: #ffe3e7;
+    border: 1px solid #f4a7b2;
+}
+
+.gs-submit-row {
+    margin-top: 0.4rem;
+    padding-top: 0.95rem;
+    border-top: 1px solid var(--color-light);
+    display: flex;
+    justify-content: flex-end;
+}
+
+.gs-submit-row .btn {
+    padding: 0.7rem 1.2rem;
+}
+
+@media screen and (max-width: 768px) {
+    .group-settings-header {
+        padding: 1rem;
+    }
+
+    .group-settings-header h1 {
+        font-size: 1.45rem;
+    }
+
+    .group-settings-header h1 i {
+        font-size: 1.6rem;
+    }
+
+    .gs-form-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .gs-media-grid {
+        grid-template-columns: 1fr;
+    }
+}
