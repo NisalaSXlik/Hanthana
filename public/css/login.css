@@ -44,6 +44,51 @@
     font-size: 1rem;
     background: var(--color-light);
 }
+
+.signup-card .form-group-l select {
+    width: 100%;
+    padding: 0 40px 0 44px;
+    min-height: var(--auth-control-height);
+    border-radius: inherit;
+    border: none !important;
+    font-size: 1rem;
+    background: transparent;
+    color: var(--color-dark);
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    cursor: pointer;
+    line-height: 1;
+    box-shadow: none !important;
+}
+
+.signup-card .form-group-l select:focus {
+    outline: none;
+    box-shadow: none !important;
+}
+
+.signup-card .form-group-l.has-dropdown {
+    padding: 0;
+    overflow: hidden;
+}
+
+.signup-card .form-group-l.has-dropdown::after {
+    content: '';
+    position: absolute;
+    right: 16px;
+    top: 50%;
+    transform: translateY(-35%);
+    width: 0;
+    height: 0;
+    border-left: 5px solid transparent;
+    border-right: 5px solid transparent;
+    border-top: 6px solid var(--color-gray);
+    pointer-events: none;
+}
+
+.signup-card .form-group-l.has-dropdown:focus-within::after {
+    border-top-color: var(--color-primary);
+}
 .signup-card .btn-block {
     width: 100%;
     padding: 1rem 0;

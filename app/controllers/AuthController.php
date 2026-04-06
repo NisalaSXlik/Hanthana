@@ -135,7 +135,7 @@ class AuthController {
                 'password' => $data['password'],
                 'username' => trim($data['username']),
                 'bio' => $data['bio'] ?? null,
-                'university' => $data['university'] ?? null,
+                'university' => trim($data['university'] ?? ''),
                 'date_of_birth' => $data['date_of_birth'] ?? null,
                 'location' => $data['location'] ?? null
             ];
@@ -439,13 +439,34 @@ class AuthController {
     // Validate registration data
     private function validateRegistration($data) {
         $errors = [];
+
+        $allowedUniversities = [
+            'University of Colombo',
+            'University of Peradeniya',
+            'University of Moratuwa',
+            'University of Sri Jayewardenepura',
+            'University of Kelaniya',
+            'University of Ruhuna',
+            'University of Jaffna',
+            'Uva Wellassa University',
+            'Rajarata University of Sri Lanka',
+            'Sabaragamuwa University of Sri Lanka',
+            'South Eastern University of Sri Lanka',
+            'Eastern University Sri Lanka',
+            'Wayamba University of Sri Lanka',
+            'University of Vavuniya'
+        ];
         
         // Required fields
-        $required = ['first_name', 'last_name', 'email', 'phone', 'password', 'username'];
+        $required = ['first_name', 'last_name', 'email', 'phone', 'password', 'username', 'university'];
         foreach ($required as $field) {
             if (empty($data[$field])) {
                 $errors[] = ucfirst(str_replace('_', ' ', $field)) . " is required.";
             }
+        }
+
+        if (!empty($data['university']) && !in_array(trim($data['university']), $allowedUniversities, true)) {
+            $errors[] = "Please select a valid university.";
         }
         
         // Email validation

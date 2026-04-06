@@ -76,6 +76,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <input type="tel" name="phone" placeholder="Phone Number" pattern="[0-9]{10}" required
                            value="<?php echo isset($_POST['phone']) ? htmlspecialchars($_POST['phone']) : ''; ?>">
                 </div>
+
+                <div class="form-group-l signup-form-group hf-icon-field has-dropdown">
+                    <i class="uil uil-graduation-cap"></i>
+                    <select name="university" required>
+                        <option value="">Select University</option>
+                        <option value="University of Colombo" <?php echo (isset($_POST['university']) && $_POST['university'] === 'University of Colombo') ? 'selected' : ''; ?>>University of Colombo</option>
+                        <option value="University of Peradeniya" <?php echo (isset($_POST['university']) && $_POST['university'] === 'University of Peradeniya') ? 'selected' : ''; ?>>University of Peradeniya</option>
+                        <option value="University of Moratuwa" <?php echo (isset($_POST['university']) && $_POST['university'] === 'University of Moratuwa') ? 'selected' : ''; ?>>University of Moratuwa</option>
+                        <option value="University of Sri Jayewardenepura" <?php echo (isset($_POST['university']) && $_POST['university'] === 'University of Sri Jayewardenepura') ? 'selected' : ''; ?>>University of Sri Jayewardenepura</option>
+                        <option value="University of Kelaniya" <?php echo (isset($_POST['university']) && $_POST['university'] === 'University of Kelaniya') ? 'selected' : ''; ?>>University of Kelaniya</option>
+                        <option value="University of Ruhuna" <?php echo (isset($_POST['university']) && $_POST['university'] === 'University of Ruhuna') ? 'selected' : ''; ?>>University of Ruhuna</option>
+                        <option value="University of Jaffna" <?php echo (isset($_POST['university']) && $_POST['university'] === 'University of Jaffna') ? 'selected' : ''; ?>>University of Jaffna</option>
+                        <option value="Uva Wellassa University" <?php echo (isset($_POST['university']) && $_POST['university'] === 'Uva Wellassa University') ? 'selected' : ''; ?>>Uva Wellassa University</option>
+                        <option value="Rajarata University of Sri Lanka" <?php echo (isset($_POST['university']) && $_POST['university'] === 'Rajarata University of Sri Lanka') ? 'selected' : ''; ?>>Rajarata University of Sri Lanka</option>
+                        <option value="Sabaragamuwa University of Sri Lanka" <?php echo (isset($_POST['university']) && $_POST['university'] === 'Sabaragamuwa University of Sri Lanka') ? 'selected' : ''; ?>>Sabaragamuwa University of Sri Lanka</option>
+                        <option value="South Eastern University of Sri Lanka" <?php echo (isset($_POST['university']) && $_POST['university'] === 'South Eastern University of Sri Lanka') ? 'selected' : ''; ?>>South Eastern University of Sri Lanka</option>
+                        <option value="Eastern University Sri Lanka" <?php echo (isset($_POST['university']) && $_POST['university'] === 'Eastern University Sri Lanka') ? 'selected' : ''; ?>>Eastern University Sri Lanka</option>
+                        <option value="Wayamba University of Sri Lanka" <?php echo (isset($_POST['university']) && $_POST['university'] === 'Wayamba University of Sri Lanka') ? 'selected' : ''; ?>>Wayamba University of Sri Lanka</option>
+                        <option value="University of Vavuniya" <?php echo (isset($_POST['university']) && $_POST['university'] === 'University of Vavuniya') ? 'selected' : ''; ?>>University of Vavuniya</option>
+                    </select>
+                </div>
                 
                 <div class="form-group-l signup-form-group hf-icon-field">
                     <i class="uil uil-lock"></i>

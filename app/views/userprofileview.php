@@ -75,7 +75,7 @@ $currentUser = $userModel->findById($_SESSION['user_id']);
                             <p class="profile-bio"><?php echo htmlspecialchars($bio); ?></p>
                             
                             <div class="profile-meta">
-                                <span class="meta-location"><?php echo htmlspecialchars($location !== '' ? $location : 'Location not set'); ?></span>
+                                <span class="meta-location"><?php echo htmlspecialchars($university !== '' ? $university : 'University not specified'); ?></span>
                                 <a href="#" class="meta-contact-link">Contact info</a>
                             </div>
 
