@@ -257,8 +257,9 @@ class UserModel
     }
 
     public function getRecentUsers($limit = 5) {
-        $sql = "SELECT user_id, first_name, last_name, username, email, created_at, role
+        $sql = "SELECT user_id, first_name, last_name, username, email, profile_picture, created_at, role
                 FROM Users
+                WHERE is_active = TRUE
                 ORDER BY created_at DESC
                 LIMIT :limit";
         $stmt = $this->db->prepare($sql);

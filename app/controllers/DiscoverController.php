@@ -3,16 +3,22 @@ require_once __DIR__ . '/../../config/config.php';
 require_once __DIR__ . '/../models/PostModel.php';
 require_once __DIR__ . '/../models/GroupPostModel.php';
 require_once __DIR__ . '/../models/GroupModel.php';
+require_once __DIR__ . '/../models/UserModel.php';
+require_once __DIR__ . '/../models/FriendModel.php';
 
 class DiscoverController {
     private $postModel;
     private $groupPostModel;
     private $groupModel;
+    private $userModel;
+    private $friendModel;
 
     public function __construct() {
         $this->postModel = new PostModel();
         $this->groupPostModel = new GroupPostModel();
         $this->groupModel = new GroupModel();
+        $this->userModel = new UserModel();
+        $this->friendModel = new FriendModel();
     }
 
 
@@ -36,8 +42,8 @@ class DiscoverController {
         $allPosts = $this->filterDiscoverPosts($allPosts);
 
         // Sidebar data
-        $trendingHashtags = $this->postModel->getTrendingHashtags(10, 7);
         $popularGroups = $this->groupModel->getPopularGroups(8, $userId);
+        $recentUsers = $this->userModel->getRecentUsers(5);
 
         $joinedGroups = $this->groupModel->getGroupsJoinedBy((int)$userId);
         $joinedMap = [];
@@ -55,6 +61,21 @@ class DiscoverController {
             $group['is_member'] = !empty($joinedMap[$groupId]);
         }
         unset($group);
+
+        foreach ($recentUsers as &$recentUser) {
+            $recentUser['profile_picture'] = !empty($recentUser['profile_picture'])
+                ? MediaHelper::resolveMediaPath($recentUser['profile_picture'], 'uploads/user_dp/default.png')
+                : MediaHelper::resolveMediaPath('', 'uploads/user_dp/default.png');
+
+            $recentUserId = (int)($recentUser['user_id'] ?? 0);
+            if ($recentUserId > 0 && $recentUserId !== (int)$userId) {
+                $rawFriendState = $this->friendModel->getFriendshipStatus((int)$userId, $recentUserId);
+                $recentUser['friend_state'] = $this->mapFriendshipStateForButton($rawFriendState);
+            } else {
+                $recentUser['friend_state'] = 'self';
+            }
+        }
+        unset($recentUser);
 
         require_once __DIR__ . '/../views/discover.php';
     }
@@ -151,6 +172,22 @@ class DiscoverController {
             
             return false;
         }));
+    }
+
+    private function mapFriendshipStateForButton(string $state): string {
+        switch ($state) {
+            case 'friends':
+                return 'friends';
+            case 'pending_them':
+                return 'pending_outgoing';
+            case 'pending_me':
+                return 'incoming_pending';
+            case 'blocked':
+                return 'blocked';
+            case 'none':
+            default:
+                return 'none';
+        }
     }
 
     // AJAX endpoint to load more posts

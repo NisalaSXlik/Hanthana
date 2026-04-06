@@ -105,61 +105,78 @@ $incomingFriendRequests = $friendModel->getIncomingRequests($currentUserId);
             </div>
 
             <div class="right">
-                <div class="friend-requests">
-                    <div class="heading">
-                        <h4>Trending Hashtags</h4>
-                    </div>
-                    <?php if (!empty($trendingHashtags)): ?>
-                        <?php foreach ($trendingHashtags as $tag): ?>
-                            <div class="request">
-                                <div class="info">
-                                    <div>
-                                        <h5><?php echo htmlspecialchars($tag['hashtag']); ?></h5>
-                                        <p>#<?php echo (int)$tag['rank']; ?> • <?php echo (int)$tag['count']; ?> posts</p>
-                                    </div>
-                                </div>
-                            </div>
-                        <?php endforeach; ?>
-                    <?php else: ?>
-                        <div class="friend-requests-empty">No trending hashtags.</div>
-                    <?php endif; ?>
-                </div>
-
-                <div class="friend-requests">
-                    <div class="heading">
+                <div class="suggested-section">
+                    <div class="section-header">
                         <h4>Popular Groups</h4>
                     </div>
-                    <?php if (!empty($popularGroups)): ?>
-                        <?php foreach ($popularGroups as $group): ?>
-                            <div class="request" data-group-id="<?php echo (int)$group['group_id']; ?>">
-                                <div class="info">
-                                    <a href="<?php echo BASE_PATH; ?>index.php?controller=Group&action=index&group_id=<?php echo (int)$group['group_id']; ?>" class="discover-group-link">
-                                        <div class="profile-picture discover-group-avatar-wrap">
-                                            <img src="<?php echo htmlspecialchars($group['display_picture'] ?? BASE_PATH . 'images/default_group.png'); ?>" alt="<?php echo htmlspecialchars($group['name']); ?>">
+                    <div class="creator-list">
+                        <?php if (!empty($popularGroups)): ?>
+                            <?php foreach ($popularGroups as $group): ?>
+                                <div class="creator-card" data-group-id="<?php echo (int)$group['group_id']; ?>">
+                                    <a href="<?php echo BASE_PATH; ?>index.php?controller=Group&action=index&group_id=<?php echo (int)$group['group_id']; ?>"
+                                       class="creator-info" style="text-decoration:none;color:inherit;">
+                                        <img src="<?php echo htmlspecialchars($group['display_picture'] ?? BASE_PATH . 'images/default_group.png'); ?>"
+                                             class="creator-avatar" alt="<?php echo htmlspecialchars($group['name']); ?>">
+                                        <div class="creator-details">
+                                            <h5><?php echo htmlspecialchars($group['name']); ?></h5>
+                                            <p class="creator-bio"><?php echo (int)$group['member_count']; ?> members</p>
                                         </div>
                                     </a>
-                                    <div>
-                                        <a href="<?php echo BASE_PATH; ?>index.php?controller=Group&action=index&group_id=<?php echo (int)$group['group_id']; ?>" class="discover-group-link">
-                                            <h5><?php echo htmlspecialchars($group['name']); ?></h5>
-                                        </a>
-                                        <p><?php echo (int)$group['member_count']; ?> members</p>
-                                    </div>
-                                </div>
-                                <div class="action">
+
                                     <?php $isMember = !empty($group['is_member']); ?>
                                     <button
-                                        class="btn btn-primary follow-btn <?php echo $isMember ? 'followed' : ''; ?>"
+                                        class="follow-btn <?php echo $isMember ? 'followed' : ''; ?>"
                                         data-group-id="<?php echo (int)$group['group_id']; ?>"
                                         data-state="<?php echo $isMember ? 'joined' : 'idle'; ?>"
                                     >
                                         <?php echo $isMember ? 'Joined' : 'Join'; ?>
                                     </button>
                                 </div>
-                            </div>
-                        <?php endforeach; ?>
-                    <?php else: ?>
-                        <div class="friend-requests-empty">No popular groups found.</div>
-                    <?php endif; ?>
+                            <?php endforeach; ?>
+                        <?php else: ?>
+                            <p>No popular groups found.</p>
+                        <?php endif; ?>
+                    </div>
+                </div>
+
+                <div class="suggested-section" style="margin-top: 1rem;">
+                    <div class="section-header">
+                        <h4>Recently Joined</h4>
+                    </div>
+                    <div class="creator-list">
+                        <?php if (!empty($recentUsers)): ?>
+                            <?php foreach ($recentUsers as $recentUser): ?>
+                                <div class="creator-card">
+                                    <a href="<?php echo BASE_PATH; ?>index.php?controller=Profile&action=view&user_id=<?php echo (int)$recentUser['user_id']; ?>"
+                                       class="creator-info" style="text-decoration:none;color:inherit;">
+                                        <img src="<?php echo htmlspecialchars($recentUser['profile_picture'] ?? BASE_PATH . 'uploads/user_dp/default.png'); ?>"
+                                             class="creator-avatar" alt="<?php echo htmlspecialchars($recentUser['username'] ?? 'User'); ?>">
+                                        <div class="creator-details">
+                                            <h5><?php echo htmlspecialchars(trim(($recentUser['first_name'] ?? '') . ' ' . ($recentUser['last_name'] ?? '')) ?: ($recentUser['username'] ?? 'User')); ?></h5>
+                                        </div>
+                                    </a>
+
+                                    <?php if (($recentUser['friend_state'] ?? 'none') !== 'self'): ?>
+                                        <button
+                                            class="follow-btn add-friend-btn"
+                                            data-user-id="<?php echo (int)$recentUser['user_id']; ?>"
+                                            data-state="<?php echo htmlspecialchars($recentUser['friend_state'] ?? 'none'); ?>"
+                                            data-label-friends="Friend"
+                                            type="button"
+                                        >
+                                            <span>Add Friend</span>
+                                        </button>
+                                    <?php else: ?>
+                                        <button class="follow-btn" type="button" disabled>
+                                            You
+                                        </button>
+                                    <?php endif; ?>
+                                </div>
+                            <?php endforeach; ?>
+                        <?php else: ?>
+                            <p>No recent users found.</p>
+                        <?php endif; ?>
+                    </div>
                 </div>
             </div>
         </div>
@@ -173,6 +190,7 @@ $incomingFriendRequests = $friendModel->getIncomingRequests($currentUserId);
     <script src="./js/notificationpopup.js"></script>
     <script src="./js/discover.js"></script>
     <script src="./js/general.js"></script>
+    <script src="./js/friends.js"></script>
     <script src="./js/post.js"></script>
 </body>
 </html>

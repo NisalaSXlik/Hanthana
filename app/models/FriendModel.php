@@ -324,7 +324,7 @@ class FriendModel
     }
 
     /**
-     * Remove an accepted friendship between two users and decrement their friends_count.
+     * Remove an accepted friendship or cancel a pending request between two users.
      */
     public function removeFriendship(int $userId, int $otherUserId): array
     {
@@ -344,26 +344,30 @@ class FriendModel
             ]);
             $friendship = $stmt->fetch(PDO::FETCH_ASSOC);
 
-            if (!$friendship || $friendship['status'] !== 'accepted') {
-                throw new \RuntimeException('You are not friends.');
+            if (!$friendship) {
+                throw new \RuntimeException('No friendship found.');
             }
+
+            $status = (string)($friendship['status'] ?? '');
 
             // Delete friendship
             $del = $this->db->prepare('DELETE FROM Friends WHERE friendship_id = :id');
             $del->execute([':id' => (int)$friendship['friendship_id']]);
 
-            // Decrement both users' counts
-            $dec = $this->db->prepare(
-                'UPDATE Users SET friends_count = CASE WHEN friends_count > 0 THEN friends_count - 1 ELSE 0 END WHERE user_id IN (:a, :b)'
-            );
-            $dec->execute([':a' => $userId, ':b' => $otherUserId]);
+            if ($status === 'accepted') {
+                // Decrement both users' counts only when removing an accepted friendship
+                $dec = $this->db->prepare(
+                    'UPDATE Users SET friends_count = CASE WHEN friends_count > 0 THEN friends_count - 1 ELSE 0 END WHERE user_id IN (:a, :b)'
+                );
+                $dec->execute([':a' => $userId, ':b' => $otherUserId]);
+            }
 
             $counts = $this->getFriendCounts($userId, $otherUserId);
             $this->db->commit();
 
             return [
-                'status' => 'removed',
-                'message' => 'Friend removed successfully.',
+                'status' => $status === 'accepted' ? 'removed' : 'cancelled',
+                'message' => $status === 'accepted' ? 'Friend removed successfully.' : 'Friend request cancelled.',
                 'friend_count' => $counts[$userId] ?? null,
                 'friend_count_other' => $counts[$otherUserId] ?? null,
             ];
