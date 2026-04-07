@@ -164,6 +164,10 @@ class SettingsModel {
     // Privacy check methods
     public function canViewProfile($profileUserId, $viewerId) {
         if ($profileUserId == $viewerId) return true;
+
+        if ($this->isBlockedBetween($profileUserId, $viewerId)) {
+            return false;
+        }
         
         $settings = $this->getUserSettings($profileUserId);
         
@@ -180,6 +184,10 @@ class SettingsModel {
 
     public function canViewPosts($profileUserId, $viewerId) {
         if ($profileUserId == $viewerId) return true;
+
+        if ($this->isBlockedBetween($profileUserId, $viewerId)) {
+            return false;
+        }
         
         $settings = $this->getUserSettings($profileUserId);
         
@@ -196,6 +204,10 @@ class SettingsModel {
 
     public function canSendFriendRequest($profileUserId, $viewerId) {
         if ($profileUserId == $viewerId) return false;
+
+        if ($this->isBlockedBetween($profileUserId, $viewerId)) {
+            return false;
+        }
         
         $settings = $this->getUserSettings($profileUserId);
         
@@ -222,6 +234,52 @@ class SettingsModel {
         
         $settings = $this->getUserSettings($profileUserId);
         return $settings['show_phone'] == 1 && $this->canViewProfile($profileUserId, $viewerId);
+    }
+
+    public function isBlockedBetween($userId1, $userId2) {
+        $firstUserId = (int)$userId1;
+        $secondUserId = (int)$userId2;
+
+        if ($firstUserId <= 0 || $secondUserId <= 0 || $firstUserId === $secondUserId) {
+            return false;
+        }
+
+        return $this->isBlockedBy($firstUserId, $secondUserId)
+            || $this->isBlockedBy($secondUserId, $firstUserId);
+    }
+
+    public function isBlockedBy($blockerId, $blockedId) {
+        $firstUserId = (int)$blockerId;
+        $secondUserId = (int)$blockedId;
+
+        if ($firstUserId <= 0 || $secondUserId <= 0 || $firstUserId === $secondUserId) {
+            return false;
+        }
+
+        $queries = [
+            "SELECT 1
+             FROM BlockedUsers
+             WHERE blocker_id = ? AND blocked_id = ?
+             LIMIT 1",
+            "SELECT 1
+             FROM BlockedUsers
+             WHERE user_id = ? AND blocked_user_id = ?
+             LIMIT 1"
+        ];
+
+        foreach ($queries as $sql) {
+            try {
+                $stmt = $this->db->getConnection()->prepare($sql);
+                $stmt->execute([$firstUserId, $secondUserId]);
+                if ($stmt->fetchColumn() !== false) {
+                    return true;
+                }
+            } catch (PDOException $e) {
+                continue;
+            }
+        }
+
+        return false;
     }
 
     // Helper methods
@@ -325,21 +383,105 @@ class SettingsModel {
     }
 
     public function getBlockedUsers($userId) {
-        $sql = "SELECT u.user_id, u.username, u.first_name, u.last_name, u.profile_picture
-                FROM Users u
-                INNER JOIN BlockedUsers bu ON bu.blocked_user_id = u.user_id
-                WHERE bu.user_id = ? AND u.is_active = TRUE
-                ORDER BY u.username ASC";
-        
-        $stmt = $this->db->getConnection()->prepare($sql);
-        $stmt->execute([$userId]);
-        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        $queries = [
+            "SELECT u.user_id AS id, u.user_id, u.username, u.first_name, u.last_name,
+                    u.profile_picture AS avatar, u.profile_picture
+             FROM Users u
+             INNER JOIN BlockedUsers bu ON bu.blocked_user_id = u.user_id
+             WHERE bu.user_id = ? AND u.is_active = TRUE
+             ORDER BY u.username ASC",
+            "SELECT u.user_id AS id, u.user_id, u.username, u.first_name, u.last_name,
+                    u.profile_picture AS avatar, u.profile_picture
+             FROM Users u
+             INNER JOIN BlockedUsers bu ON bu.blocked_id = u.user_id
+             WHERE bu.blocker_id = ? AND u.is_active = TRUE
+             ORDER BY u.username ASC"
+        ];
+
+        foreach ($queries as $sql) {
+            try {
+                $stmt = $this->db->getConnection()->prepare($sql);
+                $stmt->execute([$userId]);
+                return $stmt->fetchAll(PDO::FETCH_ASSOC);
+            } catch (PDOException $e) {
+                continue;
+            }
+        }
+
+        return [];
+    }
+
+    public function blockUser($userId, $blockedUserId) {
+        $userId = (int)$userId;
+        $blockedUserId = (int)$blockedUserId;
+
+        if ($userId <= 0 || $blockedUserId <= 0 || $userId === $blockedUserId) {
+            return false;
+        }
+
+        $pdo = $this->db->getConnection();
+
+        try {
+            $pdo->beginTransaction();
+
+            try {
+                $removeFriendSql = "DELETE FROM Friends
+                                    WHERE (user_id = ? AND friend_id = ?)
+                                       OR (user_id = ? AND friend_id = ?)";
+                $removeFriendStmt = $pdo->prepare($removeFriendSql);
+                $removeFriendStmt->execute([$userId, $blockedUserId, $blockedUserId, $userId]);
+            } catch (PDOException $e) {
+                // Keep block flow working even if friendship cleanup schema differs.
+            }
+
+            $insertQueries = [
+                "INSERT IGNORE INTO BlockedUsers (user_id, blocked_user_id) VALUES (?, ?)",
+                "INSERT IGNORE INTO BlockedUsers (blocker_id, blocked_id) VALUES (?, ?)"
+            ];
+
+            $inserted = false;
+            foreach ($insertQueries as $sql) {
+                try {
+                    $stmt = $pdo->prepare($sql);
+                    $stmt->execute([$userId, $blockedUserId]);
+                    $inserted = true;
+                    break;
+                } catch (PDOException $e) {
+                    continue;
+                }
+            }
+
+            if (!$inserted) {
+                $pdo->rollBack();
+                return false;
+            }
+
+            $pdo->commit();
+            return true;
+        } catch (Exception $e) {
+            if ($pdo->inTransaction()) {
+                $pdo->rollBack();
+            }
+            return false;
+        }
     }
 
     public function unblockUser($userId, $blockedUserId) {
-        $sql = "DELETE FROM BlockedUsers WHERE user_id = ? AND blocked_user_id = ?";
-        $stmt = $this->db->getConnection()->prepare($sql);
-        return $stmt->execute([$userId, $blockedUserId]);
+        $queries = [
+            "DELETE FROM BlockedUsers WHERE user_id = ? AND blocked_user_id = ?",
+            "DELETE FROM BlockedUsers WHERE blocker_id = ? AND blocked_id = ?"
+        ];
+
+        foreach ($queries as $sql) {
+            try {
+                $stmt = $this->db->getConnection()->prepare($sql);
+                return $stmt->execute([$userId, $blockedUserId]);
+            } catch (PDOException $e) {
+                continue;
+            }
+        }
+
+        return false;
     }
 }
 ?>
