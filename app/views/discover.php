@@ -109,7 +109,7 @@ $incomingFriendRequests = $friendModel->getIncomingRequests($currentUserId);
                                 <div class="creator-card" data-group-id="<?php echo (int)$group['group_id']; ?>">
                                     <a href="<?php echo BASE_PATH; ?>index.php?controller=Group&action=index&group_id=<?php echo (int)$group['group_id']; ?>"
                                        class="creator-info" style="text-decoration:none;color:inherit;">
-                                        <img src="<?php echo htmlspecialchars($group['display_picture'] ?? BASE_PATH . 'images/default_group.png'); ?>"
+                                        <img src="<?php echo htmlspecialchars($group['display_picture'] ?? BASE_PATH . 'uploads/group_dp/default.png'); ?>"
                                              class="creator-avatar" alt="<?php echo htmlspecialchars($group['name']); ?>">
                                         <div class="creator-details">
                                             <h5><?php echo htmlspecialchars($group['name']); ?></h5>

@@ -477,7 +477,7 @@ body.page-discover .friend-requests .request .info {
     visibility: none;
 }
 
-.modal-content {
+.modal-overlay .modal-content {
     position: relative;
     background: var(--color-white);
     width: 420px;

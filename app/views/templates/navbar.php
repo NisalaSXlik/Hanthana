@@ -192,24 +192,6 @@ if (isset($_SESSION['user_id'])) {
                                 </div>
 
                                 <div class="form-group">
-                                    <label>Context / environment</label>
-                                    <textarea name="context_details" id="contextDetails" maxlength="400" placeholder="Share stack, versions, constraints, or relevant background."></textarea>
-                                    <div class="char-count" data-for="context_details">0 / 400</div>
-                                </div>
-
-                                <div class="form-group">
-                                    <label>What have you tried?</label>
-                                    <textarea name="attempts" id="attemptDetails" maxlength="400" placeholder="List approaches, code snippets, or research already done."></textarea>
-                                    <div class="char-count" data-for="attempts">0 / 400</div>
-                                </div>
-
-                                <div class="form-group">
-                                    <label>Expected outcome</label>
-                                    <textarea name="expected_outcome" id="expectedOutcome" maxlength="300" placeholder="Clarify the goal or result you're aiming for."></textarea>
-                                    <div class="char-count" data-for="expected_outcome">0 / 300</div>
-                                </div>
-
-                                <div class="form-group">
                                     <label>Topics (comma separated)</label>
                                     <input type="text" name="topics" id="questionTopics" placeholder="e.g., php, mysql, async">
                                 </div>
