@@ -61,26 +61,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 
                 <div class="form-group-l signup-form-group hf-icon-field">
                     <i class="uil uil-user"></i>
-                    <input type="text" name="username" placeholder="Username" required
+                    <input type="text" id="username" name="username" placeholder="Username" required autocomplete="username"
                            value="<?php echo isset($_POST['username']) ? htmlspecialchars($_POST['username']) : ''; ?>">
+                    <span id="username-status" class="hf-field-status" aria-live="polite"></span>
                 </div>
                 
                 <div class="form-group-l signup-form-group hf-icon-field">
                     <i class="uil uil-envelope"></i>
-                    <input type="email" name="email" placeholder="Email" required
+                    <input type="email" id="email" name="email" placeholder="Email" required autocomplete="email"
                            value="<?php echo isset($_POST['email']) ? htmlspecialchars($_POST['email']) : ''; ?>">
+                    <span id="email-status" class="hf-field-status" aria-live="polite"></span>
                 </div>
                 
                 <div class="form-group-l signup-form-group hf-icon-field">
                     <i class="uil uil-phone"></i>
-                    <input type="tel" name="phone" placeholder="Phone Number" pattern="[0-9]{10}" required
+                    <input type="tel" id="phone" name="phone" placeholder="Phone Number" pattern="[0-9]{10}" required
                            value="<?php echo isset($_POST['phone']) ? htmlspecialchars($_POST['phone']) : ''; ?>">
+                    <span id="phone-status" class="hf-field-status" aria-live="polite"></span>
                 </div>
 
                 <div class="form-group-l signup-form-group hf-icon-field has-dropdown">
                     <i class="uil uil-graduation-cap"></i>
-                    <select name="university" required>
-                        <option value="">Select University</option>
+                    <select id="university" name="university" required>
+                        <option value="" disabled <?php echo empty($_POST['university']) ? 'selected' : ''; ?>>Select University</option>
                         <option value="University of Colombo" <?php echo (isset($_POST['university']) && $_POST['university'] === 'University of Colombo') ? 'selected' : ''; ?>>University of Colombo</option>
                         <option value="University of Peradeniya" <?php echo (isset($_POST['university']) && $_POST['university'] === 'University of Peradeniya') ? 'selected' : ''; ?>>University of Peradeniya</option>
                         <option value="University of Moratuwa" <?php echo (isset($_POST['university']) && $_POST['university'] === 'University of Moratuwa') ? 'selected' : ''; ?>>University of Moratuwa</option>
@@ -101,11 +104,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <div class="form-group-l signup-form-group hf-icon-field">
                     <i class="uil uil-lock"></i>
                     <input type="password" name="password" placeholder="Password" required>
+                    <span id="password-status" class="hf-field-status" aria-live="polite"></span>
                 </div>
                 
                 <div class="form-group-l signup-form-group hf-icon-field">
                     <i class="uil uil-lock"></i>
-                    <input type="password" name="confirmPassword" placeholder="Confirm Password" required>
+                    <input type="password" id="confirmPassword" name="confirmPassword" placeholder="Confirm Password" required>
                 </div>
                 
                 <button type="submit" class="btn btn-primary btn-block">Sign Up</button>
@@ -128,6 +132,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         </div>
     </div>
 
+    <script>const BASE_PATH = '<?php echo BASE_PATH; ?>';</script>
     <script src="./js/signup.js"></script>
 </body>
 </html>

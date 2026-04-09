@@ -112,6 +112,20 @@ class CommentModel {
         return $row ? (int)$row['author_id'] : null;
     }
 
+    public function getCommentAuthorId(int $commentId): ?int {
+        $stmt = $this->db->prepare("SELECT commenter_id FROM Comment WHERE comment_id = ? LIMIT 1");
+        $stmt->execute([$commentId]);
+        $authorId = $stmt->fetchColumn();
+        return $authorId !== false ? (int)$authorId : null;
+    }
+
+    public function getPostIdByComment(int $commentId): ?int {
+        $stmt = $this->db->prepare("SELECT post_id FROM Comment WHERE comment_id = ? LIMIT 1");
+        $stmt->execute([$commentId]);
+        $postId = $stmt->fetchColumn();
+        return $postId !== false ? (int)$postId : null;
+    }
+
     private function canUserModerateComment($commentId, $userId) {
         $stmt = $this->db->prepare("SELECT commenter_id, post_id FROM Comment WHERE comment_id = ?");
         $stmt->execute([$commentId]);

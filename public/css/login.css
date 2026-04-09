@@ -28,6 +28,47 @@
     padding: 0.8rem 1.2rem;
     position: relative;
 }
+
+.signup-card .hf-field-status {
+    position: absolute;
+    right: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    max-width: 48%;
+    padding: 0.18rem 0.45rem;
+    border-radius: 999px;
+    font-size: 0.72rem;
+    font-weight: 600;
+    line-height: 1;
+    background: rgba(255, 255, 255, 0.85);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.15s ease;
+}
+
+.signup-card .hf-field-status.is-success,
+.signup-card .hf-field-status.is-error {
+    opacity: 1;
+}
+
+.signup-card .hf-field-status.is-success {
+    color: #0f7a3a;
+}
+
+.signup-card .hf-field-status.is-error {
+    color: var(--color-danger);
+}
+
+.signup-card .form-group-l input,
+.signup-card .form-group-l select {
+    padding-right: 7.2rem;
+}
 .signup-card .form-group-l i {
     position: absolute;
     left: 16px;

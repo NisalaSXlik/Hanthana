@@ -80,12 +80,20 @@ class FriendModel
                     return [
                         'status' => 'pending_outgoing',
                         'message' => 'Friend request already sent.',
+                        'friendship_id' => (int)$existing['friendship_id'],
+                        'requester_id' => (int)$existing['user_id'],
+                        'target_id' => (int)$existing['friend_id'],
+                        'is_new_request' => false,
                     ];
                 }
 
                 return [
                     'status' => 'incoming_pending',
                     'message' => 'This user has already sent you a friend request.',
+                    'friendship_id' => (int)$existing['friendship_id'],
+                    'requester_id' => (int)$existing['user_id'],
+                    'target_id' => (int)$existing['friend_id'],
+                    'is_new_request' => false,
                 ];
             }
         }
@@ -97,10 +105,29 @@ class FriendModel
             ':friend' => $targetId,
         ]);
 
+        $friendshipId = (int)$this->db->lastInsertId();
+
         return [
             'status' => 'pending_outgoing',
             'message' => 'Friend request sent successfully.',
+            'friendship_id' => $friendshipId,
+            'requester_id' => $requesterId,
+            'target_id' => $targetId,
+            'is_new_request' => true,
         ];
+    }
+
+    public function getFriendshipById(int $friendshipId): ?array
+    {
+        $stmt = $this->db->prepare(
+            "SELECT friendship_id, user_id, friend_id, status, requested_at, accepted_at
+             FROM Friends
+             WHERE friendship_id = :id
+             LIMIT 1"
+        );
+        $stmt->execute([':id' => $friendshipId]);
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+        return $row ?: null;
     }
 
     public function getIncomingRequests(int $userId, int $limit = 10): array
@@ -196,6 +223,9 @@ class FriendModel
                 'message' => 'Friend request accepted.',
                 'friend_count' => $counts[$targetId] ?? null,
                 'friend_count_other' => $counts[$requesterId] ?? null,
+                'friendship_id' => $friendshipId,
+                'requester_id' => $requesterId,
+                'target_id' => $targetId,
             ];
         } catch (\Throwable $e) {
             if ($this->db->inTransaction()) {

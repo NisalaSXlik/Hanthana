@@ -46,7 +46,7 @@ class VoteController {
 
         if ($result) {
             $counts = $this->voteModel->getVoteCounts($postId);
-            $this->maybeSendLikeNotification($postId, $userId, $voteType, $result['action'] ?? '');
+            $this->maybeSendVoteNotification($postId, $userId, $voteType, $result['action'] ?? '');
             echo json_encode([
                 'success' => true,
                 'action' => $result['action'],
@@ -58,28 +58,46 @@ class VoteController {
         }
     }
 
-    private function maybeSendLikeNotification(int $postId, int $likerId, string $voteType, string $action): void {
-        if ($voteType !== 'upvote' || !in_array($action, ['added', 'changed'], true)) {
+    private function maybeSendVoteNotification(int $postId, int $voterId, string $voteType, string $action): void {
+        if (!in_array($action, ['added', 'changed'], true)) {
             return;
         }
 
         $postOwnerId = $this->voteModel->getPostAuthorId($postId);
-        if (!$postOwnerId || $postOwnerId === $likerId) {
+        if (!$postOwnerId || $postOwnerId === $voterId) {
             return;
         }
 
-        $likerName = $this->getCurrentUserDisplayName();
-        $message = $likerName . ' liked your post.';
         $actionUrl = $this->buildPostActionUrl($postId);
-        $this->notificationsModel->createNotification(
-            $postOwnerId,
-            $likerId,
-            'post_upvote',
-            'New like on your post',
-            $message,
-            $actionUrl,
-            'low'
-        );
+
+        if ($voteType === 'upvote') {
+            $voterName = $this->getCurrentUserDisplayName();
+            $totalLikes = $this->voteModel->getUpvoteCount($postId);
+            $this->notificationsModel->upsertGroupedPostLikeNotification(
+                $postOwnerId,
+                $voterId,
+                $postId,
+                $voterName,
+                $totalLikes,
+                $actionUrl
+            );
+            return;
+        }
+
+        if ($voteType === 'downvote') {
+            $voterName = $this->getCurrentUserDisplayName();
+            $this->notificationsModel->createNotification(
+                $postOwnerId,
+                $voterId,
+                'post_downvote',
+                'New vote on your post',
+                $voterName . ' downvoted your post.',
+                $actionUrl,
+                'low',
+                $postId,
+                'post'
+            );
+        }
     }
 
     private function getCurrentUserDisplayName(): string {

@@ -11,13 +11,95 @@ class NotificationsModel {
     /**
      * Create a notification for a user
      */
-    public function createNotification(int $userId, ?int $triggeredByUserId, string $type, string $title, string $message, ?string $actionUrl = null, string $priority = 'medium') : bool {
+    public function createNotification(
+        int $userId,
+        ?int $triggeredByUserId,
+        string $type,
+        string $title,
+        string $message,
+        ?string $actionUrl = null,
+        string $priority = 'medium',
+        ?int $referenceId = null,
+        ?string $referenceType = null,
+        ?string $expiresAt = null
+    ) : bool {
         try {
-            $sql = "INSERT INTO Notifications (user_id, triggered_by_user_id, type, title, message, action_url, priority) VALUES (?, ?, ?, ?, ?, ?, ?)";
+            $sql = "INSERT INTO Notifications (user_id, triggered_by_user_id, type, title, message, action_url, priority, reference_id, reference_type, expires_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
             $stmt = $this->db->getConnection()->prepare($sql);
-            return (bool)$stmt->execute([$userId, $triggeredByUserId, $type, $title, $message, $actionUrl, $priority]);
+            return (bool)$stmt->execute([$userId, $triggeredByUserId, $type, $title, $message, $actionUrl, $priority, $referenceId, $referenceType, $expiresAt]);
         } catch (PDOException $e) {
             error_log('createNotification error: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    public function findLatestByReference(int $userId, string $type, int $referenceId, string $referenceType): ?array {
+        try {
+            $sql = "SELECT notification_id, title, message, is_read
+                    FROM Notifications
+                    WHERE user_id = ? AND type = ? AND reference_id = ? AND reference_type = ?
+                    ORDER BY created_at DESC
+                    LIMIT 1";
+            $stmt = $this->db->getConnection()->prepare($sql);
+            $stmt->execute([$userId, $type, $referenceId, $referenceType]);
+            $row = $stmt->fetch(PDO::FETCH_ASSOC);
+            return $row ?: null;
+        } catch (PDOException $e) {
+            error_log('findLatestByReference error: ' . $e->getMessage());
+            return null;
+        }
+    }
+
+    public function updateNotification(int $notificationId, ?int $triggeredByUserId, string $title, string $message, ?string $actionUrl = null, string $priority = 'medium'): bool {
+        try {
+            $sql = "UPDATE Notifications
+                    SET triggered_by_user_id = ?, title = ?, message = ?, action_url = ?, priority = ?, is_read = FALSE, read_at = NULL, created_at = CURRENT_TIMESTAMP
+                    WHERE notification_id = ?";
+            $stmt = $this->db->getConnection()->prepare($sql);
+            return (bool)$stmt->execute([$triggeredByUserId, $title, $message, $actionUrl, $priority, $notificationId]);
+        } catch (PDOException $e) {
+            error_log('updateNotification error: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    public function upsertGroupedPostLikeNotification(int $recipientId, int $actorId, int $postId, string $actorName, int $totalLikes, ?string $actionUrl = null): bool {
+        $safeLikes = max(1, $totalLikes);
+        $title = $safeLikes > 1 ? ($safeLikes . ' people liked your post') : 'New like on your post';
+        $message = $safeLikes > 1
+            ? ($actorName . ' and ' . ($safeLikes - 1) . ' others liked your post.')
+            : ($actorName . ' liked your post.');
+
+        $existing = $this->findLatestByReference($recipientId, 'post_upvote', $postId, 'post');
+        if ($existing && (int)$existing['notification_id'] > 0) {
+            return $this->updateNotification((int)$existing['notification_id'], $actorId, $title, $message, $actionUrl, 'low');
+        }
+
+        return $this->createNotification(
+            $recipientId,
+            $actorId,
+            'post_upvote',
+            $title,
+            $message,
+            $actionUrl,
+            'low',
+            $postId,
+            'post'
+        );
+    }
+
+    public function hasEventReminderStageNotification(int $userId, int $postId, string $stage): bool {
+        try {
+            $stageTitle = $stage === '30m' ? 'Event reminder (30m)' : 'Event reminder (24h)';
+            $sql = "SELECT notification_id
+                    FROM Notifications
+                    WHERE user_id = ? AND type = 'event_reminder' AND reference_type = 'event' AND reference_id = ? AND title = ?
+                    LIMIT 1";
+            $stmt = $this->db->getConnection()->prepare($sql);
+            $stmt->execute([$userId, $postId, $stageTitle]);
+            return (bool)$stmt->fetch(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            error_log('hasEventReminderStageNotification error: ' . $e->getMessage());
             return false;
         }
     }

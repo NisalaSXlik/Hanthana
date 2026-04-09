@@ -62,4 +62,11 @@ class VoteModel {
         $authorId = $stmt->fetchColumn();
         return $authorId !== false ? (int)$authorId : null;
     }
+
+    public function getUpvoteCount(int $postId): int {
+        $stmt = $this->db->prepare("SELECT upvote_count FROM Post WHERE post_id = ? LIMIT 1");
+        $stmt->execute([$postId]);
+        $count = $stmt->fetchColumn();
+        return $count !== false ? (int)$count : 0;
+    }
 }

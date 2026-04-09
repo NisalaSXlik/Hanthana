@@ -570,5 +570,85 @@ class AuthController {
     public function searchUsers($query) {
         return $this->userModel->search($query);
     }
+
+    // Check if a registration field is available
+    public function checkAvailability() {
+        header('Content-Type: application/json; charset=utf-8');
+
+        $field = strtolower(trim($_GET['field'] ?? $_POST['field'] ?? ''));
+        $value = trim($_GET['value'] ?? $_POST['value'] ?? '');
+
+        if ($field === '' || $value === '') {
+            echo json_encode([
+                'success' => false,
+                'available' => false,
+                'message' => 'Field and value are required.'
+            ]);
+            return;
+        }
+
+        if ($field === 'username') {
+            if (!preg_match('/^[a-zA-Z0-9_]+$/', $value)) {
+                echo json_encode([
+                    'success' => true,
+                    'available' => false,
+                    'message' => 'Username can only contain letters, numbers, and underscores.'
+                ]);
+                return;
+            }
+
+            $exists = $this->userModel->usernameExists($value);
+            echo json_encode([
+                'success' => true,
+                'available' => !$exists,
+                'message' => $exists ? 'Username is already taken.' : 'Username is available.'
+            ]);
+            return;
+        }
+
+        if ($field === 'email') {
+            if (!filter_var($value, FILTER_VALIDATE_EMAIL)) {
+                echo json_encode([
+                    'success' => true,
+                    'available' => false,
+                    'message' => 'Please enter a valid email address.'
+                ]);
+                return;
+            }
+
+            $exists = $this->userModel->emailExists($value);
+            echo json_encode([
+                'success' => true,
+                'available' => !$exists,
+                'message' => $exists ? 'Email is already registered.' : 'Email is available.'
+            ]);
+            return;
+        }
+
+        if ($field === 'phone') {
+            if (!preg_match('/^[0-9]{10}$/', $value)) {
+                echo json_encode([
+                    'success' => true,
+                    'available' => false,
+                    'message' => 'Phone number must be 10 digits.'
+                ]);
+                return;
+            }
+
+            $exists = $this->userModel->phoneExists($value);
+            echo json_encode([
+                'success' => true,
+                'available' => !$exists,
+                'message' => $exists ? 'Phone number is already registered.' : 'Phone number is available.'
+            ]);
+            return;
+        }
+
+        echo json_encode([
+            'success' => false,
+            'available' => false,
+            'message' => 'Unsupported field.'
+        ]);
+    }
 }
 ?>

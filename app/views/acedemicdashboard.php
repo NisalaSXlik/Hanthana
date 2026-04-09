@@ -28,6 +28,7 @@ $currentUser = $userModel->findById($currentUserId);
     <link rel="stylesheet" href="./css/calender.css?v=20250209_zindex">
     <link rel="stylesheet" href="./css/post.css">
     <link rel="stylesheet" href="./css/notificationpopup.css">
+    <link rel="stylesheet" href="./css/notification-center.css">
     <link rel="stylesheet" href="./css/acedemicdashboard.css">
     <link rel="stylesheet" href="https://unicons.iconscout.com/release/v4.0.8/css/line.css">
     <link rel="stylesheet" href="./css/report.css">

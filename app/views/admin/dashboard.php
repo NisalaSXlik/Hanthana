@@ -53,6 +53,7 @@ $complaintTypeCounts = array_map(fn($row) => (int)($row['count'] ?? 0), $complai
     <link rel="stylesheet" href="./css/general.css">
     <link rel="stylesheet" href="./css/navbar.css">
     <link rel="stylesheet" href="./css/notificationpopup.css">
+    <link rel="stylesheet" href="./css/notification-center.css">
     <link rel="stylesheet" href="./css/calender.css?v=20250209_zindex">
     <link rel="stylesheet" href="./css/admin.css">
     <link rel="stylesheet" href="./css/forms.css">

@@ -206,48 +206,98 @@ if (isset($_SESSION['user_id'])) {
                 </div>
             <?php endif; ?>
             
+            <!-- Notification Button -->
             <div class="notification">
-                <i class="uil uil-bell">
+                <i class="uil uil-bell" id="notificationBellBtn">
                     <small class="notification-count"><?php echo $unreadCount > 9 ? '9+' : ($unreadCount > 0 ? (int)$unreadCount : ''); ?></small>
                 </i>
-                <div class="notifications-popup">
-                    <?php if (!empty($notifications)): ?>
-                        <?php foreach ($notifications as $n): ?>
-                            <?php
-                                $actionUrl = $n['action_url'] ?? '';
-                                $nid = (int)$n['notification_id'];
-                                $priority = htmlspecialchars($n['priority'] ?? 'medium');
-                                $typeLabel = ucwords(str_replace('_', ' ', $n['type'] ?? 'Update'));
-                                $triggerPic = $n['trigger_profile_picture'] ?? '';
-                                $imgUrl = MediaHelper::resolveMediaPath($triggerPic, 'uploads/user_dp/default.png');
-                                $isUnread = empty($n['is_read']);
-                            ?>
-                            <div class="notification-item-wrap<?php echo $isUnread ? ' is-unread' : ''; ?>" data-notif-id="<?php echo $nid; ?>" data-priority="<?php echo $priority; ?>">
-                                <a href="#" class="notification-item" data-action-url="<?php echo htmlspecialchars($actionUrl); ?>" data-notif-id="<?php echo $nid; ?>">
-                                    <div class="notification-avatar">
-                                        <div class="profile-picture">
-                                            <img src="<?php echo htmlspecialchars($imgUrl); ?>" alt="Trigger avatar">
-                                        </div>
+                
+                <!-- Quick Popup (small version for navbar) -->
+                <div class="notifications-popup-quick" id="notificationsPopupQuick">
+                    <div class="quick-popup-header">
+                        <h3 class="quick-popup-title">Notifications</h3>
+                        <button class="quick-popup-close" id="closeQuickPopup">
+                            <i class="uil uil-times"></i>
+                        </button>
+                    </div>
+                    <div class="quick-popup-content" id="quickNotificationsList">
+                        <?php if (!empty($notifications)): ?>
+                            <?php foreach (array_slice($notifications, 0, 5) as $n): ?>
+                                <?php
+                                    $actionUrl = $n['action_url'] ?? '';
+                                    $nid = (int)$n['notification_id'];
+                                    $priority = htmlspecialchars($n['priority'] ?? 'medium');
+                                    $rawType = (string)($n['type'] ?? 'system_alert');
+                                    $typeLabel = strtolower(str_replace('_', ' ', $rawType));
+                                    $typeClassMap = [
+                                        'friend_request' => 'friend',
+                                        'friend_request_accepted' => 'friend',
+                                        'post_comment' => 'comment',
+                                        'post_upvote' => 'like',
+                                        'post_downvote' => 'like',
+                                        'group_request' => 'group',
+                                        'message' => 'message',
+                                        'mention' => 'mention',
+                                        'event_reminder' => 'event',
+                                        'system_alert' => 'system',
+                                    ];
+                                    $typeClass = $typeClassMap[$rawType] ?? 'system';
+                                    $triggerPic = $n['trigger_profile_picture'] ?? '';
+                                    $imgUrl = MediaHelper::resolveMediaPath($triggerPic, 'uploads/user_dp/default.png');
+                                    $isUnread = empty($n['is_read']);
+                                    $friendshipId = 0;
+                                    if ($rawType === 'friend_request' && !empty($actionUrl)) {
+                                        $queryString = (string)parse_url($actionUrl, PHP_URL_QUERY);
+                                        if ($queryString !== '') {
+                                            parse_str($queryString, $queryParams);
+                                            $friendshipId = (int)($queryParams['friendship_id'] ?? 0);
+                                        }
+                                    }
+                                ?>
+                                <div class="notification-item-modern<?php echo ($isUnread ? ' is-unread' : ''); ?>" data-notif-id="<?php echo $nid; ?>" data-priority="<?php echo $priority; ?>" data-action-url="<?php echo htmlspecialchars($actionUrl); ?>" data-notif-type="<?php echo htmlspecialchars($rawType); ?>" data-friendship-id="<?php echo $friendshipId; ?>">
+                                    <div class="notification-avatar-modern">
+                                        <img src="<?php echo htmlspecialchars($imgUrl); ?>" alt="User avatar">
+                                        <div class="notification-avatar-badge"></div>
                                     </div>
-                                    <div class="notification-content">
-                                        <div class="notification-meta">
-                                            <span class="notification-chip"><?php echo htmlspecialchars($typeLabel); ?></span>
-                                            <small class="notification-time"><?php echo htmlspecialchars(date('M j, H:i', strtotime($n['created_at']))); ?></small>
+                                    <div class="notification-content-modern">
+                                        <div class="notification-header-modern">
+                                            <span class="notification-type-chip <?php echo htmlspecialchars($typeClass); ?>"><?php echo htmlspecialchars($typeLabel); ?></span>
+                                            <span class="notification-timestamp"><?php echo htmlspecialchars(date('M j', strtotime($n['created_at']))); ?></span>
                                         </div>
-                                        <p class="notification-title"><?php echo htmlspecialchars($n['title'] ?? ''); ?></p>
-                                        <p class="notification-message"><?php echo htmlspecialchars($n['message'] ?? ''); ?></p>
+                                        <p class="notification-title-modern"><?php echo htmlspecialchars($n['title'] ?? ''); ?></p>
+                                        <p class="notification-message-modern"><?php echo htmlspecialchars($n['message'] ?? ''); ?></p>
+                                        <?php if ($rawType === 'friend_request' && $friendshipId > 0): ?>
+                                            <div class="notification-actions">
+                                                <button
+                                                    type="button"
+                                                    class="notification-action-btn primary"
+                                                    data-action="accept"
+                                                    data-friendship-id="<?php echo $friendshipId; ?>"
+                                                >Accept</button>
+                                                <button
+                                                    type="button"
+                                                    class="notification-action-btn secondary"
+                                                    data-action="decline"
+                                                    data-friendship-id="<?php echo $friendshipId; ?>"
+                                                >Decline</button>
+                                            </div>
+                                        <?php endif; ?>
                                     </div>
-                                </a>
-                                <button class="notif-dismiss" data-notif-id="<?php echo $nid; ?>" title="Dismiss notification" aria-label="Dismiss notification">&times;</button>
+                                    <button class="notification-dismiss-modern" data-notif-id="<?php echo $nid; ?>" title="Dismiss">
+                                        <i class="uil uil-times"></i>
+                                    </button>
+                                </div>
+                            <?php endforeach; ?>
+                        <?php else: ?>
+                            <div class="notification-empty-state" style="padding: 2rem; text-align: center;">
+                                <div style="font-size: 2.5rem; opacity: 0.3;">📭</div>
+                                <div style="color: var(--notif-text-secondary); margin-top: 0.5rem;">No notifications</div>
                             </div>
-                        <?php endforeach; ?>
-                    <?php else: ?>
-                        <div>
-                            <div class="notification-body">
-                                No notifications
-                            </div>
-                        </div>
-                    <?php endif; ?>
+                        <?php endif; ?>
+                    </div>
+                    <div class="quick-popup-footer">
+                        <button class="quick-popup-view-all" id="viewAllNotificationsBtn">View all notifications →</button>
+                    </div>
                 </div>
             </div>
             <div class="profile-picture" id="profileDropdown">
@@ -265,3 +315,53 @@ if (isset($_SESSION['user_id'])) {
         </div>
     </div>
 </nav>
+
+<!-- Notification Center Modal -->
+<div class="notification-center-overlay" id="notificationCenterOverlay"></div>
+<div class="notification-center-modal" id="notificationCenterModal">
+    <div class="notification-center-header">
+        <h2 class="notification-center-title">
+            <i class="uil uil-bell"></i>
+            Notifications
+        </h2>
+        <div class="notification-center-actions">
+            <button class="notif-header-btn" id="settingsNotifBtn" title="Notification settings">
+                <i class="uil uil-setting"></i>
+            </button>
+            <button class="notif-header-btn notif-close-btn" id="closeNotificationCenter">
+                <i class="uil uil-times"></i>
+            </button>
+        </div>
+    </div>
+
+    <div class="notification-tabs">
+        <button class="notification-tab active" data-tab="all">
+            All
+            <span class="notification-tab-badge" id="badgeAll" style="display: none;">0</span>
+        </button>
+        <button class="notification-tab" data-tab="unread">
+            Unread
+            <span class="notification-tab-badge" id="badgeUnread"><?php echo $unreadCount > 0 ? $unreadCount : ''; ?></span>
+        </button>
+        <button class="notification-tab" data-tab="requests">
+            Requests
+            <span class="notification-tab-badge" id="badgeRequests" style="display: none;">0</span>
+        </button>
+    </div>
+
+    <div class="notification-center-content" id="notificationCenterContent">
+        <div class="notification-empty-state">
+            <div class="notification-empty-state-icon">
+                <i class="uil uil-inbox"></i>
+            </div>
+            <div class="notification-empty-state-title">All caught up!</div>
+            <div class="notification-empty-state-text">No new notifications at the moment</div>
+        </div>
+    </div>
+
+    <div class="notification-center-footer">
+        <button class="notification-footer-btn" id="markAllReadBtn">Mark all as read</button>
+        <button class="notification-footer-btn primary" id="clearReadBtn">Clear read</button>
+    </div>
+</div>
+<script src="<?php echo BASE_PATH; ?>js/notification-center.js"></script>

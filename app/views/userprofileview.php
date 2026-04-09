@@ -31,6 +31,7 @@ $currentUser = $userModel->findById($_SESSION['user_id']);
     <link rel="stylesheet" href="./css/post.css">
     <link rel="stylesheet" href="./css/myfeed.css">
     <link rel="stylesheet" href="./css/notificationpopup.css">
+    <link rel="stylesheet" href="./css/notification-center.css">
     <link rel="stylesheet" href="./css/events-page.css">
     <link rel="stylesheet" href="./css/userprofileview.css">
     <link rel="stylesheet" href="./css/report.css">
@@ -99,13 +100,6 @@ $currentUser = $userModel->findById($_SESSION['user_id']);
                                         <?php echo $friendButtonDisabled ? 'disabled' : ''; ?>
                                     >
                                         <span><?php echo htmlspecialchars($friendButtonState === 'none' ? '+ Follow' : $friendButtonLabel); ?></span>
-                                    </button>
-                                    <button class="btn btn-outline" type="button">Message</button>
-                                    <button class="btn btn-outline btn-more report-trigger" type="button"
-                                        data-report-type="user"
-                                        data-target-id="<?php echo (int)$profileUserId; ?>"
-                                        data-target-label="<?php echo htmlspecialchars('user ' . ($displayName !== '' ? $displayName : $displayHandle), ENT_QUOTES); ?>">
-                                        More
                                     </button>
                                     <button class="btn btn-outline" type="button">Message</button>
                                     <div class="profile-more" data-profile-more>
