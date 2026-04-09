@@ -181,7 +181,7 @@ if ($resolvedGroupId > 0) {
                             <div class="post-options">
                                 <button class="option" id="photoQuickBtn">
                                     <i class="uil uil-image"></i>
-                                    <span>Photo</span>
+                                    <span>Post</span>
                                 </button>
                                 <button class="option" id="pollQuickBtn">
                                     <i class="uil uil-chart-pie"></i>
@@ -1309,7 +1309,6 @@ if ($resolvedGroupId > 0) {
     <script src="./js/comment.js"></script>
     <script src="./js/report.js"></script>
     <script src="./js/groupprofileview.js"></script>
-    <script src="./js/group-post-create.js"></script>
     <script src="./js/group-poll-voting.js"></script>
     <script src="./js/group-post-interactions.js"></script>
     <script>
