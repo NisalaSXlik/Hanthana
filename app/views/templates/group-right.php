@@ -27,10 +27,10 @@
         $fileBankQuery['user_id'] = (int)$_SESSION['user_id'];
     }
 
-    $groupHomeHref = rtrim(BASE_PATH, '/') . '/index.php?controller=GroupProfileView&action=index';
+    $groupHomeHref = rtrim(BASE_PATH, '/') . '/index.php?controller=Group&action=index';
     $fileBankHref = rtrim(BASE_PATH, '/') . '/index.php?controller=FileBank&action=index';
     $channelHref = rtrim(BASE_PATH, '/') . '/index.php?controller=ChannelPage&action=index';
-    $membersHref = rtrim(BASE_PATH, '/') . '/index.php?controller=GroupProfileView&action=members';
+    $membersHref = rtrim(BASE_PATH, '/') . '/index.php?controller=Group&action=members';
     $groupReportsHref = rtrim(BASE_PATH, '/') . '/index.php?controller=GroupReports&action=index';
     $manageHref = rtrim(BASE_PATH, '/') . '/index.php?controller=Group&action=manage';
     $groupSettingsHref = rtrim(BASE_PATH, '/') . '/index.php?controller=GroupSettings&action=index';

@@ -32,7 +32,7 @@ $friendRequests = $friendRequests ?? [];
     <link rel="stylesheet" href="./css/myfeed.css">
     <link rel="stylesheet" href="./css/notificationpopup.css">
     <link rel="stylesheet" href="./css/notification-center.css">
-    <link rel="stylesheet" href="./css/groupmanage.css">
+    <link rel="stylesheet" href="./css/grouprequests.css">
     <link rel="stylesheet" href="./css/forms.css">
     <link rel="stylesheet" href="https://unicons.iconscout.com/release/v4.0.8/css/line.css">
 </head>
@@ -174,15 +174,6 @@ $friendRequests = $friendRequests ?? [];
 
                         <div class="manage-subdivider"></div>
 
-                        <table class="manage-table">
-                            <thead>
-                                <tr>
-                                    <th>Member Name</th>
-                                    <th>Message Complaint</th>
-                                    <th>Moderation Decision</th>
-                                </tr>
-                            </thead>
-                            <tbody>
                         <table class="manage-table">
                             <thead>
                                 <tr>

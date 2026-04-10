@@ -135,7 +135,50 @@ class GroupController {
         }
 
         $pendingRequests = $this->groupModel->getPendingRequests($groupId);
-        require __DIR__ . '/../views/groupmanage.php';
+        require __DIR__ . '/../views/grouprequests.php';
+    }
+
+    /**
+     * Group members page used by right-side group navigation.
+     */
+    public function members() {
+        if (!isset($_SESSION['user_id'])) {
+            header('Location: ' . BASE_PATH . 'index.php?controller=Landing&action=index');
+            exit();
+        }
+
+        $groupId = isset($_GET['group_id']) ? (int)$_GET['group_id'] : (isset($_GET['id']) ? (int)$_GET['id'] : 0);
+        if ($groupId <= 0 && isset($_SESSION['current_group_id'])) {
+            $groupId = (int)$_SESSION['current_group_id'];
+        }
+
+        if ($groupId <= 0) {
+            header('Location: ' . BASE_PATH . 'index.php?controller=Feed&action=index');
+            exit();
+        }
+
+        $userId = (int)$_SESSION['user_id'];
+        $group = $this->groupModel->getById($groupId);
+        if (!$group) {
+            header('Location: ' . BASE_PATH . 'index.php?controller=Feed&action=index&error=group_not_found');
+            exit();
+        }
+
+        $membershipState = $this->groupModel->getUserMembershipState($groupId, $userId);
+        $isCreator = (int)($group['created_by'] ?? 0) === $userId;
+        $isGroupAdmin = $this->groupModel->isGroupAdmin($groupId, $userId);
+        $isAdmin = $isCreator || $isGroupAdmin;
+        $isJoined = ($membershipState === 'active' || $isCreator);
+
+        if (!$isJoined) {
+            header('Location: ' . BASE_PATH . 'index.php?controller=Group&action=index&group_id=' . $groupId);
+            exit();
+        }
+
+        $_SESSION['current_group_id'] = (int)$groupId;
+        $groupMembers = $this->groupModel->getMembers($groupId);
+
+        require __DIR__ . '/../views/groupmembers.php';
     }
 
     public function handleAjax() {
@@ -161,6 +204,7 @@ class GroupController {
                 case 'edit': $this->editGroup(); break;  // Uses $_POST/$_FILES directly
                 case 'delete': $this->deleteGroup(); break;
                 case 'join': $this->joinGroup(); break;
+                case 'kick_member': $this->kickMember($input); break;
                 case 'approve_request': $this->approveRequest(); break;
                 case 'reject_request': $this->rejectRequest(); break;
                 case 'delete_notification': $this->deleteNotificationAjax(); break;
@@ -550,6 +594,56 @@ class GroupController {
                 echo json_encode(['success' => true, 'message' => 'You left the group successfully.']);
             } else {
                 echo json_encode(['success' => false, 'message' => 'Failed to leave the group.']);
+            }
+        } catch (Exception $e) {
+            echo json_encode(['success' => false, 'message' => 'Error: ' . $e->getMessage()]);
+        }
+    }
+
+    private function kickMember($data) {
+        try {
+            $groupId = isset($data['group_id']) ? (int)$data['group_id'] : 0;
+            $targetUserId = isset($data['target_user_id']) ? (int)$data['target_user_id'] : 0;
+            $adminId = (int)$_SESSION['user_id'];
+
+            if (!$groupId || !$targetUserId) {
+                echo json_encode(['success' => false, 'message' => 'Missing params']);
+                return;
+            }
+
+            $group = $this->groupModel->getById($groupId);
+            if (!$group) {
+                echo json_encode(['success' => false, 'message' => 'Group not found']);
+                return;
+            }
+
+            $isCreator = (int)($group['created_by'] ?? 0) === $adminId;
+            $isAdmin = $this->groupModel->isGroupAdmin($groupId, $adminId);
+            if (!$isCreator && !$isAdmin) {
+                echo json_encode(['success' => false, 'message' => 'Unauthorized']);
+                return;
+            }
+
+            if ($targetUserId === $adminId) {
+                echo json_encode(['success' => false, 'message' => 'You cannot remove yourself from the group here.']);
+                return;
+            }
+
+            $membership = $this->groupModel->getMembership($groupId, $targetUserId);
+            if (!$membership || ($membership['status'] ?? '') !== 'active') {
+                echo json_encode(['success' => false, 'message' => 'Member not found']);
+                return;
+            }
+
+            if (($membership['role'] ?? '') === 'admin' && !$isCreator) {
+                echo json_encode(['success' => false, 'message' => 'Only the group creator can remove an admin']);
+                return;
+            }
+
+            if ($this->groupModel->removeMember($groupId, $targetUserId)) {
+                echo json_encode(['success' => true, 'message' => 'Member removed successfully']);
+            } else {
+                echo json_encode(['success' => false, 'message' => 'Failed to remove member']);
             }
         } catch (Exception $e) {
             echo json_encode(['success' => false, 'message' => 'Error: ' . $e->getMessage()]);
