@@ -11,7 +11,7 @@ class CommentModel {
 
     public function getCommentsByPost($postId) {
         $stmt = $this->db->prepare("
-            SELECT c.*, u.username, u.profile_picture
+              SELECT c.*, u.username, u.first_name, u.last_name, u.profile_picture
             FROM Comment c
             JOIN Users u ON c.commenter_id = u.user_id
             WHERE c.post_id = ?

@@ -33,7 +33,7 @@ $currentUser = $userModel->findById($_SESSION['user_id']);
     <link rel="stylesheet" href="./css/notificationpopup.css">
     <link rel="stylesheet" href="./css/notification-center.css">
     <link rel="stylesheet" href="./css/events-page.css">
-    <link rel="stylesheet" href="./css/userprofileview.css">
+    <link rel="stylesheet" href="./css/userprofileview.css?v=20260410_commentprofile">
     <link rel="stylesheet" href="./css/report.css">
     <link rel="stylesheet" href="./css/forms.css">
     <link rel="stylesheet" href="https://unicons.iconscout.com/release/v4.0.0/css/line.css">
@@ -569,6 +569,31 @@ $currentUser = $userModel->findById($_SESSION['user_id']);
                             <small id="postViewDate"></small>
                         </div>
                     </div>
+                    <div class="post-view-menu" id="postViewMenu">
+                        <button type="button" class="post-view-menu-trigger" id="postViewMenuTrigger" aria-label="Post options" aria-haspopup="true" aria-expanded="false">
+                            <i class="uil uil-ellipsis-h"></i>
+                        </button>
+                        <div class="post-view-menu-dropdown" id="postViewMenuDropdown" hidden>
+                            <button type="button" class="post-view-menu-item" id="postViewEditAction">
+                                <i class="uil uil-edit"></i>
+                                <span>Edit</span>
+                            </button>
+                            <button type="button" class="post-view-menu-item" id="postViewDeleteAction">
+                                <i class="uil uil-trash-alt"></i>
+                                <span>Delete</span>
+                            </button>
+                            <button
+                                type="button"
+                                class="post-view-menu-item report-trigger"
+                                id="postViewReportAction"
+                                data-report-type="post"
+                                data-target-id=""
+                                data-target-label="">
+                                <i class="uil uil-exclamation-circle"></i>
+                                <span>Report</span>
+                            </button>
+                        </div>
+                    </div>
                 </div>
                 <div class="post-view-caption">
                     <p id="postViewCaption"></p>
@@ -612,6 +637,10 @@ $currentUser = $userModel->findById($_SESSION['user_id']);
         const PROFILE_USER_ID = <?php echo $profileUserId; ?>;
         const POSTS_ARE_PRIVATE = <?php echo $postsArePrivate ? 'true' : 'false'; ?>;
         const IS_OWNER = <?php echo $isOwner ? 'true' : 'false'; ?>;
+        window.BASE_PATH = BASE_PATH;
+        window.VIEWER_USER_ID = VIEWER_USER_ID;
+        window.PROFILE_USER_ID = PROFILE_USER_ID;
+        window.IS_OWNER = IS_OWNER;
         window.PERSONAL_POSTS = <?php echo json_encode($personalPosts ?? []); ?>;
         window.GROUP_POSTS = <?php echo json_encode($groupPosts ?? []); ?>;
         window.SAVED_POSTS = <?php echo json_encode($savedPosts ?? []); ?>;
@@ -634,6 +663,6 @@ $currentUser = $userModel->findById($_SESSION['user_id']);
     <script src="./js/comment.js"></script>
     <script src="./js/poll.js"></script>
     <script src="./js/report.js"></script>
-    <script src="./js/userprofileview.js"></script>
+    <script src="./js/userprofileview.js?v=20260410_commentprofile"></script>
 </body>
 </html>
