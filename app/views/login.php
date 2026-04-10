@@ -36,6 +36,10 @@ if (isset($_GET['registered']) && $_GET['registered'] === 'true') {
     $success = "Registration successful! Please login.";
 }
 
+if (isset($_GET['password_reset']) && $_GET['password_reset'] === 'success') {
+    $success = "Password reset successful. Please login with your new password.";
+}
+
 if (isset($_GET['oauth_error'])) {
     $oauthErrorMap = [
         'google_not_configured' => 'Google login is not configured yet. Please try email login for now.',
@@ -119,7 +123,7 @@ if (isset($_GET['oauth_error'])) {
 
             <div class="auth-footer">
                 <p>Don't have an account? <a href="<?php echo BASE_PATH; ?>index.php?controller=Signup&action=index">Register</a></p>
-                <a href="#" class="forgot-password">Forgot password?</a>
+                <a href="<?php echo BASE_PATH; ?>index.php?controller=Auth&action=forgotPassword" class="forgot-password">Forgot password?</a>
             </div>
         </div>
     </div>
