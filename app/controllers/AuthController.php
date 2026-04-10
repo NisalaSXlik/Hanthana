@@ -135,7 +135,7 @@ class AuthController {
                 'password' => $data['password'],
                 'username' => trim($data['username']),
                 'bio' => $data['bio'] ?? null,
-                'university' => $data['university'] ?? null,
+                'university' => trim($data['university'] ?? ''),
                 'date_of_birth' => $data['date_of_birth'] ?? null,
                 'location' => $data['location'] ?? null
             ];
@@ -439,13 +439,34 @@ class AuthController {
     // Validate registration data
     private function validateRegistration($data) {
         $errors = [];
+
+        $allowedUniversities = [
+            'University of Colombo',
+            'University of Peradeniya',
+            'University of Moratuwa',
+            'University of Sri Jayewardenepura',
+            'University of Kelaniya',
+            'University of Ruhuna',
+            'University of Jaffna',
+            'Uva Wellassa University',
+            'Rajarata University of Sri Lanka',
+            'Sabaragamuwa University of Sri Lanka',
+            'South Eastern University of Sri Lanka',
+            'Eastern University Sri Lanka',
+            'Wayamba University of Sri Lanka',
+            'University of Vavuniya'
+        ];
         
         // Required fields
-        $required = ['first_name', 'last_name', 'email', 'phone', 'password', 'username'];
+        $required = ['first_name', 'last_name', 'email', 'phone', 'password', 'username', 'university'];
         foreach ($required as $field) {
             if (empty($data[$field])) {
                 $errors[] = ucfirst(str_replace('_', ' ', $field)) . " is required.";
             }
+        }
+
+        if (!empty($data['university']) && !in_array(trim($data['university']), $allowedUniversities, true)) {
+            $errors[] = "Please select a valid university.";
         }
         
         // Email validation
@@ -548,6 +569,86 @@ class AuthController {
     // Search users
     public function searchUsers($query) {
         return $this->userModel->search($query);
+    }
+
+    // Check if a registration field is available
+    public function checkAvailability() {
+        header('Content-Type: application/json; charset=utf-8');
+
+        $field = strtolower(trim($_GET['field'] ?? $_POST['field'] ?? ''));
+        $value = trim($_GET['value'] ?? $_POST['value'] ?? '');
+
+        if ($field === '' || $value === '') {
+            echo json_encode([
+                'success' => false,
+                'available' => false,
+                'message' => 'Field and value are required.'
+            ]);
+            return;
+        }
+
+        if ($field === 'username') {
+            if (!preg_match('/^[a-zA-Z0-9_]+$/', $value)) {
+                echo json_encode([
+                    'success' => true,
+                    'available' => false,
+                    'message' => 'Username can only contain letters, numbers, and underscores.'
+                ]);
+                return;
+            }
+
+            $exists = $this->userModel->usernameExists($value);
+            echo json_encode([
+                'success' => true,
+                'available' => !$exists,
+                'message' => $exists ? 'Username is already taken.' : 'Username is available.'
+            ]);
+            return;
+        }
+
+        if ($field === 'email') {
+            if (!filter_var($value, FILTER_VALIDATE_EMAIL)) {
+                echo json_encode([
+                    'success' => true,
+                    'available' => false,
+                    'message' => 'Please enter a valid email address.'
+                ]);
+                return;
+            }
+
+            $exists = $this->userModel->emailExists($value);
+            echo json_encode([
+                'success' => true,
+                'available' => !$exists,
+                'message' => $exists ? 'Email is already registered.' : 'Email is available.'
+            ]);
+            return;
+        }
+
+        if ($field === 'phone') {
+            if (!preg_match('/^[0-9]{10}$/', $value)) {
+                echo json_encode([
+                    'success' => true,
+                    'available' => false,
+                    'message' => 'Phone number must be 10 digits.'
+                ]);
+                return;
+            }
+
+            $exists = $this->userModel->phoneExists($value);
+            echo json_encode([
+                'success' => true,
+                'available' => !$exists,
+                'message' => $exists ? 'Phone number is already registered.' : 'Phone number is available.'
+            ]);
+            return;
+        }
+
+        echo json_encode([
+            'success' => false,
+            'available' => false,
+            'message' => 'Unsupported field.'
+        ]);
     }
 }
 ?>

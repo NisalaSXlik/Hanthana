@@ -1092,9 +1092,6 @@
     if (photoQuickBtn) {
         photoQuickBtn.addEventListener('click', () => {
             openCreatePostModal('discussion');
-            setTimeout(() => {
-                if (uploadImageBtn) uploadImageBtn.click();
-            }, 100);
         });
     }
 

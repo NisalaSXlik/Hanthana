@@ -38,6 +38,7 @@ function timeAgo($timestamp) {
     <link rel="stylesheet" href="./css/calender.css?v=20250209_zindex">
     <link rel="stylesheet" href="./css/post.css">
     <link rel="stylesheet" href="./css/notificationpopup.css">
+    <link rel="stylesheet" href="./css/notification-center.css">
     <link rel="stylesheet" href="./css/questions.css">
     <link rel="stylesheet" href="./css/forms.css">
     <link rel="stylesheet" href="./css/report.css">

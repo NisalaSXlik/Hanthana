@@ -3,16 +3,22 @@ require_once __DIR__ . '/../../config/config.php';
 require_once __DIR__ . '/../models/PostModel.php';
 require_once __DIR__ . '/../models/GroupPostModel.php';
 require_once __DIR__ . '/../models/GroupModel.php';
+require_once __DIR__ . '/../models/UserModel.php';
+require_once __DIR__ . '/../models/FriendModel.php';
 
 class DiscoverController {
     private $postModel;
     private $groupPostModel;
     private $groupModel;
+    private $userModel;
+    private $friendModel;
 
     public function __construct() {
         $this->postModel = new PostModel();
         $this->groupPostModel = new GroupPostModel();
         $this->groupModel = new GroupModel();
+        $this->userModel = new UserModel();
+        $this->friendModel = new FriendModel();
     }
 
 
@@ -32,9 +38,12 @@ class DiscoverController {
             $post['is_group_post'] = !empty($post['group_id']);
         }
 
+        // Filter to show only user-created general image/text posts (exclude events, questions, group posts)
+        $allPosts = $this->filterDiscoverPosts($allPosts);
+
         // Sidebar data
-        $trendingHashtags = $this->postModel->getTrendingHashtags(10, 7);
         $popularGroups = $this->groupModel->getPopularGroups(8, $userId);
+        $recentUsers = $this->userModel->getRecentUsers(5);
 
         $joinedGroups = $this->groupModel->getGroupsJoinedBy((int)$userId);
         $joinedMap = [];
@@ -53,6 +62,21 @@ class DiscoverController {
         }
         unset($group);
 
+        foreach ($recentUsers as &$recentUser) {
+            $recentUser['profile_picture'] = !empty($recentUser['profile_picture'])
+                ? MediaHelper::resolveMediaPath($recentUser['profile_picture'], 'uploads/user_dp/default.png')
+                : MediaHelper::resolveMediaPath('', 'uploads/user_dp/default.png');
+
+            $recentUserId = (int)($recentUser['user_id'] ?? 0);
+            if ($recentUserId > 0 && $recentUserId !== (int)$userId) {
+                $rawFriendState = $this->friendModel->getFriendshipStatus((int)$userId, $recentUserId);
+                $recentUser['friend_state'] = $this->mapFriendshipStateForButton($rawFriendState);
+            } else {
+                $recentUser['friend_state'] = 'self';
+            }
+        }
+        unset($recentUser);
+
         require_once __DIR__ . '/../views/discover.php';
     }
 
@@ -69,6 +93,12 @@ class DiscoverController {
 
         // Get all ranked posts
         $allRankedPosts = $this->postModel->getTrendingPosts(60, $userId);
+
+        // Mark group posts and filter to show only user-created general image/text posts
+        foreach ($allRankedPosts as &$post) {
+            $post['is_group_post'] = !empty($post['group_id']);
+        }
+        $allRankedPosts = $this->filterDiscoverPosts($allRankedPosts);
 
         $posts = [];
 
@@ -96,12 +126,15 @@ class DiscoverController {
             $posts = $allRankedPosts;
         }
 
-        foreach ($posts as &$post) {
-            $post['is_group_post'] = !empty($post['group_id']);
-        }
-
-        $trendingHashtags = $this->postModel->getTrendingHashtags(10, 7);
         $popularGroups = $this->groupModel->getPopularGroups(8, $userId);
+        $recentUsers = $this->userModel->getRecentUsers(5);
+
+        // Get joined groups for sidebar display
+        $joinedGroups = $this->groupModel->getGroupsJoinedBy((int)$userId);
+        $joinedMap = [];
+        foreach ($joinedGroups as $joinedGroup) {
+            $joinedMap[(int)($joinedGroup['group_id'] ?? 0)] = true;
+        }
 
         require_once __DIR__ . '/../helpers/MediaHelper.php';
         foreach ($popularGroups as &$group) {
@@ -114,7 +147,62 @@ class DiscoverController {
         }
         unset($group);
 
+        foreach ($recentUsers as &$recentUser) {
+            $recentUser['profile_picture'] = !empty($recentUser['profile_picture'])
+                ? MediaHelper::resolveMediaPath($recentUser['profile_picture'], 'uploads/user_dp/default.png')
+                : MediaHelper::resolveMediaPath('', 'uploads/user_dp/default.png');
+
+            $recentUserId = (int)($recentUser['user_id'] ?? 0);
+            if ($recentUserId > 0 && $recentUserId !== (int)$userId) {
+                $rawFriendState = $this->friendModel->getFriendshipStatus((int)$userId, $recentUserId);
+                $recentUser['friend_state'] = $this->mapFriendshipStateForButton($rawFriendState);
+            } else {
+                $recentUser['friend_state'] = 'self';
+            }
+        }
+        unset($recentUser);
+
         require_once __DIR__ . '/../views/discover-feed.php';
+    }
+
+    /**
+     * Filter posts to show user-created general posts and group discussion posts
+     * Excludes: events, questions, polls, assignments, resources from groups
+     */
+    private function filterDiscoverPosts($posts) {
+        return array_values(array_filter($posts, function ($post) {
+            $isGroupPost = (int)($post['is_group_post'] ?? 0) === 1;
+            $postType = strtolower((string)($post['post_type'] ?? ''));
+            $groupPostType = strtolower((string)($post['group_post_type'] ?? ''));
+            
+            // Allow: User-created general posts (post_type='image', is_group_post=0)
+            if (!$isGroupPost && $postType === 'image') {
+                return true;
+            }
+            
+            // Allow: Group discussion posts (image/text based)
+            if ($isGroupPost && $groupPostType === 'discussion') {
+                return true;
+            }
+            
+            return false;
+        }));
+    }
+
+    private function mapFriendshipStateForButton(string $state): string {
+        switch ($state) {
+            case 'friends':
+                return 'friends';
+            case 'pending_them':
+                return 'pending_outgoing';
+            case 'pending_me':
+                return 'incoming_pending';
+            case 'blocked':
+                return 'blocked';
+            case 'none':
+            default:
+                return 'none';
+        }
     }
 
     // AJAX endpoint to load more posts
@@ -129,6 +217,12 @@ class DiscoverController {
         $limit = 20;
 
         $posts = $this->postModel->getTrendingPosts($limit, $userId);
+        
+        // Mark group posts and apply filter
+        foreach ($posts as &$post) {
+            $post['is_group_post'] = !empty($post['group_id']);
+        }
+        $posts = $this->filterDiscoverPosts($posts);
         
         echo json_encode(['success' => true, 'posts' => $posts]);
         exit();
@@ -147,11 +241,11 @@ class DiscoverController {
 
         $posts = $this->postModel->getTrendingPosts($limit, $userId);
 
-
+        // Mark group posts and apply filter
         foreach ($posts as &$post) {
             $post['is_group_post'] = !empty($post['group_id']);
-
         }
+        $posts = $this->filterDiscoverPosts($posts);
 
         echo json_encode(['success' => true, 'posts' => $posts, 'count' => count($posts)]);
         exit();

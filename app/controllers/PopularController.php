@@ -3,11 +3,13 @@ require_once __DIR__ . '/../core/Database.php';
 require_once __DIR__ . '/../models/QuestionModel.php';
 require_once __DIR__ . '/../models/PostModel.php';
 require_once __DIR__ . '/../models/SettingsModel.php';
+require_once __DIR__ . '/../models/NotificationsModel.php';
 
 class PopularController {
     private $questionModel;
     private $postModel;
     private $settingsModel;
+    private $notificationsModel;
 
     public function __construct() {
         if (session_status() === PHP_SESSION_NONE) {
@@ -16,6 +18,7 @@ class PopularController {
         $this->questionModel = new QuestionModel();
         $this->postModel = new PostModel();
         $this->settingsModel = new SettingsModel();
+        $this->notificationsModel = new NotificationsModel();
     }
 
     public function index() {
@@ -204,6 +207,9 @@ class PopularController {
         }
         
         $answer = $this->questionModel->createAnswer($userId, $questionId, $content, $parentAnswerId);
+        if (!empty($answer)) {
+            $this->notifyForNewAnswer($userId, $answer, $parentAnswerId);
+        }
         echo json_encode([
             'success' => true,
             'answer' => $answer,
@@ -257,6 +263,7 @@ class PopularController {
         }
         
         $result = $this->questionModel->voteQuestion($userId, $questionId, $voteType);
+        $this->notifyForQuestionVote($userId, (int)$questionId, $voteType, (string)$result);
         echo json_encode(['success' => true, 'action' => $result]);
     }
     
@@ -268,9 +275,120 @@ class PopularController {
             echo json_encode(['success' => false, 'message' => 'Invalid data']);
             return;
         }
-        
         $result = $this->questionModel->voteAnswer($userId, $answerId, $voteType);
+        $this->notifyForAnswerVote($userId, (int)$answerId, $voteType, (string)$result);
         echo json_encode(['success' => true, 'action' => $result]);
+    }
+
+    private function notifyForNewAnswer(int $actorId, array $answer, ?int $parentAnswerId): void {
+        $questionId = (int)($answer['question_id'] ?? 0);
+        if ($questionId <= 0) {
+            return;
+        }
+
+        $actorName = $this->getCurrentUserDisplayName();
+        $actionUrl = $this->buildQuestionActionUrl($questionId, (int)($answer['answer_id'] ?? 0));
+        $questionOwnerId = (int)($answer['question_user_id'] ?? 0);
+
+        if ($questionOwnerId > 0 && $questionOwnerId !== $actorId) {
+            $this->notificationsModel->createNotification(
+                $questionOwnerId,
+                $actorId,
+                'post_comment',
+                'New answer to your question',
+                $actorName . ' answered your question.',
+                $actionUrl,
+                'medium',
+                $questionId,
+                'comment'
+            );
+        }
+
+        if (!empty($parentAnswerId)) {
+            $parent = $this->questionModel->getAnswerById((int)$parentAnswerId, $actorId);
+            $parentOwnerId = (int)($parent['user_id'] ?? 0);
+            if ($parentOwnerId > 0 && $parentOwnerId !== $actorId) {
+                $this->notificationsModel->createNotification(
+                    $parentOwnerId,
+                    $actorId,
+                    'post_comment',
+                    'New reply to your answer',
+                    $actorName . ' replied to your answer.',
+                    $actionUrl,
+                    'medium',
+                    (int)$parentAnswerId,
+                    'comment'
+                );
+            }
+        }
+    }
+
+    private function notifyForQuestionVote(int $actorId, int $questionId, string $voteType, string $action): void {
+        if ($questionId <= 0 || !in_array($action, ['added', 'updated'], true)) {
+            return;
+        }
+
+        $question = $this->questionModel->getQuestion($questionId, $actorId);
+        $ownerId = (int)($question['user_id'] ?? 0);
+        if ($ownerId <= 0 || $ownerId === $actorId) {
+            return;
+        }
+
+        $actorName = $this->getCurrentUserDisplayName();
+        $isDownvote = $voteType === 'downvote';
+        $this->notificationsModel->createNotification(
+            $ownerId,
+            $actorId,
+            $isDownvote ? 'post_downvote' : 'post_upvote',
+            $isDownvote ? 'New vote on your question' : 'New upvote on your question',
+            $actorName . ($isDownvote ? ' downvoted your question.' : ' upvoted your question.'),
+            $this->buildQuestionActionUrl($questionId),
+            'low',
+            $questionId,
+            'post'
+        );
+    }
+
+    private function notifyForAnswerVote(int $actorId, int $answerId, string $voteType, string $action): void {
+        if ($answerId <= 0 || !in_array($action, ['added', 'updated'], true)) {
+            return;
+        }
+
+        $answer = $this->questionModel->getAnswerById($answerId, $actorId);
+        $ownerId = (int)($answer['user_id'] ?? 0);
+        if ($ownerId <= 0 || $ownerId === $actorId) {
+            return;
+        }
+
+        $questionId = (int)($answer['question_id'] ?? 0);
+        $actorName = $this->getCurrentUserDisplayName();
+        $isDownvote = $voteType === 'downvote';
+        $this->notificationsModel->createNotification(
+            $ownerId,
+            $actorId,
+            $isDownvote ? 'post_downvote' : 'post_upvote',
+            $isDownvote ? 'New vote on your answer' : 'New upvote on your answer',
+            $actorName . ($isDownvote ? ' downvoted your answer.' : ' upvoted your answer.'),
+            $this->buildQuestionActionUrl($questionId, $answerId),
+            'low',
+            $answerId,
+            'comment'
+        );
+    }
+
+    private function buildQuestionActionUrl(int $questionId, ?int $answerId = null): string {
+        $url = BASE_PATH . 'index.php?controller=QnA&action=view&id=' . $questionId;
+        if (!empty($answerId)) {
+            $url .= '#answer-' . $answerId;
+        }
+        return $url;
+    }
+
+    private function getCurrentUserDisplayName(): string {
+        $first = trim((string)($_SESSION['first_name'] ?? ''));
+        $last = trim((string)($_SESSION['last_name'] ?? ''));
+        $full = trim($first . ' ' . $last);
+        return $full !== '' ? $full : (string)($_SESSION['username'] ?? 'Someone');
     }
 
     private function editQuestion($userId) {

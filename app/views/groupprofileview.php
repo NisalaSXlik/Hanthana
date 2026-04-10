@@ -47,6 +47,7 @@ if ($resolvedGroupId > 0) {
     <link rel="stylesheet" href="./css/post.css">
     <link rel="stylesheet" href="./css/myfeed.css">
     <link rel="stylesheet" href="./css/notificationpopup.css">
+    <link rel="stylesheet" href="./css/notification-center.css">
     <link rel="stylesheet" href="./css/report.css">
     <link rel="stylesheet" href="./css/forms.css">
     <link rel="stylesheet" href="https://unicons.iconscout.com/release/v4.0.8/css/line.css">
@@ -180,7 +181,7 @@ if ($resolvedGroupId > 0) {
                             <div class="post-options">
                                 <button class="option" id="photoQuickBtn">
                                     <i class="uil uil-image"></i>
-                                    <span>Photo</span>
+                                    <span>Post</span>
                                 </button>
                                 <button class="option" id="pollQuickBtn">
                                     <i class="uil uil-chart-pie"></i>
@@ -1308,7 +1309,6 @@ if ($resolvedGroupId > 0) {
     <script src="./js/comment.js"></script>
     <script src="./js/report.js"></script>
     <script src="./js/groupprofileview.js"></script>
-    <script src="./js/group-post-create.js"></script>
     <script src="./js/group-poll-voting.js"></script>
     <script src="./js/group-post-interactions.js"></script>
     <script>

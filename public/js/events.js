@@ -265,6 +265,16 @@ function createEventCard(event) {
     const postOwnerId = Number(event.author_id || event.user_id || 0);
     const canDelete = postOwnerId === currentUserId;
     
+    // User info
+    const userName = [event.first_name, event.last_name].filter(Boolean).join(' ').trim() || 'Unknown User';
+    const userProfilePath = event.profile_picture || event.avatar || 'uploads/user_dp/default_user_dp.jpg';
+    const fullProfileUrl = userProfilePath.startsWith('http') ? userProfilePath : (userProfilePath.startsWith('/') ? userProfilePath : ('uploads/user_dp/default_user_dp.jpg'));
+    const userId = event.author_id || event.user_id || 0;
+    
+    // Format creation date/time
+    const createdDate = new Date(event.created_at || event.event_date);
+    const createdTimeStr = createdDate.toLocaleDateString() + ' ' + createdDate.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+    
     const isAdded = event.is_going == 1;
     const btnClass = isAdded ? 'btn-add-calendar added' : 'btn-add-calendar';
     const btnContent = isAdded
@@ -287,27 +297,40 @@ function createEventCard(event) {
                     </div>
                 </div>
                 ` : ''}
-                <h3 class="event-card-title">${escapeHtml(title)}</h3>
-                <div class="event-date-badge">
-                    <span class="day">${day}</span>
-                    <span class="month">${month}</span>
+                
+                <div class="event-header-content">
+                    <div class="event-card-author">
+                        <img src="${escapeHtml(fullProfileUrl)}" alt="${escapeHtml(userName)}" class="event-author-avatar" data-user-id="${userId}">
+                        <div class="event-author-info">
+                            <h4 class="event-author-name" data-user-id="${userId}">${escapeHtml(userName)}</h4>
+                            <p class="event-author-time">${createdTimeStr}</p>
+                        </div>
+                    </div>
+                    <div class="event-date-badge">
+                        <span class="day">${day}</span>
+                        <span class="month">${month}</span>
+                    </div>
                 </div>
-                <p class="event-card-group">${groupInfo}</p>
             </div>
 
             <div class="event-card-body">
                 <div class="event-card-content">
                     <div class="event-card-main">
-                        <div class="event-detail">
-                            <i class="uil uil-clock"></i>
-                            <span><strong>Time:</strong> ${time}</span>
-                        </div>
-                        <div class="event-detail">
-                            <i class="uil uil-location-point"></i>
-                            <span><strong>Location:</strong> ${escapeHtml(location)}</span>
-                        </div>
+                        <h3 class="event-card-title">${escapeHtml(title)}</h3>
+
                         <div class="event-description">
                             ${escapeHtml(description)}
+                        </div>
+
+                        <div class="event-meta-compact">
+                            <div class="event-detail">
+                                <i class="uil uil-clock"></i>
+                                <span><strong>Time:</strong><span class="event-detail-value">${time}</span></span>
+                            </div>
+                            <div class="event-detail">
+                                <i class="uil uil-location-point"></i>
+                                <span><strong>Location:</strong><span class="event-detail-value">${escapeHtml(location)}</span></span>
+                            </div>
                         </div>
                     </div>
 
@@ -331,6 +354,31 @@ function createEventCard(event) {
 }
 
 function initializeEventCardActions() {
+    // User profile click handlers
+    document.querySelectorAll('.event-author-avatar').forEach(avatar => {
+        avatar.style.cursor = 'pointer';
+        avatar.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            const userId = avatar.getAttribute('data-user-id');
+            if (userId && userId !== '0') {
+                window.location.href = `${BASE_PATH || '/'}index.php?controller=Profile&action=view&user_id=${userId}`;
+            }
+        });
+    });
+
+    document.querySelectorAll('.event-author-name').forEach(name => {
+        name.style.cursor = 'pointer';
+        name.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            const userId = name.getAttribute('data-user-id');
+            if (userId && userId !== '0') {
+                window.location.href = `${BASE_PATH || '/'}index.php?controller=Profile&action=view&user_id=${userId}`;
+            }
+        });
+    });
+
     document.querySelectorAll('.event-card-menu-trigger').forEach(trigger => {
         trigger.addEventListener('click', (e) => {
             e.preventDefault();

@@ -1,12 +1,14 @@
 <?php
 require_once __DIR__ . '/../../config/config.php';
 require_once __DIR__ . '/../models/FriendModel.php';
+require_once __DIR__ . '/../models/NotificationsModel.php';
 
 use Throwable;
 
 class FriendController
 {
     private FriendModel $friendModel;
+    private NotificationsModel $notificationsModel;
 
     public function __construct()
     {
@@ -15,6 +17,7 @@ class FriendController
         }
 
         $this->friendModel = new FriendModel();
+        $this->notificationsModel = new NotificationsModel();
     }
 
     public function sendRequest(): void
@@ -55,6 +58,24 @@ class FriendController
 
         try {
             $result = $this->friendModel->sendFriendRequest($viewerId, $targetId);
+
+            if (($result['status'] ?? '') === 'pending_outgoing' && !empty($result['is_new_request'])) {
+                $friendshipId = (int)($result['friendship_id'] ?? 0);
+                if ($friendshipId > 0) {
+                    $this->notificationsModel->createNotification(
+                        $targetId,
+                        $viewerId,
+                        'friend_request',
+                        'New friend request',
+                        $this->getCurrentUserDisplayName() . ' sent you a friend request.',
+                        $this->buildFriendActionUrl($viewerId, $friendshipId),
+                        'high',
+                        $friendshipId,
+                        'friend_request'
+                    );
+                }
+            }
+
             http_response_code(200);
             echo json_encode([
                 'success' => true,
@@ -98,7 +119,27 @@ class FriendController
         }
 
         try {
+            $friendship = $this->friendModel->getFriendshipById($friendshipId);
             $result = $this->friendModel->acceptFriendRequest($friendshipId, (int)$_SESSION['user_id']);
+
+            if ($friendship) {
+                $requesterId = (int)$friendship['user_id'];
+                $acceptorId = (int)$_SESSION['user_id'];
+                if ($requesterId > 0 && $requesterId !== $acceptorId) {
+                    $this->notificationsModel->createNotification(
+                        $requesterId,
+                        $acceptorId,
+                        'friend_request_accepted',
+                        'Friend request accepted',
+                        $this->getCurrentUserDisplayName() . ' accepted your friend request.',
+                        $this->buildFriendActionUrl($acceptorId, $friendshipId),
+                        'medium',
+                        $friendshipId,
+                        'friend_request'
+                    );
+                }
+            }
+
             $friendCount = (array_key_exists('friend_count', $result) && $result['friend_count'] !== null)
                 ? (int)$result['friend_count']
                 : null;
@@ -225,5 +266,18 @@ class FriendController
             echo json_encode(['success' => false, 'message' => 'Unable to remove friend. Please try again.']);
         }
         exit;
+    }
+
+    private function buildFriendActionUrl(int $otherUserId, int $friendshipId): string
+    {
+        return BASE_PATH . 'index.php?controller=Profile&action=view&user_id=' . $otherUserId . '&friendship_id=' . $friendshipId;
+    }
+
+    private function getCurrentUserDisplayName(): string
+    {
+        $first = trim((string)($_SESSION['first_name'] ?? ''));
+        $last = trim((string)($_SESSION['last_name'] ?? ''));
+        $full = trim($first . ' ' . $last);
+        return $full !== '' ? $full : (string)($_SESSION['username'] ?? 'Someone');
     }
 }

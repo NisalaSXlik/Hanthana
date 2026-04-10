@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/../../config/config.php';
+require_once __DIR__ . '/../models/UserModel.php';
 
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
@@ -11,6 +12,8 @@ if (!isset($_SESSION['user_id'])) {
 }
 
 $userId = $_SESSION['user_id'];
+$userModel = new UserModel();
+$currentUser = $userModel->findById((int)$userId);
 
 require_once __DIR__ . '/../models/FriendModel.php';
 $friendModel = new FriendModel();
@@ -114,6 +117,7 @@ function renderAnswerNode(array $answer, int $currentUserId, int $questionOwnerI
     <link rel="stylesheet" href="./css/calender.css?v=20250209_zindex">
     <link rel="stylesheet" href="./css/post.css">
     <link rel="stylesheet" href="./css/notificationpopup.css">
+    <link rel="stylesheet" href="./css/notification-center.css">
     <link rel="stylesheet" href="./css/questions.css">
     <link rel="stylesheet" href="./css/forms.css">
     <link rel="stylesheet" href="https://unicons.iconscout.com/release/v4.0.8/css/line.css">
