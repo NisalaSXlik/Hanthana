@@ -39,7 +39,7 @@ class GroupReportsController extends BaseController
             $this->redirect('GroupProfileView');
         }
 
-        require_once __DIR__ . '/../views/groupreports.php';
+        require_once __DIR__ . '/../views/groupmoderation.php';
     }
 
     private function resolveGroupId(): int

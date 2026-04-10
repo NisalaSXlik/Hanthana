@@ -35,8 +35,11 @@ class ChannelPageController extends BaseController
         $_SESSION['current_group_id'] = $groupId;
         $currentUserId = $userId;
         $currentUser = $this->userModel->findById($currentUserId);
+        $isCreator = (int)($group['created_by'] ?? 0) === $userId;
+        $isGroupAdmin = $this->groupModel->isGroupAdmin($groupId, $userId);
+        $isAdmin = $isCreator || $isGroupAdmin;
 
-        require_once __DIR__ . '/../views/channelpage.php';
+        require_once __DIR__ . '/../views/groupchannels.php';
     }
 
     public function listChannels()

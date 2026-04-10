@@ -32,7 +32,7 @@ $currentUser = $userModel->findById($_SESSION['user_id']);
     <link rel="stylesheet" href="./css/notificationpopup.css">
     <link rel="stylesheet" href="./css/notification-center.css">
     <link rel="stylesheet" href="./css/report.css">
-    <link rel="stylesheet" href="./css/channelpage.css">
+    <link rel="stylesheet" href="./css/groupchannels.css">
     <link rel="stylesheet" href="https://unicons.iconscout.com/release/v4.0.8/css/line.css">
 </head>
 <body>
@@ -170,6 +170,6 @@ $currentUser = $userModel->findById($_SESSION['user_id']);
     <script src="./js/post.js"></script>
     <script src="./js/vote.js"></script>
     <script src="./js/comment.js"></script>
-    <script type="module" src="./js/channelpage.js"></script>
+    <script type="module" src="./js/groupchannels.js"></script>
 </body>
 </html>
