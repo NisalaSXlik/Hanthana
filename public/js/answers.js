@@ -51,9 +51,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const author = `${answer.first_name || ''} ${answer.last_name || ''}`.trim() || 'Unknown';
         const profile = answer.profile_picture || `${ANSWERS_BASE_PATH}public/images/default-avatar.png`;
         const currentUserId = Number(window.USER_ID || 0);
-        const canModerate =
-            currentUserId === Number(answer.user_id || 0) ||
-            currentUserId === Number(answer.question_user_id || 0);
+        const canModerate = currentUserId === Number(answer.user_id || 0);
         const replies = Array.isArray(answer.replies) ? answer.replies.map(r => renderAnswer(r, level + 1)).join('') : '';
         const replyStyle = level > 0 ? ' style="margin-left: 40px;"' : '';
 

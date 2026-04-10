@@ -73,8 +73,7 @@ function renderAnswerNode(array $answer, int $currentUserId, int $questionOwnerI
     $time = htmlspecialchars(timeAgo($answer['created_at'] ?? 'now'));
     $profilePic = BASE_PATH . ($answer['profile_picture'] ?: 'public/images/default-avatar.png');
     $content = nl2br(htmlspecialchars($answer['content'] ?? ''));
-    $canModerate = (int)($answer['user_id'] ?? 0) === $currentUserId
-        || $questionOwnerId === $currentUserId;
+    $canModerate = (int)($answer['user_id'] ?? 0) === $currentUserId;
     $accepted = !empty($answer['is_accepted']);
     $replyStyle = $level > 0 ? ' style="margin-left: 40px;"' : '';
 
@@ -283,7 +282,8 @@ function renderAnswerNode(array $answer, int $currentUserId, int $questionOwnerI
 
     <script>
         const BASE_PATH = '<?php echo rtrim(BASE_PATH, '/'); ?>';
-        const USER_ID = <?php echo $userId; ?>;
+        window.USER_ID = <?php echo $userId; ?>;
+        const USER_ID = window.USER_ID;
     </script>
     <script src="./js/calender.js?v=20250209_syntax"></script>
     <script src="./js/general.js"></script>

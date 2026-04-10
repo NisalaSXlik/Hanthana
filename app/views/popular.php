@@ -291,7 +291,8 @@ function timeAgo($timestamp) {
     <?php include __DIR__ . '/templates/chat-clean.php'; ?>
 
     <script>
-        const USER_ID = <?php echo $currentUserId; ?>;
+        window.USER_ID = <?php echo $currentUserId; ?>;
+        const USER_ID = window.USER_ID;
 
         (function focusQuestionCardFromQuery() {
             const params = new URLSearchParams(window.location.search);

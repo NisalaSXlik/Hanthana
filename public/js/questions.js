@@ -412,9 +412,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const author = `${answer.first_name || ''} ${answer.last_name || ''}`.trim() || 'Unknown';
         const profile = answer.profile_picture || `${QUESTIONS_BASE_PATH}public/images/default-avatar.png`;
         const currentUserId = Number(window.USER_ID || 0);
-        const canModerate =
-            currentUserId === Number(answer.user_id || 0) ||
-            currentUserId === Number(answer.question_user_id || 0);
+        const canModerate = currentUserId === Number(answer.user_id || 0);
         const replies = Array.isArray(answer.replies) ? answer.replies.map((reply) => renderAnswerNode(reply, level + 1)).join('') : '';
         const replyStyle = level > 0 ? ' style="margin-left: 40px;"' : '';
 
@@ -428,24 +426,14 @@ document.addEventListener('DOMContentLoaded', function() {
                 </div>
                 <div class="comment-text">${escapeHtml(answer.content || '').replace(/\n/g, '<br>')}</div>
                 <div class="comment-actions">
-                    ${level === 0 ? `<button class="comment-action reply-btn" data-answer-id="${id}"><i class="uil uil-corner-up-left"></i><span>Reply</span></button>` : '<span></span>'}
-                    <div class="question-menu-wrap answer-menu-wrap">
-                        <button type="button" class="question-menu-trigger answer-menu-trigger" aria-label="Answer menu">
-                            <i class="uil uil-ellipsis-h"></i>
-                        </button>
-                        <div class="question-menu">
-                            ${canModerate ? `<button type="button" class="question-menu-item edit-answer-btn" data-answer-id="${id}"><i class="uil uil-edit"></i> Edit</button><button type="button" class="question-menu-item delete-answer-btn" data-answer-id="${id}"><i class="uil uil-trash-alt"></i> Delete</button>` : ''}
-                            <button type="button" class="question-menu-item report-trigger" data-report-type="answer" data-target-id="${id}" data-target-label="${escapeHtml(author)} answer">
-                                <i class="uil uil-exclamation-circle"></i> Report
-                            </button>
-                        </div>
-                    </div>
+                    ${level === 0 ? `<button class="comment-action reply-btn" data-answer-id="${id}"><i class="fas fa-reply"></i><span>Reply</span></button>` : ''}
+                    ${canModerate ? `<button class="comment-action edit-answer-btn" data-answer-id="${id}">Edit</button><button class="comment-action delete-answer-btn" data-answer-id="${id}">Delete</button>` : ''}
                 </div>
                 ${level === 0 ? `
                 <div class="reply-form" id="reply-form-${id}">
                     <div class="reply-input-container">
                         <input type="text" class="reply-input" placeholder="Write a reply..." data-answer-id="${id}">
-                        <button class="reply-submit-btn" data-answer-id="${id}"><i class="uil uil-message"></i></button>
+                        <button class="reply-submit-btn" data-answer-id="${id}"><i class="fas fa-paper-plane"></i></button>
                     </div>
                 </div>
                 ` : ''}
