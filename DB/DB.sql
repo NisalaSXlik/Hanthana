@@ -658,25 +658,40 @@ CREATE TABLE GroupDeleteApprovals (
 CREATE TABLE Reports (
     report_id INT AUTO_INCREMENT PRIMARY KEY,
     reporter_id INT NOT NULL,
+
+    target_type ENUM(
+        'user',
+        'post',
+        'comment',
+        'group',
+        'media',
+        'question',
+        'answer',
+        'channel',
+        'message'
+    ) NOT NULL,
+
+    target_id INT NOT NULL,
+
+    -- Group context only when the reported target belongs to a group scope.
+    group_id INT NULL,
+
+    -- Actor/owner context for moderation workflows (nullable where not applicable).
     reported_user_id INT NULL,
-    reported_post_id INT NULL,
-    reported_comment_id INT NULL,
-    reported_group_id INT NULL,
-    reported_media_id INT NULL,
-    reported_question_id INT NULL,
+
     report_type ENUM('spam','harassment','inappropriate','other') NOT NULL,
     description TEXT,
     status ENUM('pending','reviewed','resolved') DEFAULT 'pending',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     reviewed_by INT NULL,
     reviewed_at TIMESTAMP NULL,
+
+    INDEX idx_target (target_type, target_id),
+    INDEX idx_group (group_id),
+
     FOREIGN KEY (reporter_id) REFERENCES Users(user_id) ON DELETE CASCADE,
+    FOREIGN KEY (group_id) REFERENCES GroupsTable(group_id) ON DELETE SET NULL,
     FOREIGN KEY (reported_user_id) REFERENCES Users(user_id) ON DELETE SET NULL,
-    FOREIGN KEY (reported_post_id) REFERENCES Post(post_id) ON DELETE SET NULL,
-    FOREIGN KEY (reported_comment_id) REFERENCES Comment(comment_id) ON DELETE SET NULL,
-    FOREIGN KEY (reported_group_id) REFERENCES GroupsTable(group_id) ON DELETE SET NULL,
-    FOREIGN KEY (reported_media_id) REFERENCES BinMedia(media_id) ON DELETE SET NULL,
-    FOREIGN KEY (reported_question_id) REFERENCES Questions(question_id) ON DELETE SET NULL,
     FOREIGN KEY (reviewed_by) REFERENCES Users(user_id) ON DELETE SET NULL
 );
 

@@ -24,8 +24,8 @@
     const aboutGroupBtn = document.getElementById('aboutGroupBtn');
     const editGroupBtn = document.getElementById('editGroupBtn');
     const manageGroupBtn = document.getElementById('manageGroupBtn');
-    const deleteGroupBtn = document.getElementById('deleteGroupBtn');
     const groupSettingsNavBtn = document.getElementById('groupSettingsNavBtn');
+    const deleteGroupBtn = document.getElementById('deleteGroupBtn');
 
     // Dropdown toggle
     if (groupMenuBtn && groupDropdownMenu) {
@@ -454,6 +454,11 @@
         link.addEventListener('click', function(e) {
             e.preventDefault();
             const tabId = this.getAttribute('data-tab');
+            const targetContent = document.getElementById(tabId + '-content');
+
+            if (!targetContent) {
+                return;
+            }
 
             // Remove active class from all tabs
             tabLinks.forEach(l => l.parentElement.classList.remove('active'));
@@ -461,7 +466,7 @@
 
             // Add active class to clicked tab
             this.parentElement.classList.add('active');
-            document.getElementById(tabId + '-content').classList.add('active');
+            targetContent.classList.add('active');
         });
     });
 
