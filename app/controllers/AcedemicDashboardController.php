@@ -45,9 +45,9 @@ class AcedemicDashboardController
 
         $action = (string)($payload['sub_action'] ?? 'resource_data');
         $userId = (int)$_SESSION['user_id'];
-        $resourceModel = new AcedemicDashboardModel();
 
         try {
+            $resourceModel = new AcedemicDashboardModel();
             switch ($action) {
                 case 'resource_data':
                     $this->handleResourceData($resourceModel, $payload, $userId);
@@ -64,9 +64,13 @@ class AcedemicDashboardController
                     break;
             }
         } catch (Throwable $e) {
-            error_log('AcedemicDashboardController handleAjax error: ' . $e->getMessage());
+            error_log('AcedemicDashboardController handleAjax error: ' . $e->getMessage() . ' | Trace: ' . $e->getTraceAsString());
             http_response_code(500);
-            echo json_encode(['success' => false, 'message' => 'Server error']);
+            echo json_encode([
+                'success' => false,
+                'message' => 'Server error: ' . $e->getMessage(),
+                'debug' => defined('DEBUG_MODE') ? $e->getTraceAsString() : null
+            ]);
         }
 
         exit;
