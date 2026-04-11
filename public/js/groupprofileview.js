@@ -998,7 +998,7 @@
     const closeCreatePostModal = document.getElementById('closeCreatePostModal');
     const cancelCreatePostBtn = document.getElementById('cancelCreatePostBtn');
     const createGroupPostForm = document.getElementById('createGroupPostForm');
-    const postTypeBtns = document.querySelectorAll('.post-type-btn');
+    const postTypeBtns = createGroupPostForm ? createGroupPostForm.querySelectorAll('.post-type-btn') : [];
     const selectedPostType = document.getElementById('selectedPostType');
     const postImageInput = document.getElementById('postImageInput');
     const imagePreview = document.getElementById('imagePreview');
@@ -1011,6 +1011,16 @@
     const removeFileBtn = document.getElementById('removeFileBtn');
     const uploadFileBtn = document.getElementById('uploadFileBtn');
     const fileUploadSection = document.getElementById('fileUploadSection');
+    const commonContentField = document.getElementById('groupCommonContentField');
+    const groupImageUploadField = document.getElementById('groupImageUploadField');
+    const postContentField = document.getElementById('postContent');
+    const groupProblemStatement = document.getElementById('groupProblemStatement');
+    const groupQuestionTitle = document.getElementById('groupQuestionTitle');
+    const groupQuestionFields = document.getElementById('groupQuestionFields');
+    const questionTemplateChips = groupQuestionFields ? groupQuestionFields.querySelectorAll('.template-chip') : [];
+    const groupEventDescription = document.getElementById('groupEventDescription');
+    const groupEventImageUploadBtn = document.getElementById('groupEventImageUploadBtn');
+    const groupEventImageLabel = document.getElementById('groupEventImageLabel');
 
     // Open modal with specific post type
     function openCreatePostModal(type = 'discussion') {
@@ -1020,10 +1030,10 @@
             
             if (type) {
                 postTypeBtns.forEach(btn => btn.classList.remove('active'));
-                const typeBtn = document.querySelector(`.post-type-btn[data-type="${type}"]`);
+                const typeBtn = createGroupPostForm ? createGroupPostForm.querySelector(`.post-type-btn[data-type="${type}"]`) : null;
                 if (typeBtn) {
                     typeBtn.classList.add('active');
-                    selectedPostType.value = type;
+                        if (selectedPostType) selectedPostType.value = type;
                     showConditionalFields(type);
                 }
             }
@@ -1043,41 +1053,74 @@
     function resetCreatePostForm() {
         if (createGroupPostForm) {
             createGroupPostForm.reset();
-            selectedPostType.value = 'discussion';
+            if (selectedPostType) selectedPostType.value = 'discussion';
             postTypeBtns.forEach(btn => btn.classList.remove('active'));
             postTypeBtns[0].classList.add('active');
-            document.querySelectorAll('.conditional-fields').forEach(field => {
+            createGroupPostForm.querySelectorAll('.conditional-fields').forEach(field => {
                 field.style.display = 'none';
             });
+            if (commonContentField) commonContentField.style.display = 'block';
+            if (postContentField) postContentField.required = true;
+            if (groupImageUploadField) groupImageUploadField.style.display = 'block';
             if (imagePreviewContainer) imagePreviewContainer.style.display = 'none';
             if (filePreviewContainer) filePreviewContainer.style.display = 'none';
             if (fileUploadSection) fileUploadSection.style.display = 'none';
+            if (groupEventImageLabel) groupEventImageLabel.textContent = 'Click to add event image';
+
+            questionTemplateChips.forEach(chip => chip.classList.remove('active'));
+            if (questionTemplateChips[0]) questionTemplateChips[0].classList.add('active');
+
+            const problemCount = createGroupPostForm.querySelector('.char-count[data-for="problem_statement"]');
+            if (problemCount) problemCount.textContent = '0 / 400';
         }
     }
 
     // Show conditional fields based on post type
     function showConditionalFields(type) {
-        document.querySelectorAll('.conditional-fields').forEach(field => {
+        if (!createGroupPostForm) return;
+
+        createGroupPostForm.querySelectorAll('.conditional-fields').forEach(field => {
             field.style.display = 'none';
         });
         
         const fieldMap = {
-            'question': 'questionFields',
+            'question': 'groupQuestionFields',
             'resource': 'resourceFields',
             'poll': 'pollFields',
-            'event': 'eventFields',
+            'event': 'groupEventFields',
             'assignment': 'assignmentFields'
         };
         
         const fieldId = fieldMap[type];
         if (fieldId) {
-            const field = document.getElementById(fieldId);
+            const field = createGroupPostForm.querySelector(`#${fieldId}`);
             if (field) field.style.display = 'block';
+        }
+
+        if (commonContentField && postContentField) {
+            const hideCommon = type === 'question' || type === 'event';
+            commonContentField.style.display = hideCommon ? 'none' : 'block';
+            postContentField.required = !hideCommon;
         }
 
         if (fileUploadSection) {
             fileUploadSection.style.display = type === 'resource' ? 'block' : 'none';
         }
+
+        if (groupImageUploadField) {
+            const hideGenericImage = type === 'question' || type === 'event';
+            groupImageUploadField.style.display = hideGenericImage ? 'none' : 'block';
+            if (hideGenericImage && postImageInput) {
+                postImageInput.value = '';
+                if (imagePreview) imagePreview.src = '';
+                if (imagePreviewContainer) imagePreviewContainer.style.display = 'none';
+                if (groupEventImageLabel) groupEventImageLabel.textContent = 'Click to add event image';
+            }
+        }
+    }
+
+    if (groupEventImageUploadBtn && uploadImageBtn) {
+        groupEventImageUploadBtn.addEventListener('click', () => uploadImageBtn.click());
     }
 
     // Event listeners for opening modal
@@ -1145,6 +1188,7 @@
                     if (imagePreviewContainer) imagePreviewContainer.style.display = 'block';
                 };
                 reader.readAsDataURL(file);
+                if (groupEventImageLabel) groupEventImageLabel.textContent = file.name;
             }
         });
     }
@@ -1154,8 +1198,36 @@
             if (postImageInput) postImageInput.value = '';
             if (imagePreview) imagePreview.src = '';
             if (imagePreviewContainer) imagePreviewContainer.style.display = 'none';
+            if (groupEventImageLabel) groupEventImageLabel.textContent = 'Click to add event image';
         });
     }
+
+    if (groupProblemStatement) {
+        groupProblemStatement.addEventListener('input', function() {
+            const max = Number(this.getAttribute('maxlength')) || 400;
+            const target = createGroupPostForm ? createGroupPostForm.querySelector('.char-count[data-for="problem_statement"]') : null;
+            if (target) target.textContent = `${this.value.length} / ${max}`;
+        });
+    }
+
+    function applyQuestionTemplate(chip, force = false) {
+        if (!chip || !groupQuestionTitle) return;
+        const prefix = (chip.dataset.templatePrefix || '').trim();
+        if (!prefix) return;
+        const current = groupQuestionTitle.value.trim();
+        if (!force && current.length > 0) return;
+        groupQuestionTitle.value = `${prefix} `;
+        groupQuestionTitle.focus();
+        groupQuestionTitle.setSelectionRange(groupQuestionTitle.value.length, groupQuestionTitle.value.length);
+    }
+
+    questionTemplateChips.forEach(chip => {
+        chip.addEventListener('click', function() {
+            questionTemplateChips.forEach(item => item.classList.remove('active'));
+            this.classList.add('active');
+            applyQuestionTemplate(this, true);
+        });
+    });
 
     // File upload (for resources)
     if (uploadFileBtn) {
@@ -1195,9 +1267,17 @@
             submitBtn.disabled = true;
 
             try {
-                const formData = new FormData(createGroupPostForm);
+                const selectedType = selectedPostType ? selectedPostType.value : 'discussion';
+                if (postContentField && selectedType === 'question') {
+                    postContentField.value = (groupProblemStatement?.value || '').trim();
+                } else if (postContentField && selectedType === 'event') {
+                    postContentField.value = (groupEventDescription?.value || '').trim();
+                }
 
-                const response = await fetch(BASE_PATH + 'index.php?controller=Group&action=createPost', {
+                const formData = new FormData(createGroupPostForm);
+                formData.set('sub_action', 'createPost');
+
+                const response = await fetch(BASE_PATH + 'index.php?controller=Group&action=handleAjax', {
                     method: 'POST',
                     body: formData
                 });

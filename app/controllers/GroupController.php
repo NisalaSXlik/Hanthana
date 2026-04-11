@@ -754,18 +754,36 @@ class GroupController {
             
             $userId = (int)$_SESSION['user_id'];
             $groupId = isset($_POST['group_id']) ? (int)$_POST['group_id'] : 0;
-            $content = isset($_POST['content']) ? trim($_POST['content']) : '';
             $postType = isset($_POST['post_type']) ? trim($_POST['post_type']) : 'discussion';
+
+            $content = isset($_POST['content']) ? trim($_POST['content']) : '';
+            if ($content === '') {
+                if ($postType === 'question') {
+                    $content = trim((string)($_POST['problem_statement'] ?? ''));
+                } elseif ($postType === 'event') {
+                    $content = trim((string)($_POST['event_description'] ?? ''));
+                    if ($content === '') {
+                        $content = trim((string)($_POST['event_title'] ?? ''));
+                    }
+                }
+            }
             
             if (!$groupId || !$content) {
                 echo json_encode(['success' => false, 'message' => 'Missing required fields']);
                 return;
             }
             
-            // Check if user is a member of the group
+            $group = $this->groupModel->getById($groupId);
+            if (!$group) {
+                echo json_encode(['success' => false, 'message' => 'Group not found']);
+                return;
+            }
+
+            // Check if user is a member of the group (creator is always allowed)
             $membershipState = $this->groupModel->getUserMembershipState($groupId, $userId);
+            $isCreator = (int)($group['created_by'] ?? 0) === $userId;
             
-            if ($membershipState !== 'active') {
+            if ($membershipState !== 'active' && !$isCreator) {
                 echo json_encode(['success' => false, 'message' => 'You must be a member to post']);
                 return;
             }

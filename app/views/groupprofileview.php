@@ -45,6 +45,7 @@ if ($resolvedGroupId > 0) {
     <link rel="stylesheet" href="./css/mediaquery.css">
     <link rel="stylesheet" href="./css/calender.css?v=20250209_zindex">
     <link rel="stylesheet" href="./css/post.css">
+    <link rel="stylesheet" href="./css/questions.css">
     <link rel="stylesheet" href="./css/myfeed.css">
     <link rel="stylesheet" href="./css/notificationpopup.css">
     <link rel="stylesheet" href="./css/notification-center.css">
@@ -266,18 +267,13 @@ if ($resolvedGroupId > 0) {
                                             <?php if ($postType === 'question'): ?>
                                                 <!-- Question Post -->
                                                 <div class="question-content">
-                                                    <?php if (!empty($postMetadata['category'])): ?>
-                                                        <span class="question-category"><?php echo htmlspecialchars($postMetadata['category']); ?></span>
+                                                    <?php if (!empty($postMetadata['title'])): ?>
+                                                        <h3 class="question-title"><?php echo htmlspecialchars($postMetadata['title']); ?></h3>
                                                     <?php endif; ?>
                                                     <?php if (!empty($post['content'])): ?>
-                                                        <p class="post-text"><?php echo nl2br(htmlspecialchars($post['content'])); ?></p>
+                                                        <p class="question-excerpt"><?php echo nl2br(htmlspecialchars($post['content'])); ?></p>
                                                     <?php endif; ?>
                                                 </div>
-                                                <?php if (!empty($post['image_url'])): ?>
-                                                    <div class="post-image">
-                                                        <img src="<?php echo htmlspecialchars($post['image_url']); ?>" alt="Post image">
-                                                    </div>
-                                                <?php endif; ?>
 
                                             <?php elseif ($postType === 'resource'): ?>
                                                 <!-- Resource Post -->
@@ -359,10 +355,10 @@ if ($resolvedGroupId > 0) {
 
                                             <?php elseif ($postType === 'event'): ?>
                                                 <!-- Event Post -->
-                                                <div class="event-content">
-                                                    <h3 class="event-title"><?php echo htmlspecialchars($postMetadata['title'] ?? ($post['event_title'] ?? 'Untitled Event')); ?></h3>
+                                                <div class="question-content">
+                                                    <h3 class="question-title"><?php echo htmlspecialchars($postMetadata['title'] ?? ($post['event_title'] ?? 'Untitled Event')); ?></h3>
                                                     <?php if (!empty($post['content'])): ?>
-                                                        <p class="post-text"><?php echo nl2br(htmlspecialchars($post['content'])); ?></p>
+                                                        <p class="question-excerpt"><?php echo nl2br(htmlspecialchars($post['content'])); ?></p>
                                                     <?php endif; ?>
                                                     <div class="event-details">
                                                         <?php if (!empty($postMetadata['date']) || !empty($post['event_date'])): ?>
@@ -384,12 +380,6 @@ if ($resolvedGroupId > 0) {
                                                             </div>
                                                         <?php endif; ?>
                                                     </div>
-
-                                                    <?php if (!empty($post['image_url'])): ?>
-                                                        <div class="photo post-image">
-                                                            <img src="<?php echo htmlspecialchars($post['image_url']); ?>" alt="Event image">
-                                                        </div>
-                                                    <?php endif; ?>
                                                 </div>
 
                                             <?php elseif ($postType === 'assignment'): ?>
@@ -431,9 +421,9 @@ if ($resolvedGroupId > 0) {
                                             </div>
                                             <div class="post-actions-right">
                                                 <div class="comments-side">
-                                                    <button type="button" class="question-answer-link-btn load-comments-btn" data-post-id="<?php echo $postId; ?>">
+                                                    <button type="button" class="question-answer-link-btn load-comments-btn" data-post-id="<?php echo $postId; ?>" data-thread-label="<?php echo $postType === 'question' ? 'answers' : 'comments'; ?>">
                                                         <i class="uil uil-comment" aria-hidden="true"></i>
-                                                        <?php echo (int)($post['comment_count'] ?? 0); ?> comments
+                                                        <?php echo (int)($post['comment_count'] ?? 0); ?> <?php echo $postType === 'question' ? 'answers' : 'comments'; ?>
                                                     </button>
                                                 </div>
                                                 <div class="interaction-item bookmark-item">
@@ -444,15 +434,15 @@ if ($resolvedGroupId > 0) {
                                             </div>
                                         </div>
 
-                                        <div id="comments-post-<?php echo (int)$post['post_id']; ?>" class="comment-section" data-post-id="<?php echo (int)$post['post_id']; ?>">
+                                        <div id="comments-post-<?php echo (int)$post['post_id']; ?>" class="comment-section" data-post-id="<?php echo (int)$post['post_id']; ?>" data-thread-label="<?php echo $postType === 'question' ? 'answers' : 'comments'; ?>">
                                             <div class="comment-header">
-                                                <h3>Comments</h3>
+                                                <h3><?php echo $postType === 'question' ? 'Answers' : 'Comments'; ?></h3>
                                                 <button class="close-comments" type="button">
                                                     <i class="fas fa-times"></i>
                                                 </button>
                                             </div>
                                             <div id="comments-container-<?php echo (int)$post['post_id']; ?>" class="comments-container" data-post-id="<?php echo (int)$post['post_id']; ?>">
-                                                <div class="comments-loading">Click to load comments</div>
+                                                <div class="comments-loading">Click to load <?php echo $postType === 'question' ? 'answers' : 'comments'; ?></div>
                                             </div>
                                             
                                             <div class="add-comment-form">
@@ -463,8 +453,8 @@ if ($resolvedGroupId > 0) {
                                                     ?>
                                                     <img src="<?php echo htmlspecialchars($currentUserAvatar); ?>" alt="Your Avatar" class="current-user-avatar">
                                                     <div class="comment-input-wrapper">
-                                                        <textarea class="comment-input" placeholder="Write a comment..." data-post-id="<?php echo (int)$post['post_id']; ?>"></textarea>
-                                                        <button class="comment-submit-btn" data-post-id="<?php echo (int)$post['post_id']; ?>">Post Comment</button>
+                                                        <textarea class="comment-input" placeholder="<?php echo $postType === 'question' ? 'Write an answer...' : 'Write a comment...'; ?>" data-post-id="<?php echo (int)$post['post_id']; ?>"></textarea>
+                                                        <button class="comment-submit-btn" data-post-id="<?php echo (int)$post['post_id']; ?>"><?php echo $postType === 'question' ? 'Post Answer' : 'Post Comment'; ?></button>
                                                     </div>
                                                 </div>
                                                 </form>
@@ -1143,26 +1133,56 @@ if ($resolvedGroupId > 0) {
                 </div>
 
                 <!-- Common Fields -->
-                <div class="form-group">
+                <div class="form-group" id="groupCommonContentField">
                     <label for="postContent">Content</label>
                     <textarea id="postContent" name="content" rows="4" placeholder="Share your thoughts..." required></textarea>
                 </div>
 
                 <!-- Question-specific fields -->
-                <div id="questionFields" class="conditional-fields" style="display:none;">
+                <div id="groupQuestionFields" class="conditional-fields" style="display:none;">
+                    <section class="template-section">
+                        <div class="template-label-row">
+                            <label>Question style</label>
+                            <small>Select one to pre-fill your title</small>
+                        </div>
+                        <div class="question-type-grid" role="list">
+                            <button type="button" class="template-chip active" data-template-prefix="How do I">How do I...</button>
+                            <button type="button" class="template-chip" data-template-prefix="Why does">Why does...</button>
+                            <button type="button" class="template-chip" data-template-prefix="What is">What is...</button>
+                            <button type="button" class="template-chip" data-template-prefix="Best way to">Best way to...</button>
+                            <button type="button" class="template-chip" data-template-prefix="Troubleshooting">Troubleshooting...</button>
+                        </div>
+                    </section>
                     <div class="form-group">
-                        <label for="questionCategory">Category</label>
-                        <select id="questionCategory" name="question_category">
-                            <option value="general">General</option>
-                            <option value="technical">Technical</option>
-                            <option value="assignment">Assignment Help</option>
-                            <option value="exam">Exam Prep</option>
-                            <option value="project">Project Discussion</option>
+                        <label for="groupQuestionTitle">Question title <span class="required">*</span></label>
+                        <input type="text" id="groupQuestionTitle" name="title" placeholder="Summarize your question in one sentence">
+                        <small>Example: "How do I create a modal popup in PHP?"</small>
+                    </div>
+                    <div class="form-group">
+                        <label for="groupQuestionCategory">Category</label>
+                        <select id="groupQuestionCategory" name="question_category">
+                            <option value="General">General</option>
+                            <option value="Technology">Technology</option>
+                            <option value="Science">Science</option>
+                            <option value="Education">Education</option>
+                            <option value="Health">Health</option>
+                            <option value="Finance">Finance</option>
+                            <option value="Career">Career</option>
+                            <option value="Lifestyle">Lifestyle</option>
+                            <option value="Travel">Travel</option>
+                            <option value="Entertainment">Entertainment</option>
+                            <option value="Sports">Sports</option>
+                            <option value="Other">Other</option>
                         </select>
                     </div>
                     <div class="form-group">
-                        <label for="questionTags">Tags (comma separated)</label>
-                        <input type="text" id="questionTags" name="tags" placeholder="e.g., java, arrays, data-structures">
+                        <label for="groupProblemStatement">What problem are you facing? <span class="required">*</span></label>
+                        <textarea id="groupProblemStatement" name="problem_statement" maxlength="400" rows="4" placeholder="Describe the exact issue, error messages, or blockers."></textarea>
+                        <div class="char-count" data-for="problem_statement">0 / 400</div>
+                    </div>
+                    <div class="form-group">
+                        <label for="groupQuestionTopics">Topics (comma separated)</label>
+                        <input type="text" id="groupQuestionTopics" name="topics" placeholder="e.g., php, mysql, async">
                     </div>
                 </div>
 
@@ -1209,22 +1229,33 @@ if ($resolvedGroupId > 0) {
                 </div>
 
                 <!-- Event-specific fields -->
-                <div id="eventFields" class="conditional-fields" style="display:none;">
+                <div id="groupEventFields" class="conditional-fields" style="display:none;">
                     <div class="form-group">
-                        <label for="eventTitle">Event Title</label>
-                        <input type="text" id="eventTitle" name="event_title" placeholder="Event name">
+                        <label for="groupEventTitle">Event Title <span class="required">*</span></label>
+                        <input type="text" id="groupEventTitle" name="event_title" placeholder="Enter event title">
                     </div>
                     <div class="form-group">
-                        <label for="eventDate">Event Date</label>
-                        <input type="date" id="eventDate" name="event_date">
+                        <label>Event Image</label>
+                        <div class="event-image-upload" id="groupEventImageUploadBtn">
+                            <i class="uil uil-image-upload"></i>
+                            <p id="groupEventImageLabel">Click to add event image</p>
+                        </div>
                     </div>
                     <div class="form-group">
-                        <label for="eventTime">Event Time</label>
-                        <input type="time" id="eventTime" name="event_time">
+                        <label for="groupEventDescription">Description</label>
+                        <textarea id="groupEventDescription" name="event_description" rows="4" placeholder="Describe your event..."></textarea>
                     </div>
                     <div class="form-group">
-                        <label for="eventLocation">Location</label>
-                        <input type="text" id="eventLocation" name="event_location" placeholder="Where will this take place?">
+                        <label for="groupEventDate">Date <span class="required">*</span></label>
+                        <input type="date" id="groupEventDate" name="event_date">
+                    </div>
+                    <div class="form-group">
+                        <label for="groupEventTime">Time</label>
+                        <input type="time" id="groupEventTime" name="event_time">
+                    </div>
+                    <div class="form-group">
+                        <label for="groupEventLocation">Location</label>
+                        <input type="text" id="groupEventLocation" name="event_location" placeholder="Enter location">
                     </div>
                 </div>
 
@@ -1245,7 +1276,7 @@ if ($resolvedGroupId > 0) {
                 </div>
 
                 <!-- Image Upload -->
-                <div class="form-group">
+                <div class="form-group" id="groupImageUploadField">
                     <button type="button" class="upload-btn" id="uploadImageBtn">
                         <i class="uil uil-image"></i> Add Image
                     </button>

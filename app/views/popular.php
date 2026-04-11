@@ -97,60 +97,72 @@ function timeAgo($timestamp) {
                                             ($q['title'] ?? '') . ' ' .
                                             strip_tags($q['content'] ?? '') . ' ' .
                                             ($q['topics'] ?? '') . ' ' .
-                                            ($q['category'] ?? '')
+                                            ($q['category'] ?? '') . ' ' .
+                                            ($q['group_name'] ?? '')
                                         );
                                         $normalizedSearchBlob = function_exists('mb_strtolower')
                                             ? mb_strtolower($searchBlob)
                                             : strtolower($searchBlob);
                                     ?>
                                     <?php $isOwner = (int)$q['user_id'] === (int)$currentUserId; ?>
+                                    <?php $isGroupQuestion = (($q['source_type'] ?? 'question') === 'group_question'); ?>
                                     <article id="question-card-<?php echo (int)$q['question_id']; ?>" class="question-card" data-question-id="<?php echo (int)$q['question_id']; ?>" data-search-text="<?php echo htmlspecialchars($normalizedSearchBlob, ENT_QUOTES, 'UTF-8'); ?>">
                                         <div class="question-card-head">
                                             <div class="question-author">
-                                                <a href="<?php echo BASE_PATH; ?>index.php?controller=Profile&action=view&user_id=<?php echo (int)$q['user_id']; ?>" class="question-author-link">
-                                                    <img src="<?php echo BASE_PATH . ($q['profile_picture'] ?: 'public/images/default-avatar.png'); ?>"
-                                                         alt="<?php echo htmlspecialchars($q['first_name']); ?>">
-                                                    <div>
-                                                        <span class="author-name"><?php echo htmlspecialchars($q['first_name'] . ' ' . $q['last_name']); ?></span>
-                                                        <small class="question-time"><?php echo timeAgo($q['created_at']); ?></small>
+                                                <img src="<?php echo BASE_PATH . ($q['profile_picture'] ?: 'public/images/default-avatar.png'); ?>"
+                                                     alt="<?php echo htmlspecialchars($q['first_name']); ?>">
+                                                <div>
+                                                    <div style="display: flex; align-items: center; gap: 0.35rem; flex-wrap: wrap;">
+                                                        <a href="<?php echo BASE_PATH; ?>index.php?controller=Profile&action=view&user_id=<?php echo (int)$q['user_id']; ?>" class="question-author-link" style="display: inline-flex; align-items: center; gap: 0.25rem;">
+                                                            <span class="author-name"><?php echo htmlspecialchars($q['first_name'] . ' ' . $q['last_name']); ?></span>
+                                                        </a>
+                                                        <?php if ($isGroupQuestion && !empty($q['group_name'])): ?>
+                                                            <i class="uil uil-angle-right" style="color: var(--color-gray);"></i>
+                                                            <a href="<?php echo BASE_PATH; ?>index.php?controller=Group&action=index&group_id=<?php echo (int)$q['group_id']; ?>" class="group-link" style="color: var(--color-gray); text-decoration: none; font-weight: 600;" title="Go to group">
+                                                                <?php echo htmlspecialchars($q['group_name']); ?>
+                                                            </a>
+                                                        <?php endif; ?>
                                                     </div>
-                                                </a>
+                                                    <small class="question-time"><?php echo timeAgo($q['created_at']); ?></small>
+                                                </div>
                                             </div>
 
                                             <div class="question-card-meta">
                                                 <span><i class="uil uil-eye"></i> <?php echo (int)$q['views']; ?> views</span>
 
                                                 <div class="question-menu-wrap">
-                                                    <button type="button" class="question-menu-trigger" aria-label="Question menu">
-                                                        <i class="uil uil-ellipsis-h"></i>
-                                                    </button>
+                                                    <?php if (!$isGroupQuestion): ?>
+                                                        <button type="button" class="question-menu-trigger" aria-label="Question menu">
+                                                            <i class="uil uil-ellipsis-h"></i>
+                                                        </button>
 
-                                                    <div class="question-menu">
-                                                        <?php if ($isOwner): ?>
-                                                            <button type="button" class="question-menu-item edit-question" data-question-id="<?php echo (int)$q['question_id']; ?>">
-                                                                <i class="uil uil-edit"></i> Edit
-                                                            </button>
-                                                            <button type="button" class="question-menu-item delete-question" data-question-id="<?php echo (int)$q['question_id']; ?>">
-                                                                <i class="uil uil-trash-alt"></i> Delete
-                                                            </button>
-                                                        <?php endif; ?>
+                                                        <div class="question-menu">
+                                                            <?php if ($isOwner): ?>
+                                                                <button type="button" class="question-menu-item edit-question" data-question-id="<?php echo (int)$q['question_id']; ?>">
+                                                                    <i class="uil uil-edit"></i> Edit
+                                                                </button>
+                                                                <button type="button" class="question-menu-item delete-question" data-question-id="<?php echo (int)$q['question_id']; ?>">
+                                                                    <i class="uil uil-trash-alt"></i> Delete
+                                                                </button>
+                                                            <?php endif; ?>
 
-                                                        <?php if (!$isOwner): ?>
-                                                            <button type="button"
-                                                                    class="question-menu-item report-trigger"
-                                                                    data-report-type="question"
-                                                                    data-target-id="<?php echo (int)$q['question_id']; ?>"
-                                                                    data-target-label="<?php echo htmlspecialchars($q['title'], ENT_QUOTES); ?>">
-                                                                <i class="uil uil-exclamation-circle"></i> Report
-                                                            </button>
-                                                        <?php endif; ?>
-                                                    </div>
+                                                            <?php if (!$isOwner): ?>
+                                                                <button type="button"
+                                                                        class="question-menu-item report-trigger"
+                                                                        data-report-type="question"
+                                                                        data-target-id="<?php echo (int)$q['question_id']; ?>"
+                                                                        data-target-label="<?php echo htmlspecialchars($q['title'], ENT_QUOTES); ?>">
+                                                                    <i class="uil uil-exclamation-circle"></i> Report
+                                                                </button>
+                                                            <?php endif; ?>
+                                                        </div>
+                                                    <?php endif; ?>
                                                 </div>
                                             </div>
                                         </div>
 
                                         <h2 class="question-title">
-                                            <a href="<?php echo BASE_PATH; ?>index.php?controller=QnA&action=view&id=<?php echo $q['question_id']; ?>">
+                                            <a href="<?php echo $isGroupQuestion && !empty($q['group_id']) ? BASE_PATH . 'index.php?controller=Group&action=index&group_id=' . (int)$q['group_id'] . '#post-' . (int)$q['question_id'] : BASE_PATH . 'index.php?controller=QnA&action=view&id=' . $q['question_id']; ?>">
                                                 <?php echo htmlspecialchars($q['title']); ?>
                                             </a>
                                         </h2>
@@ -201,42 +213,51 @@ function timeAgo($timestamp) {
                                             </div>
 
                                             <div class="question-card-stats">
-                                                <button type="button"
-                                                        class="question-answer-link question-answer-link-btn toggle-inline-answers"
-                                                        data-question-id="<?php echo (int)$q['question_id']; ?>"
-                                                        data-target="inlineAnswers-<?php echo (int)$q['question_id']; ?>"
-                                                        aria-expanded="false">
-                                                    <i class="uil uil-comment"></i> <?php echo (int)$q['answer_count']; ?> answers
-                                                </button>
+                                                <?php if ($isGroupQuestion && !empty($q['group_id'])): ?>
+                                                    <a href="<?php echo BASE_PATH . 'index.php?controller=Group&action=index&group_id=' . (int)$q['group_id'] . '#post-' . (int)$q['question_id']; ?>"
+                                                       class="question-answer-link question-answer-link-btn">
+                                                        <i class="uil uil-comment"></i> <?php echo (int)$q['answer_count']; ?> answers
+                                                    </a>
+                                                <?php else: ?>
+                                                    <button type="button"
+                                                            class="question-answer-link question-answer-link-btn toggle-inline-answers"
+                                                            data-question-id="<?php echo (int)$q['question_id']; ?>"
+                                                            data-target="inlineAnswers-<?php echo (int)$q['question_id']; ?>"
+                                                            aria-expanded="false">
+                                                        <i class="uil uil-comment"></i> <?php echo (int)$q['answer_count']; ?> answers
+                                                    </button>
+                                                <?php endif; ?>
                                             </div>
                                         </div>
 
-                                        <div id="inlineAnswers-<?php echo (int)$q['question_id']; ?>"
-                                             class="inline-answers-panel collapsed"
-                                             data-question-id="<?php echo (int)$q['question_id']; ?>"
-                                             aria-hidden="true">
-                                            <div class="inline-answers-header">
-                                                <h4>Answers</h4>
-                                                <button type="button" class="close-inline-answers" aria-label="Close answers">
-                                                    <i class="uil uil-times"></i>
-                                                </button>
-                                            </div>
+                                        <?php if (!$isGroupQuestion): ?>
+                                            <div id="inlineAnswers-<?php echo (int)$q['question_id']; ?>"
+                                                 class="inline-answers-panel collapsed"
+                                                 data-question-id="<?php echo (int)$q['question_id']; ?>"
+                                                 aria-hidden="true">
+                                                <div class="inline-answers-header">
+                                                    <h4>Answers</h4>
+                                                    <button type="button" class="close-inline-answers" aria-label="Close answers">
+                                                        <i class="uil uil-times"></i>
+                                                    </button>
+                                                </div>
 
-                                            <div class="inline-answers-list comments-container">
-                                                <div class="no-comments">Loading answers...</div>
-                                            </div>
+                                                <div class="inline-answers-list comments-container">
+                                                    <div class="no-comments">Loading answers...</div>
+                                                </div>
 
-                                            <div class="add-comment-form inline-answer-form-wrap">
-                                                <form class="inline-answer-form">
-                                                    <input type="hidden" name="question_id" value="<?php echo (int)$q['question_id']; ?>">
-                                                    <input type="hidden" name="parent_answer_id" value="">
-                                                    <div class="comment-input-wrapper">
-                                                        <textarea name="content" class="comment-input" rows="3" placeholder="Write your answer..." required></textarea>
-                                                        <button type="submit" class="comment-submit-btn">Post Answer</button>
-                                                    </div>
-                                                </form>
+                                                <div class="add-comment-form inline-answer-form-wrap">
+                                                    <form class="inline-answer-form">
+                                                        <input type="hidden" name="question_id" value="<?php echo (int)$q['question_id']; ?>">
+                                                        <input type="hidden" name="parent_answer_id" value="">
+                                                        <div class="comment-input-wrapper">
+                                                            <textarea name="content" class="comment-input" rows="3" placeholder="Write your answer..." required></textarea>
+                                                            <button type="submit" class="comment-submit-btn">Post Answer</button>
+                                                        </div>
+                                                    </form>
+                                                </div>
                                             </div>
-                                        </div>
+                                        <?php endif; ?>
                                     </article>
                                 <?php endforeach; ?>
                                 <div class="empty-state" id="questionSearchEmpty" style="display:none;">

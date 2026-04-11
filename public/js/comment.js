@@ -2,6 +2,17 @@ class CommentSystem {
     constructor() {
         this.init();
     }
+
+    getThreadType(postId) {
+        const section = document.querySelector(`.comment-section[data-post-id="${postId}"]`);
+        return section?.dataset.threadLabel === 'answers' ? 'answers' : 'comments';
+    }
+
+    getThreadLabel(postId, plural = true) {
+        const type = this.getThreadType(postId);
+        if (type === 'answers') return plural ? 'answers' : 'answer';
+        return plural ? 'comments' : 'comment';
+    }
     
     init() {
         this.bindEvents();
@@ -121,6 +132,7 @@ class CommentSystem {
     async loadComments(postId) {
         const container = document.getElementById(`comments-container-${postId}`);
         if (!container) return;
+        const threadLabel = this.getThreadLabel(postId, true);
         
         try {
             const formData = new FormData();
@@ -149,7 +161,7 @@ class CommentSystem {
                 this.displayComments(container, data.comments || [], { 
                     currentUserId: data.currentUserId, 
                     postOwnerId: data.postOwnerId 
-                });
+                }, threadLabel);
             } else {
                 container.innerHTML = `<div class="comments-loading">${data.message || 'Failed to load comments'}</div>`;
             }
@@ -159,9 +171,10 @@ class CommentSystem {
         }
     }
     
-    displayComments(container, comments, meta = {}) {
+    displayComments(container, comments, meta = {}, threadLabel = 'comments') {
         if (comments.length === 0) {
-            container.innerHTML = '<div class="no-comments">No comments yet. Be the first to comment!</div>';
+            const emptyLabel = threadLabel === 'answers' ? 'No answers yet. Be the first to answer!' : 'No comments yet. Be the first to comment!';
+            container.innerHTML = `<div class="no-comments">${emptyLabel}</div>`;
             return;
         }
         
@@ -333,10 +346,10 @@ class CommentSystem {
                 
                 // Update both the comment button text and the comment count display
                 if (data.comment_count !== undefined) {
-                    // Update "View all X comments" text
-                    const viewCommentsDiv = document.querySelector(`.comments.load-comments-btn[data-post-id="${postId}"]`);
+                    const threadLabel = this.getThreadLabel(postId, true);
+                    const viewCommentsDiv = document.querySelector(`.load-comments-btn[data-post-id="${postId}"]`);
                     if (viewCommentsDiv) {
-                        viewCommentsDiv.textContent = `View all ${data.comment_count} comments`;
+                        viewCommentsDiv.innerHTML = `<i class="uil uil-comment" aria-hidden="true"></i> ${data.comment_count} ${threadLabel}`;
                         // Make sure it's visible
                         viewCommentsDiv.style.display = 'block';
                     }
@@ -356,7 +369,7 @@ class CommentSystem {
                     }
                 }
                 
-                this.showToast('Comment added successfully!', 'success');
+                this.showToast(this.getThreadType(postId) === 'answers' ? 'Answer added successfully!' : 'Comment added successfully!', 'success');
             } else {
                 console.error('CommentSystem: Server error:', data.message);
                 this.showToast(data.message || 'Failed to add comment', 'error');
@@ -437,10 +450,10 @@ class CommentSystem {
                 
                 // Update both the comment button text and the comment count display
                 if (data.comment_count !== undefined) {
-                    // Update "View all X comments" text
-                    const viewCommentsDiv = document.querySelector(`.comments.load-comments-btn[data-post-id="${postId}"]`);
+                    const threadLabel = this.getThreadLabel(postId, true);
+                    const viewCommentsDiv = document.querySelector(`.load-comments-btn[data-post-id="${postId}"]`);
                     if (viewCommentsDiv) {
-                        viewCommentsDiv.textContent = `View all ${data.comment_count} comments`;
+                        viewCommentsDiv.innerHTML = `<i class="uil uil-comment" aria-hidden="true"></i> ${data.comment_count} ${threadLabel}`;
                         viewCommentsDiv.style.display = 'block';
                     }
                     
