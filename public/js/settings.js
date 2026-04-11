@@ -377,13 +377,20 @@ function initializeFormValidation() {
     // Email validation
     const emailInput = document.getElementById('email');
     if (emailInput) {
-        emailInput.addEventListener('blur', function() {
-            const email = this.value;
+        const validateEmailField = function() {
+            const email = this.value.trim();
             if (email && !isValidEmail(email)) {
-                showFieldError(this, 'Please enter a valid email address');
+                showFieldError(this, 'Use university email ending with .ac.lk');
+                this.setCustomValidity('Use university email ending with .ac.lk');
             } else {
                 clearFieldError(this);
+                this.setCustomValidity('');
             }
+        };
+
+        emailInput.addEventListener('input', validateEmailField);
+        emailInput.addEventListener('blur', function() {
+            validateEmailField.call(this);
         });
     }
     
@@ -403,7 +410,7 @@ function initializeFormValidation() {
 
 // Email validation helper
 function isValidEmail(email) {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const emailRegex = /^[^@\s]+@[a-z0-9-]+(?:\.[a-z0-9-]+)*\.ac\.lk$/i;
     return emailRegex.test(email);
 }
 

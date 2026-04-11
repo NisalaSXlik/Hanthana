@@ -68,7 +68,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 
                 <div class="form-group-l signup-form-group hf-icon-field">
                     <i class="uil uil-envelope"></i>
-                    <input type="email" id="email" name="email" placeholder="Email" required autocomplete="email"
+                      <input type="email" id="email" name="email" placeholder="University Email" required autocomplete="email"
+                          pattern="^[^@\s]+@[a-zA-Z0-9-]+(\.[a-zA-Z0-9-]+)*\.ac\.lk$"
+                          title="Use university email ending with .ac.lk (e.g., 2023cs140@stu.ucsc.cmb.ac.lk)"
                            value="<?php echo isset($_POST['email']) ? htmlspecialchars($_POST['email']) : ''; ?>">
                     <span id="email-status" class="hf-field-status" aria-live="polite"></span>
                 </div>

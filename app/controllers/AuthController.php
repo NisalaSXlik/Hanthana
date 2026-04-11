@@ -25,6 +25,10 @@ class AuthController {
             session_start();
         }
     }
+
+    private function isValidUniversityEmail(string $email): bool {
+        return (bool) preg_match('/^[^@\s]+@[a-z0-9-]+(?:\.[a-z0-9-]+)*\.ac\.lk$/i', $email);
+    }
     
     // Handle user registration
     public function register($data) {
@@ -237,9 +241,13 @@ class AuthController {
         
         // Email validation
         if (!empty($data['email'])) {
-            if (!filter_var($data['email'], FILTER_VALIDATE_EMAIL)) {
+            $email = trim((string)$data['email']);
+
+            if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
                 $errors[] = "Valid email is required.";
-            } elseif ($this->userModel->emailExists($data['email'])) {
+            } elseif (!$this->isValidUniversityEmail($email)) {
+                $errors[] = "Please use a university email ending with .ac.lk (e.g., 2023cs140@stu.ucsc.cmb.ac.lk).";
+            } elseif ($this->userModel->emailExists($email)) {
                 $errors[] = "Email already exists.";
             }
         }
@@ -314,8 +322,13 @@ class AuthController {
         }
         
         // Check unique fields
-        if (!empty($data['email']) && $this->userModel->emailExists($data['email'], $user_id)) {
-            $errors[] = "Email already exists.";
+        if (!empty($data['email'])) {
+            $email = trim((string)$data['email']);
+            if (!filter_var($email, FILTER_VALIDATE_EMAIL) || !$this->isValidUniversityEmail($email)) {
+                $errors[] = "Please use a university email ending with .ac.lk (e.g., 2023cs140@stu.ucsc.cmb.ac.lk).";
+            } elseif ($this->userModel->emailExists($email, $user_id)) {
+                $errors[] = "Email already exists.";
+            }
         }
         if (!empty($data['username']) && $this->userModel->usernameExists($data['username'], $user_id)) {
             $errors[] = "Username already exists.";
@@ -378,6 +391,15 @@ class AuthController {
                     'success' => true,
                     'available' => false,
                     'message' => 'Please enter a valid email address.'
+                ]);
+                return;
+            }
+
+            if (!$this->isValidUniversityEmail($value)) {
+                echo json_encode([
+                    'success' => true,
+                    'available' => false,
+                    'message' => 'Use your university email format: name@....ac.lk'
                 ]);
                 return;
             }
