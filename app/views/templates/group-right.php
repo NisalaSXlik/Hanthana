@@ -93,7 +93,7 @@
                 <i class="uil uil-sliders-v" style="font-size: 1.4rem;"></i>
                 <span style="font-size: 0.82rem; font-weight: 500;">Requests</span>
             </a>
-            <a href="<?php echo $groupSettingsHref; ?>" id="groupSettingsNavBtn" class="detail-item" style="flex-direction: column; align-items: center; justify-content: center; padding: 1rem 0.5rem; text-decoration: none; border: 1px solid var(--color-light); border-radius: var(--border-radius); text-align: center; gap: 0.4rem; transition: background 0.2s; background: transparent; cursor: pointer;">
+            <a href="<?php echo $groupSettingsHref; ?>" class="detail-item" style="flex-direction: column; align-items: center; justify-content: center; padding: 1rem 0.5rem; text-decoration: none; border: 1px solid var(--color-light); border-radius: var(--border-radius); text-align: center; gap: 0.4rem; transition: background 0.2s;">
                 <i class="uil uil-cog" style="font-size: 1.4rem;"></i>
                 <span style="font-size: 0.82rem; font-weight: 500;">Settings</span>
             </a>

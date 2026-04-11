@@ -78,21 +78,6 @@ $fileBankGroupDp = MediaHelper::resolveMediaPath(
                     </div>
                 </div>
 
-                <div class="mod-stat-grid mod-stat-grid-top">
-                    <div class="mod-stat">
-                        <strong>Content</strong>
-                        <span>Questions, Social, Events, Polls, Assignments</span>
-                    </div>
-                    <div class="mod-stat">
-                        <strong>Bin</strong>
-                        <span>Bins and bin media report queue</span>
-                    </div>
-                    <div class="mod-stat">
-                        <strong>Messages & Channels</strong>
-                        <span>Conversation reports and channel moderation</span>
-                    </div>
-                </div>
-
                 <div class="profile-tabs">
                     <ul>
                         <li class="active">
@@ -102,7 +87,10 @@ $fileBankGroupDp = MediaHelper::resolveMediaPath(
                             <a href="#" data-tab="bin">Bin</a>
                         </li>
                         <li>
-                            <a href="#" data-tab="messages-channels">Messages & Channels</a>
+                            <a href="#" data-tab="messages">Messages</a>
+                        </li>
+                        <li>
+                            <a href="#" data-tab="channels">Channels</a>
                         </li>
                     </ul>
                 </div>
@@ -193,7 +181,7 @@ $fileBankGroupDp = MediaHelper::resolveMediaPath(
                         </div>
                     </div>
 
-                    <div class="tab-content" id="messages-channels-content">
+                    <div class="tab-content" id="messages-content">
                         <div class="mod-section-card">
                             <h3>Conversation Reports</h3>
                             <div class="channel-list message-thread-list">
@@ -234,7 +222,9 @@ $fileBankGroupDp = MediaHelper::resolveMediaPath(
                                 </tbody>
                             </table>
                         </div>
+                    </div>
 
+                    <div class="tab-content" id="channels-content">
                         <div class="mod-section-card">
                             <h3>Channels Moderation</h3>
                             <table class="mod-table">
