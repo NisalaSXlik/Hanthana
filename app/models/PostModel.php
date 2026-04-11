@@ -293,8 +293,8 @@ class PostModel {
         $groupEventFilter = "";
         if ($excludeEvents) {
             $groupEventFilter = $this->hasGroupPostColumns 
-                ? "AND (p.group_post_type NOT IN ('event', 'assignment') OR p.group_post_type IS NULL)" 
-                : "AND (p.post_type NOT IN ('event', 'assignment') OR p.post_type IS NULL)";
+                ? "AND (p.group_post_type NOT IN ('event', 'question') OR p.group_post_type IS NULL)" 
+                : "AND (p.post_type NOT IN ('event', 'question') OR p.post_type IS NULL)";
         }
 
         $groupWhere = "(

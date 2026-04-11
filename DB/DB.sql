@@ -131,8 +131,7 @@ CREATE TABLE Channel (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     FOREIGN KEY (group_id) REFERENCES GroupsTable(group_id) ON DELETE CASCADE,
-    FOREIGN KEY (created_by) REFERENCES Users(user_id) ON DELETE CASCADE,
-    UNIQUE KEY uq_channel_group_name (group_id, name)
+    FOREIGN KEY (created_by) REFERENCES Users(user_id) ON DELETE CASCADE
 );
 
 -- Posts table with vote counts and view count
@@ -220,6 +219,10 @@ CREATE TABLE Vote (
     FOREIGN KEY (user_id) REFERENCES Users(user_id) ON DELETE CASCADE,
     UNIQUE(post_id, user_id)
 );
+
+
+
+
 
 -- Chat Conversations (Direct Messages & Group Chats)
 CREATE TABLE Conversations (
@@ -345,30 +348,26 @@ CREATE TABLE Bin (
     bin_id INT AUTO_INCREMENT PRIMARY KEY,
     group_id INT NOT NULL,
     created_by INT NOT NULL,
-    name VARCHAR(255) NOT NULL,
+    name VARCHAR(255),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-
     FOREIGN KEY (group_id) REFERENCES GroupsTable(group_id) ON DELETE CASCADE,
-    FOREIGN KEY (created_by) REFERENCES Users(user_id) ON DELETE CASCADE,
-
-    UNIQUE (group_id, name)
+    FOREIGN KEY (created_by) REFERENCES Users(user_id) ON DELETE CASCADE
 );
 
 -- BinMedia (existing - good)
 CREATE TABLE BinMedia (
-    media_id INT AUTO_INCREMENT PRIMARY KEY,
     bin_id INT NOT NULL,
-    file_name VARCHAR(255),
-    file_type ENUM('image','video','document','other'),
-    file_path VARCHAR(255),
-    file_size INT,
+    media_id INT NOT NULL,
     added_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     added_by INT NOT NULL,
-    UNIQUE (bin_id, file_name),
+    PRIMARY KEY(bin_id, media_id),
     FOREIGN KEY (bin_id) REFERENCES Bin(bin_id) ON DELETE CASCADE,
     FOREIGN KEY (media_id) REFERENCES MediaFile(media_id) ON DELETE CASCADE,
     FOREIGN KEY (added_by) REFERENCES Users(user_id) ON DELETE CASCADE
 );
+
+
+
 
 -- Post Views Tracking (for popular feed)
 CREATE TABLE PostViews (
@@ -549,10 +548,6 @@ CREATE TABLE Questions (
     user_id INT NOT NULL,
     title VARCHAR(500) NOT NULL,
     content TEXT,
-    attachment_name VARCHAR(255) NULL,
-    attachment_path VARCHAR(500) NULL,
-    attachment_type VARCHAR(20) NULL,
-    attachment_size INT NULL,
     category VARCHAR(100),
     views INT DEFAULT 0,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -618,43 +613,6 @@ CREATE TABLE QuestionTopics (
     INDEX idx_topic (topic_name)
 );
 
-CREATE TABLE GroupRoleChangeRequests (
-    request_id INT AUTO_INCREMENT PRIMARY KEY,
-    group_id INT NOT NULL,
-    target_user_id INT NOT NULL,
-    requested_role ENUM('admin', 'member') NOT NULL,
-    current_role ENUM('admin', 'member') NOT NULL,
-    proposed_by INT NOT NULL,
-    status ENUM('pending', 'approved', 'rejected') NOT NULL DEFAULT 'pending',
-    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    resolved_at DATETIME NULL,
-    INDEX idx_grcr_group_status (group_id, status),
-    INDEX idx_grcr_target (target_user_id),
-    CONSTRAINT fk_grcr_group FOREIGN KEY (group_id) REFERENCES GroupsTable(group_id) ON DELETE CASCADE,
-    CONSTRAINT fk_grcr_target_user FOREIGN KEY (target_user_id) REFERENCES Users(user_id) ON DELETE CASCADE,
-    CONSTRAINT fk_grcr_proposer FOREIGN KEY (proposed_by) REFERENCES Users(user_id) ON DELETE CASCADE
-);
-
-CREATE TABLE GroupRoleChangeVotes (
-    request_id INT NOT NULL,
-    admin_user_id INT NOT NULL,
-    voted_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    PRIMARY KEY (request_id, admin_user_id),
-    INDEX idx_grcv_admin (admin_user_id),
-    CONSTRAINT fk_grcv_request FOREIGN KEY (request_id) REFERENCES GroupRoleChangeRequests(request_id) ON DELETE CASCADE,
-    CONSTRAINT fk_grcv_admin FOREIGN KEY (admin_user_id) REFERENCES Users(user_id) ON DELETE CASCADE
-);
-
-CREATE TABLE GroupDeleteApprovals (
-    group_id INT NOT NULL,
-    admin_user_id INT NOT NULL,
-    approved_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    PRIMARY KEY (group_id, admin_user_id),
-    INDEX idx_gda_admin (admin_user_id),
-    CONSTRAINT fk_gda_group FOREIGN KEY (group_id) REFERENCES GroupsTable(group_id) ON DELETE CASCADE,
-    CONSTRAINT fk_gda_admin FOREIGN KEY (admin_user_id) REFERENCES Users(user_id) ON DELETE CASCADE
-);
-
 CREATE TABLE Reports (
     report_id INT AUTO_INCREMENT PRIMARY KEY,
     reporter_id INT NOT NULL,
@@ -662,7 +620,6 @@ CREATE TABLE Reports (
     reported_post_id INT NULL,
     reported_comment_id INT NULL,
     reported_group_id INT NULL,
-    reported_media_id INT NULL,
     reported_question_id INT NULL,
     report_type ENUM('spam','harassment','inappropriate','other') NOT NULL,
     description TEXT,
@@ -675,12 +632,16 @@ CREATE TABLE Reports (
     FOREIGN KEY (reported_post_id) REFERENCES Post(post_id) ON DELETE SET NULL,
     FOREIGN KEY (reported_comment_id) REFERENCES Comment(comment_id) ON DELETE SET NULL,
     FOREIGN KEY (reported_group_id) REFERENCES GroupsTable(group_id) ON DELETE SET NULL,
-    FOREIGN KEY (reported_media_id) REFERENCES BinMedia(media_id) ON DELETE SET NULL,
     FOREIGN KEY (reported_question_id) REFERENCES Questions(question_id) ON DELETE SET NULL,
     FOREIGN KEY (reviewed_by) REFERENCES Users(user_id) ON DELETE SET NULL
 );
 
 INSERT INTO `Users` (`user_id`, `first_name`, `last_name`, `email`, `phone_number`, `password_hash`, `username`, `bio`, `profile_picture`, `cover_photo`, `created_at`, `updated_at`, `university`, `last_login`, `friends_count`, `is_active`, `date_of_birth`, `location`, `role`, `banned_until`, `ban_reason`, `ban_notes`, `banned_by`) VALUES
+(1, 'Dummy', 'Admin', 'admin@hanthana.com', '0000000000', '$2y$10$Ys6K.2VyuP482eNAUDBHK.zGRJb18Cz5dlCOGUfNnPEHakO6Qlrvy', 'admin', NULL, 'uploads/user_dp/default.png', 'uploads/user_cover/default.png', '2026-01-22 20:15:29', '2026-01-22 20:16:50', NULL, '2026-01-22 20:15:54', 0, 1, NULL, NULL, 'admin', NULL, NULL, NULL, NULL),
+(2, 'Dummy', 'User1', 'user1@hanthana.com', '0000000001', '$2y$10$n0yBtBE3bEz53dEjCHGLOOaw5Sha2umqYkXoF90jEbuCfeO.8thYG', 'user1', NULL, 'uploads/user_dp/default.png', 'uploads/user_cover/default.png', '2026-01-22 20:17:41', '2026-01-22 20:18:24', NULL, '2026-01-22 20:17:59', 0, 1, NULL, NULL, 'user', NULL, NULL, NULL, NULL);
+
+ALTER TABLE `Users`
+  MODIFY `user_id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 (1, 'Dummy', 'Admin', 'admin@hanthana.com', '0000000000', '$2y$10$Ys6K.2VyuP482eNAUDBHK.zGRJb18Cz5dlCOGUfNnPEHakO6Qlrvy', 'admin', NULL, 'public/images/profile-1.jpg', 'public/images/story-1.jpg', '2026-01-22 20:15:29', '2026-01-22 20:16:50', NULL, '2026-01-22 20:15:54', 0, 1, NULL, NULL, 'admin', NULL, NULL, NULL, NULL),
 (2, 'Dummy', 'User1', 'user1@hanthana.com', '0000000001', '$2y$10$n0yBtBE3bEz53dEjCHGLOOaw5Sha2umqYkXoF90jEbuCfeO.8thYG', 'user1', NULL, 'public/images/profile-2.jpg', 'public/images/story-2.jpg', '2026-01-22 20:17:41', '2026-01-22 20:18:24', NULL, '2026-01-22 20:17:59', 0, 1, NULL, NULL, 'user', NULL, NULL, NULL, NULL),
 (3, 'Maya', 'Lee', 'maya.lee@hanthana.edu', '5550101003', '$2y$10$n0yBtBE3bEz53dEjCHGLOOaw5Sha2umqYkXoF90jEbuCfeO.8thYG', 'mayalee', 'STEM education researcher facilitating first-year calculus support.', 'public/images/profile-3.jpg', 'public/images/story-3.jpg', '2026-02-01 08:45:00', '2026-02-06 16:10:00', 'Hanthana University of Education', '2026-02-06 16:05:00', 3, 1, '1992-04-14', 'Boston, MA', 'user', NULL, NULL, NULL, NULL),
