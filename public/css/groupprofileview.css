@@ -1449,7 +1449,7 @@
 }
 
 .events-list .event-item {
-  padding: 16px;
+  padding: 18px;
   border-radius: 12px;
   border: 1px solid rgba(2,6,23,0.04);
   margin-bottom: 12px;
@@ -1458,9 +1458,11 @@
 .events-list .event-header h4 {
   margin: 0 0 6px 0;
   color: var(--color-dark);
+  font-size: 1.1rem;
 }
 .events-list .event-header small {
   color: var(--color-gray);
+  font-size: 0.92rem;
 }
 .events-list .event-actions { display:flex; align-items:center; gap:12px; margin-top:8px; }
 .events-list .btn-outline { background: transparent; border: 1px solid rgba(2,6,23,0.06); padding:6px 12px; border-radius:8px; cursor:pointer; }
@@ -1653,9 +1655,9 @@
 }
 
 .event-date {
-  width: 72px;
-  min-width: 72px;
-  height: 72px;
+  width: 84px;
+  min-width: 84px;
+  height: 84px;
   border-radius: 16px;
   background: linear-gradient(135deg, var(--color-primary), var(--color-secondary));
   color: var(--color-white);
@@ -1673,13 +1675,13 @@
 }
 
 .event-date .date-number {
-  font-size: 1.35rem;
+  font-size: 1.55rem;
   font-weight: 700;
 }
 
 .event-info h4 {
   margin: 0 0 8px;
-  font-size: 18px;
+  font-size: 20px;
   color: var(--color-dark);
 }
 
@@ -1689,6 +1691,7 @@
   display: flex;
   align-items: center;
   gap: 8px;
+  font-size: 0.95rem;
 }
 
 .event-info p i {
@@ -1712,6 +1715,12 @@
   background: rgba(7, 92, 230, 0.15);
   color: var(--color-primary);
   box-shadow: inset 0 0 0 1px var(--color-primary);
+}
+
+.btn-add-calendar.event-interest-btn.added,
+.btn-add-calendar.event-interest-btn.added i,
+.btn-add-calendar.event-interest-btn.added span {
+  color: #fff;
 }
 
 .event-interest-btn.loading {

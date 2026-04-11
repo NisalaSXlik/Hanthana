@@ -498,13 +498,20 @@
                 if (result.success) {
                     const interested = !!result.interested;
                     button.classList.toggle('interested', interested);
+                    button.classList.toggle('added', interested);
                     
                     const icon = button.querySelector('i');
                     if (icon) {
-                        icon.className = interested ? 'uis uis-bookmark' : 'uil uil-star';
+                        icon.className = interested ? 'uis uis-bookmark' : 'uil uil-calendar-alt';
+                    }
+
+                    const label = button.querySelector('span');
+                    if (label) {
+                        label.textContent = interested ? 'Added' : 'Add Calendar';
                     }
                     
                     button.setAttribute('aria-pressed', interested ? 'true' : 'false');
+                    button.setAttribute('title', interested ? 'Added to Calendar' : 'Add to Calendar');
                     const toastType = interested ? 'success' : 'info';
                     const toastMessage = result.message || (interested ? 'Event saved to your calendar' : 'Removed from your calendar');
                     if (typeof window.showToast === 'function') {

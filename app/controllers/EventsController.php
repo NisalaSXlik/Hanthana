@@ -44,7 +44,7 @@ class EventsController {
     }
 
     private function getEvents() {
-        $filter = $_GET['filter'] ?? 'upcoming';
+        $filter = $_GET['filter'] ?? 'recent';
         $userId = (int)($_SESSION['user_id'] ?? 0);
 
         if ($userId <= 0) {
@@ -126,19 +126,12 @@ class EventsController {
                 return (int)($b['reminder_added_at_ts'] ?? 0) <=> (int)($a['reminder_added_at_ts'] ?? 0); // most recently added first
             });
 
-        } else { // default: upcoming
-            $nowTs = time();
+        } else { // default: recent (also supports legacy upcoming filter)
+            $filteredEvents = $events;
 
-            foreach ($events as $event) {
-                $eventTs = $toEventTimestamp($event);
-                if ($eventTs >= $nowTs) {
-                    $filteredEvents[] = $event;
-                }
-            }
-
-            // Keep upcoming in chronological order (nearest first)
-            usort($filteredEvents, function($a, $b) use ($toEventTimestamp) {
-                return $toEventTimestamp($a) <=> $toEventTimestamp($b);
+            // Keep recent by post creation time (newest first)
+            usort($filteredEvents, function($a, $b) use ($toCreatedTimestamp) {
+                return $toCreatedTimestamp($b) <=> $toCreatedTimestamp($a);
             });
         }
 

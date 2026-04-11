@@ -47,6 +47,35 @@ class GroupController {
 
         $groupPostModel = new GroupPostModel();
         $groupPosts = $groupPostModel->getGroupPosts($groupId, $userId);
+        $eventPostIds = [];
+        foreach ($groupPosts as $postItem) {
+            if (($postItem['group_post_type'] ?? '') === 'event') {
+                $eventPostIds[] = (int)($postItem['post_id'] ?? 0);
+            }
+        }
+        $eventPostIds = array_values(array_unique(array_filter($eventPostIds, function ($id) {
+            return $id > 0;
+        })));
+
+        $interestedMap = [];
+        $goingCountMap = [];
+        if (!empty($eventPostIds)) {
+            $interestedMap = $this->calendarModel->getRemindersForPosts($userId, $eventPostIds);
+            foreach ($eventPostIds as $eventPostId) {
+                $goingCountMap[$eventPostId] = $this->calendarModel->getGoingCount($eventPostId);
+            }
+
+            foreach ($groupPosts as &$postItem) {
+                if (($postItem['group_post_type'] ?? '') !== 'event') {
+                    continue;
+                }
+                $eventPostId = (int)($postItem['post_id'] ?? 0);
+                $postItem['is_going'] = !empty($interestedMap[$eventPostId]);
+                $postItem['going_count'] = (int)($goingCountMap[$eventPostId] ?? 0);
+            }
+            unset($postItem);
+        }
+
         $groupEvents = array_values(array_map(function ($post) {
             $metadata = is_array($post['metadata']) ? $post['metadata'] : [];
             return [
@@ -56,17 +85,17 @@ class GroupController {
                 'time' => $metadata['time'] ?? $post['event_time'] ?? null,
                 'location' => $metadata['location'] ?? $post['event_location'] ?? null,
                 'description' => $metadata['description'] ?? $post['content'] ?? '',
-                'image_url' => $post['image_url'] ?? null
+                'image_url' => $post['image_url'] ?? null,
+                'going_count' => (int)($post['going_count'] ?? 0)
             ];
         }, array_filter($groupPosts, function ($post) {
             return ($post['group_post_type'] ?? '') === 'event';
         })));
 
         if (!empty($groupEvents)) {
-            $eventPostIds = array_column($groupEvents, 'post_id');
-            $interestedMap = $this->calendarModel->getRemindersForPosts($userId, $eventPostIds);
             foreach ($groupEvents as &$eventItem) {
                 $eventItem['interested'] = !empty($interestedMap[$eventItem['post_id']]);
+                $eventItem['going_count'] = (int)($goingCountMap[$eventItem['post_id']] ?? ($eventItem['going_count'] ?? 0));
             }
             unset($eventItem);
         }

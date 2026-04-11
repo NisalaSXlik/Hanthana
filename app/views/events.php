@@ -53,14 +53,14 @@ $incomingFriendRequests = $friendModel->getIncomingRequests($currentUserId);
                     <p style="color: var(--color-gray);">Discover and join exciting events in your community</p>
                     <div class="events-header-actions">
                         <div class="filter-tabs">
-                            <button class="filter-tab active" data-filter="upcoming">
-                                <i class="uil uil-clock"></i> Upcoming
+                            <button class="filter-tab active" data-filter="recent">
+                                <i class="uil uil-clock"></i> Recent
                             </button>
                             <button class="filter-tab" data-filter="my_events">
                                 <i class="uil uil-user"></i> My Events
                             </button>
                             <button class="filter-tab" data-filter="added_to_calendar">
-                                <i class="uil uil-calendar-plus"></i> Added to Calendar
+                                <i class="uil uil-bookmark"></i> Added to Calendar
                             </button>
                         </div>
                     </div>

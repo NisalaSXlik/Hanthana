@@ -1,7 +1,8 @@
 // Events page functionality
-let currentFilter = 'upcoming';
+let currentFilter = 'recent';
 let eventCardGlobalHandlersBound = false;
 let selectedEventCreateFile = null;
+let pendingEventFocusId = null;
 
 // Helper to construct API URL safely
 const getApiUrl = (queryString) => {
@@ -10,6 +11,18 @@ const getApiUrl = (queryString) => {
 };
 
 document.addEventListener('DOMContentLoaded', function() {
+    const params = new URLSearchParams(window.location.search);
+    const requestedFilter = params.get('filter');
+    const requestedEventId = Number(params.get('target_event_id') || params.get('event_id') || 0);
+
+    if (requestedFilter) {
+        currentFilter = requestedFilter;
+    }
+    if (requestedEventId > 0) {
+        pendingEventFocusId = requestedEventId;
+    }
+
+    setActiveFilterTab(currentFilter);
     loadEvents(currentFilter);
     initializeEventHandlers();
 });
@@ -21,9 +34,8 @@ function initializeEventHandlers() {
     // Filter tabs
     document.querySelectorAll('.filter-tab').forEach(tab => {
         tab.addEventListener('click', function() {
-            document.querySelectorAll('.filter-tab').forEach(t => t.classList.remove('active'));
-            this.classList.add('active');
             currentFilter = this.dataset.filter;
+            setActiveFilterTab(currentFilter);
             loadEvents(currentFilter);
         });
     });
@@ -203,15 +215,21 @@ async function loadEvents(filter) {
 
             container.innerHTML = data.events.map(event => createEventCard(event)).join('');
             initializeEventCardActions();
+
+            if (pendingEventFocusId) {
+                const focusId = pendingEventFocusId;
+                pendingEventFocusId = null;
+                setTimeout(() => focusEventCard(focusId), 50);
+            }
         } else {
             const titleMap = {
-                upcoming: 'Upcoming',
+                recent: 'Recent',
                 my_events: 'My',
                 added_to_calendar: 'Added to Calendar'
             };
 
             const bodyMap = {
-                upcoming: 'No upcoming events at the moment',
+                recent: 'No recent events at the moment',
                 my_events: 'You have not created any events yet',
                 added_to_calendar: 'You have not added any events to calendar yet'
             };
@@ -253,9 +271,7 @@ function createEventCard(event) {
     const location = (event.event_location || event.location || 'TBA').trim();
     const description = event.content || event.description || 'No description available';
     
-    const groupInfo = event.group_name 
-        ? `<i class="uil uil-users-alt"></i> ${escapeHtml(event.group_name)}` 
-        : `<i class="uil uil-user"></i> ${escapeHtml(event.first_name + ' ' + event.last_name)}`;
+    const hasGroupContext = !!(event.group_name && event.group_id);
     
     // Use event_title if available, fallback to title (PostModel returns event_title)
     const title = event.event_title || event.title || 'Untitled Event';
@@ -267,6 +283,9 @@ function createEventCard(event) {
     
     // User info
     const userName = [event.first_name, event.last_name].filter(Boolean).join(' ').trim() || 'Unknown User';
+    const authorDisplay = hasGroupContext
+        ? `<span class="event-author-creator">${escapeHtml(userName)}</span> <span class="event-author-separator">&gt;</span> <a href="${BASE_PATH || '/'}index.php?controller=Group&action=index&group_id=${Number(event.group_id)}" class="event-author-group-link">${escapeHtml(event.group_name)}</a>`
+        : `<span class="event-author-creator">${escapeHtml(userName)}</span>`;
     const userProfilePath = event.profile_picture || event.avatar || 'uploads/user_dp/default_user_dp.jpg';
     const fullProfileUrl = userProfilePath.startsWith('http') ? userProfilePath : (userProfilePath.startsWith('/') ? userProfilePath : ('uploads/user_dp/default_user_dp.jpg'));
     const userId = event.author_id || event.user_id || 0;
@@ -282,7 +301,7 @@ function createEventCard(event) {
         : '<i class="uil uil-calendar-alt"></i><span>Add Calendar</span>';
     
     return `
-        <div class="event-card" data-event-id="${eventId}">
+        <div id="event-card-${eventId}" class="event-card" data-event-id="${eventId}">
             <div class="event-card-header">
                 ${canDelete ? `
                 <div class="event-card-menu" data-event-id="${eventId}">
@@ -302,7 +321,7 @@ function createEventCard(event) {
                     <div class="event-card-author">
                         <img src="${escapeHtml(fullProfileUrl)}" alt="${escapeHtml(userName)}" class="event-author-avatar" data-user-id="${userId}">
                         <div class="event-author-info">
-                            <h4 class="event-author-name" data-user-id="${userId}">${escapeHtml(userName)}</h4>
+                            <h4 class="event-author-name" data-user-id="${userId}">${authorDisplay}</h4>
                             <p class="event-author-time">${createdTimeStr}</p>
                         </div>
                     </div>
@@ -370,6 +389,9 @@ function initializeEventCardActions() {
     document.querySelectorAll('.event-author-name').forEach(name => {
         name.style.cursor = 'pointer';
         name.addEventListener('click', (e) => {
+            if (e.target.closest('.event-author-group-link')) {
+                return;
+            }
             e.preventDefault();
             e.stopPropagation();
             const userId = name.getAttribute('data-user-id');
@@ -391,6 +413,10 @@ function initializeEventCardActions() {
             });
 
             menu.classList.toggle('open');
+        });
+
+        document.querySelectorAll('.trending-event-item').forEach(item => {
+            item.style.cursor = 'pointer';
         });
     });
 
@@ -417,6 +443,25 @@ function initializeEventCardActions() {
         });
         eventCardGlobalHandlersBound = true;
     }
+}
+
+function focusEventCard(eventId) {
+    const normalizedEventId = Number(eventId || 0);
+    if (!normalizedEventId) return;
+
+    const card = document.querySelector(`#eventsContainer .event-card[data-event-id="${normalizedEventId}"]`);
+    if (!card) return;
+
+    card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    card.classList.add('event-card-focus');
+    setTimeout(() => card.classList.remove('event-card-focus'), 1600);
+}
+
+function setActiveFilterTab(filter) {
+    const normalizedFilter = filter || 'recent';
+    document.querySelectorAll('.filter-tab').forEach(tab => {
+        tab.classList.toggle('active', tab.dataset.filter === normalizedFilter);
+    });
 }
 
 async function deleteEventPost(eventId) {
