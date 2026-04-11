@@ -98,6 +98,7 @@ class ReportModel {
                     r.reported_comment_id,
                     r.reported_group_id,
                     r.reported_media_id,
+                    r.reported_question_id,
                     r.reported_user_id,
                     u.username AS reporter_username,
                     reported.username AS reported_username,
@@ -106,6 +107,7 @@ class ReportModel {
                         WHEN r.reported_comment_id IS NOT NULL THEN CONCAT('Comment #', r.reported_comment_id)
                         WHEN r.reported_group_id IS NOT NULL THEN CONCAT('Group #', r.reported_group_id)
                         WHEN r.reported_media_id IS NOT NULL THEN CONCAT('File #', r.reported_media_id)
+                        WHEN r.reported_question_id IS NOT NULL THEN CONCAT('Question #', r.reported_question_id)
                         WHEN r.reported_user_id IS NOT NULL THEN CONCAT('User #', r.reported_user_id)
                         ELSE 'General'
                     END AS target_label
@@ -135,6 +137,7 @@ class ReportModel {
                     r.reported_comment_id,
                     r.reported_group_id,
                     r.reported_media_id,
+                    r.reported_question_id,
                     r.reported_user_id,
                     u.user_id AS reporter_id,
                     u.username AS reporter_username,
@@ -145,6 +148,7 @@ class ReportModel {
                         WHEN r.reported_comment_id IS NOT NULL THEN CONCAT('Comment #', r.reported_comment_id)
                         WHEN r.reported_group_id IS NOT NULL THEN CONCAT('Group #', r.reported_group_id)
                         WHEN r.reported_media_id IS NOT NULL THEN CONCAT('File #', r.reported_media_id)
+                        WHEN r.reported_question_id IS NOT NULL THEN CONCAT('Question #', r.reported_question_id)
                         WHEN r.reported_user_id IS NOT NULL THEN CONCAT('User #', r.reported_user_id)
                         ELSE 'General'
                     END AS target_label
@@ -155,9 +159,11 @@ class ReportModel {
         $conditions = [];
         $params = [];
 
-        if ($statusFilter === 'pending' || $statusFilter === 'resolved' || $statusFilter === 'reviewed') {
+        if ($statusFilter === 'pending' || $statusFilter === 'reviewed') {
             $conditions[] = 'LOWER(r.status) = :status';
             $params[':status'] = $statusFilter;
+        } elseif ($statusFilter === 'resolved') {
+            $conditions[] = "LOWER(r.status) IN ('resolved', 'reviewed')";
         } elseif ($statusFilter === 'received') {
             $conditions[] = 'r.created_at >= DATE_SUB(NOW(), INTERVAL 2 DAY)';
             $conditions[] = "LOWER(r.status) = 'pending'";
