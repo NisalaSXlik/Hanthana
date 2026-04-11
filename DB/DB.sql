@@ -654,11 +654,7 @@ CREATE TABLE Reports (
 );
 
 INSERT INTO `Users` (`user_id`, `first_name`, `last_name`, `email`, `phone_number`, `password_hash`, `username`, `bio`, `profile_picture`, `cover_photo`, `created_at`, `updated_at`, `university`, `last_login`, `friends_count`, `is_active`, `date_of_birth`, `location`, `role`, `banned_until`, `ban_reason`, `ban_notes`, `banned_by`) VALUES
-(1, 'Dummy', 'Admin', 'admin@hanthana.com', '0000000000', '$2y$10$Ys6K.2VyuP482eNAUDBHK.zGRJb18Cz5dlCOGUfNnPEHakO6Qlrvy', 'admin', NULL, 'uploads/user_dp/default.png', 'uploads/user_cover/default.png', '2026-01-22 20:15:29', '2026-01-22 20:16:50', NULL, '2026-01-22 20:15:54', 0, 1, NULL, NULL, 'admin', NULL, NULL, NULL, NULL),
-(2, 'Dummy', 'User1', 'user1@hanthana.com', '0000000001', '$2y$10$n0yBtBE3bEz53dEjCHGLOOaw5Sha2umqYkXoF90jEbuCfeO.8thYG', 'user1', NULL, 'uploads/user_dp/default.png', 'uploads/user_cover/default.png', '2026-01-22 20:17:41', '2026-01-22 20:18:24', NULL, '2026-01-22 20:17:59', 0, 1, NULL, NULL, 'user', NULL, NULL, NULL, NULL);
 
-ALTER TABLE `Users`
-  MODIFY `user_id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 (1, 'Dummy', 'Admin', 'admin@hanthana.com', '0000000000', '$2y$10$Ys6K.2VyuP482eNAUDBHK.zGRJb18Cz5dlCOGUfNnPEHakO6Qlrvy', 'admin', NULL, 'public/images/profile-1.jpg', 'public/images/story-1.jpg', '2026-01-22 20:15:29', '2026-01-22 20:16:50', NULL, '2026-01-22 20:15:54', 0, 1, NULL, NULL, 'admin', NULL, NULL, NULL, NULL),
 (2, 'Dummy', 'User1', 'user1@hanthana.com', '0000000001', '$2y$10$n0yBtBE3bEz53dEjCHGLOOaw5Sha2umqYkXoF90jEbuCfeO.8thYG', 'user1', NULL, 'public/images/profile-2.jpg', 'public/images/story-2.jpg', '2026-01-22 20:17:41', '2026-01-22 20:18:24', NULL, '2026-01-22 20:17:59', 0, 1, NULL, NULL, 'user', NULL, NULL, NULL, NULL),
 (3, 'Maya', 'Lee', 'maya.lee@hanthana.edu', '5550101003', '$2y$10$n0yBtBE3bEz53dEjCHGLOOaw5Sha2umqYkXoF90jEbuCfeO.8thYG', 'mayalee', 'STEM education researcher facilitating first-year calculus support.', 'public/images/profile-3.jpg', 'public/images/story-3.jpg', '2026-02-01 08:45:00', '2026-02-06 16:10:00', 'Hanthana University of Education', '2026-02-06 16:05:00', 3, 1, '1992-04-14', 'Boston, MA', 'user', NULL, NULL, NULL, NULL),
