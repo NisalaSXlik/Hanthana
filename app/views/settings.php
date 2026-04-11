@@ -53,6 +53,7 @@ try {
     <link rel="stylesheet" href="./css/forms.css">
     <link rel="stylesheet" href="./css/notificationpopup.css">
     <link rel="stylesheet" href="./css/notification-center.css">
+    <link rel="stylesheet" href="./css/report.css">
     <link rel="stylesheet" href="https://unicons.iconscout.com/release/v4.0.8/css/line.css">
     
     <script> 
@@ -420,7 +421,7 @@ try {
             </div>
         </div>
     </div>
-    
+
     <?php include __DIR__ . '/templates/chat-clean.php'; ?>
     <?php include __DIR__ . '/templates/report-modal.php'; ?>
 

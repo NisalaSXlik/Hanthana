@@ -1,5 +1,20 @@
 ﻿document.addEventListener('DOMContentLoaded', function() {
     console.log('=== GROUP PROFILE VIEW JS LOADED ===');
+    const basePath = typeof BASE_PATH !== 'undefined' ? BASE_PATH : '/';
+
+    const toast = (message, type = 'info') => {
+        if (typeof window.showToast === 'function') {
+            window.showToast(message, type);
+            return;
+        }
+
+        if (type === 'error') {
+            window.alert(message);
+            return;
+        }
+
+        console.log(message);
+    };
     
     // ===== HIGHLIGHT ACTIVE GROUP IN SIDEBAR =====
     const currentUrl = window.location.href;
@@ -94,19 +109,94 @@
     const joinGroupBtn = document.getElementById('joinGroupBtn');
     const leaveGroupBtn = document.getElementById('leaveGroupBtn');
 
+    const setButtonLoading = (button, loading, loadingLabel) => {
+        if (!button) return;
+
+        if (loading) {
+            if (!button.dataset.originalLabel) {
+                button.dataset.originalLabel = button.innerHTML;
+            }
+            button.disabled = true;
+            button.innerHTML = `<i class="uil uil-spinner-alt"></i><span>${loadingLabel}</span>`;
+            return;
+        }
+
+        button.disabled = false;
+        if (button.dataset.originalLabel) {
+            button.innerHTML = button.dataset.originalLabel;
+            delete button.dataset.originalLabel;
+        }
+    };
+
+    const postGroupAction = async (subAction, groupId) => {
+        const body = new URLSearchParams();
+        body.append('sub_action', subAction);
+        body.append('group_id', String(groupId));
+
+        const response = await fetch(`${basePath}index.php?controller=Group&action=handleAjax`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: body.toString(),
+            credentials: 'same-origin'
+        });
+
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok || !data.success) {
+            throw new Error(data.message || 'Unable to update group membership.');
+        }
+
+        return data;
+    };
+
     if (joinGroupBtn) {
         joinGroupBtn.addEventListener('click', (e) => {
             e.preventDefault();
-            console.log('Join group clicked');
-            // TODO: Implement join group action
+            const groupId = Number((typeof GROUP_ID !== 'undefined' ? GROUP_ID : window.GROUP_ID) || document.querySelector('input[name="group_id"]')?.value || 0);
+            if (!groupId) {
+                toast('Missing group context.', 'error');
+                return;
+            }
+
+            setButtonLoading(joinGroupBtn, true, 'Joining...');
+            postGroupAction('join', groupId)
+                .then((data) => {
+                    toast(data.message || 'Group updated successfully.', 'success');
+                    window.location.reload();
+                })
+                .catch((error) => {
+                    toast(error.message || 'Failed to join group.', 'error');
+                })
+                .finally(() => {
+                    setButtonLoading(joinGroupBtn, false);
+                });
         });
     }
 
     if (leaveGroupBtn) {
         leaveGroupBtn.addEventListener('click', (e) => {
             e.preventDefault();
-            console.log('Leave group clicked');
-            // TODO: Implement leave group action
+            const groupId = Number((typeof GROUP_ID !== 'undefined' ? GROUP_ID : window.GROUP_ID) || document.querySelector('input[name="group_id"]')?.value || 0);
+            if (!groupId) {
+                toast('Missing group context.', 'error');
+                return;
+            }
+
+            if (!window.confirm('Leave this group?')) {
+                return;
+            }
+
+            setButtonLoading(leaveGroupBtn, true, 'Leaving...');
+            postGroupAction('leave', groupId)
+                .then((data) => {
+                    toast(data.message || 'Group updated successfully.', 'success');
+                    window.location.reload();
+                })
+                .catch((error) => {
+                    toast(error.message || 'Failed to leave group.', 'error');
+                })
+                .finally(() => {
+                    setButtonLoading(leaveGroupBtn, false);
+                });
         });
     }
 

@@ -28,7 +28,8 @@ class ChannelPageController extends BaseController
         }
 
         $userId = (int) $_SESSION['user_id'];
-        if (!$this->channelModel->isActiveGroupMember($groupId, $userId)) {
+        $groupPrivacy = strtolower(trim((string)($group['privacy_status'] ?? 'public')));
+        if ($groupPrivacy !== 'public' && !$this->channelModel->isActiveGroupMember($groupId, $userId)) {
             $this->redirect('Feed');
         }
 
@@ -52,7 +53,13 @@ class ChannelPageController extends BaseController
             return $this->response(['status' => 'error', 'errors' => ['Valid group ID is required.']], 400);
         }
 
-        if (!$this->channelModel->isActiveGroupMember($groupId, $userId)) {
+        $group = $this->groupModel->getById($groupId);
+        if (!$group) {
+            return $this->response(['status' => 'error', 'errors' => ['Group not found.']], 404);
+        }
+
+        $groupPrivacy = strtolower(trim((string)($group['privacy_status'] ?? 'public')));
+        if ($groupPrivacy !== 'public' && !$this->channelModel->isActiveGroupMember($groupId, $userId)) {
             return $this->response(['status' => 'error', 'errors' => ['You are not a member of this group.']], 403);
         }
 
