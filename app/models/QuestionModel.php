@@ -14,11 +14,11 @@ class QuestionModel {
                     q.question_id,
                     q.title,
                     q.content,
-                    q.category,
                     q.attachment_name,
                     q.attachment_path,
                     q.attachment_type,
                     q.attachment_size,
+                    q.category,
                     q.views,
                     q.created_at,
                     u.user_id,
@@ -175,22 +175,22 @@ class QuestionModel {
                     user_id,
                     title,
                     content,
-                    category,
                     attachment_name,
                     attachment_path,
                     attachment_type,
-                    attachment_size
+                    attachment_size,
+                    category
                 ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
         $stmt = $this->db->getConnection()->prepare($sql);
         $stmt->execute([
             $userId,
             $data['title'],
             $data['content'] ?? '',
-            $data['category'] ?? 'General',
             $data['attachment_name'] ?? null,
             $data['attachment_path'] ?? null,
             $data['attachment_type'] ?? null,
-            $data['attachment_size'] ?? null
+            $data['attachment_size'] ?? null,
+            $data['category'] ?? 'General'
         ]);
         
         $questionId = $this->db->getConnection()->lastInsertId();

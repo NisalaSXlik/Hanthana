@@ -580,9 +580,11 @@ class SearchController
             $remaining = $limit - count($results);
             $qSql = "SELECT
                         q.question_id,
+                        q.title,
                         q.attachment_name,
                         q.attachment_type,
                         q.attachment_path,
+                        q.attachment_size,
                         q.created_at,
                         u.username
                     FROM Questions q
@@ -605,7 +607,7 @@ class SearchController
 
             foreach ($qStmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
                 $results[] = [
-                    'name' => (string)($row['attachment_name'] ?? ('Question attachment #' . (int)($row['question_id'] ?? 0))),
+                    'name' => (string)($row['attachment_name'] ?? ($row['title'] ?? ('Question attachment #' . (int)($row['question_id'] ?? 0)))),
                     'type' => (string)($row['attachment_type'] ?? 'attachment'),
                     'uploader_or_group' => '@' . (string)($row['username'] ?? 'unknown'),
                     'uploaded_at' => (string)($row['created_at'] ?? ''),
