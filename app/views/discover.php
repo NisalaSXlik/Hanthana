@@ -178,6 +178,7 @@ $incomingFriendRequests = $friendModel->getIncomingRequests($currentUserId);
     </main>
 
     <?php include __DIR__ . '/templates/chat-clean.php'; ?>
+    <?php include __DIR__ . '/templates/report-modal.php'; ?>
 
 
     <script src="./js/navbar.js"></script>
@@ -187,5 +188,6 @@ $incomingFriendRequests = $friendModel->getIncomingRequests($currentUserId);
     <script src="./js/general.js"></script>
     <script src="./js/friends.js"></script>
     <script src="./js/post.js"></script>
+    <script src="./js/report.js"></script>
 </body>
 </html>

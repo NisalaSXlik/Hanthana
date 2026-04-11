@@ -108,6 +108,7 @@ $incomingFriendRequests = $friendModel->getIncomingRequests($currentUserId);
         </div>
     </div>
     <?php include __DIR__ . '/templates/chat-clean.php'; ?>
+    <?php include __DIR__ . '/templates/report-modal.php'; ?>
 
     <div id="eventsCreateModal" class="event-create-modal" aria-hidden="true">
         <div class="event-create-modal-content" role="dialog" aria-modal="true" aria-labelledby="eventsCreateTitle">
