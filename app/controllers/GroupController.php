@@ -1094,6 +1094,8 @@ class GroupController {
             if ($content === '') {
                 if ($postType === 'question') {
                     $content = trim((string)($_POST['problem_statement'] ?? ''));
+                } elseif ($postType === 'poll') {
+                    $content = trim((string)($_POST['poll_question'] ?? ''));
                 } elseif ($postType === 'event') {
                     $content = trim((string)($_POST['event_description'] ?? ''));
                     if ($content === '') {
