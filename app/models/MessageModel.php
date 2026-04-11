@@ -601,6 +601,112 @@ class MessageModel {
         return $this->hydrateMessage($message, $requesterId);
     }
 
+    public function getMessageForReport(int $messageId): ?array {
+        $sql = "
+            SELECT m.message_id, m.sender_id, ch.group_id
+            FROM Messages m
+            INNER JOIN Conversations c ON c.conversation_id = m.conversation_id
+            LEFT JOIN Channel ch ON ch.conversation_id = c.conversation_id
+            WHERE m.message_id = :messageId
+              AND m.is_deleted = FALSE
+            LIMIT 1";
+
+        $stmt = $this->conn()->prepare($sql);
+        $stmt->execute([':messageId' => $messageId]);
+        $message = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        return $message ?: null;
+    }
+
+    public function deleteMessage(int $messageId, int $requesterId): array {
+        if ($messageId <= 0 || $requesterId <= 0) {
+            return ['success' => false, 'status' => 422, 'message' => 'Invalid delete request'];
+        }
+
+        $lookupSql = "
+            SELECT m.message_id, m.sender_id, m.conversation_id, m.is_deleted,
+                   ch.group_id,
+                   gm.role AS group_role
+            FROM Messages m
+            LEFT JOIN Channel ch ON ch.conversation_id = m.conversation_id
+            LEFT JOIN GroupMember gm
+                ON gm.group_id = ch.group_id
+               AND gm.user_id = :requesterId
+               AND gm.status = 'active'
+            WHERE m.message_id = :messageId
+            LIMIT 1";
+
+        $stmt = $this->conn()->prepare($lookupSql);
+        $stmt->execute([
+            ':messageId' => $messageId,
+            ':requesterId' => $requesterId,
+        ]);
+        $message = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        if (!$message) {
+            return ['success' => false, 'status' => 404, 'message' => 'Message not found'];
+        }
+
+        if ((int)($message['is_deleted'] ?? 0) === 1) {
+            return ['success' => true, 'status' => 200, 'message' => 'Message already deleted'];
+        }
+
+        $isOwner = (int)($message['sender_id'] ?? 0) === $requesterId;
+        $isGroupModerator = in_array(strtolower((string)($message['group_role'] ?? '')), ['admin', 'moderator'], true);
+        if (!$isOwner && !$isGroupModerator) {
+            return ['success' => false, 'status' => 403, 'message' => 'You are not allowed to delete this message'];
+        }
+
+        $connection = $this->conn();
+        $connection->beginTransaction();
+
+        try {
+            $deleteStmt = $connection->prepare(
+                "UPDATE Messages
+                 SET is_deleted = TRUE,
+                     content = '',
+                     file_url = NULL,
+                     file_name = NULL,
+                     file_size = NULL
+                 WHERE message_id = :messageId"
+            );
+            $deleteStmt->execute([':messageId' => $messageId]);
+
+            $conversationId = (int)($message['conversation_id'] ?? 0);
+            $lastStmt = $connection->prepare(
+                "SELECT content, created_at
+                 FROM Messages
+                 WHERE conversation_id = :conversationId
+                   AND is_deleted = FALSE
+                 ORDER BY created_at DESC, message_id DESC
+                 LIMIT 1"
+            );
+            $lastStmt->execute([':conversationId' => $conversationId]);
+            $lastMessage = $lastStmt->fetch(PDO::FETCH_ASSOC) ?: null;
+
+            $updateConversationStmt = $connection->prepare(
+                "UPDATE Conversations
+                 SET last_message_text = :lastText,
+                     last_message_at = :lastAt
+                 WHERE conversation_id = :conversationId"
+            );
+            $updateConversationStmt->execute([
+                ':lastText' => $lastMessage['content'] ?? null,
+                ':lastAt' => $lastMessage['created_at'] ?? null,
+                ':conversationId' => $conversationId,
+            ]);
+
+            $connection->commit();
+            return ['success' => true, 'status' => 200, 'message' => 'Message deleted'];
+        } catch (Throwable $e) {
+            if ($connection->inTransaction()) {
+                $connection->rollBack();
+            }
+            error_log('deleteMessage failed: ' . $e->getMessage());
+            return ['success' => false, 'status' => 500, 'message' => 'Failed to delete message'];
+        }
+    }
+
     private function markMessageAsRead(int $messageId, int $userId): void {
         $sql = "
             INSERT INTO MessageReadStatus (message_id, user_id, read_at)
@@ -614,7 +720,7 @@ class MessageModel {
         ]);
     }
 
-    public function getSharedMedia(int $conversationId): array {
+    public function getSharedMedia(int $conversationId, int $viewerUserId): array {
         $sql = "
             SELECT message_id, message_type, file_url, file_name, file_size, created_at
             FROM Messages
@@ -648,9 +754,139 @@ class MessageModel {
         }
 
         return [
+            'about' => $this->getConversationAbout($conversationId, $viewerUserId),
+            'files' => $items,
             'photos' => $photos,
             'videos' => $videos,
             'documents' => $documents,
+        ];
+    }
+
+    private function getConversationAbout(int $conversationId, int $viewerUserId): array {
+        $typeSql = "
+            SELECT c.conversation_type
+            FROM Conversations c
+            INNER JOIN ConversationParticipants cp
+                ON cp.conversation_id = c.conversation_id
+                AND cp.user_id = :viewerUserId
+                AND cp.is_active = TRUE
+            WHERE c.conversation_id = :conversationId
+            LIMIT 1";
+
+        $typeStmt = $this->conn()->prepare($typeSql);
+        $typeStmt->execute([
+            ':conversationId' => $conversationId,
+            ':viewerUserId' => $viewerUserId,
+        ]);
+        $conversationType = (string)($typeStmt->fetchColumn() ?: '');
+
+        if ($conversationType === 'direct') {
+            $directSql = "
+                SELECT
+                    u.user_id,
+                    u.first_name,
+                    u.last_name,
+                    u.username,
+                    u.profile_picture,
+                    u.cover_photo,
+                    u.friends_count
+                FROM ConversationParticipants self_cp
+                INNER JOIN ConversationParticipants peer_cp
+                    ON peer_cp.conversation_id = self_cp.conversation_id
+                    AND peer_cp.user_id <> :viewerUserId
+                    AND peer_cp.is_active = TRUE
+                INNER JOIN Users u
+                    ON u.user_id = peer_cp.user_id
+                WHERE self_cp.conversation_id = :conversationId
+                  AND self_cp.user_id = :viewerUserId
+                  AND self_cp.is_active = TRUE
+                LIMIT 1";
+
+            $directStmt = $this->conn()->prepare($directSql);
+            $directStmt->execute([
+                ':conversationId' => $conversationId,
+                ':viewerUserId' => $viewerUserId,
+            ]);
+            $peer = $directStmt->fetch(PDO::FETCH_ASSOC) ?: [];
+
+            $name = trim(((string)($peer['first_name'] ?? '')) . ' ' . ((string)($peer['last_name'] ?? '')));
+            if ($name === '') {
+                $name = (string)($peer['username'] ?? 'User');
+            }
+
+            return [
+                'type' => 'direct',
+                'name' => $name,
+                'username' => (string)($peer['username'] ?? ''),
+                'avatar' => (string)($peer['profile_picture'] ?? ''),
+                'cover_image' => (string)($peer['cover_photo'] ?? ''),
+                'friend_count' => (int)($peer['friends_count'] ?? 0),
+                'profile_user_id' => isset($peer['user_id']) ? (int)$peer['user_id'] : null,
+                'group_tag' => null,
+                'member_count' => null,
+                'channel_id' => null,
+                'group_id' => null,
+                'description' => '',
+            ];
+        }
+
+        if ($conversationType === 'group') {
+            $groupSql = "
+                SELECT
+                    ch.channel_id,
+                    ch.group_id,
+                    ch.name AS channel_name,
+                    ch.description,
+                    ch.display_picture,
+                    g.tag,
+                    g.member_count,
+                    g.cover_image
+                FROM Channel ch
+                INNER JOIN GroupsTable g
+                    ON g.group_id = ch.group_id
+                INNER JOIN ConversationParticipants cp
+                    ON cp.conversation_id = ch.conversation_id
+                    AND cp.user_id = :viewerUserId
+                    AND cp.is_active = TRUE
+                WHERE ch.conversation_id = :conversationId
+                LIMIT 1";
+
+            $groupStmt = $this->conn()->prepare($groupSql);
+            $groupStmt->execute([
+                ':conversationId' => $conversationId,
+                ':viewerUserId' => $viewerUserId,
+            ]);
+            $channel = $groupStmt->fetch(PDO::FETCH_ASSOC) ?: [];
+
+            return [
+                'type' => 'group',
+                'name' => (string)($channel['channel_name'] ?? 'Channel'),
+                'username' => '',
+                'avatar' => (string)($channel['display_picture'] ?? ''),
+                'cover_image' => (string)($channel['cover_image'] ?? ''),
+                'friend_count' => null,
+                'profile_user_id' => null,
+                'group_tag' => (string)($channel['tag'] ?? ''),
+                'member_count' => isset($channel['member_count']) ? (int)$channel['member_count'] : null,
+                'channel_id' => isset($channel['channel_id']) ? (int)$channel['channel_id'] : null,
+                'group_id' => isset($channel['group_id']) ? (int)$channel['group_id'] : null,
+                'description' => (string)($channel['description'] ?? ''),
+            ];
+        }
+
+        return [
+            'type' => 'unknown',
+            'name' => 'Conversation',
+            'username' => '',
+            'avatar' => '',
+            'cover_image' => '',
+            'friend_count' => null,
+            'profile_user_id' => null,
+            'group_tag' => null,
+            'member_count' => null,
+            'channel_id' => null,
+            'group_id' => null,
+            'description' => '',
         ];
     }
 

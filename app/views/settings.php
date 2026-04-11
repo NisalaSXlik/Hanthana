@@ -422,6 +422,7 @@ try {
     </div>
     
     <?php include __DIR__ . '/templates/chat-clean.php'; ?>
+    <?php include __DIR__ . '/templates/report-modal.php'; ?>
 
     <script src="./js/calender.js?v=20250209_syntax"></script>
     <script src="./js/general.js"></script>
@@ -429,6 +430,7 @@ try {
     <script src="./js/navbar.js"></script>
     <script src="./js/notificationpopup.js"></script>
     <script src="./js/post.js"></script>
+    <script src="./js/report.js"></script>
     <script src="./js/settings.js"></script>
     
     <script>

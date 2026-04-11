@@ -44,6 +44,7 @@ $groupDp = MediaHelper::resolveMediaPath((string)($group['display_picture'] ?? '
     <link rel="stylesheet" href="./css/myfeed.css">
     <link rel="stylesheet" href="./css/notificationpopup.css">
     <link rel="stylesheet" href="./css/notification-center.css">
+    <link rel="stylesheet" href="./css/group-right.css">
     <link rel="stylesheet" href="./css/forms.css">
     <link rel="stylesheet" href="./css/groupsettings.css">
     <link rel="stylesheet" href="https://unicons.iconscout.com/release/v4.0.8/css/line.css">
@@ -132,6 +133,7 @@ $groupDp = MediaHelper::resolveMediaPath((string)($group['display_picture'] ?? '
     <div class="toast-container" id="toastContainer"></div>
 
     <?php include __DIR__ . '/templates/chat-clean.php'; ?>
+    <?php include __DIR__ . '/templates/report-modal.php'; ?>
 
     <script>const BASE_PATH = '<?php echo BASE_PATH; ?>';</script>
     <script src="./js/calender.js?v=20250209_syntax"></script>
@@ -141,6 +143,7 @@ $groupDp = MediaHelper::resolveMediaPath((string)($group['display_picture'] ?? '
     <script src="./js/notificationpopup.js"></script>
     <script src="./js/navbar.js"></script>
     <script src="./js/post.js"></script>
+    <script src="./js/report.js"></script>
     <script src="./js/groupsettings.js"></script>
 </body>
 </html>

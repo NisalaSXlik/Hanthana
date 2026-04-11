@@ -3,12 +3,9 @@ require_once __DIR__ . '/../core/Database.php';
 
 class GroupModel {
     private $db;
-    private $hasRoleChangeTables = false;
-    private $hasDeleteApprovalTable = false;
 
     public function __construct() {
         $this->db = (new Database())->getConnection();
-        $this->ensureGroupGovernanceTables();
     }
 
     private function tableExists(string $tableName): bool {
@@ -19,58 +16,6 @@ class GroupModel {
         } catch (Throwable $e) {
             return false;
         }
-    }
-
-    private function ensureGroupGovernanceTables(): void {
-        try {
-            $this->db->exec(
-                "CREATE TABLE IF NOT EXISTS GroupRoleChangeRequests (
-                    request_id INT AUTO_INCREMENT PRIMARY KEY,
-                    group_id INT NOT NULL,
-                    target_user_id INT NOT NULL,
-                    requested_role ENUM('admin', 'member') NOT NULL,
-                    current_role ENUM('admin', 'member') NOT NULL,
-                    proposed_by INT NOT NULL,
-                    status ENUM('pending', 'approved', 'rejected') NOT NULL DEFAULT 'pending',
-                    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-                    resolved_at DATETIME NULL,
-                    INDEX idx_grcr_group_status (group_id, status),
-                    INDEX idx_grcr_target (target_user_id),
-                    CONSTRAINT fk_grcr_group FOREIGN KEY (group_id) REFERENCES GroupsTable(group_id) ON DELETE CASCADE,
-                    CONSTRAINT fk_grcr_target_user FOREIGN KEY (target_user_id) REFERENCES Users(user_id) ON DELETE CASCADE,
-                    CONSTRAINT fk_grcr_proposer FOREIGN KEY (proposed_by) REFERENCES Users(user_id) ON DELETE CASCADE
-                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4"
-            );
-
-            $this->db->exec(
-                "CREATE TABLE IF NOT EXISTS GroupRoleChangeVotes (
-                    request_id INT NOT NULL,
-                    admin_user_id INT NOT NULL,
-                    voted_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-                    PRIMARY KEY (request_id, admin_user_id),
-                    INDEX idx_grcv_admin (admin_user_id),
-                    CONSTRAINT fk_grcv_request FOREIGN KEY (request_id) REFERENCES GroupRoleChangeRequests(request_id) ON DELETE CASCADE,
-                    CONSTRAINT fk_grcv_admin FOREIGN KEY (admin_user_id) REFERENCES Users(user_id) ON DELETE CASCADE
-                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4"
-            );
-
-            $this->db->exec(
-                "CREATE TABLE IF NOT EXISTS GroupDeleteApprovals (
-                    group_id INT NOT NULL,
-                    admin_user_id INT NOT NULL,
-                    approved_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-                    PRIMARY KEY (group_id, admin_user_id),
-                    INDEX idx_gda_admin (admin_user_id),
-                    CONSTRAINT fk_gda_group FOREIGN KEY (group_id) REFERENCES GroupsTable(group_id) ON DELETE CASCADE,
-                    CONSTRAINT fk_gda_admin FOREIGN KEY (admin_user_id) REFERENCES Users(user_id) ON DELETE CASCADE
-                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4"
-            );
-        } catch (Throwable $e) {
-            error_log('ensureGroupGovernanceTables error: ' . $e->getMessage());
-        }
-
-        $this->hasRoleChangeTables = $this->tableExists('GroupRoleChangeRequests') && $this->tableExists('GroupRoleChangeVotes');
-        $this->hasDeleteApprovalTable = $this->tableExists('GroupDeleteApprovals');
     }
 
     /**
@@ -463,6 +408,9 @@ class GroupModel {
     public function getUserMembershipState($groupId, $userId) {
         $membership = $this->getMembership($groupId, $userId);
         if (!$membership) {
+            if ($this->hasPendingRequest($groupId, $userId)) {
+                return 'pending';
+            }
             return 'not_joined';
         }
         return $membership['status'] === 'active' ? 'active' : $membership['status'];
@@ -529,6 +477,15 @@ class GroupModel {
      * Check if user has pending join request
      */
     public function hasPendingRequest($groupId, $userId) {
+        if ($this->tableExists('GroupJoinRequests')) {
+            $sql = "SELECT 1 FROM GroupJoinRequests WHERE group_id = ? AND user_id = ? AND status = 'pending'";
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute([$groupId, $userId]);
+            if ($stmt->fetch(PDO::FETCH_ASSOC) !== false) {
+                return true;
+            }
+        }
+
         $sql = "SELECT 1 FROM GroupMember WHERE group_id = ? AND user_id = ? AND status = 'pending'";
         $stmt = $this->db->prepare($sql);
         $stmt->execute([$groupId, $userId]);
@@ -547,6 +504,29 @@ class GroupModel {
             }
             return false; // Already a member or other status
         }
+
+        if ($this->tableExists('GroupJoinRequests')) {
+            $sql = "SELECT status FROM GroupJoinRequests WHERE group_id = ? AND user_id = ? LIMIT 1";
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute([$groupId, $userId]);
+            $request = $stmt->fetch(PDO::FETCH_ASSOC);
+
+            if ($request) {
+                if (($request['status'] ?? '') === 'pending') {
+                    return 'exists';
+                }
+
+                $sql = "UPDATE GroupJoinRequests
+                        SET status = 'pending', requested_at = NOW(), reviewed_by = NULL, reviewed_at = NULL
+                        WHERE group_id = ? AND user_id = ?";
+                $stmt = $this->db->prepare($sql);
+                return $stmt->execute([$groupId, $userId]);
+            }
+
+            $sql = "INSERT INTO GroupJoinRequests (group_id, user_id, status, requested_at) VALUES (?, ?, 'pending', NOW())";
+            $stmt = $this->db->prepare($sql);
+            return $stmt->execute([$groupId, $userId]);
+        }
         
         // Create new pending request
         $sql = "INSERT INTO GroupMember (group_id, user_id, role, status, joined_at) VALUES (?, ?, 'member', 'pending', NULL)";
@@ -558,6 +538,20 @@ class GroupModel {
      * Get pending join requests
      */
     public function getPendingRequests($groupId) {
+        if ($this->tableExists('GroupJoinRequests')) {
+            $sql = "SELECT gjr.request_id, gjr.group_id, gjr.user_id, gjr.status,
+                           gjr.requested_at,
+                           gjr.requested_at AS joined_at,
+                           u.username, u.first_name, u.last_name, u.profile_picture
+                    FROM GroupJoinRequests gjr
+                    INNER JOIN Users u ON gjr.user_id = u.user_id
+                    WHERE gjr.group_id = ? AND gjr.status = 'pending'
+                    ORDER BY gjr.requested_at DESC";
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute([$groupId]);
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        }
+
         $sql = "SELECT gm.*, u.user_id, u.username, u.first_name, u.last_name, u.profile_picture
                 , gm.joined_at AS requested_at
             FROM GroupMember gm
@@ -573,6 +567,24 @@ class GroupModel {
      * Approve join request
      */
     public function approveJoinRequest($groupId, $userId, $adminId) {
+        if ($this->tableExists('GroupJoinRequests')) {
+            $sql = "UPDATE GroupJoinRequests
+                    SET status = 'approved', reviewed_by = ?, reviewed_at = NOW()
+                    WHERE group_id = ? AND user_id = ? AND status = 'pending'";
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute([$adminId, $groupId, $userId]);
+
+            if ($stmt->rowCount() > 0) {
+                $added = $this->addMember($groupId, $userId, 'member');
+                if ($added) {
+                    return true;
+                }
+
+                $membership = $this->getMembership($groupId, $userId);
+                return $membership && ($membership['status'] ?? '') === 'active';
+            }
+        }
+
         $sql = "UPDATE GroupMember SET status = 'active', joined_at = NOW() WHERE group_id = ? AND user_id = ? AND status = 'pending'";
         $stmt = $this->db->prepare($sql);
         $result = $stmt->execute([$groupId, $userId]);
@@ -588,6 +600,18 @@ class GroupModel {
      * Reject join request
      */
     public function rejectJoinRequest($groupId, $userId, $adminId) {
+        if ($this->tableExists('GroupJoinRequests')) {
+            $sql = "UPDATE GroupJoinRequests
+                    SET status = 'rejected', reviewed_by = ?, reviewed_at = NOW()
+                    WHERE group_id = ? AND user_id = ? AND status = 'pending'";
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute([$adminId, $groupId, $userId]);
+
+            if ($stmt->rowCount() > 0) {
+                return true;
+            }
+        }
+
         $sql = "DELETE FROM GroupMember WHERE group_id = ? AND user_id = ? AND status = 'pending'";
         $stmt = $this->db->prepare($sql);
         return $stmt->execute([$groupId, $userId]);
@@ -757,101 +781,346 @@ class GroupModel {
         return (int)($row['c'] ?? 0);
     }
 
-    public function getDeleteApprovalStatus(int $groupId, int $viewerId = 0): array {
-        if (!$this->hasDeleteApprovalTable) {
-            $this->ensureGroupGovernanceTables();
+    private function closeExpiredGovernanceVotes(int $groupId): void {
+        $expiredSql = "SELECT vote_event_id
+                       FROM GroupGovernanceVoteEvent
+                       WHERE group_id = ? AND result = 'in_process' AND expires_at <= NOW()";
+        $stmt = $this->db->prepare($expiredSql);
+        $stmt->execute([$groupId]);
+        $eventIds = $stmt->fetchAll(PDO::FETCH_COLUMN) ?: [];
+
+        foreach ($eventIds as $eventId) {
+            $this->finalizeGovernanceVoteEvent($groupId, (int)$eventId, true);
+        }
+    }
+
+    private function finalizeGovernanceVoteEvent(int $groupId, int $eventId, bool $expired = false): void {
+        $countStmt = $this->db->prepare(
+            "SELECT
+                SUM(CASE WHEN vote_choice = 'in_favor' THEN 1 ELSE 0 END) AS in_favor_count,
+                SUM(CASE WHEN vote_choice = 'not_in_favor' THEN 1 ELSE 0 END) AS not_in_favor_count
+             FROM GroupGovernanceVote
+             WHERE vote_event_id = ?"
+        );
+        $countStmt->execute([$eventId]);
+        $counts = $countStmt->fetch(PDO::FETCH_ASSOC) ?: [];
+        $inFavor = (int)($counts['in_favor_count'] ?? 0);
+        $notInFavor = (int)($counts['not_in_favor_count'] ?? 0);
+        $result = ($inFavor > $notInFavor) ? 'accepted' : (($inFavor === $notInFavor && $expired) ? 'expired' : 'rejected');
+
+        $metaStmt = $this->db->prepare(
+            "SELECT vote_type, target_id, target_type, meta_json
+             FROM GroupGovernanceVoteEvent
+             WHERE vote_event_id = ? AND group_id = ?
+             LIMIT 1"
+        );
+        $metaStmt->execute([$eventId, $groupId]);
+        $event = $metaStmt->fetch(PDO::FETCH_ASSOC) ?: null;
+        if (!$event) {
+            return;
         }
 
-        $adminCount = $this->getActiveAdminCount($groupId);
+        if ($result === 'accepted' && ($event['vote_type'] ?? '') === 'member_role_change' && ($event['target_type'] ?? '') === 'user') {
+            $meta = json_decode((string)($event['meta_json'] ?? '{}'), true) ?: [];
+            $requestedRole = strtolower((string)($meta['to_role'] ?? $meta['requested_role'] ?? 'member'));
+            if (in_array($requestedRole, ['admin', 'member'], true)) {
+                $roleStmt = $this->db->prepare(
+                    "UPDATE GroupMember SET role = ? WHERE group_id = ? AND user_id = ? AND status = 'active'"
+                );
+                $roleStmt->execute([$requestedRole, $groupId, (int)($event['target_id'] ?? 0)]);
+            }
+        }
 
-        if (!$this->hasDeleteApprovalTable) {
-            return [
-                'admin_count' => $adminCount,
-                'approved_count' => 0,
-                'viewer_approved' => false,
-                'all_approved' => false
+        $closeStmt = $this->db->prepare(
+            "UPDATE GroupGovernanceVoteEvent
+             SET result = ?, closed_at = NOW()
+             WHERE vote_event_id = ? AND group_id = ? AND result = 'in_process'"
+        );
+        $closeStmt->execute([$result, $eventId, $groupId]);
+    }
+
+    public function createGovernanceVoteEvent(int $groupId, string $targetType, int $targetId, string $voteType, string $reason, int $creatorId, array $meta = []): array {
+        if (!$this->isGroupAdmin($groupId, $creatorId)) {
+            return ['success' => false, 'message' => 'Only group admins can start governance votes.'];
+        }
+
+        $targetType = strtolower(trim($targetType));
+        if (!in_array($targetType, ['group', 'user', 'channel'], true)) {
+            $targetType = 'group';
+        }
+
+        $voteTypeMap = [
+            'role' => 'member_role_change',
+            'member_role_change' => 'member_role_change',
+            'delete' => 'group_deletion',
+            'group_deletion' => 'group_deletion',
+            'visibility' => 'group_visibility_change',
+            'group_visibility_change' => 'group_visibility_change',
+        ];
+        $voteType = $voteTypeMap[strtolower(trim($voteType))] ?? '';
+        if ($voteType === '') {
+            return ['success' => false, 'message' => 'Invalid vote type.'];
+        }
+
+        if ($targetType === 'group' || $targetId <= 0) {
+            $targetId = $groupId;
+        }
+
+        $meta = is_array($meta) ? $meta : [];
+
+        $insert = $this->db->prepare(
+            "INSERT INTO GroupGovernanceVoteEvent
+                (group_id, target_type, target_id, vote_type, reason, meta_json, created_by, created_at, expires_at, result)
+             VALUES (?, ?, ?, ?, ?, ?, ?, NOW(), DATE_ADD(NOW(), INTERVAL 3 DAY), 'in_process')"
+        );
+        $insert->execute([
+            $groupId,
+            $targetType,
+            $targetId,
+            $voteType,
+            trim($reason),
+            !empty($meta) ? json_encode($meta) : null,
+            $creatorId
+        ]);
+
+        return [
+            'success' => true,
+            'message' => 'Governance vote created.',
+            'vote_event_id' => (int)$this->db->lastInsertId()
+        ];
+    }
+
+    public function castGovernanceVote(int $groupId, int $eventId, int $voterId, string $voteChoice): array {
+        if (!$this->isGroupAdmin($groupId, $voterId)) {
+            return ['success' => false, 'message' => 'Only group admins can vote on governance events.'];
+        }
+
+        $voteChoice = ($voteChoice === 'in_favor') ? 'in_favor' : (($voteChoice === 'not_in_favor') ? 'not_in_favor' : '');
+        if ($voteChoice === '') {
+            return ['success' => false, 'message' => 'Invalid vote choice.'];
+        }
+
+        $this->closeExpiredGovernanceVotes($groupId);
+
+        $eventStmt = $this->db->prepare(
+            "SELECT vote_event_id, expires_at, result
+             FROM GroupGovernanceVoteEvent
+             WHERE vote_event_id = ? AND group_id = ?
+             LIMIT 1"
+        );
+        $eventStmt->execute([$eventId, $groupId]);
+        $event = $eventStmt->fetch(PDO::FETCH_ASSOC);
+        if (!$event) {
+            return ['success' => false, 'message' => 'Governance vote event not found.'];
+        }
+        if (($event['result'] ?? '') !== 'in_process') {
+            return ['success' => false, 'message' => 'Voting is closed for this event.'];
+        }
+
+        $voteStmt = $this->db->prepare(
+            "INSERT INTO GroupGovernanceVote (vote_event_id, voter_user_id, vote_choice, voted_at)
+             VALUES (?, ?, ?, NOW())
+             ON DUPLICATE KEY UPDATE vote_choice = VALUES(vote_choice), voted_at = NOW()"
+        );
+        $voteStmt->execute([$eventId, $voterId, $voteChoice]);
+
+        $adminCount = $this->getActiveAdminCount($groupId);
+        $countStmt = $this->db->prepare("SELECT COUNT(*) AS c FROM GroupGovernanceVote WHERE vote_event_id = ?");
+        $countStmt->execute([$eventId]);
+        $voteCount = (int)($countStmt->fetch(PDO::FETCH_ASSOC)['c'] ?? 0);
+
+        if ($voteCount >= $adminCount && $adminCount > 0) {
+            $this->finalizeGovernanceVoteEvent($groupId, $eventId, false);
+        }
+
+        return ['success' => true, 'message' => 'Vote recorded.'];
+    }
+
+    public function getGovernanceVoteEvents(int $groupId, int $viewerId = 0): array {
+        $this->closeExpiredGovernanceVotes($groupId);
+
+        $sql = "SELECT
+                    e.vote_event_id,
+                    e.group_id,
+                    e.target_type,
+                    e.target_id,
+                    e.vote_type,
+                    e.reason,
+                    e.meta_json,
+                    e.created_by,
+                    e.created_at,
+                    e.expires_at,
+                    e.result,
+                    tu.username AS target_username,
+                    tu.first_name AS target_first_name,
+                    tu.last_name AS target_last_name,
+                    su.username AS starter_username,
+                    su.first_name AS starter_first_name,
+                    su.last_name AS starter_last_name,
+                    SUM(CASE WHEN v.vote_choice = 'in_favor' THEN 1 ELSE 0 END) AS in_favor_count,
+                    SUM(CASE WHEN v.vote_choice = 'not_in_favor' THEN 1 ELSE 0 END) AS not_in_favor_count,
+                    MAX(CASE WHEN v.voter_user_id = ? THEN v.vote_choice ELSE NULL END) AS viewer_vote
+                FROM GroupGovernanceVoteEvent e
+                LEFT JOIN GroupGovernanceVote v ON v.vote_event_id = e.vote_event_id
+                LEFT JOIN Users tu ON e.target_type = 'user' AND tu.user_id = e.target_id
+                LEFT JOIN Users su ON su.user_id = e.created_by
+                WHERE e.group_id = ?
+                GROUP BY e.vote_event_id
+                ORDER BY FIELD(e.result, 'in_process', 'accepted', 'rejected', 'expired'), e.created_at DESC";
+
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute([$viewerId, $groupId]);
+        $rows = $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
+
+        $voterStmt = $this->db->prepare(
+            "SELECT u.first_name, u.last_name, u.username, u.profile_picture
+             FROM GroupGovernanceVote v
+             INNER JOIN Users u ON u.user_id = v.voter_user_id
+             WHERE v.vote_event_id = ? AND v.vote_choice = ?
+             ORDER BY v.voted_at ASC"
+        );
+
+        $events = [];
+        foreach ($rows as $row) {
+            $meta = json_decode((string)($row['meta_json'] ?? '{}'), true) ?: [];
+            $voteType = (string)($row['vote_type'] ?? 'member_role_change');
+            $inFavor = (int)($row['in_favor_count'] ?? 0);
+            $notInFavor = (int)($row['not_in_favor_count'] ?? 0);
+            $result = (string)($row['result'] ?? 'in_process');
+            $startedByName = trim((string)($row['starter_first_name'] ?? '') . ' ' . (string)($row['starter_last_name'] ?? ''));
+            if ($startedByName === '') {
+                $startedByName = (string)($row['starter_username'] ?? 'Admin');
+            }
+
+            $typeKey = 'role';
+            $typeLabel = 'Member Role Change';
+            $tone = 'role';
+            if ($voteType === 'group_deletion') {
+                $typeKey = 'delete';
+                $typeLabel = 'Group Deletion';
+                $tone = 'danger';
+            } elseif ($voteType === 'group_visibility_change') {
+                $typeKey = 'visibility';
+                $typeLabel = 'Group Visibility Change';
+                $tone = 'danger';
+            }
+
+            $supporters = [];
+            $opponents = [];
+            $eventId = (int)($row['vote_event_id'] ?? 0);
+            foreach (['in_favor', 'not_in_favor'] as $choice) {
+                $voterStmt->execute([$eventId, $choice]);
+                $list = [];
+                foreach ($voterStmt->fetchAll(PDO::FETCH_ASSOC) ?: [] as $v) {
+                    $fullName = trim((string)($v['first_name'] ?? '') . ' ' . (string)($v['last_name'] ?? ''));
+                    if ($fullName === '') {
+                        $fullName = (string)($v['username'] ?? 'Member');
+                    }
+                    $list[] = [
+                        'name' => $fullName,
+                        'username' => (string)($v['username'] ?? 'member'),
+                        'avatar' => $this->resolveUserProfilePicture((string)($v['profile_picture'] ?? '')),
+                    ];
+                }
+
+                if ($choice === 'in_favor') {
+                    $supporters = $list;
+                } else {
+                    $opponents = $list;
+                }
+            }
+
+            $events[] = [
+                'event_id' => $eventId,
+                'type' => $typeLabel,
+                'type_key' => $typeKey,
+                'reason' => (string)($row['reason'] ?? ''),
+                'in_favor' => $inFavor,
+                'against' => $notInFavor,
+                'status' => $result,
+                'result_text' => $inFavor . ' in favor',
+                'tone' => $tone,
+                'supporters' => $supporters,
+                'opponents' => $opponents,
+                'target_user_id' => (int)($row['target_id'] ?? 0),
+                'target_username' => (string)($row['target_username'] ?? ''),
+                'target_first_name' => (string)($row['target_first_name'] ?? ''),
+                'target_last_name' => (string)($row['target_last_name'] ?? ''),
+                'requested_role' => (string)($meta['to_role'] ?? $meta['requested_role'] ?? 'member'),
+                'from_role' => (string)($meta['from_role'] ?? ''),
+                'to_role' => (string)($meta['to_role'] ?? $meta['requested_role'] ?? ''),
+                'from_visibility' => (string)($meta['from_visibility'] ?? ''),
+                'to_visibility' => (string)($meta['to_visibility'] ?? ''),
+                'started_by_user_id' => (int)($row['created_by'] ?? 0),
+                'started_by_username' => (string)($row['starter_username'] ?? ''),
+                'started_by_name' => $startedByName,
+                'target_type' => (string)($row['target_type'] ?? 'group'),
+                'target_id' => (int)($row['target_id'] ?? 0),
+                'viewer_voted' => !empty($row['viewer_vote']),
+                'votes_needed' => max(1, (int)floor($this->getActiveAdminCount($groupId) / 2) + 1),
             ];
         }
 
-        $stmt = $this->db->prepare("SELECT COUNT(*) AS c FROM GroupDeleteApprovals WHERE group_id = ?");
-        $stmt->execute([$groupId]);
-        $row = $stmt->fetch(PDO::FETCH_ASSOC);
-        $approvedCount = (int)($row['c'] ?? 0);
+        return $events;
+    }
 
-        $viewerApproved = false;
-        if ($viewerId > 0) {
-            $voteStmt = $this->db->prepare("SELECT 1 FROM GroupDeleteApprovals WHERE group_id = ? AND admin_user_id = ? LIMIT 1");
-            $voteStmt->execute([$groupId, $viewerId]);
-            $viewerApproved = (bool)$voteStmt->fetchColumn();
+    private function resolveUserProfilePicture(string $rawPath): string {
+        $rawPath = trim($rawPath);
+        if ($rawPath !== '') {
+            return $rawPath;
+        }
+        return 'uploads/user_dp/default_user_dp.jpg';
+    }
+
+    public function getDeleteApprovalStatus(int $groupId, int $viewerId = 0): array {
+        $events = $this->getGovernanceVoteEvents($groupId, $viewerId);
+        $deleteEvent = null;
+        foreach ($events as $event) {
+            if (($event['type_key'] ?? '') === 'delete') {
+                $deleteEvent = $event;
+                break;
+            }
         }
 
+        $adminCount = $this->getActiveAdminCount($groupId);
+        $approvedCount = (int)($deleteEvent['in_favor'] ?? 0);
         return [
             'admin_count' => $adminCount,
             'approved_count' => $approvedCount,
-            'viewer_approved' => $viewerApproved,
-            'all_approved' => ($adminCount > 0 && $approvedCount >= $adminCount)
+            'viewer_approved' => !empty($deleteEvent['viewer_voted']),
+            'all_approved' => (($deleteEvent['status'] ?? '') === 'accepted')
         ];
     }
 
     public function approveGroupDeletion(int $groupId, int $adminId): array {
-        if (!$this->hasDeleteApprovalTable) {
-            $this->ensureGroupGovernanceTables();
-        }
-
-        if (!$this->hasDeleteApprovalTable) {
-            return ['success' => false, 'message' => 'Group deletion approvals are unavailable until database migrations are applied.'];
-        }
-
         if (!$this->isGroupAdmin($groupId, $adminId)) {
             return ['success' => false, 'message' => 'Only group admins can approve deletion.'];
         }
 
-        $ins = $this->db->prepare(
-            "INSERT INTO GroupDeleteApprovals (group_id, admin_user_id, approved_at)
-             VALUES (?, ?, NOW())
-             ON DUPLICATE KEY UPDATE approved_at = approved_at"
+        $eventId = 0;
+        $existing = $this->db->prepare(
+            "SELECT vote_event_id FROM GroupGovernanceVoteEvent
+             WHERE group_id = ? AND vote_type = 'group_deletion' AND result = 'in_process'
+             ORDER BY created_at DESC LIMIT 1"
         );
-        $ins->execute([$groupId, $adminId]);
+        $existing->execute([$groupId]);
+        $eventId = (int)$existing->fetchColumn();
 
-        $status = $this->getDeleteApprovalStatus($groupId, $adminId);
-        if ($status['all_approved']) {
-            $deleted = $this->deleteGroup($groupId);
-            if ($deleted) {
-                return [
-                    'success' => true,
-                    'deleted' => true,
-                    'message' => 'All admins approved. Group deleted.',
-                    'status' => $status
-                ];
+        if ($eventId <= 0) {
+            $created = $this->createGovernanceVoteEvent($groupId, 'group', $groupId, 'group_deletion', 'Group deletion vote initiated by admin.', $adminId);
+            if (empty($created['success'])) {
+                return $created;
             }
-
-            return ['success' => false, 'message' => 'All approvals collected, but failed to delete group.', 'status' => $status];
+            $eventId = (int)($created['vote_event_id'] ?? 0);
         }
 
-        return [
-            'success' => true,
-            'deleted' => false,
-            'message' => 'Delete approval recorded.',
-            'status' => $status
-        ];
+        return $this->castGovernanceVote($groupId, $eventId, $adminId, 'in_favor');
     }
 
     public function createRoleChangeRequest(int $groupId, int $targetUserId, string $requestedRole, int $adminId): array {
-        if (!$this->hasRoleChangeTables) {
-            $this->ensureGroupGovernanceTables();
-        }
-
-        if (!$this->hasRoleChangeTables) {
-            return ['success' => false, 'message' => 'Role change voting is unavailable until database migrations are applied.'];
-        }
-
         $requestedRole = strtolower(trim($requestedRole));
         if (!in_array($requestedRole, ['admin', 'member'], true)) {
             return ['success' => false, 'message' => 'Invalid target role.'];
-        }
-
-        if (!$this->isGroupAdmin($groupId, $adminId)) {
-            return ['success' => false, 'message' => 'Only group admins can start role votes.'];
         }
 
         $membership = $this->getMembership($groupId, $targetUserId);
@@ -864,182 +1133,72 @@ class GroupModel {
             return ['success' => false, 'message' => 'User already has that role.'];
         }
 
-        $existingStmt = $this->db->prepare(
-            "SELECT request_id
-             FROM GroupRoleChangeRequests
-             WHERE group_id = ? AND target_user_id = ? AND requested_role = ? AND status = 'pending'
-             ORDER BY created_at DESC
-             LIMIT 1"
+        $eventId = 0;
+        $existing = $this->db->prepare(
+            "SELECT vote_event_id FROM GroupGovernanceVoteEvent
+             WHERE group_id = ? AND vote_type = 'member_role_change' AND target_type = 'user' AND target_id = ? AND result = 'in_process'
+             ORDER BY created_at DESC LIMIT 1"
         );
-        $existingStmt->execute([$groupId, $targetUserId, $requestedRole]);
-        $existingId = (int)$existingStmt->fetchColumn();
+        $existing->execute([$groupId, $targetUserId]);
+        $eventId = (int)$existing->fetchColumn();
 
-        if ($existingId > 0) {
-            return $this->approveRoleChangeRequest($groupId, $existingId, $adminId);
-        }
-
-        $this->db->beginTransaction();
-        try {
-            $insert = $this->db->prepare(
-                "INSERT INTO GroupRoleChangeRequests
-                    (group_id, target_user_id, requested_role, current_role, proposed_by, status, created_at)
-                 VALUES (?, ?, ?, ?, ?, 'pending', NOW())"
-            );
-            $insert->execute([$groupId, $targetUserId, $requestedRole, $currentRole, $adminId]);
-            $requestId = (int)$this->db->lastInsertId();
-
-            $voteInsert = $this->db->prepare(
-                "INSERT INTO GroupRoleChangeVotes (request_id, admin_user_id, voted_at)
-                 VALUES (?, ?, NOW())"
-            );
-            $voteInsert->execute([$requestId, $adminId]);
-
-            $this->db->commit();
-
-            return $this->approveRoleChangeRequest($groupId, $requestId, $adminId, true);
-        } catch (Throwable $e) {
-            if ($this->db->inTransaction()) {
-                $this->db->rollBack();
+        if ($eventId <= 0) {
+            $fullName = trim((string)($membership['first_name'] ?? '') . ' ' . (string)($membership['last_name'] ?? ''));
+            if ($fullName === '') {
+                $fullName = (string)($membership['username'] ?? 'member');
             }
-            return ['success' => false, 'message' => 'Failed to create role vote request.'];
+            $reason = 'Change the role for ' . $fullName . ' to ' . ucfirst($requestedRole) . '.';
+            $created = $this->createGovernanceVoteEvent(
+                $groupId,
+                'user',
+                $targetUserId,
+                'member_role_change',
+                $reason,
+                $adminId,
+                [
+                    'from_role' => $currentRole,
+                    'to_role' => $requestedRole,
+                ]
+            );
+            if (empty($created['success'])) {
+                return $created;
+            }
+            $eventId = (int)($created['vote_event_id'] ?? 0);
         }
+
+        return $this->castGovernanceVote($groupId, $eventId, $adminId, 'in_favor');
     }
 
     public function approveRoleChangeRequest(int $groupId, int $requestId, int $adminId, bool $alreadyVoted = false): array {
-        if (!$this->hasRoleChangeTables) {
-            $this->ensureGroupGovernanceTables();
-        }
-
-        if (!$this->hasRoleChangeTables) {
-            return ['success' => false, 'message' => 'Role change voting is unavailable until database migrations are applied.'];
-        }
-
-        if (!$this->isGroupAdmin($groupId, $adminId)) {
-            return ['success' => false, 'message' => 'Only group admins can vote on role changes.'];
-        }
-
-        $reqStmt = $this->db->prepare(
-            "SELECT request_id, group_id, target_user_id, requested_role, status
-             FROM GroupRoleChangeRequests
-             WHERE request_id = ? AND group_id = ?
-             LIMIT 1"
-        );
-        $reqStmt->execute([$requestId, $groupId]);
-        $request = $reqStmt->fetch(PDO::FETCH_ASSOC);
-
-        if (!$request) {
-            return ['success' => false, 'message' => 'Role vote request not found.'];
-        }
-
-        if (($request['status'] ?? '') !== 'pending') {
-            return ['success' => false, 'message' => 'This role vote is already closed.'];
-        }
-
-        if (!$alreadyVoted) {
-            $voteStmt = $this->db->prepare(
-                "INSERT INTO GroupRoleChangeVotes (request_id, admin_user_id, voted_at)
-                 VALUES (?, ?, NOW())
-                 ON DUPLICATE KEY UPDATE voted_at = voted_at"
-            );
-            $voteStmt->execute([$requestId, $adminId]);
-        }
-
-        $countStmt = $this->db->prepare("SELECT COUNT(*) AS c FROM GroupRoleChangeVotes WHERE request_id = ?");
-        $countStmt->execute([$requestId]);
-        $voteCount = (int)($countStmt->fetch(PDO::FETCH_ASSOC)['c'] ?? 0);
-
-        $adminCount = $this->getActiveAdminCount($groupId);
-        $needed = max(1, (int)floor($adminCount / 2) + 1);
-
-        if ($voteCount >= $needed) {
-            $this->db->beginTransaction();
-            try {
-                $roleStmt = $this->db->prepare(
-                    "UPDATE GroupMember
-                     SET role = ?
-                     WHERE group_id = ? AND user_id = ? AND status = 'active'"
-                );
-                $roleStmt->execute([$request['requested_role'], $groupId, (int)$request['target_user_id']]);
-
-                $closeStmt = $this->db->prepare(
-                    "UPDATE GroupRoleChangeRequests
-                     SET status = 'approved', resolved_at = NOW()
-                     WHERE request_id = ?"
-                );
-                $closeStmt->execute([$requestId]);
-
-                $this->db->commit();
-
-                return [
-                    'success' => true,
-                    'applied' => true,
-                    'message' => 'Majority reached. Member role updated.',
-                    'votes' => $voteCount,
-                    'needed' => $needed
-                ];
-            } catch (Throwable $e) {
-                if ($this->db->inTransaction()) {
-                    $this->db->rollBack();
-                }
-                return ['success' => false, 'message' => 'Vote passed, but failed to update role.'];
-            }
-        }
-
-        return [
-            'success' => true,
-            'applied' => false,
-            'message' => 'Vote recorded.',
-            'votes' => $voteCount,
-            'needed' => $needed
-        ];
+        unset($alreadyVoted);
+        return $this->castGovernanceVote($groupId, $requestId, $adminId, 'in_favor');
     }
 
     public function getRoleChangeRequests(int $groupId, int $viewerId = 0): array {
-        if (!$this->hasRoleChangeTables) {
-            $this->ensureGroupGovernanceTables();
-        }
-
-        if (!$this->hasRoleChangeTables) {
-            return [];
-        }
-
-        $sql = "SELECT
-                    r.request_id,
-                    r.group_id,
-                    r.target_user_id,
-                    r.requested_role,
-                    r.current_role,
-                    r.proposed_by,
-                    r.status,
-                    r.created_at,
-                    r.resolved_at,
-                    u.username AS target_username,
-                    u.first_name AS target_first_name,
-                    u.last_name AS target_last_name,
-                    COUNT(v.admin_user_id) AS vote_count
-                FROM GroupRoleChangeRequests r
-                INNER JOIN Users u ON u.user_id = r.target_user_id
-                LEFT JOIN GroupRoleChangeVotes v ON v.request_id = r.request_id
-                WHERE r.group_id = ?
-                GROUP BY r.request_id
-                ORDER BY FIELD(r.status, 'pending', 'approved', 'rejected'), r.created_at DESC
-                LIMIT 25";
-
-        $stmt = $this->db->prepare($sql);
-        $stmt->execute([$groupId]);
-        $rows = $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
-
-        $adminCount = $this->getActiveAdminCount($groupId);
-        $needed = max(1, (int)floor($adminCount / 2) + 1);
-
-        if ($viewerId > 0 && !empty($rows)) {
-            $voteStmt = $this->db->prepare("SELECT 1 FROM GroupRoleChangeVotes WHERE request_id = ? AND admin_user_id = ? LIMIT 1");
-            foreach ($rows as &$row) {
-                $voteStmt->execute([(int)$row['request_id'], $viewerId]);
-                $row['viewer_voted'] = (bool)$voteStmt->fetchColumn();
-                $row['votes_needed'] = $needed;
+        $events = $this->getGovernanceVoteEvents($groupId, $viewerId);
+        $rows = [];
+        foreach ($events as $event) {
+            if (($event['type_key'] ?? '') !== 'role') {
+                continue;
             }
-            unset($row);
+
+            $rows[] = [
+                'request_id' => (int)($event['event_id'] ?? 0),
+                'group_id' => $groupId,
+                'target_user_id' => (int)($event['target_user_id'] ?? 0),
+                'requested_role' => (string)($event['requested_role'] ?? 'member'),
+                'current_role' => 'member',
+                'proposed_by' => 0,
+                'status' => (string)($event['status'] ?? 'in_process'),
+                'created_at' => null,
+                'resolved_at' => null,
+                'target_username' => (string)($event['target_username'] ?? ''),
+                'target_first_name' => (string)($event['target_first_name'] ?? ''),
+                'target_last_name' => (string)($event['target_last_name'] ?? ''),
+                'vote_count' => (int)($event['in_favor'] ?? 0),
+                'viewer_voted' => !empty($event['viewer_voted']),
+                'votes_needed' => (int)($event['votes_needed'] ?? 1),
+            ];
         }
 
         return $rows;
@@ -1212,6 +1371,302 @@ class GroupModel {
         $stmt->bindValue(':limit', (int)$limit, PDO::PARAM_INT);
         $stmt->execute();
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    public function isPostApprovalRequired(int $groupId): bool {
+        if ($groupId <= 0) {
+            return false;
+        }
+
+        try {
+            $stmt = $this->db->prepare("SELECT require_post_approval FROM GroupSettings WHERE group_id = ? LIMIT 1");
+            $stmt->execute([$groupId]);
+            $value = $stmt->fetchColumn();
+            return (int)$value === 1;
+        } catch (Throwable $e) {
+            return false;
+        }
+    }
+
+    public function queuePostCreationRequest(int $groupId, int $requesterId, string $postType, array $payload): bool {
+        $postType = strtolower(trim($postType));
+        $jsonPayload = json_encode($payload);
+        if ($jsonPayload === false) {
+            $jsonPayload = '{}';
+        }
+
+        if ($postType === 'poll') {
+            $sql = "INSERT INTO GroupPostPollRequests
+                (group_id, requester_id, post_id, payload_json, status, requested_at, reviewed_by, reviewed_at)
+                VALUES (?, ?, NULL, ?, 'pending', NOW(), NULL, NULL)";
+            $stmt = $this->db->prepare($sql);
+            return $stmt->execute([$groupId, $requesterId, $jsonPayload]);
+        }
+
+        $sql = "INSERT INTO GroupPostRequests
+            (group_id, requester_id, post_id, payload_json, status, requested_at, reviewed_by, reviewed_at)
+            VALUES (?, ?, NULL, ?, 'pending', NOW(), NULL, NULL)";
+        $stmt = $this->db->prepare($sql);
+        return $stmt->execute([$groupId, $requesterId, $jsonPayload]);
+    }
+
+    public function queueBinCreationRequest(int $groupId, int $requesterId, array $payload): bool {
+        $jsonPayload = json_encode($payload);
+        if ($jsonPayload === false) {
+            $jsonPayload = '{}';
+        }
+
+        $sql = "INSERT INTO GroupBinRequests
+            (group_id, requester_id, bin_id, payload_json, status, requested_at, reviewed_by, reviewed_at)
+            VALUES (?, ?, NULL, ?, 'pending', NOW(), NULL, NULL)";
+        $stmt = $this->db->prepare($sql);
+        return $stmt->execute([$groupId, $requesterId, $jsonPayload]);
+    }
+
+    public function queueBinMediaAddRequest(int $groupId, int $requesterId, int $binId, array $payload): bool {
+        $jsonPayload = json_encode($payload);
+        if ($jsonPayload === false) {
+            $jsonPayload = '{}';
+        }
+
+        $sql = "INSERT INTO GroupBinMediaRequests
+            (group_id, requester_id, bin_id, media_id, payload_json, status, requested_at, reviewed_by, reviewed_at)
+            VALUES (?, ?, ?, NULL, ?, 'pending', NOW(), NULL, NULL)";
+        $stmt = $this->db->prepare($sql);
+        return $stmt->execute([$groupId, $requesterId, $binId, $jsonPayload]);
+    }
+
+    public function queueChannelCreationRequest(int $groupId, int $requesterId, array $payload): bool {
+        $jsonPayload = json_encode($payload);
+        if ($jsonPayload === false) {
+            $jsonPayload = '{}';
+        }
+
+        $sql = "INSERT INTO GroupChannelRequests
+            (group_id, requester_id, channel_id, payload_json, status, requested_at, reviewed_by, reviewed_at)
+            VALUES (?, ?, NULL, ?, 'pending', NOW(), NULL, NULL)";
+        $stmt = $this->db->prepare($sql);
+        return $stmt->execute([$groupId, $requesterId, $jsonPayload]);
+    }
+
+    public function getPendingPostCreationRequests(int $groupId): array {
+        $sql = "SELECT r.request_id, r.group_id, r.requester_id, r.payload_json, r.requested_at,
+                       u.username, u.first_name, u.last_name,
+                       'post' AS request_kind,
+                       'post' AS post_type
+                FROM GroupPostRequests r
+                INNER JOIN Users u ON u.user_id = r.requester_id
+            WHERE r.group_id = ? AND r.status = 'pending'
+                UNION ALL
+            SELECT r.request_id, r.group_id, r.requester_id, r.payload_json, r.requested_at,
+                       u.username, u.first_name, u.last_name,
+                       'post_poll' AS request_kind,
+                       'poll' AS post_type
+                FROM GroupPostPollRequests r
+                INNER JOIN Users u ON u.user_id = r.requester_id
+            WHERE r.group_id = ? AND r.status = 'pending'
+                ORDER BY requested_at DESC";
+
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute([$groupId, $groupId]);
+        $rows = $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
+
+        foreach ($rows as &$row) {
+            $payload = $this->decodeRequestPayload((string)($row['payload_json'] ?? ''));
+            if (!empty($payload['post_type'])) {
+                $row['post_type'] = (string)$payload['post_type'];
+            }
+            $row['reason'] = 'Creation request pending approval';
+            $row['member'] = trim((string)($row['first_name'] ?? '') . ' ' . (string)($row['last_name'] ?? ''));
+            if ($row['member'] === '') {
+                $row['member'] = (string)($row['username'] ?? 'Unknown');
+            }
+        }
+        unset($row);
+
+        return $rows;
+    }
+
+    public function getPendingBinCreationRequests(int $groupId): array {
+     $sql = "SELECT r.request_id, r.group_id, r.requester_id, r.payload_json, r.requested_at,
+                       u.username, u.first_name, u.last_name,
+                       'bin' AS request_kind,
+                       r.bin_id
+                FROM GroupBinRequests r
+                INNER JOIN Users u ON u.user_id = r.requester_id
+          WHERE r.group_id = ? AND r.status = 'pending'
+                UNION ALL
+          SELECT r.request_id, r.group_id, r.requester_id, r.payload_json, r.requested_at,
+                       u.username, u.first_name, u.last_name,
+                       'bin_media' AS request_kind,
+                       r.bin_id
+                FROM GroupBinMediaRequests r
+                INNER JOIN Users u ON u.user_id = r.requester_id
+          WHERE r.group_id = ? AND r.status = 'pending'
+                ORDER BY requested_at DESC";
+
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute([$groupId, $groupId]);
+        $rows = $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
+
+        foreach ($rows as &$row) {
+            $payload = $this->decodeRequestPayload((string)($row['payload_json'] ?? ''));
+            $row['member'] = trim((string)($row['first_name'] ?? '') . ' ' . (string)($row['last_name'] ?? ''));
+            if ($row['member'] === '') {
+                $row['member'] = (string)($row['username'] ?? 'Unknown');
+            }
+
+            if (($row['request_kind'] ?? '') === 'bin') {
+                $row['bin_name'] = (string)($payload['name'] ?? ('Bin #' . (int)($row['bin_id'] ?? 0)));
+                $row['request'] = 'Create bin request pending approval';
+            } else {
+                $row['bin_name'] = (string)($payload['file_name'] ?? 'Pending file');
+                $row['request'] = 'Add file to bin pending approval';
+            }
+        }
+        unset($row);
+
+        return $rows;
+    }
+
+    public function getPendingChannelCreationRequests(int $groupId): array {
+        $sql = "SELECT r.request_id, r.group_id, r.requester_id, r.payload_json, r.requested_at,
+                       u.username, u.first_name, u.last_name,
+                       'channel' AS request_kind
+                FROM GroupChannelRequests r
+                INNER JOIN Users u ON u.user_id = r.requester_id
+                WHERE r.group_id = ? AND r.status = 'pending'
+                ORDER BY r.requested_at DESC";
+
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute([$groupId]);
+        $rows = $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
+
+        foreach ($rows as &$row) {
+            $payload = $this->decodeRequestPayload((string)($row['payload_json'] ?? ''));
+            $row['member'] = trim((string)($row['first_name'] ?? '') . ' ' . (string)($row['last_name'] ?? ''));
+            if ($row['member'] === '') {
+                $row['member'] = (string)($row['username'] ?? 'Unknown');
+            }
+
+            $name = trim((string)($payload['name'] ?? ''));
+            $description = trim((string)($payload['description'] ?? ''));
+            $row['channel'] = $name !== '' ? $name : ('Channel request #' . (int)($row['request_id'] ?? 0));
+            $row['request_type'] = 'Create channel';
+            $row['reason'] = $description !== '' ? $description : 'Creation request pending approval';
+        }
+        unset($row);
+
+        return $rows;
+    }
+
+    public function getPendingPostRequestById(int $groupId, int $requestId, string $requestKind): ?array {
+        $requestKind = strtolower(trim($requestKind));
+        $table = ($requestKind === 'post_poll') ? 'GroupPostPollRequests' : 'GroupPostRequests';
+
+        $sql = "SELECT * FROM {$table} WHERE request_id = ? AND group_id = ? AND status = 'pending' LIMIT 1";
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute([$requestId, $groupId]);
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        if (!$row && $requestKind === 'post') {
+            $sql = "SELECT * FROM GroupPostPollRequests WHERE request_id = ? AND group_id = ? AND status = 'pending' LIMIT 1";
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute([$requestId, $groupId]);
+            $row = $stmt->fetch(PDO::FETCH_ASSOC);
+            if ($row) {
+                $row['_request_table'] = 'GroupPostPollRequests';
+            }
+        }
+
+        if (!$row) {
+            return null;
+        }
+
+        if (!isset($row['_request_table'])) {
+            $row['_request_table'] = $table;
+        }
+        $row['_payload'] = $this->decodeRequestPayload((string)($row['payload_json'] ?? ''));
+        return $row;
+    }
+
+    public function getPendingBinRequestById(int $groupId, int $requestId, string $requestKind): ?array {
+        $requestKind = strtolower(trim($requestKind));
+        $table = ($requestKind === 'bin_media') ? 'GroupBinMediaRequests' : 'GroupBinRequests';
+
+        $sql = "SELECT * FROM {$table} WHERE request_id = ? AND group_id = ? AND status = 'pending' LIMIT 1";
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute([$requestId, $groupId]);
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        if (!$row && $requestKind === 'bin') {
+            $sql = "SELECT * FROM GroupBinMediaRequests WHERE request_id = ? AND group_id = ? AND status = 'pending' LIMIT 1";
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute([$requestId, $groupId]);
+            $row = $stmt->fetch(PDO::FETCH_ASSOC);
+            if ($row) {
+                $row['_request_table'] = 'GroupBinMediaRequests';
+            }
+        }
+
+        if (!$row) {
+            return null;
+        }
+
+        if (!isset($row['_request_table'])) {
+            $row['_request_table'] = $table;
+        }
+        $row['_payload'] = $this->decodeRequestPayload((string)($row['payload_json'] ?? ''));
+        return $row;
+    }
+
+    public function getPendingChannelRequestById(int $groupId, int $requestId): ?array {
+        $sql = "SELECT * FROM GroupChannelRequests WHERE request_id = ? AND group_id = ? AND status = 'pending' LIMIT 1";
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute([$requestId, $groupId]);
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        if (!$row) {
+            return null;
+        }
+
+        $row['_request_table'] = 'GroupChannelRequests';
+        $row['_payload'] = $this->decodeRequestPayload((string)($row['payload_json'] ?? ''));
+        return $row;
+    }
+
+    public function markRequestStatus(string $table, int $requestId, int $adminId, string $status): bool {
+        $status = strtolower(trim($status));
+        if (!in_array($status, ['approved', 'rejected'], true)) {
+            return false;
+        }
+
+        $allowedTables = [
+            'GroupPostRequests',
+            'GroupPostPollRequests',
+            'GroupBinRequests',
+            'GroupBinMediaRequests',
+            'GroupChannelRequests'
+        ];
+        if (!in_array($table, $allowedTables, true)) {
+            return false;
+        }
+
+        $sql = "UPDATE {$table}
+                SET status = ?, reviewed_by = ?, reviewed_at = NOW()
+                WHERE request_id = ? AND status = 'pending'";
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute([$status, $adminId, $requestId]);
+        return $stmt->rowCount() > 0;
+    }
+
+    private function decodeRequestPayload(string $raw): array {
+        if ($raw === '') {
+            return [];
+        }
+
+        $decoded = json_decode($raw, true);
+        return is_array($decoded) ? $decoded : [];
     }
 }
 ?>

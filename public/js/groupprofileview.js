@@ -1084,7 +1084,30 @@
 
             const problemCount = createGroupPostForm.querySelector('.char-count[data-for="problem_statement"]');
             if (problemCount) problemCount.textContent = '0 / 400';
+
+            syncConditionalFieldValidation('');
         }
+    }
+
+    function syncConditionalFieldValidation(activeFieldId) {
+        if (!createGroupPostForm) return;
+
+        createGroupPostForm.querySelectorAll('.conditional-fields').forEach(section => {
+            const isActiveSection = section.id === activeFieldId;
+            section.querySelectorAll('input, select, textarea').forEach(control => {
+                if (!control.hasAttribute('data-original-required')) {
+                    control.setAttribute('data-original-required', control.required ? '1' : '0');
+                }
+
+                if (isActiveSection) {
+                    control.disabled = false;
+                    control.required = control.getAttribute('data-original-required') === '1';
+                } else {
+                    control.required = false;
+                    control.disabled = true;
+                }
+            });
+        });
     }
 
     // Show conditional fields based on post type
@@ -1108,6 +1131,8 @@
             const field = createGroupPostForm.querySelector(`#${fieldId}`);
             if (field) field.style.display = 'block';
         }
+
+        syncConditionalFieldValidation(fieldId || '');
 
         if (commonContentField && postContentField) {
             const hideCommon = type === 'question' || type === 'event';
