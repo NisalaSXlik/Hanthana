@@ -26,6 +26,11 @@ class FileBankController extends BaseController
             $this->redirect('Feed');
         }
 
+        $groupPrivacy = strtolower(trim((string)($group['privacy_status'] ?? 'public')));
+        if ($groupPrivacy !== 'public' && !$this->groupModel->isMember($groupId, (int)$_SESSION['user_id']) && !$this->groupModel->isGroupAdmin($groupId, (int)$_SESSION['user_id'])) {
+            $this->redirect('Feed');
+        }
+
         $_SESSION['current_group_id'] = $groupId;
 
         $currentUserId = $_SESSION['user_id'];

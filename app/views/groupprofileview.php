@@ -98,17 +98,17 @@ if ($resolvedGroupId > 0) {
                             <!-- Action buttons: three dots dropdown + join/leave/invite -->
                             <div class="profile-actions">
                                 <?php if ($isJoined): ?>
-                                    <button class="btn btn-alert" id="leaveGroupBtn">
+                                    <button type="button" class="btn btn-alert" id="leaveGroupBtn">
                                         <i class="uil uil-sign-out-alt"></i>
                                         <span>Leave</span>
                                     </button>
                                 <?php elseif ($hasPendingRequest): ?>
-                                    <button class="btn btn-secondary" disabled>
+                                    <button type="button" class="btn btn-secondary" disabled>
                                         <i class="uil uil-clock"></i>
                                         <span>Pending</span>
                                     </button>
                                 <?php else: ?>
-                                    <button class="btn btn-primary" id="joinGroupBtn">
+                                    <button type="button" class="btn btn-primary" id="joinGroupBtn">
                                         <i class="uil uil-sign-in-alt"></i>
                                         <span>Join</span>
                                     </button>

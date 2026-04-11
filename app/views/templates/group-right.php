@@ -36,6 +36,13 @@
     $governanceHref = rtrim(BASE_PATH, '/') . '/index.php?controller=Group&action=governance';
     $groupSettingsHref = rtrim(BASE_PATH, '/') . '/index.php?controller=GroupSettings&action=index';
 
+    $groupPrivacy = strtolower(trim((string)($group['privacy_status'] ?? 'public')));
+    $isGroupOwnerOrMember = !empty($isCreator) || !empty($isAdmin) || !empty($isJoined);
+
+    if ($groupPrivacy !== 'public' && !$isGroupOwnerOrMember) {
+        return;
+    }
+
     if (!empty($groupHomeQuery)) {
         $groupHomeHref .= '&' . http_build_query($groupHomeQuery);
     }

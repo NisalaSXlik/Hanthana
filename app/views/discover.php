@@ -35,6 +35,7 @@ $incomingFriendRequests = $friendModel->getIncomingRequests($currentUserId);
     <link rel="stylesheet" href="./css/post.css">
     <link rel="stylesheet" href="./css/notificationpopup.css">
     <link rel="stylesheet" href="./css/notification-center.css">
+    <link rel="stylesheet" href="./css/report.css">
     <link rel="stylesheet" href="https://unicons.iconscout.com/release/v4.0.8/css/line.css">
 </head>
 <body class="page-discover">

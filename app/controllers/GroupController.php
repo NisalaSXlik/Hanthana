@@ -250,9 +250,11 @@ class GroupController {
         $isCreator = (int)($group['created_by'] ?? 0) === $userId;
         $isGroupAdmin = $this->groupModel->isGroupAdmin($groupId, $userId);
         $isAdmin = $isCreator || $isGroupAdmin;
+        $groupPrivacy = strtolower(trim((string)($group['privacy_status'] ?? 'public')));
         $isJoined = ($membershipState === 'active' || $isCreator);
+        $canViewGroupPages = $groupPrivacy === 'public' || $isJoined || $isAdmin;
 
-        if (!$isJoined) {
+        if (!$canViewGroupPages) {
             header('Location: ' . BASE_PATH . 'index.php?controller=Group&action=index&group_id=' . $groupId);
             exit();
         }

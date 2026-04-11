@@ -47,6 +47,7 @@ $groupDp = MediaHelper::resolveMediaPath((string)($group['display_picture'] ?? '
     <link rel="stylesheet" href="./css/group-right.css">
     <link rel="stylesheet" href="./css/forms.css">
     <link rel="stylesheet" href="./css/groupsettings.css">
+    <link rel="stylesheet" href="./css/report.css">
     <link rel="stylesheet" href="https://unicons.iconscout.com/release/v4.0.8/css/line.css">
 </head>
 <body class="group-settings-page">
