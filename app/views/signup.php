@@ -68,7 +68,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 
                 <div class="form-group-l signup-form-group hf-icon-field">
                     <i class="uil uil-envelope"></i>
-                    <input type="email" id="email" name="email" placeholder="Email" required autocomplete="email"
+                      <input type="email" id="email" name="email" placeholder="University Email" required autocomplete="email"
+                          pattern="^[^@\s]+@[a-zA-Z0-9-]+(\.[a-zA-Z0-9-]+)*\.ac\.lk$"
+                          title="Use university email ending with .ac.lk (e.g., 2023cs140@stu.ucsc.cmb.ac.lk)"
                            value="<?php echo isset($_POST['email']) ? htmlspecialchars($_POST['email']) : ''; ?>">
                     <span id="email-status" class="hf-field-status" aria-live="polite"></span>
                 </div>
@@ -113,19 +115,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 </div>
                 
                 <button type="submit" class="btn btn-primary btn-block">Sign Up</button>
-
-                <div class="auth-divider"><span>or</span></div>
-                <a class="btn btn-google btn-block" href="<?php echo BASE_PATH; ?>index.php?controller=Auth&action=googleLogin" aria-label="Sign up with Google">
-                    <span class="google-mark" aria-hidden="true">
-                        <svg viewBox="0 0 24 24" width="18" height="18" focusable="false" aria-hidden="true">
-                            <path fill="#EA4335" d="M12 10.2v3.9h5.4c-.2 1.2-1.4 3.6-5.4 3.6-3.2 0-5.8-2.7-5.8-6s2.6-6 5.8-6c1.8 0 3.1.8 3.8 1.5l2.6-2.5C16.8 3.2 14.6 2.3 12 2.3 6.8 2.3 2.6 6.6 2.6 12s4.2 9.7 9.4 9.7c5.4 0 9-3.8 9-9.1 0-.6-.1-1.1-.2-1.5H12z"/>
-                            <path fill="#34A853" d="M3.7 7.4l3.2 2.3C7.8 7.9 9.7 6.6 12 6.6c1.8 0 3.1.8 3.8 1.5l2.6-2.5C16.8 3.2 14.6 2.3 12 2.3c-3.6 0-6.7 2-8.3 5.1z"/>
-                            <path fill="#FBBC05" d="M12 21.7c2.5 0 4.7-.8 6.3-2.3l-3-2.4c-.8.6-1.8 1-3.3 1-2.4 0-4.4-1.6-5.1-3.8l-3.2 2.5c1.6 3.1 4.7 5 8.3 5z"/>
-                            <path fill="#4285F4" d="M21 12.6c0-.6-.1-1.1-.2-1.5H12v3.9h5.4c-.3 1.4-1.1 2.4-2.1 3.1l3 2.4c1.8-1.7 2.7-4.2 2.7-7.9z"/>
-                        </svg>
-                    </span>
-                    <span class="google-text">Sign up with Google</span>
-                </a>
                 
                 <p class="auth-footer">Already have an account? <a href="<?php echo BASE_PATH; ?>index.php?controller=Login&action=index">Login</a></p>
             </form>

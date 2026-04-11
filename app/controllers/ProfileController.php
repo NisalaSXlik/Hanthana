@@ -25,6 +25,10 @@ class ProfileController {
         $this->settingsModel = new SettingsModel();
     }
 
+    private function isValidUniversityEmail(string $email): bool {
+        return (bool) preg_match('/^[^@\s]+@[a-z0-9-]+(?:\.[a-z0-9-]+)*\.ac\.lk$/i', $email);
+    }
+
     public function index() {
         if (!isset($_SESSION['user_id'])) {
             header('Location: ' . BASE_PATH . 'index.php?controller=Landing&action=index');
@@ -287,6 +291,14 @@ class ProfileController {
             if (empty($updateData['first_name']) || empty($updateData['last_name']) || empty($updateData['username']) || empty($updateData['email'])) {
                 error_log('UpdateProfile - Validation failed: Missing required fields');
                 echo json_encode(['success' => false, 'message' => 'Required fields are missing']);
+                return;
+            }
+
+            if (!filter_var($updateData['email'], FILTER_VALIDATE_EMAIL) || !$this->isValidUniversityEmail($updateData['email'])) {
+                echo json_encode([
+                    'success' => false,
+                    'message' => 'Please use a university email ending with .ac.lk (e.g., 2023cs140@stu.ucsc.cmb.ac.lk).'
+                ]);
                 return;
             }
 

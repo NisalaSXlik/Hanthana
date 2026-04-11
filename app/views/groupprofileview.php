@@ -209,8 +209,8 @@ if ($resolvedGroupId > 0) {
                                         $postId = (int)$post['post_id'];
                                         $isPostOwner = (int)($_SESSION['user_id'] ?? 0) === (int)($post['author_id'] ?? $post['user_id'] ?? 0);
                                         $postReportLabel = 'post in ' . ($group['name'] ?? 'group');
-                                        $badgeIcons = ['discussion' => '💬', 'question' => '❓', 'resource' => '📚', 'poll' => '📊', 'event' => '📅', 'assignment' => '📋'];
-                                        $badgeLabels = ['discussion' => 'Discussion', 'question' => 'Question', 'resource' => 'Resource', 'poll' => 'Poll', 'event' => 'Event', 'assignment' => 'Assignment'];
+                                        $badgeIcons = ['discussion' => '💬', 'question' => '❓', 'resource' => '📚', 'poll' => '📊', 'event' => '📅', 'assignment' => '🔔'];
+                                        $badgeLabels = ['discussion' => 'Discussion', 'question' => 'Question', 'resource' => 'Resource', 'poll' => 'Poll', 'event' => 'Event', 'assignment' => 'Alert'];
                                     ?>
                                     <div class="feed group-post-card <?php echo $postType; ?>-post group-post-clickable" id="post-<?php echo $postId; ?>" data-post-id="<?php echo $postId; ?>" data-post-index="<?php echo $index; ?>">
                                         <?php if ($postType === 'event'): ?>
@@ -1210,8 +1210,8 @@ if ($resolvedGroupId > 0) {
                         <span>Event</span>
                     </button>
                     <button type="button" class="post-type-btn" data-type="assignment">
-                        <i class="uil uil-file-check-alt"></i>
-                        <span>Assignment</span>
+                        <i class="uil uil-bell"></i>
+                        <span>Alert</span>
                     </button>
                 </div>
 
@@ -1342,19 +1342,15 @@ if ($resolvedGroupId > 0) {
                     </div>
                 </div>
 
-                <!-- Assignment-specific fields -->
+                <!-- Alert-specific fields -->
                 <div id="assignmentFields" class="conditional-fields" style="display:none;">
                     <div class="form-group">
-                        <label for="assignmentTitle">Assignment Title</label>
-                        <input type="text" id="assignmentTitle" name="assignment_title" placeholder="Assignment name">
+                        <label for="assignmentTitle">Alert Title <span class="required">*</span></label>
+                        <input type="text" id="assignmentTitle" name="assignment_title" placeholder="Enter alert title" required>
                     </div>
                     <div class="form-group">
-                        <label for="assignmentDeadline">Deadline</label>
+                        <label for="assignmentDeadline">Deadline (Optional)</label>
                         <input type="datetime-local" id="assignmentDeadline" name="assignment_deadline">
-                    </div>
-                    <div class="form-group">
-                        <label for="assignmentPoints">Points</label>
-                        <input type="number" id="assignmentPoints" name="assignment_points" min="0" placeholder="e.g., 100">
                     </div>
                 </div>
 

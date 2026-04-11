@@ -23,6 +23,8 @@ document.addEventListener('DOMContentLoaded', function() {
     let emailTimer = null;
     let phoneTimer = null;
 
+    const universityEmailRegex = /^[^@\s]+@[a-z0-9-]+(?:\.[a-z0-9-]+)*\.ac\.lk$/i;
+
     function validatePasswordMatch() {
         if (!passwordInput || !confirmPasswordInput) return true;
 
@@ -51,6 +53,26 @@ document.addEventListener('DOMContentLoaded', function() {
         target.textContent = message ? `${icon || ''} ${message}`.trim() : '';
         target.classList.toggle('is-error', !!isError);
         target.classList.toggle('is-success', !isError && !!message);
+    }
+
+    function validateUniversityEmailRealtime(value, targetInput, targetFeedback) {
+        const trimmedValue = (value || '').trim();
+
+        if (!trimmedValue) {
+            setFeedback(targetFeedback, '', false);
+            targetInput?.setCustomValidity('');
+            return false;
+        }
+
+        if (!universityEmailRegex.test(trimmedValue)) {
+            const message = 'Use university email ending with .ac.lk';
+            setFeedback(targetFeedback, message, true, '!');
+            targetInput?.setCustomValidity(message);
+            return false;
+        }
+
+        targetInput?.setCustomValidity('');
+        return true;
     }
 
     function updateAvailabilityState(field, value, available) {
@@ -141,7 +163,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
     if (emailInput) {
         emailInput.addEventListener('blur', function() {
-            scheduleAvailabilityCheck('email', this.value);
+            const isFormatValid = validateUniversityEmailRealtime(this.value, this, emailStatus);
+            if (isFormatValid) {
+                scheduleAvailabilityCheck('email', this.value);
+            }
         });
         emailInput.addEventListener('input', function() {
             const currentValue = this.value.trim();
@@ -150,7 +175,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 setFeedback(emailStatus, '', false);
                 this.setCustomValidity('');
             }
-            if (currentValue) {
+            if (currentValue && validateUniversityEmailRealtime(currentValue, this, emailStatus)) {
                 scheduleAvailabilityCheck('email', currentValue);
             }
         });
@@ -216,6 +241,11 @@ document.addEventListener('DOMContentLoaded', function() {
         const username = (usernameInput?.value || '').trim();
         const email = (emailInput?.value || '').trim();
         const phoneValue = (phoneInput?.value || '').trim();
+
+        if (!validateUniversityEmailRealtime(email, emailInput, emailStatus)) {
+            emailInput?.reportValidity();
+            return;
+        }
 
         const usernameReady = !username || (availabilityState.username.value === username && availabilityState.username.available) || await checkAvailability('username', username);
         const emailReady = !email || (availabilityState.email.value === email && availabilityState.email.available) || await checkAvailability('email', email);

@@ -76,6 +76,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const closeModalBtn = document.getElementById('closeEditProfileModal');
     const cancelBtn = document.getElementById('cancelEditProfileBtn');
     const form = document.getElementById('editProfileForm');
+    const emailInput = document.getElementById('emailInput');
     const messageBox = document.getElementById('profileFormMessage');
     const profilePictureInput = document.getElementById('profilePictureInput');
     const coverPhotoInput = document.getElementById('coverPhotoInput');
@@ -118,6 +119,33 @@ document.addEventListener('DOMContentLoaded', () => {
         messageBox.className = `form-message ${type}`;
         messageBox.style.display = 'block';
     };
+
+    const isValidUniversityEmail = (email) => {
+        return /^[^@\s]+@[a-z0-9-]+(?:\.[a-z0-9-]+)*\.ac\.lk$/i.test(String(email || '').trim());
+    };
+
+    const validateProfileEmailInput = () => {
+        if (!emailInput) return true;
+
+        const email = emailInput.value.trim();
+        if (!email) {
+            emailInput.setCustomValidity('Email is required.');
+            return false;
+        }
+
+        if (!isValidUniversityEmail(email)) {
+            emailInput.setCustomValidity('Use university email ending with .ac.lk');
+            return false;
+        }
+
+        emailInput.setCustomValidity('');
+        return true;
+    };
+
+    if (emailInput) {
+        emailInput.addEventListener('input', validateProfileEmailInput);
+        emailInput.addEventListener('blur', validateProfileEmailInput);
+    }
 
     function showToast(message, type = 'success') {
         let toastContainer = document.getElementById('toastContainer');
@@ -278,6 +306,11 @@ document.addEventListener('DOMContentLoaded', () => {
         form.addEventListener('submit', async event => {
             event.preventDefault();
             console.log('=== FORM SUBMIT STARTED ===');
+
+            if (!validateProfileEmailInput()) {
+                emailInput?.reportValidity();
+                return;
+            }
             
             const formData = new FormData(form);
             formData.append('sub_action', 'update_profile');

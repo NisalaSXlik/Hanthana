@@ -287,9 +287,9 @@ if (!isset($posts)) {
                                             </div>
 
                                         <?php elseif ($postType === 'assignment'): ?>
-                                            <!-- Assignment Post -->
+                                            <!-- Alert Post -->
                                             <div class="assignment-content">
-                                                <h3 class="assignment-title"><?php echo htmlspecialchars($postMetadata['title'] ?? 'Untitled Assignment'); ?></h3>
+                                                <h3 class="assignment-title"><?php echo htmlspecialchars($postMetadata['title'] ?? 'Untitled Alert'); ?></h3>
                                                 <?php if (!empty($post['content'])): ?>
                                                     <p class="post-text"><?php echo nl2br(htmlspecialchars($post['content'])); ?></p>
                                                 <?php endif; ?>
