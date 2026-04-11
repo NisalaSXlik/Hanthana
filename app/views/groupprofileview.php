@@ -1346,7 +1346,7 @@ if ($resolvedGroupId > 0) {
                 <div id="assignmentFields" class="conditional-fields" style="display:none;">
                     <div class="form-group">
                         <label for="assignmentTitle">Alert Title <span class="required">*</span></label>
-                        <input type="text" id="assignmentTitle" name="assignment_title" placeholder="Enter alert title" required>
+                        <input type="text" id="assignmentTitle" name="assignment_title" placeholder="Enter alert title">
                     </div>
                     <div class="form-group">
                         <label for="assignmentDeadline">Deadline (Optional)</label>
@@ -1370,14 +1370,14 @@ if ($resolvedGroupId > 0) {
 
                 <!-- File Upload (for resources) -->
                 <div id="fileUploadSection" class="form-group" style="display:none;">
-                    <button type="button" class="upload-btn" id="uploadFileBtn">
+                    <button type="button" class="upload-btn" id="groupPostUploadFileBtn">
                         <i class="uil uil-file"></i> Attach File
                     </button>
-                    <input type="file" id="postFileInput" name="file" style="display:none;">
-                    <div id="filePreviewContainer" style="display:none; margin-top:10px; padding:10px; background:var(--color-light); border-radius:8px;">
+                    <input type="file" id="groupPostFileInput" name="file" style="display:none;">
+                    <div id="groupPostFilePreviewContainer" style="display:none; margin-top:10px; padding:10px; background:var(--color-light); border-radius:8px;">
                         <i class="uil uil-file"></i>
-                        <span id="fileName"></span>
-                        <button type="button" id="removeFileBtn" style="margin-left:10px;">
+                        <span id="groupPostFileName"></span>
+                        <button type="button" id="groupPostRemoveFileBtn" style="margin-left:10px;">
                             <i class="uil uil-times"></i>
                         </button>
                     </div>
@@ -1418,7 +1418,7 @@ if ($resolvedGroupId > 0) {
     <script src="./js/vote.js"></script>
     <script src="./js/comment.js"></script>
     <script src="./js/report.js"></script>
-    <script src="./js/groupprofileview.js"></script>
+    <script src="./js/groupprofileview.js?v=20260412_poll_backend_native"></script>
     <script src="./js/group-poll-voting.js"></script>
     <script src="./js/group-post-interactions.js"></script>
     <script>

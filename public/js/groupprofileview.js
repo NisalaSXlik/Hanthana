@@ -1004,8 +1004,9 @@
     const createPostModal = document.getElementById('createPostModal');
     const quickPostTrigger = document.getElementById('quickPostTrigger');
     const photoQuickBtn = document.getElementById('photoQuickBtn');
-    const videoQuickBtn = document.getElementById('videoQuickBtn');
-    const eventQuickBtn = document.getElementById('eventQuickBtn');
+    const pollQuickBtn = document.getElementById('pollQuickBtn');
+    const questionQuickBtn = document.getElementById('questionQuickBtn');
+    const resourceQuickBtn = document.getElementById('resourceQuickBtn');
     const openCreatePostBtn = document.getElementById('openCreatePostBtn');
     const closeCreatePostModal = document.getElementById('closeCreatePostModal');
     const cancelCreatePostBtn = document.getElementById('cancelCreatePostBtn');
@@ -1017,11 +1018,11 @@
     const imagePreviewContainer = document.getElementById('imagePreviewContainer');
     const removeImageBtn = document.getElementById('removeImageBtn');
     const uploadImageBtn = document.getElementById('uploadImageBtn');
-    const postFileInput = document.getElementById('postFileInput');
-    const filePreviewContainer = document.getElementById('filePreviewContainer');
-    const fileName = document.getElementById('fileName');
-    const removeFileBtn = document.getElementById('removeFileBtn');
-    const uploadFileBtn = document.getElementById('uploadFileBtn');
+    const postFileInput = document.getElementById('groupPostFileInput');
+    const filePreviewContainer = document.getElementById('groupPostFilePreviewContainer');
+    const fileName = document.getElementById('groupPostFileName');
+    const removeFileBtn = document.getElementById('groupPostRemoveFileBtn');
+    const uploadFileBtn = document.getElementById('groupPostUploadFileBtn');
     const fileUploadSection = document.getElementById('fileUploadSection');
     const commonContentField = document.getElementById('groupCommonContentField');
     const groupImageUploadField = document.getElementById('groupImageUploadField');
@@ -1029,6 +1030,11 @@
     const groupProblemStatement = document.getElementById('groupProblemStatement');
     const groupQuestionTitle = document.getElementById('groupQuestionTitle');
     const groupQuestionFields = document.getElementById('groupQuestionFields');
+    const assignmentTitleField = document.getElementById('assignmentTitle');
+    const pollQuestionField = document.getElementById('pollQuestion');
+    const pollOption1Field = createGroupPostForm ? createGroupPostForm.querySelector('input[name="poll_option_1"]') : null;
+    const pollOption2Field = createGroupPostForm ? createGroupPostForm.querySelector('input[name="poll_option_2"]') : null;
+    const resourceTitleField = document.getElementById('resourceTitle');
     const questionTemplateChips = groupQuestionFields ? groupQuestionFields.querySelectorAll('.template-chip') : [];
     const groupEventDescription = document.getElementById('groupEventDescription');
     const groupEventImageUploadBtn = document.getElementById('groupEventImageUploadBtn');
@@ -1110,17 +1116,25 @@
         }
 
         if (commonContentField && postContentField) {
-            const hideCommon = type === 'question' || type === 'event';
+            const hideCommon = type === 'question' || type === 'event' || type === 'poll';
             commonContentField.style.display = hideCommon ? 'none' : 'block';
             postContentField.required = !hideCommon;
         }
+
+        if (assignmentTitleField) assignmentTitleField.required = (type === 'assignment');
+        if (groupQuestionTitle) groupQuestionTitle.required = (type === 'question');
+        if (groupProblemStatement) groupProblemStatement.required = (type === 'question');
+        if (resourceTitleField) resourceTitleField.required = (type === 'resource');
+        if (pollQuestionField) pollQuestionField.required = (type === 'poll');
+        if (pollOption1Field) pollOption1Field.required = (type === 'poll');
+        if (pollOption2Field) pollOption2Field.required = (type === 'poll');
 
         if (fileUploadSection) {
             fileUploadSection.style.display = type === 'resource' ? 'block' : 'none';
         }
 
         if (groupImageUploadField) {
-            const hideGenericImage = type === 'question' || type === 'event';
+            const hideGenericImage = type === 'question' || type === 'event' || type === 'resource' || type === 'poll' || type === 'assignment';
             groupImageUploadField.style.display = hideGenericImage ? 'none' : 'block';
             if (hideGenericImage && postImageInput) {
                 postImageInput.value = '';
@@ -1133,6 +1147,10 @@
 
     if (groupEventImageUploadBtn && uploadImageBtn) {
         groupEventImageUploadBtn.addEventListener('click', () => uploadImageBtn.click());
+    }
+
+    if (selectedPostType) {
+        showConditionalFields(selectedPostType.value || 'discussion');
     }
 
     // Event listeners for opening modal
@@ -1150,17 +1168,22 @@
         });
     }
 
-    if (videoQuickBtn) {
-        videoQuickBtn.addEventListener('click', () => {
-            openCreatePostModal('discussion');
-            if (typeof showToast === 'function') {
-                showToast('Video upload coming soon!', 'info');
-            }
+    if (pollQuickBtn) {
+        pollQuickBtn.addEventListener('click', () => {
+            openCreatePostModal('poll');
         });
     }
 
-    if (eventQuickBtn) {
-        eventQuickBtn.addEventListener('click', () => openCreatePostModal('event'));
+    if (questionQuickBtn) {
+        questionQuickBtn.addEventListener('click', () => {
+            openCreatePostModal('question');
+        });
+    }
+
+    if (resourceQuickBtn) {
+        resourceQuickBtn.addEventListener('click', () => {
+            openCreatePostModal('resource');
+        });
     }
 
     // Event listeners for closing modal
