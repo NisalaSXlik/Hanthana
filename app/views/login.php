@@ -87,7 +87,7 @@ if (isset($_GET['registered']) && $_GET['registered'] === 'true') {
 
             <div class="auth-footer">
                 <p>Don't have an account? <a href="<?php echo BASE_PATH; ?>index.php?controller=Signup&action=index">Register</a></p>
-                <a href="#" class="forgot-password">Forgot password?</a>
+                <a href="<?php echo BASE_PATH; ?>index.php?controller=Auth&action=forgotPassword" class="forgot-password">Forgot password?</a>
             </div>
         </div>
     </div>
