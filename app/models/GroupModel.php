@@ -6,6 +6,7 @@ class GroupModel {
 
     public function __construct() {
         $this->db = (new Database())->getConnection();
+        $this->reactivateExpiredGroups();
     }
 
     private function tableExists(string $tableName): bool {
@@ -19,10 +20,6 @@ class GroupModel {
     }
 
     private function reactivateExpiredGroups(): void {
-        if (!$this->hasGroupModerationColumns) {
-            return;
-        }
-
         try {
             $sql = "UPDATE GroupsTable
                     SET is_active = 1,
@@ -1302,27 +1299,25 @@ class GroupModel {
         }
 
         $this->reactivateExpiredGroups();
-
-        if ($this->hasGroupModerationColumns) {
-            $sql = "UPDATE GroupsTable
-                    SET is_active = 0,
-                        disabled_until = :disabled_until,
-                        disable_reason = :disable_reason,
-                        disable_notes = :disable_notes,
-                        disabled_by = :disabled_by,
-                        updated_at = NOW()
-                    WHERE group_id = :group_id
-                        AND COALESCE(is_active, 1) = 1";
-            $stmt = $this->db->prepare($sql);
-            $stmt->execute([
-                ':disabled_until' => $disableUntil,
-                ':disable_reason' => $reason,
-                ':disable_notes' => $notes,
-                ':disabled_by' => $adminId,
-                ':group_id' => $groupId
-            ]);
-            return $stmt->rowCount() > 0;
-        }
+        
+        $sql = "UPDATE GroupsTable
+                SET is_active = 0,
+                    disabled_until = :disabled_until,
+                    disable_reason = :disable_reason,
+                    disable_notes = :disable_notes,
+                    disabled_by = :disabled_by,
+                    updated_at = NOW()
+                WHERE group_id = :group_id
+                    AND COALESCE(is_active, 1) = 1";
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute([
+            ':disabled_until' => $disableUntil,
+            ':disable_reason' => $reason,
+            ':disable_notes' => $notes,
+            ':disabled_by' => $adminId,
+            ':group_id' => $groupId
+        ]);
+        return $stmt->rowCount() > 0;
 
         $sql = "UPDATE GroupsTable SET is_active = 0, updated_at = NOW() WHERE group_id = ? AND COALESCE(is_active, 1) = 1";
         $stmt = $this->db->prepare($sql);
@@ -1501,21 +1496,19 @@ class GroupModel {
 
         $this->reactivateExpiredGroups();
 
-        if ($this->hasGroupModerationColumns) {
-            $sql = "UPDATE GroupsTable
-                    SET is_active = 1,
-                        disabled_until = NULL,
-                        disable_reason = NULL,
-                        disable_notes = NULL,
-                        disabled_by = NULL,
-                        updated_at = NOW()
-                    WHERE group_id = :group_id
-                        AND COALESCE(is_active, 1) = 0";
+        $sql = "UPDATE GroupsTable
+                SET is_active = 1,
+                    disabled_until = NULL,
+                    disable_reason = NULL,
+                    disable_notes = NULL,
+                    disabled_by = NULL,
+                    updated_at = NOW()
+                WHERE group_id = :group_id
+                    AND COALESCE(is_active, 1) = 0";
 
-            $stmt = $this->db->prepare($sql);
-            $stmt->execute([':group_id' => $groupId]);
-            return $stmt->rowCount() > 0;
-        }
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute([':group_id' => $groupId]);
+        return $stmt->rowCount() > 0;
 
         $sql = "UPDATE GroupsTable SET is_active = 1, updated_at = NOW() WHERE group_id = ? AND COALESCE(is_active, 1) = 0";
         $stmt = $this->db->prepare($sql);

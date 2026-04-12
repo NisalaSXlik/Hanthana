@@ -54,7 +54,6 @@ npm-debug.log*
 vendor/
 
 # Environment files
-.env
 .env.local
 .env.production
 
