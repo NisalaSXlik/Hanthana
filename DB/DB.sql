@@ -134,6 +134,119 @@ CREATE TABLE GroupJoinRequests (
     UNIQUE(group_id, user_id)
 );
 
+-- Group Post Requests
+CREATE TABLE GroupPostRequests (
+    request_id INT AUTO_INCREMENT PRIMARY KEY,
+    group_id INT NOT NULL,
+    requester_id INT NOT NULL,
+    post_id INT NULL,
+    payload_json JSON NULL,
+    status ENUM('pending','approved','rejected') DEFAULT 'pending',
+    requested_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    reviewed_by INT NULL,
+    reviewed_at TIMESTAMP NULL,
+    FOREIGN KEY (group_id) REFERENCES GroupsTable(group_id) ON DELETE CASCADE,
+    FOREIGN KEY (requester_id) REFERENCES Users(user_id) ON DELETE CASCADE,
+    FOREIGN KEY (reviewed_by) REFERENCES Users(user_id) ON DELETE SET NULL
+);
+
+-- Group Post Poll Requests
+CREATE TABLE GroupPostPollRequests (
+    request_id INT AUTO_INCREMENT PRIMARY KEY,
+    group_id INT NOT NULL,
+    requester_id INT NOT NULL,
+    post_id INT NULL,
+    payload_json JSON NULL,
+    status ENUM('pending','approved','rejected') DEFAULT 'pending',
+    requested_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    reviewed_by INT NULL,
+    reviewed_at TIMESTAMP NULL,
+    FOREIGN KEY (group_id) REFERENCES GroupsTable(group_id) ON DELETE CASCADE,
+    FOREIGN KEY (requester_id) REFERENCES Users(user_id) ON DELETE CASCADE,
+    FOREIGN KEY (reviewed_by) REFERENCES Users(user_id) ON DELETE SET NULL
+);
+
+-- Group Bin Requests
+CREATE TABLE GroupBinRequests (
+    request_id INT AUTO_INCREMENT PRIMARY KEY,
+    group_id INT NOT NULL,
+    requester_id INT NOT NULL,
+    bin_id INT NULL,
+    payload_json JSON NULL,
+    status ENUM('pending','approved','rejected') DEFAULT 'pending',
+    requested_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    reviewed_by INT NULL,
+    reviewed_at TIMESTAMP NULL,
+    FOREIGN KEY (group_id) REFERENCES GroupsTable(group_id) ON DELETE CASCADE,
+    FOREIGN KEY (requester_id) REFERENCES Users(user_id) ON DELETE CASCADE,
+    FOREIGN KEY (reviewed_by) REFERENCES Users(user_id) ON DELETE SET NULL
+);
+
+-- Group Bin Media Requests
+CREATE TABLE GroupBinMediaRequests (
+    request_id INT AUTO_INCREMENT PRIMARY KEY,
+    group_id INT NOT NULL,
+    requester_id INT NOT NULL,
+    bin_id INT NULL,
+    media_id INT NULL,
+    payload_json JSON NULL,
+    status ENUM('pending','approved','rejected') DEFAULT 'pending',
+    requested_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    reviewed_by INT NULL,
+    reviewed_at TIMESTAMP NULL,
+    FOREIGN KEY (group_id) REFERENCES GroupsTable(group_id) ON DELETE CASCADE,
+    FOREIGN KEY (requester_id) REFERENCES Users(user_id) ON DELETE CASCADE,
+    FOREIGN KEY (reviewed_by) REFERENCES Users(user_id) ON DELETE SET NULL
+);
+
+-- Group Channel Requests
+CREATE TABLE GroupChannelRequests (
+    request_id INT AUTO_INCREMENT PRIMARY KEY,
+    group_id INT NOT NULL,
+    requester_id INT NOT NULL,
+    channel_id INT NULL,
+    payload_json JSON NULL,
+    status ENUM('pending','approved','rejected') DEFAULT 'pending',
+    requested_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    reviewed_by INT NULL,
+    reviewed_at TIMESTAMP NULL,
+    FOREIGN KEY (group_id) REFERENCES GroupsTable(group_id) ON DELETE CASCADE,
+    FOREIGN KEY (requester_id) REFERENCES Users(user_id) ON DELETE CASCADE,
+    FOREIGN KEY (reviewed_by) REFERENCES Users(user_id) ON DELETE SET NULL
+);
+
+-- Unified governance vote events (group-level + member role changes)
+CREATE TABLE GroupGovernanceVoteEvent (
+    vote_event_id INT AUTO_INCREMENT PRIMARY KEY,
+    group_id INT NOT NULL,
+    target_type ENUM('group', 'user') NOT NULL,
+    target_id INT NOT NULL,
+    vote_type ENUM('member_role_change', 'group_deletion', 'group_visibility_change') NOT NULL,
+    reason TEXT NOT NULL,
+    meta_json JSON NULL, -- includes from_role/to_role, from_visibility/to_visibility
+    created_by INT NOT NULL,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    expires_at DATETIME NOT NULL,
+    result ENUM('in_process', 'accepted', 'rejected') NOT NULL DEFAULT 'in_process',
+    closed_at DATETIME NULL,
+    INDEX idx_ggve_group_result (group_id, result),
+    INDEX idx_ggve_target (target_type, target_id),
+    FOREIGN KEY (group_id) REFERENCES GroupsTable(group_id) ON DELETE CASCADE,
+    FOREIGN KEY (created_by) REFERENCES Users(user_id) ON DELETE CASCADE
+);
+
+-- One vote per admin per governance event
+CREATE TABLE GroupGovernanceVote (
+    vote_event_id INT NOT NULL,
+    voter_user_id INT NOT NULL,
+    vote_choice ENUM('in_favor', 'not_in_favor') NOT NULL,
+    voted_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (vote_event_id, voter_user_id),
+    INDEX idx_ggv_voter (voter_user_id),
+    FOREIGN KEY (vote_event_id) REFERENCES GroupGovernanceVoteEvent(vote_event_id) ON DELETE CASCADE,
+    FOREIGN KEY (voter_user_id) REFERENCES Users(user_id) ON DELETE CASCADE
+);
+
 -- Channels (enhanced for group chats)
 CREATE TABLE Channel (
     channel_id INT AUTO_INCREMENT PRIMARY KEY,
@@ -146,8 +259,7 @@ CREATE TABLE Channel (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     FOREIGN KEY (group_id) REFERENCES GroupsTable(group_id) ON DELETE CASCADE,
-    FOREIGN KEY (created_by) REFERENCES Users(user_id) ON DELETE CASCADE,
-    UNIQUE KEY uq_channel_group_name (group_id, name)
+    FOREIGN KEY (created_by) REFERENCES Users(user_id) ON DELETE CASCADE
 );
 
 -- Posts table with vote counts and view count
@@ -235,6 +347,10 @@ CREATE TABLE Vote (
     FOREIGN KEY (user_id) REFERENCES Users(user_id) ON DELETE CASCADE,
     UNIQUE(post_id, user_id)
 );
+
+
+
+
 
 -- Chat Conversations (Direct Messages & Group Chats)
 CREATE TABLE Conversations (
@@ -360,13 +476,10 @@ CREATE TABLE Bin (
     bin_id INT AUTO_INCREMENT PRIMARY KEY,
     group_id INT NOT NULL,
     created_by INT NOT NULL,
-    name VARCHAR(255) NOT NULL,
+    name VARCHAR(255),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-
     FOREIGN KEY (group_id) REFERENCES GroupsTable(group_id) ON DELETE CASCADE,
-    FOREIGN KEY (created_by) REFERENCES Users(user_id) ON DELETE CASCADE,
-
-    UNIQUE (group_id, name)
+    FOREIGN KEY (created_by) REFERENCES Users(user_id) ON DELETE CASCADE
 );
 
 -- BinMedia (existing - good)
@@ -374,16 +487,41 @@ CREATE TABLE BinMedia (
     media_id INT AUTO_INCREMENT PRIMARY KEY,
     bin_id INT NOT NULL,
     file_name VARCHAR(255),
-    file_type ENUM('image','video','document','other'),
-    file_path VARCHAR(255),
+    file_type ENUM('image','video','doc','pdf','other') DEFAULT 'other',
+    file_url VARCHAR(255),
     file_size INT,
     added_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     added_by INT NOT NULL,
-    UNIQUE (bin_id, file_name),
     FOREIGN KEY (bin_id) REFERENCES Bin(bin_id) ON DELETE CASCADE,
-    FOREIGN KEY (media_id) REFERENCES MediaFile(media_id) ON DELETE CASCADE,
+    INDEX idx_binmedia_bin (bin_id),
+    INDEX idx_binmedia_added_at (added_at),
     FOREIGN KEY (added_by) REFERENCES Users(user_id) ON DELETE CASCADE
 );
+
+CREATE TABLE BinMediaDownload (
+    download_id INT AUTO_INCREMENT PRIMARY KEY,
+    media_id INT NOT NULL,
+    user_id INT NULL,
+    downloaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_binmedia_download_media (media_id),
+    INDEX idx_binmedia_download_user (user_id),
+    FOREIGN KEY (media_id) REFERENCES BinMedia(media_id) ON DELETE CASCADE,
+    FOREIGN KEY (user_id) REFERENCES Users(user_id) ON DELETE SET NULL
+);
+
+CREATE TABLE BinMediaSave (
+    save_id INT AUTO_INCREMENT PRIMARY KEY,
+    media_id INT NOT NULL,
+    user_id INT NOT NULL,
+    saved_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE KEY uniq_binmedia_save (media_id, user_id),
+    INDEX idx_binmedia_save_user (user_id),
+    FOREIGN KEY (media_id) REFERENCES BinMedia(media_id) ON DELETE CASCADE,
+    FOREIGN KEY (user_id) REFERENCES Users(user_id) ON DELETE CASCADE
+);
+
+
+
 
 -- Post Views Tracking (for popular feed)
 CREATE TABLE PostViews (
@@ -566,7 +704,7 @@ CREATE TABLE Questions (
     content TEXT,
     attachment_name VARCHAR(255) NULL,
     attachment_path VARCHAR(500) NULL,
-    attachment_type VARCHAR(20) NULL,
+    attachment_type VARCHAR(50) NULL,
     attachment_size INT NULL,
     category VARCHAR(100),
     views INT DEFAULT 0,
@@ -633,69 +771,81 @@ CREATE TABLE QuestionTopics (
     INDEX idx_topic (topic_name)
 );
 
-CREATE TABLE GroupRoleChangeRequests (
-    request_id INT AUTO_INCREMENT PRIMARY KEY,
-    group_id INT NOT NULL,
-    target_user_id INT NOT NULL,
-    requested_role ENUM('admin', 'member') NOT NULL,
-    current_role ENUM('admin', 'member') NOT NULL,
-    proposed_by INT NOT NULL,
-    status ENUM('pending', 'approved', 'rejected') NOT NULL DEFAULT 'pending',
-    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    resolved_at DATETIME NULL,
-    INDEX idx_grcr_group_status (group_id, status),
-    INDEX idx_grcr_target (target_user_id),
-    CONSTRAINT fk_grcr_group FOREIGN KEY (group_id) REFERENCES GroupsTable(group_id) ON DELETE CASCADE,
-    CONSTRAINT fk_grcr_target_user FOREIGN KEY (target_user_id) REFERENCES Users(user_id) ON DELETE CASCADE,
-    CONSTRAINT fk_grcr_proposer FOREIGN KEY (proposed_by) REFERENCES Users(user_id) ON DELETE CASCADE
-);
-
-CREATE TABLE GroupRoleChangeVotes (
-    request_id INT NOT NULL,
-    admin_user_id INT NOT NULL,
-    voted_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    PRIMARY KEY (request_id, admin_user_id),
-    INDEX idx_grcv_admin (admin_user_id),
-    CONSTRAINT fk_grcv_request FOREIGN KEY (request_id) REFERENCES GroupRoleChangeRequests(request_id) ON DELETE CASCADE,
-    CONSTRAINT fk_grcv_admin FOREIGN KEY (admin_user_id) REFERENCES Users(user_id) ON DELETE CASCADE
-);
-
-CREATE TABLE GroupDeleteApprovals (
-    group_id INT NOT NULL,
-    admin_user_id INT NOT NULL,
-    approved_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    PRIMARY KEY (group_id, admin_user_id),
-    INDEX idx_gda_admin (admin_user_id),
-    CONSTRAINT fk_gda_group FOREIGN KEY (group_id) REFERENCES GroupsTable(group_id) ON DELETE CASCADE,
-    CONSTRAINT fk_gda_admin FOREIGN KEY (admin_user_id) REFERENCES Users(user_id) ON DELETE CASCADE
-);
-
 CREATE TABLE Reports (
     report_id INT AUTO_INCREMENT PRIMARY KEY,
+
+    -- Who reported
     reporter_id INT NOT NULL,
+
+    -- What is reported (polymorphic target)
+    target_type ENUM(
+        'user',
+        'post',
+        'comment',
+        'group',
+        'bin',
+        'bin_media',
+        'question',
+        'answer',
+        'channel',
+        'message'
+    ) NOT NULL,
+
+    target_id INT NOT NULL,
+
+    -- Group context (for routing to group moderation)
+    group_id INT NULL,
+
+    -- Owner / actor of the target (who gets punished)
     reported_user_id INT NULL,
-    reported_post_id INT NULL,
-    reported_comment_id INT NULL,
-    reported_group_id INT NULL,
-    reported_media_id INT NULL,
-    reported_question_id INT NULL,
+
+    -- Reason category
     report_type ENUM('spam','harassment','inappropriate','other') NOT NULL,
+
+    -- User-provided explanation
     description TEXT,
+
+    -- Workflow state
     status ENUM('pending','reviewed','resolved') DEFAULT 'pending',
+
+    -- Action outcome
+    action_taken ENUM(
+        'none',
+        'delete_content',
+        'warn_user',
+        'kick_user',
+        'ban_user',
+        'remove_file',
+        'remove_folder',
+        'delete_channel',
+        'clear_channel',
+        'false_positive',
+        'other'
+    ) DEFAULT 'none',
+
+    -- Moderator explanation
+    reviewer_note TEXT NULL,
+
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+    -- Who handled it
     reviewed_by INT NULL,
     reviewed_at TIMESTAMP NULL,
+
+    -- Indexes for performance
+    INDEX idx_target (target_type, target_id),
+    INDEX idx_group (group_id),
+    INDEX idx_status (status),
+
+    -- Foreign keys
     FOREIGN KEY (reporter_id) REFERENCES Users(user_id) ON DELETE CASCADE,
+    FOREIGN KEY (group_id) REFERENCES GroupsTable(group_id) ON DELETE SET NULL,
     FOREIGN KEY (reported_user_id) REFERENCES Users(user_id) ON DELETE SET NULL,
-    FOREIGN KEY (reported_post_id) REFERENCES Post(post_id) ON DELETE SET NULL,
-    FOREIGN KEY (reported_comment_id) REFERENCES Comment(comment_id) ON DELETE SET NULL,
-    FOREIGN KEY (reported_group_id) REFERENCES GroupsTable(group_id) ON DELETE SET NULL,
-    FOREIGN KEY (reported_media_id) REFERENCES BinMedia(media_id) ON DELETE SET NULL,
-    FOREIGN KEY (reported_question_id) REFERENCES Questions(question_id) ON DELETE SET NULL,
     FOREIGN KEY (reviewed_by) REFERENCES Users(user_id) ON DELETE SET NULL
 );
 
 INSERT INTO `Users` (`user_id`, `first_name`, `last_name`, `email`, `phone_number`, `password_hash`, `username`, `bio`, `profile_picture`, `cover_photo`, `created_at`, `updated_at`, `university`, `last_login`, `friends_count`, `is_active`, `date_of_birth`, `location`, `role`, `banned_until`, `ban_reason`, `ban_notes`, `banned_by`) VALUES
+
 (1, 'Dummy', 'Admin', 'admin@hanthana.com', '0000000000', '$2y$10$Ys6K.2VyuP482eNAUDBHK.zGRJb18Cz5dlCOGUfNnPEHakO6Qlrvy', 'admin', NULL, 'public/images/profile-1.jpg', 'public/images/story-1.jpg', '2026-01-22 20:15:29', '2026-01-22 20:16:50', NULL, '2026-01-22 20:15:54', 0, 1, NULL, NULL, 'admin', NULL, NULL, NULL, NULL),
 (2, 'Dummy', 'User1', 'user1@hanthana.com', '0000000001', '$2y$10$n0yBtBE3bEz53dEjCHGLOOaw5Sha2umqYkXoF90jEbuCfeO.8thYG', 'user1', NULL, 'public/images/profile-2.jpg', 'public/images/story-2.jpg', '2026-01-22 20:17:41', '2026-01-22 20:18:24', NULL, '2026-01-22 20:17:59', 0, 1, NULL, NULL, 'user', NULL, NULL, NULL, NULL),
 (3, 'Maya', 'Lee', 'maya.lee@hanthana.edu', '5550101003', '$2y$10$n0yBtBE3bEz53dEjCHGLOOaw5Sha2umqYkXoF90jEbuCfeO.8thYG', 'mayalee', 'STEM education researcher facilitating first-year calculus support.', 'public/images/profile-3.jpg', 'public/images/story-3.jpg', '2026-02-01 08:45:00', '2026-02-06 16:10:00', 'Hanthana University of Education', '2026-02-06 16:05:00', 3, 1, '1992-04-14', 'Boston, MA', 'user', NULL, NULL, NULL, NULL),
@@ -941,3 +1091,17 @@ INSERT INTO `PostViews` (`view_id`, `post_id`, `user_id`, `viewed_at`) VALUES
 
 ALTER TABLE `PostViews`
     MODIFY `view_id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
+
+INSERT INTO `Reports` (`report_id`, `reporter_id`, `target_type`, `target_id`, `group_id`, `reported_user_id`, `report_type`, `description`, `status`, `created_at`, `reviewed_by`, `reviewed_at`) VALUES
+(1, 7, 'user', 4, NULL, 4, 'harassment', 'False claims in profile bio and repeated hostile replies.', 'pending', '2026-02-07 10:12:00', NULL, NULL),
+(2, 5, 'post', 6, NULL, 8, 'spam', 'Public post pushing unrelated promotional links.', 'reviewed', '2026-02-07 10:45:00', 1, '2026-02-07 11:05:00'),
+(3, 9, 'comment', 201, NULL, 5, 'inappropriate', 'Comment contains insulting language under an individual post.', 'pending', '2026-02-07 11:00:00', NULL, NULL),
+(4, 11, 'question', 301, NULL, 12, 'other', 'Question text repeats a copied solution request.', 'reviewed', '2026-02-07 11:20:00', 1, '2026-02-07 12:00:00'),
+(5, 3, 'answer', 401, NULL, 9, 'harassment', 'Answer replies with personal attack in an individual Q&A thread.', 'pending', '2026-02-07 11:35:00', NULL, NULL),
+(6, 4, 'group', 2, NULL, NULL, 'spam', 'Group page reported for misleading title and repeated promotion.', 'pending', '2026-02-07 12:05:00', NULL, NULL),
+(7, 6, 'post', 1024, 1, 3, 'inappropriate', 'Group discussion post contains abusive language.', 'pending', '2026-02-07 12:20:00', NULL, NULL),
+(8, 8, 'comment', 2025, 1, 7, 'harassment', 'Comment in group thread targets another member.', 'reviewed', '2026-02-07 12:40:00', 1, '2026-02-07 13:05:00'),
+(9, 10, 'bin', 51, 1, 3, 'other', 'Bin title reports an offensive label in file bank.', 'pending', '2026-02-07 13:00:00', NULL, NULL),
+(10, 12, 'bin_media', 78, 4, 8, 'inappropriate', 'Bin media upload appears to be unauthorized lecture content.', 'pending', '2026-02-07 13:25:00', NULL, NULL),
+(11, 13, 'message', 9001, 3, 14, 'harassment', 'Text message in group chat contains a personal attack.', 'pending', '2026-02-07 13:45:00', NULL, NULL),
+(12, 14, 'channel', 7001, 1, 10, 'spam', 'Channel is being used for repeated spam posts and links.', 'reviewed', '2026-02-07 14:00:00', 1, '2026-02-07 14:15:00');

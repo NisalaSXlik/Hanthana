@@ -185,6 +185,80 @@ class ReportModel {
         return $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
     }
 
+    public function getReportById(int $reportId): ?array {
+        if ($reportId <= 0) {
+            return null;
+        }
+
+        $sql = "SELECT r.*, 
+                    reporter.username AS reporter_username,
+                    owner.username AS owner_username,
+                    reviewer.username AS reviewed_by_username
+                FROM {$this->table} r
+                LEFT JOIN Users reporter ON reporter.user_id = r.reporter_id
+                LEFT JOIN Users owner ON owner.user_id = r.reported_user_id
+                LEFT JOIN Users reviewer ON reviewer.user_id = r.reviewed_by
+                WHERE r.report_id = :report_id
+                LIMIT 1";
+
+        $stmt = $this->db->getConnection()->prepare($sql);
+        $stmt->bindValue(':report_id', $reportId, PDO::PARAM_INT);
+        $stmt->execute();
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        return $row ?: null;
+    }
+
+    public function getGroupModerationReports(int $groupId, int $limit = 200): array {
+        if ($groupId <= 0) {
+            return [];
+        }
+
+        $limit = max(1, min(500, $limit));
+        $sql = "SELECT
+                    r.report_id,
+                    r.reporter_id,
+                    r.target_type,
+                    r.target_id,
+                    r.group_id,
+                    r.reported_user_id,
+                    r.report_type,
+                    r.description,
+                    r.status,
+                    r.created_at,
+                    r.reviewed_by,
+                    r.reviewed_at,
+                    r.action_taken,
+                    r.reviewer_note,
+                    reporter.username AS reporter_username,
+                    owner.username AS owner_username,
+                    reviewer.username AS reviewed_by_username,
+                    g.name AS group_name
+                FROM {$this->table} r
+                LEFT JOIN Users reporter ON reporter.user_id = r.reporter_id
+                LEFT JOIN Users owner ON owner.user_id = r.reported_user_id
+                LEFT JOIN Users reviewer ON reviewer.user_id = r.reviewed_by
+                LEFT JOIN GroupsTable g ON g.group_id = r.group_id
+                WHERE r.group_id = :group_id
+                   OR (r.target_type = 'group' AND r.target_id = :group_target_id)
+                ORDER BY
+                    CASE r.status
+                        WHEN 'pending' THEN 1
+                        WHEN 'reviewed' THEN 2
+                        ELSE 3
+                    END,
+                    r.created_at DESC
+                LIMIT :limit";
+
+        $stmt = $this->db->getConnection()->prepare($sql);
+        $stmt->bindValue(':group_id', $groupId, PDO::PARAM_INT);
+        $stmt->bindValue(':group_target_id', $groupId, PDO::PARAM_INT);
+        $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
+        $stmt->execute();
+
+        return $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
+    }
+
     public function resolveReport(int $reportId, int $adminId): bool {
         if ($reportId <= 0) {
             return false;
@@ -215,6 +289,17 @@ class ReportModel {
             return ['success' => false, 'message' => 'Reporter required'];
         }
 
+        $targetType = strtolower(trim((string)($payload['target_type'] ?? '')));
+        $allowedTargetTypes = ['user', 'post', 'comment', 'group', 'bin', 'bin_media', 'question', 'answer', 'channel', 'message'];
+        if (!in_array($targetType, $allowedTargetTypes, true)) {
+            return ['success' => false, 'message' => 'Invalid report target'];
+        }
+
+        $targetId = (int)($payload['target_id'] ?? 0);
+        if ($targetId <= 0) {
+            return ['success' => false, 'message' => 'Target required'];
+        }
+
         $allowedTypes = ['spam', 'harassment', 'inappropriate', 'other'];
         $reportType = strtolower(trim($payload['report_type'] ?? 'other'));
         if (!in_array($reportType, $allowedTypes, true)) {
@@ -231,20 +316,18 @@ class ReportModel {
         }
 
         $connection = $this->db->getConnection();
-        $sql = "INSERT INTO {$this->table} 
-            (reporter_id, report_type, description, reported_post_id, reported_comment_id, reported_group_id, reported_media_id, reported_user_id, reported_question_id)
-            VALUES (:reporter_id, :report_type, :description, :reported_post_id, :reported_comment_id, :reported_group_id, :reported_media_id, :reported_user_id, :reported_question_id)";
+        $sql = "INSERT INTO {$this->table}
+            (reporter_id, target_type, target_id, group_id, reported_user_id, report_type, description)
+            VALUES (:reporter_id, :target_type, :target_id, :group_id, :reported_user_id, :report_type, :description)";
 
         $params = [
             ':reporter_id' => $reporterId,
-            ':report_type' => $reportType,
-            ':description' => $description !== '' ? $description : null,
-            ':reported_post_id' => $payload['reported_post_id'] ?? null,
-            ':reported_comment_id' => $payload['reported_comment_id'] ?? null,
-            ':reported_group_id' => $payload['reported_group_id'] ?? null,
-            ':reported_media_id' => $payload['reported_media_id'] ?? null,
+            ':target_type' => $targetType,
+            ':target_id' => $targetId,
+            ':group_id' => $payload['group_id'] ?? null,
             ':reported_user_id' => $payload['reported_user_id'] ?? null,
-            ':reported_question_id' => $payload['reported_question_id'] ?? null
+            ':report_type' => $reportType,
+            ':description' => $description !== '' ? $description : null
         ];
 
         try {
@@ -280,6 +363,84 @@ class ReportModel {
             return $stmt->rowCount() > 0;
         } catch (PDOException $e) {
             error_log('markReviewed error: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    public function updateModerationReport(int $reportId, int $adminId, array $updates): bool {
+        if ($reportId <= 0 || $adminId <= 0) {
+            return false;
+        }
+
+        $allowedStatuses = ['pending', 'reviewed', 'resolved'];
+        $allowedActions = [
+            'none',
+            'delete_content',
+            'warn_user',
+            'kick_user',
+            'remove_file',
+            'remove_folder',
+            'delete_channel',
+            'clear_channel',
+            'false_positive',
+            'other',
+        ];
+
+        $status = strtolower(trim((string)($updates['status'] ?? 'pending')));
+        if (!in_array($status, $allowedStatuses, true)) {
+            $status = 'pending';
+        }
+
+        $actionTaken = strtolower(trim((string)($updates['action_taken'] ?? 'none')));
+        if (!in_array($actionTaken, $allowedActions, true)) {
+            $actionTaken = 'none';
+        }
+
+        $reviewerNote = trim((string)($updates['reviewer_note'] ?? ''));
+        if ($reviewerNote !== '') {
+            $maxLength = 2000;
+            $length = function_exists('mb_strlen') ? mb_strlen($reviewerNote) : strlen($reviewerNote);
+            if ($length > $maxLength) {
+                $reviewerNote = function_exists('mb_substr')
+                    ? mb_substr($reviewerNote, 0, $maxLength)
+                    : substr($reviewerNote, 0, $maxLength);
+            }
+        }
+
+        $description = trim((string)($updates['description'] ?? ''));
+        if ($description !== '') {
+            $maxLength = 1000;
+            $length = function_exists('mb_strlen') ? mb_strlen($description) : strlen($description);
+            if ($length > $maxLength) {
+                $description = function_exists('mb_substr')
+                    ? mb_substr($description, 0, $maxLength)
+                    : substr($description, 0, $maxLength);
+            }
+        }
+
+        $sql = "UPDATE {$this->table}
+                SET status = :status,
+                    action_taken = :action_taken,
+                    description = :description,
+                    reviewer_note = :reviewer_note,
+                    reviewed_by = :admin_id,
+                    reviewed_at = NOW()
+                WHERE report_id = :report_id";
+
+        try {
+            $stmt = $this->db->getConnection()->prepare($sql);
+            $stmt->execute([
+                ':status' => $status,
+                ':action_taken' => $actionTaken,
+                ':description' => $description !== '' ? $description : null,
+                ':reviewer_note' => $reviewerNote !== '' ? $reviewerNote : null,
+                ':admin_id' => $adminId,
+                ':report_id' => $reportId,
+            ]);
+
+            return $stmt->rowCount() > 0;
+        } catch (PDOException $e) {
+            error_log('updateModerationReport error: ' . $e->getMessage());
             return false;
         }
     }

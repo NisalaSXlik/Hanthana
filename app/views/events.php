@@ -35,6 +35,7 @@ $incomingFriendRequests = $friendModel->getIncomingRequests($currentUserId);
     <link rel="stylesheet" href="./css/events-page.css">
     <link rel="stylesheet" href="./css/notificationpopup.css">
     <link rel="stylesheet" href="./css/notification-center.css">
+    <link rel="stylesheet" href="./css/report.css">
     <link rel="stylesheet" href="https://unicons.iconscout.com/release/v4.0.8/css/line.css">
 </head>
 
@@ -53,14 +54,14 @@ $incomingFriendRequests = $friendModel->getIncomingRequests($currentUserId);
                     <p style="color: var(--color-gray);">Discover and join exciting events in your community</p>
                     <div class="events-header-actions">
                         <div class="filter-tabs">
-                            <button class="filter-tab active" data-filter="upcoming">
-                                <i class="uil uil-clock"></i> Upcoming
+                            <button class="filter-tab active" data-filter="recent">
+                                <i class="uil uil-clock"></i> Recent
                             </button>
                             <button class="filter-tab" data-filter="my_events">
                                 <i class="uil uil-user"></i> My Events
                             </button>
                             <button class="filter-tab" data-filter="added_to_calendar">
-                                <i class="uil uil-calendar-plus"></i> Added to Calendar
+                                <i class="uil uil-bookmark"></i> Added to Calendar
                             </button>
                         </div>
                     </div>
@@ -108,6 +109,7 @@ $incomingFriendRequests = $friendModel->getIncomingRequests($currentUserId);
         </div>
     </div>
     <?php include __DIR__ . '/templates/chat-clean.php'; ?>
+    <?php include __DIR__ . '/templates/report-modal.php'; ?>
 
     <div id="eventsCreateModal" class="event-create-modal" aria-hidden="true">
         <div class="event-create-modal-content" role="dialog" aria-modal="true" aria-labelledby="eventsCreateTitle">

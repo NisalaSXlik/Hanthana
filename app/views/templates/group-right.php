@@ -33,7 +33,15 @@
     $membersHref = rtrim(BASE_PATH, '/') . '/index.php?controller=Group&action=members';
     $groupReportsHref = rtrim(BASE_PATH, '/') . '/index.php?controller=GroupReports&action=index';
     $manageHref = rtrim(BASE_PATH, '/') . '/index.php?controller=Group&action=manage';
+    $governanceHref = rtrim(BASE_PATH, '/') . '/index.php?controller=Group&action=governance';
     $groupSettingsHref = rtrim(BASE_PATH, '/') . '/index.php?controller=GroupSettings&action=index';
+
+    $groupPrivacy = strtolower(trim((string)($group['privacy_status'] ?? 'public')));
+    $isGroupOwnerOrMember = !empty($isCreator) || !empty($isAdmin) || !empty($isJoined);
+
+    if ($groupPrivacy !== 'public' && !$isGroupOwnerOrMember) {
+        return;
+    }
 
     if (!empty($groupHomeQuery)) {
         $groupHomeHref .= '&' . http_build_query($groupHomeQuery);
@@ -53,6 +61,7 @@
     if (!empty($manageQuery)) {
         $manageHref .= '&' . http_build_query($manageQuery);
         $groupSettingsHref .= '&' . http_build_query($manageQuery);
+        $governanceHref .= '&' . http_build_query($manageQuery);
     }
 
     // $activeGroupIdForReport = 0;
@@ -93,9 +102,13 @@
                 <i class="uil uil-sliders-v" style="font-size: 1.4rem;"></i>
                 <span style="font-size: 0.82rem; font-weight: 500;">Requests</span>
             </a>
-            <a href="<?php echo $groupSettingsHref; ?>" id="groupSettingsNavBtn" class="detail-item" style="flex-direction: column; align-items: center; justify-content: center; padding: 1rem 0.5rem; text-decoration: none; border: 1px solid var(--color-light); border-radius: var(--border-radius); text-align: center; gap: 0.4rem; transition: background 0.2s; background: transparent; cursor: pointer;">
+            <a href="<?php echo $groupSettingsHref; ?>" class="detail-item" style="flex-direction: column; align-items: center; justify-content: center; padding: 1rem 0.5rem; text-decoration: none; border: 1px solid var(--color-light); border-radius: var(--border-radius); text-align: center; gap: 0.4rem; transition: background 0.2s;">
                 <i class="uil uil-cog" style="font-size: 1.4rem;"></i>
                 <span style="font-size: 0.82rem; font-weight: 500;">Settings</span>
+            </a>
+            <a href="<?php echo $governanceHref; ?>" class="detail-item" style="flex-direction: column; align-items: center; justify-content: center; padding: 1rem 0.5rem; text-decoration: none; border: 1px solid var(--color-light); border-radius: var(--border-radius); text-align: center; gap: 0.4rem; transition: background 0.2s;">
+                <i class="uil uil-balance-scale" style="font-size: 1.4rem;"></i>
+                <span style="font-size: 0.82rem; font-weight: 500;">Governance</span>
             </a>
             <?php endif; ?>
         </div>

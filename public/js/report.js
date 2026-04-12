@@ -4,6 +4,10 @@
         return;
     }
 
+    if (modal.parentElement !== document.body) {
+        document.body.appendChild(modal);
+    }
+
     const form = document.getElementById('reportForm');
     const targetTypeInput = document.getElementById('reportTargetType');
     const targetIdInput = document.getElementById('reportTargetId');
@@ -40,11 +44,13 @@
         resetFeedback();
         targetLabelEl.textContent = label || 'this content';
         modal.classList.add('is-open');
+        modal.setAttribute('aria-hidden', 'false');
         document.body.classList.add('report-modal-open');
     };
 
     const closeModal = () => {
         modal.classList.remove('is-open');
+        modal.setAttribute('aria-hidden', 'true');
         document.body.classList.remove('report-modal-open');
         form.reset();
         resetFeedback();

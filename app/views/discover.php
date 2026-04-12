@@ -35,6 +35,7 @@ $incomingFriendRequests = $friendModel->getIncomingRequests($currentUserId);
     <link rel="stylesheet" href="./css/post.css">
     <link rel="stylesheet" href="./css/notificationpopup.css">
     <link rel="stylesheet" href="./css/notification-center.css">
+    <link rel="stylesheet" href="./css/report.css">
     <link rel="stylesheet" href="https://unicons.iconscout.com/release/v4.0.8/css/line.css">
 </head>
 <body class="page-discover">
@@ -178,6 +179,7 @@ $incomingFriendRequests = $friendModel->getIncomingRequests($currentUserId);
     </main>
 
     <?php include __DIR__ . '/templates/chat-clean.php'; ?>
+    <?php include __DIR__ . '/templates/report-modal.php'; ?>
 
 
     <script src="./js/navbar.js"></script>
@@ -187,5 +189,6 @@ $incomingFriendRequests = $friendModel->getIncomingRequests($currentUserId);
     <script src="./js/general.js"></script>
     <script src="./js/friends.js"></script>
     <script src="./js/post.js"></script>
+    <script src="./js/report.js"></script>
 </body>
 </html>

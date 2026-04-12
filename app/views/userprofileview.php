@@ -409,7 +409,9 @@ $currentUser = $userModel->findById($_SESSION['user_id']);
                     </div>
                     <div class="form-group">
                         <label for="emailInput">Email</label>
-                        <input type="email" id="emailInput" name="email" value="<?php echo htmlspecialchars($email ?? ''); ?>" required>
+                        <input type="email" id="emailInput" name="email" value="<?php echo htmlspecialchars($email ?? ''); ?>" required
+                               pattern="^[^@\s]+@[a-zA-Z0-9-]+(\.[a-zA-Z0-9-]+)*\.ac\.lk$"
+                               title="Use university email ending with .ac.lk (e.g., 2023cs140@stu.ucsc.cmb.ac.lk)">
                     </div>
                     <div class="form-group">
                         <label for="phoneInput">Phone Number</label>

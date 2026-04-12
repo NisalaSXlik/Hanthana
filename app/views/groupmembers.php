@@ -1,60 +1,60 @@
 <?php
-require_once __DIR__ . '/../../config/config.php';
-require_once __DIR__ . '/../helpers/MediaHelper.php';
-require_once __DIR__ . '/../models/UserModel.php';
+    require_once __DIR__ . '/../../config/config.php';
+    require_once __DIR__ . '/../helpers/MediaHelper.php';
+    require_once __DIR__ . '/../models/UserModel.php';
 
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
-
-if (!isset($_SESSION['user_id'])) {
-    header('Location: login.php');
-    exit();
-}
-
-$currentUserId = $_SESSION['user_id'];
-$userModel = new UserModel;
-$currentUser = $userModel->findById($_SESSION['user_id']);
-
-// Keep active group context in session for related pages like File Bank.
-$resolvedGroupId = 0;
-if (isset($groupId) && (int)$groupId > 0) {
-    $resolvedGroupId = (int)$groupId;
-} elseif (isset($group['group_id']) && (int)$group['group_id'] > 0) {
-    $resolvedGroupId = (int)$group['group_id'];
-} elseif (isset($_GET['group_id']) && (int)$_GET['group_id'] > 0) {
-    $resolvedGroupId = (int)$_GET['group_id'];
-} elseif (isset($_GET['id']) && (int)$_GET['id'] > 0) {
-    $resolvedGroupId = (int)$_GET['id'];
-}
-
-if ($resolvedGroupId > 0) {
-    $_SESSION['current_group_id'] = $resolvedGroupId;
-    $groupId = $resolvedGroupId;
-}
-
-$group = (isset($group) && is_array($group)) ? $group : [];
-$groupMembers = (isset($groupMembers) && is_array($groupMembers)) ? $groupMembers : [];
-
-$groupName = trim((string)($group['name'] ?? 'Group'));
-if ($groupName === '') {
-    $groupName = 'Group';
-}
-
-$totalMembers = count($groupMembers);
-$profileBase = rtrim(BASE_PATH, '/') . '/index.php?controller=Profile&action=view&user_id=';
-
-$adminMembers = [];
-$otherMembers = [];
-foreach ($groupMembers as $member) {
-    $role = strtolower((string)($member['role'] ?? 'member'));
-    if ($role === 'admin') {
-        $adminMembers[] = $member;
-    } else {
-        $otherMembers[] = $member;
+    if (session_status() === PHP_SESSION_NONE) {
+        session_start();
     }
-}
-$orderedMembers = array_merge($adminMembers, $otherMembers);
+
+    if (!isset($_SESSION['user_id'])) {
+        header('Location: login.php');
+        exit();
+    }
+
+    $currentUserId = $_SESSION['user_id'];
+    $userModel = new UserModel;
+    $currentUser = $userModel->findById($_SESSION['user_id']);
+
+    // Keep active group context in session for related pages like File Bank.
+    $resolvedGroupId = 0;
+    if (isset($groupId) && (int)$groupId > 0) {
+        $resolvedGroupId = (int)$groupId;
+    } elseif (isset($group['group_id']) && (int)$group['group_id'] > 0) {
+        $resolvedGroupId = (int)$group['group_id'];
+    } elseif (isset($_GET['group_id']) && (int)$_GET['group_id'] > 0) {
+        $resolvedGroupId = (int)$_GET['group_id'];
+    } elseif (isset($_GET['id']) && (int)$_GET['id'] > 0) {
+        $resolvedGroupId = (int)$_GET['id'];
+    }
+
+    if ($resolvedGroupId > 0) {
+        $_SESSION['current_group_id'] = $resolvedGroupId;
+        $groupId = $resolvedGroupId;
+    }
+
+    $group = (isset($group) && is_array($group)) ? $group : [];
+    $groupMembers = (isset($groupMembers) && is_array($groupMembers)) ? $groupMembers : [];
+
+    $groupName = trim((string)($group['name'] ?? 'Group'));
+    if ($groupName === '') {
+        $groupName = 'Group';
+    }
+
+    $totalMembers = count($groupMembers);
+    $profileBase = rtrim(BASE_PATH, '/') . '/index.php?controller=Profile&action=view&user_id=';
+
+    $adminMembers = [];
+    $otherMembers = [];
+    foreach ($groupMembers as $member) {
+        $role = strtolower((string)($member['role'] ?? 'member'));
+        if ($role === 'admin') {
+            $adminMembers[] = $member;
+        } else {
+            $otherMembers[] = $member;
+        }
+    }
+    $orderedMembers = array_merge($adminMembers, $otherMembers);
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -71,6 +71,7 @@ $orderedMembers = array_merge($adminMembers, $otherMembers);
     <link rel="stylesheet" href="./css/myfeed.css">
     <link rel="stylesheet" href="./css/notificationpopup.css">
     <link rel="stylesheet" href="./css/notification-center.css">
+    <link rel="stylesheet" href="./css/group-right.css">
     <link rel="stylesheet" href="./css/report.css">
     <link rel="stylesheet" href="./css/forms.css">
     <link rel="stylesheet" href="./css/groupmembers.css">

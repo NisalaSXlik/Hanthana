@@ -233,6 +233,21 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
 
+        navSearchInput.addEventListener('keydown', (event) => {
+            if (event.key !== 'Enter') {
+                return;
+            }
+
+            const term = navSearchInput.value.trim();
+            if (!term) {
+                return;
+            }
+
+            event.preventDefault();
+            hideNavSearchResults();
+            window.location.href = `${basePath}index.php?controller=Search&action=index&query=${encodeURIComponent(term)}`;
+        });
+
         document.addEventListener('click', (event) => {
             if (event.target === navSearchInput || (navSearchResults && navSearchResults.contains(event.target))) {
                 return;

@@ -23,102 +23,6 @@ class AuthController {
         $_SESSION['role'] = $user['role'] ?? 'user';
     }
 
-    private function redirectToLoginWithError(string $errorCode): void {
-        header('Location: ' . BASE_PATH . 'index.php?controller=Login&action=index&oauth_error=' . urlencode($errorCode));
-        exit();
-    }
-
-    private function isGoogleAuthConfigured(): bool {
-        return GOOGLE_CLIENT_ID !== '' && GOOGLE_CLIENT_SECRET !== '';
-    }
-
-    private function getGoogleRedirectUri(): string {
-        if (GOOGLE_REDIRECT_URI !== '') {
-            return GOOGLE_REDIRECT_URI;
-        }
-
-        $isHttps = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') || (($_SERVER['SERVER_PORT'] ?? null) == 443);
-        $scheme = $isHttps ? 'https' : 'http';
-        $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
-        $basePath = rtrim(BASE_PATH, '/');
-
-        return $scheme . '://' . $host . $basePath . '/index.php?controller=Auth&action=googleCallback';
-    }
-
-    private function postFormJson(string $url, array $formData): ?array {
-        $ch = curl_init($url);
-        if ($ch === false) {
-            return null;
-        }
-
-        curl_setopt_array($ch, [
-            CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_POST => true,
-            CURLOPT_POSTFIELDS => http_build_query($formData),
-            CURLOPT_HTTPHEADER => ['Content-Type: application/x-www-form-urlencoded'],
-            CURLOPT_TIMEOUT => 20,
-        ]);
-
-        $response = curl_exec($ch);
-        $httpCode = (int)curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        curl_close($ch);
-
-        if ($response === false || $httpCode >= 400) {
-            return null;
-        }
-
-        $decoded = json_decode($response, true);
-        return is_array($decoded) ? $decoded : null;
-    }
-
-    private function getJson(string $url, array $headers = []): ?array {
-        $ch = curl_init($url);
-        if ($ch === false) {
-            return null;
-        }
-
-        curl_setopt_array($ch, [
-            CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_HTTPGET => true,
-            CURLOPT_HTTPHEADER => $headers,
-            CURLOPT_TIMEOUT => 20,
-        ]);
-
-        $response = curl_exec($ch);
-        $httpCode = (int)curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        curl_close($ch);
-
-        if ($response === false || $httpCode >= 400) {
-            return null;
-        }
-
-        $decoded = json_decode($response, true);
-        return is_array($decoded) ? $decoded : null;
-    }
-
-    private function generateUniqueUsername(string $seed): string {
-        $base = strtolower(trim($seed));
-        $base = preg_replace('/[^a-z0-9_]/', '', str_replace(' ', '_', $base));
-
-        if ($base === '') {
-            $base = 'user';
-        }
-
-        $candidate = $base;
-        $attempt = 0;
-
-        while ($this->userModel->usernameExists($candidate) && $attempt < 20) {
-            $candidate = $base . random_int(1000, 9999);
-            $attempt++;
-        }
-
-        if ($this->userModel->usernameExists($candidate)) {
-            $candidate = $base . uniqid();
-        }
-
-        return $candidate;
-    }
-    
     private function startSession() {
         if (session_status() == PHP_SESSION_NONE) {
             session_start();
@@ -546,6 +450,10 @@ class AuthController {
         header('Location: ' . BASE_PATH . 'index.php?controller=Login&action=index&password_reset=success');
         exit();
     }
+
+    private function isValidUniversityEmail(string $email): bool {
+        return (bool) preg_match('/^[^@\s]+@[a-z0-9-]+(?:\.[a-z0-9-]+)*\.ac\.lk$/i', $email);
+    }
     
     // Handle user registration
     public function register($data) {
@@ -627,144 +535,6 @@ class AuthController {
         return ['success' => false, 'errors' => ['Invalid email/phone or password.']];
     }
 
-    public function googleLogin() {
-        if (!$this->isGoogleAuthConfigured()) {
-            $this->redirectToLoginWithError('google_not_configured');
-        }
-
-        try {
-            $_SESSION['google_oauth_state'] = bin2hex(random_bytes(16));
-        } catch (Exception $e) {
-            $this->redirectToLoginWithError('oauth_state_failed');
-        }
-
-        $params = [
-            'client_id' => GOOGLE_CLIENT_ID,
-            'redirect_uri' => $this->getGoogleRedirectUri(),
-            'response_type' => 'code',
-            'scope' => 'openid email profile',
-            'include_granted_scopes' => 'true',
-            'access_type' => 'online',
-            'prompt' => 'select_account',
-            'state' => $_SESSION['google_oauth_state'],
-        ];
-
-        $authUrl = 'https://accounts.google.com/o/oauth2/v2/auth?' . http_build_query($params);
-        header('Location: ' . $authUrl);
-        exit();
-    }
-
-    public function googleCallback() {
-        if (!$this->isGoogleAuthConfigured()) {
-            $this->redirectToLoginWithError('google_not_configured');
-        }
-
-        if (!empty($_GET['error'])) {
-            $this->redirectToLoginWithError('google_access_denied');
-        }
-
-        $incomingState = $_GET['state'] ?? '';
-        $expectedState = $_SESSION['google_oauth_state'] ?? '';
-        unset($_SESSION['google_oauth_state']);
-
-        if ($incomingState === '' || $expectedState === '' || !hash_equals($expectedState, $incomingState)) {
-            $this->redirectToLoginWithError('google_invalid_state');
-        }
-
-        $code = $_GET['code'] ?? '';
-        if ($code === '') {
-            $this->redirectToLoginWithError('google_missing_code');
-        }
-
-        $tokenData = $this->postFormJson('https://oauth2.googleapis.com/token', [
-            'code' => $code,
-            'client_id' => GOOGLE_CLIENT_ID,
-            'client_secret' => GOOGLE_CLIENT_SECRET,
-            'redirect_uri' => $this->getGoogleRedirectUri(),
-            'grant_type' => 'authorization_code',
-        ]);
-
-        if (!$tokenData || empty($tokenData['access_token'])) {
-            $this->redirectToLoginWithError('google_token_exchange_failed');
-        }
-
-        $googleUser = $this->getJson('https://www.googleapis.com/oauth2/v3/userinfo', [
-            'Authorization: Bearer ' . $tokenData['access_token'],
-        ]);
-
-        if (!$googleUser || empty($googleUser['email'])) {
-            $this->redirectToLoginWithError('google_profile_fetch_failed');
-        }
-
-        if (isset($googleUser['email_verified']) && $googleUser['email_verified'] === false) {
-            $this->redirectToLoginWithError('google_email_not_verified');
-        }
-
-        $email = trim($googleUser['email']);
-        $user = $this->userModel->findByEmail($email);
-
-        if (!$user) {
-            $firstName = trim($googleUser['given_name'] ?? 'Google');
-            $lastName = trim($googleUser['family_name'] ?? 'User');
-            if ($lastName === '') {
-                $lastName = 'User';
-            }
-
-            $usernameSeed = $googleUser['given_name'] ?? strstr($email, '@', true) ?: 'user';
-            $generatedUsername = $this->generateUniqueUsername($usernameSeed);
-
-            try {
-                $randomPassword = bin2hex(random_bytes(24));
-            } catch (Exception $e) {
-                $randomPassword = bin2hex(openssl_random_pseudo_bytes(24));
-            }
-
-            $newUser = [
-                'first_name' => $firstName,
-                'last_name' => $lastName,
-                'email' => $email,
-                'phone_number' => null,
-                'password' => $randomPassword,
-                'username' => $generatedUsername,
-                'bio' => null,
-                'university' => null,
-                'date_of_birth' => null,
-                'location' => null,
-            ];
-
-            if (!$this->userModel->create($newUser)) {
-                $this->redirectToLoginWithError('google_account_create_failed');
-            }
-
-            $user = $this->userModel->findByEmail($email);
-            if (!$user) {
-                $this->redirectToLoginWithError('google_account_create_failed');
-            }
-        }
-
-        if (!empty($user['banned_until'])) {
-            try {
-                $banUntil = new DateTime($user['banned_until']);
-            } catch (Exception $e) {
-                $banUntil = null;
-            }
-
-            if ($banUntil && $banUntil > new DateTime()) {
-                $this->redirectToLoginWithError('account_banned');
-            }
-
-            if ($banUntil && $banUntil <= new DateTime()) {
-                $this->userModel->clearBan($user['user_id']);
-            }
-        }
-
-        $this->setAuthenticatedSession($user);
-        $this->userModel->updateLastLogin($user['user_id']);
-
-        header('Location: ' . BASE_PATH . 'index.php?controller=AcedemicDashboard&action=index');
-        exit();
-    }
-    
     // Handle user logout - FIXED VERSION
     public function logout() {
         // Ensure session is started
@@ -896,9 +666,13 @@ class AuthController {
         
         // Email validation
         if (!empty($data['email'])) {
-            if (!filter_var($data['email'], FILTER_VALIDATE_EMAIL)) {
+            $email = trim((string)$data['email']);
+
+            if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
                 $errors[] = "Valid email is required.";
-            } elseif ($this->userModel->emailExists($data['email'])) {
+            } elseif (!$this->isValidUniversityEmail($email)) {
+                $errors[] = "Please use a university email ending with .ac.lk (e.g., 2023cs140@stu.ucsc.cmb.ac.lk).";
+            } elseif ($this->userModel->emailExists($email)) {
                 $errors[] = "Email already exists.";
             }
         }
@@ -973,8 +747,13 @@ class AuthController {
         }
         
         // Check unique fields
-        if (!empty($data['email']) && $this->userModel->emailExists($data['email'], $user_id)) {
-            $errors[] = "Email already exists.";
+        if (!empty($data['email'])) {
+            $email = trim((string)$data['email']);
+            if (!filter_var($email, FILTER_VALIDATE_EMAIL) || !$this->isValidUniversityEmail($email)) {
+                $errors[] = "Please use a university email ending with .ac.lk (e.g., 2023cs140@stu.ucsc.cmb.ac.lk).";
+            } elseif ($this->userModel->emailExists($email, $user_id)) {
+                $errors[] = "Email already exists.";
+            }
         }
         if (!empty($data['username']) && $this->userModel->usernameExists($data['username'], $user_id)) {
             $errors[] = "Username already exists.";
@@ -1037,6 +816,15 @@ class AuthController {
                     'success' => true,
                     'available' => false,
                     'message' => 'Please enter a valid email address.'
+                ]);
+                return;
+            }
+
+            if (!$this->isValidUniversityEmail($value)) {
+                echo json_encode([
+                    'success' => true,
+                    'available' => false,
+                    'message' => 'Use your university email format: name@....ac.lk'
                 ]);
                 return;
             }

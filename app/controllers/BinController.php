@@ -35,7 +35,25 @@ class BinController extends BaseController
             return $this->response(['status' => 'error', 'errors' => $errors], 400);
         }
 
-        $created = $this->binModel->createBin($payload, (int) $_SESSION['user_id']);
+        $groupId = (int)($payload['group_id'] ?? 0);
+        $userId = (int)$_SESSION['user_id'];
+        $canBypassApproval = $this->canManageGroupContent($groupId);
+        if (!$canBypassApproval) {
+            $queued = $this->groupModel->queueBinCreationRequest($groupId, $userId, [
+                'name' => trim((string)$payload['name'])
+            ]);
+            if ($queued) {
+                return $this->response([
+                    'status' => 'success',
+                    'queued' => true,
+                    'message' => 'Bin request submitted for approval.'
+                ]);
+            }
+
+            return $this->response(['status' => 'error', 'errors' => ['Failed to submit bin request.']], 500);
+        }
+
+        $created = $this->binModel->createBin($payload, $userId);
         if (!$created) {
             return $this->response(['status' => 'error', 'errors' => ['Failed to create bin.']], 500);
         }
@@ -118,7 +136,38 @@ class BinController extends BaseController
         }
 
         $payload = array_merge($payload, $fileInfo);
-        $created = $this->binModel->addMedia($payload, (int) $_SESSION['user_id']);
+        $groupId = (int)($payload['group_id'] ?? 0);
+        $userId = (int)$_SESSION['user_id'];
+        $canBypassApproval = $this->canManageGroupContent($groupId);
+
+        if (!$canBypassApproval) {
+            $queued = $this->groupModel->queueBinMediaAddRequest(
+                $groupId,
+                $userId,
+                (int)($payload['bin_id'] ?? 0),
+                [
+                    'group_id' => $groupId,
+                    'bin_id' => (int)($payload['bin_id'] ?? 0),
+                    'file_name' => (string)($payload['file_name'] ?? ''),
+                    'file_path' => (string)($payload['file_path'] ?? ''),
+                    'file_size' => (int)($payload['file_size'] ?? 0),
+                    'media_file_type' => (string)($payload['media_file_type'] ?? 'other'),
+                    'bin_file_type' => (string)($payload['bin_file_type'] ?? 'other')
+                ]
+            );
+
+            if ($queued) {
+                return $this->response([
+                    'status' => 'success',
+                    'queued' => true,
+                    'message' => 'File request submitted for approval.'
+                ]);
+            }
+
+            return $this->response(['status' => 'error', 'errors' => ['Failed to submit file request.']], 500);
+        }
+
+        $created = $this->binModel->addMedia($payload, $userId);
 
         if (!$created) {
             return $this->response(['status' => 'error', 'errors' => ['Failed to add file.']], 500);
@@ -331,6 +380,7 @@ class BinController extends BaseController
         $types = $this->resolveFileTypesByName($originalName);
 
         return array_merge($types, [
+            'file_url' => $relativePath,
             'file_path' => $relativePath,
             'file_size' => (int) ($file['size'] ?? 0),
         ]);
@@ -357,7 +407,7 @@ class BinController extends BaseController
         } elseif (in_array($ext, ['mp4', 'webm', 'mov', 'avi'], true)) {
             $binType = 'video';
         } elseif (in_array($ext, ['pdf', 'doc', 'docx', 'txt', 'rtf', 'odt', 'xlsx', 'xls', 'ppt', 'pptx', 'zip'], true)) {
-            $binType = 'document';
+            $binType = 'doc';
         }
 
         return [
@@ -413,10 +463,6 @@ class BinController extends BaseController
         $group = $this->groupModel->getById($groupId);
         if (!$group) {
             return false;
-        }
-
-        if ((int)($group['created_by'] ?? 0) === $currentUserId) {
-            return true;
         }
 
         if ($this->groupModel->isGroupAdmin($groupId, $currentUserId)) {

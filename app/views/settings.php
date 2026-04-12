@@ -53,6 +53,7 @@ try {
     <link rel="stylesheet" href="./css/forms.css">
     <link rel="stylesheet" href="./css/notificationpopup.css">
     <link rel="stylesheet" href="./css/notification-center.css">
+    <link rel="stylesheet" href="./css/report.css">
     <link rel="stylesheet" href="https://unicons.iconscout.com/release/v4.0.8/css/line.css">
     
     <script> 
@@ -124,7 +125,9 @@ try {
 
                                     <div class="form-group">
                                         <label for="email">Email</label>
-                                        <input type="email" id="email" name="email" value="<?php echo htmlspecialchars($currentUser['email'] ?? ''); ?>" required>
+                                        <input type="email" id="email" name="email" value="<?php echo htmlspecialchars($currentUser['email'] ?? ''); ?>" required
+                                               pattern="^[^@\s]+@[a-zA-Z0-9-]+(\.[a-zA-Z0-9-]+)*\.ac\.lk$"
+                                               title="Use university email ending with .ac.lk (e.g., 2023cs140@stu.ucsc.cmb.ac.lk)">
                                     </div>
 
                                     <div class="form-group">
@@ -418,8 +421,9 @@ try {
             </div>
         </div>
     </div>
-    
+
     <?php include __DIR__ . '/templates/chat-clean.php'; ?>
+    <?php include __DIR__ . '/templates/report-modal.php'; ?>
 
     <script src="./js/calender.js?v=20250209_syntax"></script>
     <script src="./js/general.js"></script>
@@ -427,6 +431,7 @@ try {
     <script src="./js/navbar.js"></script>
     <script src="./js/notificationpopup.js"></script>
     <script src="./js/post.js"></script>
+    <script src="./js/report.js"></script>
     <script src="./js/settings.js"></script>
     
     <script>

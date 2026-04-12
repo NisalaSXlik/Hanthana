@@ -16,6 +16,9 @@ if (!isset($_SESSION['user_id'])) {
 $userModel = new UserModel;
 $currentUser = $userModel->findById((int)$_SESSION['user_id']);
 $friendRequests = $friendRequests ?? [];
+$postRequests = $postRequests ?? [];
+$binRequests = $binRequests ?? [];
+$channelRequests = $channelRequests ?? [];
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -24,7 +27,6 @@ $friendRequests = $friendRequests ?? [];
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Manage Group - <?php echo htmlspecialchars($group['name'] ?? 'Group'); ?></title>
     <link rel="stylesheet" href="./css/general.css">
-    <link rel="stylesheet" href="./css/groupprofileview.css">
     <link rel="stylesheet" href="./css/navbar.css">
     <link rel="stylesheet" href="./css/mediaquery.css">
     <link rel="stylesheet" href="./css/calender.css?v=20250209_zindex">
@@ -32,34 +34,38 @@ $friendRequests = $friendRequests ?? [];
     <link rel="stylesheet" href="./css/myfeed.css">
     <link rel="stylesheet" href="./css/notificationpopup.css">
     <link rel="stylesheet" href="./css/notification-center.css">
+    <link rel="stylesheet" href="./css/group-right.css">
     <link rel="stylesheet" href="./css/grouprequests.css">
+    <link rel="stylesheet" href="./css/report.css">
     <link rel="stylesheet" href="./css/forms.css">
     <link rel="stylesheet" href="https://unicons.iconscout.com/release/v4.0.8/css/line.css">
 </head>
-<body class="group-manage-page">
+<body>
     <?php include __DIR__ . '/templates/navbar.php'; ?>
 
     <main>
         <div class="container">
             <?php include __DIR__ . '/templates/left-sidebar.php'; ?>
             <div class="middle">
-                <div class="manage-header events-like-header">
-                    <h1><i class="uil uil-sliders-v-alt"></i> Group Manage</h1>
+                <div class="manage-header">
+                    <h1><i class="uil uil-sliders-v-alt"></i>Group Requests</h1>
                     <p>Review requests for private and secret group activity in <?php echo htmlspecialchars($group['name']); ?>.</p>
                 </div>
 
-                <div class="profile-tabs manage-tabs">
-                    <ul>
-                        <li class="active"><a href="#" data-tab="join-requests">Join Requests</a></li>
-                        <li><a href="#" data-tab="post-requests">Post Requests</a></li>
-                        <li><a href="#" data-tab="bin-requests">Bin Requests</a></li>
-                        <li><a href="#" data-tab="channel-requests">Channel Requests</a></li>
-                    </ul>
-                </div>
+                <div class="requests-container">
+                    <div class="profile-tabs manage-tabs">
+                        <ul>
+                            <li class="active"><a href="#" data-tab="join-requests">Join Requests</a></li>
+                            <li><a href="#" data-tab="post-requests">Post Requests</a></li>
+                            <li><a href="#" data-tab="bin-requests">Bin Requests</a></li>
+                            <li><a href="#" data-tab="channel-requests">Channel Requests</a></li>
+                        </ul>
+                    </div>
 
-                <div class="manage-content">
+                    <div class="manage-content">
                     <section class="manage-card tab-content active" id="join-requests-content">
                         <h3><i class="uil uil-user-plus"></i> Join Requests</h3>
+                        <div class="request-feedback" id="groupRequestsFeedback" style="display:none;"></div>
                         <?php if (!empty($pendingRequests)): ?>
                             <div class="requests-list">
                                 <?php foreach ($pendingRequests as $req): ?>
@@ -72,8 +78,9 @@ $friendRequests = $friendRequests ?? [];
                                             </div>
                                         </div>
                                         <div class="request-actions">
-                                            <button class="btn btn-primary approve-request" data-user-id="<?php echo (int)$req['user_id']; ?>" data-group-id="<?php echo (int)$group['group_id']; ?>">Approve</button>
-                                            <button class="btn btn-secondary reject-request" data-user-id="<?php echo (int)$req['user_id']; ?>" data-group-id="<?php echo (int)$group['group_id']; ?>">Reject</button>
+                                            <button class="btn btn-primary approve-request" data-user-id="<?php echo (int)$req['user_id']; ?>" data-group-id="<?php echo (int)$group['group_id']; ?>" type="button">Approve</button>
+                                            <button class="btn btn-secondary reject-request" data-user-id="<?php echo (int)$req['user_id']; ?>" data-group-id="<?php echo (int)$group['group_id']; ?>" type="button">Reject</button>
+                                            <a class="btn btn-secondary" href="<?php echo BASE_PATH; ?>index.php?controller=Profile&action=view&user_id=<?php echo (int)$req['user_id']; ?>">View</a>
                                         </div>
                                     </div>
                                 <?php endforeach; ?>
@@ -87,129 +94,87 @@ $friendRequests = $friendRequests ?? [];
 
                     <section class="manage-card tab-content" id="post-requests-content">
                         <h3><i class="uil uil-file-exclamation-alt"></i> Post Requests</h3>
-                        <table class="manage-table">
-                            <thead>
-                                <tr>
-                                    <th>Member</th>
-                                    <th>Post Type</th>
-                                    <th>Reason</th>
-                                    <th>Action</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr>
-                                    <td>Nethmi Perera</td>
-                                    <td>Question</td>
-                                    <td>Private group post approval needed</td>
-                                    <td>
-                                        <button class="btn btn-primary btn-sm" type="button">Approve</button>
-                                        <button class="btn btn-secondary btn-sm" type="button">Reject</button>
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td>Kavindu Jay</td>
-                                    <td>Event</td>
-                                    <td>Secret group event publishing request</td>
-                                    <td>
-                                        <button class="btn btn-primary btn-sm" type="button">Approve</button>
-                                        <button class="btn btn-secondary btn-sm" type="button">Reject</button>
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
+                        <div class="requests-list">
+                            <?php if (!empty($postRequests)): ?>
+                            <?php foreach ($postRequests as $request): ?>
+                                <div class="request-row">
+                                    <div class="request-left">
+                                        <div class="request-meta">
+                                            <strong><?php echo htmlspecialchars((string)$request['member']); ?></strong>
+                                            <div class="muted"><?php echo htmlspecialchars((string)$request['post_type']); ?> · <?php echo htmlspecialchars((string)$request['reason']); ?></div>
+                                        </div>
+                                    </div>
+                                    <div class="request-actions">
+                                        <button class="btn btn-primary approve-other-request" data-request-kind="<?php echo htmlspecialchars((string)($request['request_kind'] ?? 'post')); ?>" data-request-id="<?php echo (int)($request['request_id'] ?? $request['report_id'] ?? 0); ?>" data-group-id="<?php echo (int)$group['group_id']; ?>" type="button">Approve</button>
+                                        <button class="btn btn-secondary reject-other-request" data-request-kind="<?php echo htmlspecialchars((string)($request['request_kind'] ?? 'post')); ?>" data-request-id="<?php echo (int)($request['request_id'] ?? $request['report_id'] ?? 0); ?>" data-group-id="<?php echo (int)$group['group_id']; ?>" type="button">Reject</button>
+                                        <a class="btn btn-secondary" href="<?php echo BASE_PATH; ?>index.php?controller=GroupReports&action=index&group_id=<?php echo (int)$group['group_id']; ?>">View</a>
+                                    </div>
+                                </div>
+                            <?php endforeach; ?>
+                            <?php else: ?>
+                            <div class="manage-empty-inline">No pending post requests right now.</div>
+                            <?php endif; ?>
+                        </div>
                     </section>
 
                     <section class="manage-card tab-content" id="bin-requests-content">
                         <h3><i class="uil uil-folder-exclamation"></i> Bin Requests</h3>
-                        <table class="manage-table">
-                            <thead>
-                                <tr>
-                                    <th>Member</th>
-                                    <th>Bin Name</th>
-                                    <th>Request</th>
-                                    <th>Action</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr>
-                                    <td>Isuri Kavya</td>
-                                    <td>Semester Materials</td>
-                                    <td>Create bin in secret group</td>
-                                    <td>
-                                        <button class="btn btn-primary btn-sm" type="button">Approve</button>
-                                        <button class="btn btn-secondary btn-sm" type="button">Reject</button>
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td>Malinda S</td>
-                                    <td>Exam Archives</td>
-                                    <td>Bin visibility escalation request</td>
-                                    <td>
-                                        <button class="btn btn-primary btn-sm" type="button">Approve</button>
-                                        <button class="btn btn-secondary btn-sm" type="button">Reject</button>
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
+                        <div class="requests-list">
+                            <?php if (!empty($binRequests)): ?>
+                            <?php foreach ($binRequests as $request): ?>
+                                <div class="request-row">
+                                    <div class="request-left">
+                                        <div class="request-meta">
+                                            <strong><?php echo htmlspecialchars((string)$request['member']); ?></strong>
+                                            <div class="muted"><?php echo htmlspecialchars((string)$request['bin_name']); ?> · <?php echo htmlspecialchars((string)$request['request']); ?></div>
+                                        </div>
+                                    </div>
+                                    <div class="request-actions">
+                                        <button class="btn btn-primary approve-other-request" data-request-kind="<?php echo htmlspecialchars((string)($request['request_kind'] ?? 'bin')); ?>" data-request-id="<?php echo (int)($request['request_id'] ?? $request['report_id'] ?? 0); ?>" data-group-id="<?php echo (int)$group['group_id']; ?>" type="button">Approve</button>
+                                        <button class="btn btn-secondary reject-other-request" data-request-kind="<?php echo htmlspecialchars((string)($request['request_kind'] ?? 'bin')); ?>" data-request-id="<?php echo (int)($request['request_id'] ?? $request['report_id'] ?? 0); ?>" data-group-id="<?php echo (int)$group['group_id']; ?>" type="button">Reject</button>
+                                        <a class="btn btn-secondary" href="<?php echo BASE_PATH; ?>index.php?controller=GroupReports&action=index&group_id=<?php echo (int)$group['group_id']; ?>">View</a>
+                                    </div>
+                                </div>
+                            <?php endforeach; ?>
+                            <?php else: ?>
+                            <div class="manage-empty-inline">No pending bin requests right now.</div>
+                            <?php endif; ?>
+                        </div>
                     </section>
 
                     <section class="manage-card tab-content" id="channel-requests-content">
                         <h3><i class="uil uil-channel"></i> Channel Requests</h3>
-                        <div class="channel-list message-thread-list">
-                            <div class="channel-item">
-                                <div>
-                                    <strong>Channel request: #first-year-help</strong>
-                                    <p>Member asked to create a new help channel.</p>
+                        <div class="requests-list">
+                            <?php if (!empty($channelRequests)): ?>
+                            <?php foreach ($channelRequests as $request): ?>
+                                <div class="request-row">
+                                    <div class="request-left">
+                                        <div class="request-meta">
+                                            <strong><?php echo htmlspecialchars((string)$request['channel']); ?></strong>
+                                            <div class="muted"><?php echo htmlspecialchars((string)$request['request_type']); ?> · <?php echo htmlspecialchars((string)$request['reason']); ?></div>
+                                        </div>
+                                    </div>
+                                    <div class="request-actions">
+                                        <button class="btn btn-primary approve-other-request" data-request-kind="channel" data-request-id="<?php echo (int)($request['request_id'] ?? 0); ?>" data-group-id="<?php echo (int)$group['group_id']; ?>" type="button">Approve</button>
+                                        <button class="btn btn-secondary reject-other-request" data-request-kind="channel" data-request-id="<?php echo (int)($request['request_id'] ?? 0); ?>" data-group-id="<?php echo (int)$group['group_id']; ?>" type="button">Reject</button>
+                                        <a class="btn btn-secondary" href="<?php echo BASE_PATH; ?>index.php?controller=ChannelPage&action=index&group_id=<?php echo (int)$group['group_id']; ?>">View</a>
+                                    </div>
                                 </div>
-                                <button class="btn btn-secondary btn-sm" type="button">Review</button>
-                            </div>
-                            <div class="channel-item">
-                                <div>
-                                    <strong>Channel request: #internships</strong>
-                                    <p>Member asked to open a new internships channel.</p>
-                                </div>
-                                <button class="btn btn-secondary btn-sm" type="button">Review</button>
-                            </div>
+                            <?php endforeach; ?>
+                            <?php else: ?>
+                            <div class="manage-empty-inline">No pending channel requests right now.</div>
+                            <?php endif; ?>
                         </div>
-
-                        <div class="manage-subdivider"></div>
-
-                        <table class="manage-table">
-                            <thead>
-                                <tr>
-                                    <th>Channel</th>
-                                    <th>Request Type</th>
-                                    <th>Reason</th>
-                                    <th>Action</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr>
-                                    <td>#hostel-talk</td>
-                                    <td>New channel</td>
-                                    <td>Repeated study discussion requests</td>
-                                    <td>
-                                        <button class="btn btn-primary btn-sm" type="button">Approve</button>
-                                        <button class="btn btn-secondary btn-sm" type="button">Reject</button>
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td>#project-marketplace</td>
-                                    <td>New channel</td>
-                                    <td>Group wants a project buying/selling space</td>
-                                    <td>
-                                        <button class="btn btn-primary btn-sm" type="button">Approve</button>
-                                        <button class="btn btn-secondary btn-sm" type="button">Reject</button>
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
                     </section>
+                    </div>
                 </div>
             </div>
 
             <?php include __DIR__ . '/templates/group-right.php'; ?>
         </div>
+
+        <?php include __DIR__ . '/templates/chat-clean.php'; ?>
+        <?php include __DIR__ . '/templates/report-modal.php'; ?>
     </main>
 
     <script>const BASE_PATH = '<?php echo BASE_PATH; ?>'; const GROUP_ID = <?php echo (int)$group['group_id']; ?>;</script>
@@ -221,38 +186,8 @@ $friendRequests = $friendRequests ?? [];
     <script src="./js/navbar.js"></script>
     <script src="./js/post.js"></script>
     <script src="./js/comment.js"></script>
+    <script src="./js/report.js"></script>
     <script src="./js/groupprofileview.js"></script>
-    <script>
-        document.querySelectorAll('.manage-tabs a[data-tab]').forEach(function(tabLink) {
-            tabLink.addEventListener('click', function(event) {
-                event.preventDefault();
-
-                const selectedTab = this.getAttribute('data-tab');
-
-                document.querySelectorAll('.manage-tabs li').forEach(function(tabItem) {
-                    tabItem.classList.remove('active');
-                });
-                this.parentElement.classList.add('active');
-
-                document.querySelectorAll('.manage-content .tab-content').forEach(function(section) {
-                    section.classList.remove('active');
-                });
-
-                const activeSection = document.getElementById(selectedTab + '-content');
-                if (activeSection) {
-                    activeSection.classList.add('active');
-                }
-            });
-        });
-
-        // Refresh button handler for the empty state
-        document.addEventListener('DOMContentLoaded', function() {
-            // Handle initial refresh button if present
-            const refreshBtn = document.getElementById('refreshRequestsBtn');
-            if (refreshBtn) {
-                refreshBtn.addEventListener('click', () => window.location.reload());
-            }
-        });
-    </script>
+    <script src="./js/grouprequests.js"></script>
 </body>
 </html>

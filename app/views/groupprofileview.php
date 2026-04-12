@@ -45,9 +45,12 @@ if ($resolvedGroupId > 0) {
     <link rel="stylesheet" href="./css/mediaquery.css">
     <link rel="stylesheet" href="./css/calender.css?v=20250209_zindex">
     <link rel="stylesheet" href="./css/post.css">
+    <link rel="stylesheet" href="./css/questions.css">
     <link rel="stylesheet" href="./css/myfeed.css">
+    <link rel="stylesheet" href="./css/events-page.css">
     <link rel="stylesheet" href="./css/notificationpopup.css">
     <link rel="stylesheet" href="./css/notification-center.css">
+    <link rel="stylesheet" href="./css/group-right.css">
     <link rel="stylesheet" href="./css/report.css">
     <link rel="stylesheet" href="./css/forms.css">
     <link rel="stylesheet" href="https://unicons.iconscout.com/release/v4.0.8/css/line.css">
@@ -95,17 +98,17 @@ if ($resolvedGroupId > 0) {
                             <!-- Action buttons: three dots dropdown + join/leave/invite -->
                             <div class="profile-actions">
                                 <?php if ($isJoined): ?>
-                                    <button class="btn btn-alert" id="leaveGroupBtn">
+                                    <button type="button" class="btn btn-alert" id="leaveGroupBtn">
                                         <i class="uil uil-sign-out-alt"></i>
                                         <span>Leave</span>
                                     </button>
                                 <?php elseif ($hasPendingRequest): ?>
-                                    <button class="btn btn-secondary" disabled>
+                                    <button type="button" class="btn btn-secondary" disabled>
                                         <i class="uil uil-clock"></i>
                                         <span>Pending</span>
                                     </button>
                                 <?php else: ?>
-                                    <button class="btn btn-primary" id="joinGroupBtn">
+                                    <button type="button" class="btn btn-primary" id="joinGroupBtn">
                                         <i class="uil uil-sign-in-alt"></i>
                                         <span>Join</span>
                                     </button>
@@ -207,47 +210,92 @@ if ($resolvedGroupId > 0) {
                                         $postId = (int)$post['post_id'];
                                         $isPostOwner = (int)($_SESSION['user_id'] ?? 0) === (int)($post['author_id'] ?? $post['user_id'] ?? 0);
                                         $postReportLabel = 'post in ' . ($group['name'] ?? 'group');
-                                        $badgeIcons = ['discussion' => '💬', 'question' => '❓', 'resource' => '📚', 'poll' => '📊', 'event' => '📅', 'assignment' => '📋'];
-                                        $badgeLabels = ['discussion' => 'Discussion', 'question' => 'Question', 'resource' => 'Resource', 'poll' => 'Poll', 'event' => 'Event', 'assignment' => 'Assignment'];
+                                        $badgeIcons = ['discussion' => '💬', 'question' => '❓', 'resource' => '📚', 'poll' => '📊', 'event' => '📅', 'assignment' => '🔔'];
+                                        $badgeLabels = ['discussion' => 'Discussion', 'question' => 'Question', 'resource' => 'Resource', 'poll' => 'Poll', 'event' => 'Event', 'assignment' => 'Alert'];
                                     ?>
                                     <div class="feed group-post-card <?php echo $postType; ?>-post group-post-clickable" id="post-<?php echo $postId; ?>" data-post-id="<?php echo $postId; ?>" data-post-index="<?php echo $index; ?>">
-                                        <div class="head">
-                                            <div class="user">
-                                                <div class="profile-picture">
-                                                    <img src="<?php echo htmlspecialchars(MediaHelper::resolveMediaPath($post['profile_picture'] ?? '', 'uploads/user_dp/default.png')); ?>" alt="<?php echo htmlspecialchars($post['first_name'] . ' ' . $post['last_name']); ?>">
-                                                </div>
-                                                <div class="info">
-                                                    <h3><?php echo htmlspecialchars($post['first_name'] . ' ' . $post['last_name']); ?></h3>
-                                                    <small><?php echo htmlspecialchars($post['created_at'] ?? ''); ?></small>
-                                                </div>
-                                            </div>
-                                            <div class="post-head-right">
-                                                <div class="post-type-badge post-type-badge-inline <?php echo $postType; ?>-badge">
-                                                    <?php echo $badgeIcons[$postType] . ' ' . $badgeLabels[$postType]; ?>
-                                                </div>
-                                                <div class="post-menu">
-                                                    <button type="button" class="menu-trigger" aria-label="Post menu">
-                                                        <i class="uil uil-ellipsis-h"></i>
-                                                    </button>
-                                                    <div class="menu">
-                                                        <?php if ($isPostOwner || !empty($isAdmin)): ?>
-                                                            <button type="button" class="menu-item delete-post" data-post-id="<?php echo $postId; ?>">
+                                        <?php if ($postType === 'event'): ?>
+                                            <?php
+                                                $eventDateRaw = $postMetadata['date'] ?? ($post['event_date'] ?? null);
+                                                $eventDateTs = !empty($eventDateRaw) ? strtotime((string)$eventDateRaw) : null;
+                                                $eventDay = $eventDateTs ? date('j', $eventDateTs) : '--';
+                                                $eventMonth = $eventDateTs ? date('M', $eventDateTs) : 'TBD';
+                                            ?>
+                                            <div class="event-card-header">
+                                                <div class="event-card-menu post-menu <?php echo ($isPostOwner || !empty($isAdmin)) ? '' : 'no-actions'; ?>" data-event-id="<?php echo $postId; ?>">
+                                                    <?php if ($isPostOwner || !empty($isAdmin)): ?>
+                                                        <button type="button" class="event-card-menu-trigger menu-trigger" aria-label="Post menu">
+                                                            <i class="uil uil-ellipsis-h"></i>
+                                                        </button>
+                                                        <div class="event-card-menu-dropdown menu">
+                                                            <button type="button" class="event-card-menu-item menu-item delete-post" data-post-id="<?php echo $postId; ?>">
                                                                 <i class="uil uil-trash-alt"></i>
                                                                 <span>Delete</span>
                                                             </button>
-                                                        <?php endif; ?>
-                                                        <button type="button"
-                                                                class="menu-item report-trigger"
-                                                                data-report-type="post"
-                                                                data-target-id="<?php echo $postId; ?>"
-                                                                data-target-label="<?php echo htmlspecialchars($postReportLabel, ENT_QUOTES); ?>">
-                                                            <i class="uil uil-exclamation-circle"></i>
-                                                            <span>Report</span>
-                                                        </button>
+                                                            <button type="button"
+                                                                    class="event-card-menu-item menu-item report-trigger"
+                                                                    data-report-type="post"
+                                                                    data-target-id="<?php echo $postId; ?>"
+                                                                    data-target-label="<?php echo htmlspecialchars($postReportLabel, ENT_QUOTES); ?>">
+                                                                <i class="uil uil-exclamation-circle"></i>
+                                                                <span>Report</span>
+                                                            </button>
+                                                        </div>
+                                                    <?php endif; ?>
+                                                </div>
+                                                <div class="event-header-content">
+                                                    <div class="event-card-author">
+                                                        <img src="<?php echo htmlspecialchars(MediaHelper::resolveMediaPath($post['profile_picture'] ?? '', 'uploads/user_dp/default.png')); ?>" alt="<?php echo htmlspecialchars($post['first_name'] . ' ' . $post['last_name']); ?>" class="event-author-avatar">
+                                                        <div class="event-author-info">
+                                                            <h4 class="event-author-name"><?php echo htmlspecialchars($post['first_name'] . ' ' . $post['last_name']); ?></h4>
+                                                            <p class="event-author-time"><?php echo htmlspecialchars($post['created_at'] ?? ''); ?></p>
+                                                        </div>
+                                                    </div>
+                                                    <div class="event-date-badge">
+                                                        <span class="day"><?php echo htmlspecialchars($eventDay); ?></span>
+                                                        <span class="month"><?php echo htmlspecialchars($eventMonth); ?></span>
                                                     </div>
                                                 </div>
                                             </div>
-                                        </div>
+                                        <?php else: ?>
+                                            <div class="head">
+                                                <div class="user">
+                                                    <div class="profile-picture">
+                                                        <img src="<?php echo htmlspecialchars(MediaHelper::resolveMediaPath($post['profile_picture'] ?? '', 'uploads/user_dp/default.png')); ?>" alt="<?php echo htmlspecialchars($post['first_name'] . ' ' . $post['last_name']); ?>">
+                                                    </div>
+                                                    <div class="info">
+                                                        <h3><?php echo htmlspecialchars($post['first_name'] . ' ' . $post['last_name']); ?></h3>
+                                                        <small><?php echo htmlspecialchars($post['created_at'] ?? ''); ?></small>
+                                                    </div>
+                                                </div>
+                                                <div class="post-head-right">
+                                                    <div class="post-type-badge post-type-badge-inline <?php echo $postType; ?>-badge">
+                                                        <?php echo $badgeIcons[$postType] . ' ' . $badgeLabels[$postType]; ?>
+                                                    </div>
+                                                    <div class="post-menu">
+                                                        <button type="button" class="menu-trigger" aria-label="Post menu">
+                                                            <i class="uil uil-ellipsis-h"></i>
+                                                        </button>
+                                                        <div class="menu">
+                                                            <?php if ($isPostOwner || !empty($isAdmin)): ?>
+                                                                <button type="button" class="menu-item delete-post" data-post-id="<?php echo $postId; ?>">
+                                                                    <i class="uil uil-trash-alt"></i>
+                                                                    <span>Delete</span>
+                                                                </button>
+                                                            <?php endif; ?>
+                                                            <button type="button"
+                                                                    class="menu-item report-trigger"
+                                                                    data-report-type="post"
+                                                                    data-target-id="<?php echo $postId; ?>"
+                                                                    data-target-label="<?php echo htmlspecialchars($postReportLabel, ENT_QUOTES); ?>">
+                                                                <i class="uil uil-exclamation-circle"></i>
+                                                                <span>Report</span>
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        <?php endif; ?>
 
                                         <!-- Post Content -->
                                         <div class="post-body">
@@ -266,18 +314,13 @@ if ($resolvedGroupId > 0) {
                                             <?php if ($postType === 'question'): ?>
                                                 <!-- Question Post -->
                                                 <div class="question-content">
-                                                    <?php if (!empty($postMetadata['category'])): ?>
-                                                        <span class="question-category"><?php echo htmlspecialchars($postMetadata['category']); ?></span>
+                                                    <?php if (!empty($postMetadata['title'])): ?>
+                                                        <h3 class="question-title"><?php echo htmlspecialchars($postMetadata['title']); ?></h3>
                                                     <?php endif; ?>
                                                     <?php if (!empty($post['content'])): ?>
-                                                        <p class="post-text"><?php echo nl2br(htmlspecialchars($post['content'])); ?></p>
+                                                        <p class="question-excerpt"><?php echo nl2br(htmlspecialchars($post['content'])); ?></p>
                                                     <?php endif; ?>
                                                 </div>
-                                                <?php if (!empty($post['image_url'])): ?>
-                                                    <div class="post-image">
-                                                        <img src="<?php echo htmlspecialchars($post['image_url']); ?>" alt="Post image">
-                                                    </div>
-                                                <?php endif; ?>
 
                                             <?php elseif ($postType === 'resource'): ?>
                                                 <!-- Resource Post -->
@@ -359,37 +402,66 @@ if ($resolvedGroupId > 0) {
 
                                             <?php elseif ($postType === 'event'): ?>
                                                 <!-- Event Post -->
-                                                <div class="event-content">
-                                                    <h3 class="event-title"><?php echo htmlspecialchars($postMetadata['title'] ?? ($post['event_title'] ?? 'Untitled Event')); ?></h3>
-                                                    <?php if (!empty($post['content'])): ?>
-                                                        <p class="post-text"><?php echo nl2br(htmlspecialchars($post['content'])); ?></p>
-                                                    <?php endif; ?>
-                                                    <div class="event-details">
-                                                        <?php if (!empty($postMetadata['date']) || !empty($post['event_date'])): ?>
-                                                            <div class="event-detail">
-                                                                <i class="uil uil-calendar-alt"></i>
-                                                                <span><?php echo date('l, F j, Y', strtotime($postMetadata['date'] ?? $post['event_date'])); ?></span>
+                                                <?php
+                                                    $eventTitle = $postMetadata['title'] ?? ($post['event_title'] ?? 'Untitled Event');
+                                                    $eventDescription = !empty($post['content']) ? $post['content'] : ($postMetadata['description'] ?? 'No description available');
+                                                    $eventTimeValue = $postMetadata['time'] ?? ($post['event_time'] ?? 'TBA');
+                                                    $eventLocationValue = $postMetadata['location'] ?? ($post['event_location'] ?? 'TBA');
+                                                    $goingCount = (int)($post['going_count'] ?? 0);
+                                                    $isInterested = !empty($post['is_going']);
+                                                    $calendarBtnClass = 'btn-add-calendar event-interest-btn' . ($isInterested ? ' added interested' : '');
+                                                ?>
+                                                <div class="event-card-body">
+                                                    <div class="event-card-content">
+                                                        <div class="event-card-main">
+                                                            <h3 class="event-card-title"><?php echo htmlspecialchars($eventTitle); ?></h3>
+
+                                                            <div class="event-description">
+                                                                <?php echo nl2br(htmlspecialchars($eventDescription)); ?>
                                                             </div>
-                                                        <?php endif; ?>
-                                                        <?php if (!empty($postMetadata['time']) || !empty($post['event_time'])): ?>
-                                                            <div class="event-detail">
-                                                                <i class="uil uil-clock"></i>
-                                                                <span><?php echo htmlspecialchars($postMetadata['time'] ?? $post['event_time']); ?></span>
+
+                                                            <div class="event-meta-compact">
+                                                                <div class="event-detail">
+                                                                    <i class="uil uil-clock"></i>
+                                                                    <span><strong>Time:</strong><span class="event-detail-value"><?php echo htmlspecialchars($eventTimeValue); ?></span></span>
+                                                                </div>
+                                                                <div class="event-detail">
+                                                                    <i class="uil uil-location-point"></i>
+                                                                    <span><strong>Location:</strong><span class="event-detail-value"><?php echo htmlspecialchars($eventLocationValue); ?></span></span>
+                                                                </div>
                                                             </div>
-                                                        <?php endif; ?>
-                                                        <?php if (!empty($postMetadata['location']) || !empty($post['event_location'])): ?>
-                                                            <div class="event-detail">
-                                                                <i class="uil uil-map-marker"></i>
-                                                                <span><?php echo htmlspecialchars($postMetadata['location'] ?? $post['event_location']); ?></span>
+                                                        </div>
+
+                                                        <?php if (!empty($post['image_url'])): ?>
+                                                            <div class="event-card-image">
+                                                                <img src="<?php echo htmlspecialchars($post['image_url']); ?>" alt="Event image">
                                                             </div>
                                                         <?php endif; ?>
                                                     </div>
 
-                                                    <?php if (!empty($post['image_url'])): ?>
-                                                        <div class="photo post-image">
-                                                            <img src="<?php echo htmlspecialchars($post['image_url']); ?>" alt="Event image">
+                                                    <div class="event-card-footer">
+                                                        <div class="event-stats">
+                                                            <span><i class="uil uil-users-alt"></i> <?php echo $goingCount; ?> going</span>
                                                         </div>
-                                                    <?php endif; ?>
+                                                        <button
+                                                            class="<?php echo $calendarBtnClass; ?>"
+                                                            data-post-id="<?php echo $postId; ?>"
+                                                            data-group-id="<?php echo (int)$groupId; ?>"
+                                                            data-event-title="<?php echo htmlspecialchars($eventTitle); ?>"
+                                                            data-event-date="<?php echo htmlspecialchars($postMetadata['date'] ?? ($post['event_date'] ?? '')); ?>"
+                                                            data-event-time="<?php echo htmlspecialchars($eventTimeValue === 'TBA' ? '' : $eventTimeValue); ?>"
+                                                            data-event-location="<?php echo htmlspecialchars($eventLocationValue === 'TBA' ? '' : $eventLocationValue); ?>"
+                                                            data-event-description="<?php echo htmlspecialchars($eventDescription); ?>"
+                                                            aria-pressed="<?php echo $isInterested ? 'true' : 'false'; ?>"
+                                                            title="<?php echo $isInterested ? 'Added to Calendar' : 'Add to Calendar'; ?>"
+                                                        >
+                                                            <?php if ($isInterested): ?>
+                                                                <i class="uis uis-bookmark"></i><span>Added</span>
+                                                            <?php else: ?>
+                                                                <i class="uil uil-calendar-alt"></i><span>Add Calendar</span>
+                                                            <?php endif; ?>
+                                                        </button>
+                                                    </div>
                                                 </div>
 
                                             <?php elseif ($postType === 'assignment'): ?>
@@ -417,59 +489,61 @@ if ($resolvedGroupId > 0) {
                                             <?php endif; ?>
                                         </div>
 
-                                        <!-- Post Actions -->
-                                        <div class="action-buttons compact">
-                                            <div class="interaction-buttons compact">
-                                                <button class="action-button compact upvote-btn" data-post-id="<?php echo $postId; ?>">
-                                                    <i class="uil uil-arrow-up <?php echo (isset($post['user_vote']) && $post['user_vote'] === 'upvote') ? 'liked' : ''; ?>" aria-hidden="true"></i>
-                                                    <span class="action-count"><?php echo (int)($post['upvote_count'] ?? 0); ?></span>
-                                                </button>
-                                                <button class="action-button compact downvote-btn" data-post-id="<?php echo $postId; ?>">
-                                                    <i class="uil uil-arrow-down <?php echo (isset($post['user_vote']) && $post['user_vote'] === 'downvote') ? 'liked' : ''; ?>" aria-hidden="true"></i>
-                                                    <span class="action-count"><?php echo (int)($post['downvote_count'] ?? 0); ?></span>
-                                                </button>
-                                            </div>
-                                            <div class="post-actions-right">
-                                                <div class="comments-side">
-                                                    <button type="button" class="question-answer-link-btn load-comments-btn" data-post-id="<?php echo $postId; ?>">
-                                                        <i class="uil uil-comment" aria-hidden="true"></i>
-                                                        <?php echo (int)($post['comment_count'] ?? 0); ?> comments
+                                        <?php if ($postType !== 'event'): ?>
+                                            <!-- Post Actions -->
+                                            <div class="action-buttons compact">
+                                                <div class="interaction-buttons compact">
+                                                    <button class="action-button compact upvote-btn" data-post-id="<?php echo $postId; ?>">
+                                                        <i class="uil uil-arrow-up <?php echo (isset($post['user_vote']) && $post['user_vote'] === 'upvote') ? 'liked' : ''; ?>" aria-hidden="true"></i>
+                                                        <span class="action-count"><?php echo (int)($post['upvote_count'] ?? 0); ?></span>
+                                                    </button>
+                                                    <button class="action-button compact downvote-btn" data-post-id="<?php echo $postId; ?>">
+                                                        <i class="uil uil-arrow-down <?php echo (isset($post['user_vote']) && $post['user_vote'] === 'downvote') ? 'liked' : ''; ?>" aria-hidden="true"></i>
+                                                        <span class="action-count"><?php echo (int)($post['downvote_count'] ?? 0); ?></span>
                                                     </button>
                                                 </div>
-                                                <div class="interaction-item bookmark-item">
-                                                    <button type="button" class="action-button compact bookmark-btn" data-post-id="<?php echo $postId; ?>" aria-label="Bookmark post">
-                                                        <i class="<?php echo (!empty($post['is_bookmarked'])) ? 'uis uis-bookmark bookmarked' : 'uil uil-bookmark'; ?>" aria-hidden="true"></i>
-                                                    </button>
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        <div id="comments-post-<?php echo (int)$post['post_id']; ?>" class="comment-section" data-post-id="<?php echo (int)$post['post_id']; ?>">
-                                            <div class="comment-header">
-                                                <h3>Comments</h3>
-                                                <button class="close-comments" type="button">
-                                                    <i class="fas fa-times"></i>
-                                                </button>
-                                            </div>
-                                            <div id="comments-container-<?php echo (int)$post['post_id']; ?>" class="comments-container" data-post-id="<?php echo (int)$post['post_id']; ?>">
-                                                <div class="comments-loading">Click to load comments</div>
-                                            </div>
-                                            
-                                            <div class="add-comment-form">
-                                                <form class="hf-form hf-inline" onsubmit="return false;">
-                                                <div class="comment-input-container">
-                                                    <?php
-                                                    $currentUserAvatar = MediaHelper::resolveMediaPath($_SESSION['profile_picture'] ?? '', 'uploads/user_dp/default.png');
-                                                    ?>
-                                                    <img src="<?php echo htmlspecialchars($currentUserAvatar); ?>" alt="Your Avatar" class="current-user-avatar">
-                                                    <div class="comment-input-wrapper">
-                                                        <textarea class="comment-input" placeholder="Write a comment..." data-post-id="<?php echo (int)$post['post_id']; ?>"></textarea>
-                                                        <button class="comment-submit-btn" data-post-id="<?php echo (int)$post['post_id']; ?>">Post Comment</button>
+                                                <div class="post-actions-right">
+                                                    <div class="comments-side">
+                                                        <button type="button" class="question-answer-link-btn load-comments-btn" data-post-id="<?php echo $postId; ?>" data-thread-label="<?php echo $postType === 'question' ? 'answers' : 'comments'; ?>">
+                                                            <i class="uil uil-comment" aria-hidden="true"></i>
+                                                            <?php echo (int)($post['comment_count'] ?? 0); ?> <?php echo $postType === 'question' ? 'answers' : 'comments'; ?>
+                                                        </button>
+                                                    </div>
+                                                    <div class="interaction-item bookmark-item">
+                                                        <button type="button" class="action-button compact bookmark-btn" data-post-id="<?php echo $postId; ?>" aria-label="Bookmark post">
+                                                            <i class="<?php echo (!empty($post['is_bookmarked'])) ? 'uis uis-bookmark bookmarked' : 'uil uil-bookmark'; ?>" aria-hidden="true"></i>
+                                                        </button>
                                                     </div>
                                                 </div>
-                                                </form>
                                             </div>
-                                        </div>
+
+                                            <div id="comments-post-<?php echo (int)$post['post_id']; ?>" class="comment-section" data-post-id="<?php echo (int)$post['post_id']; ?>" data-thread-label="<?php echo $postType === 'question' ? 'answers' : 'comments'; ?>">
+                                                <div class="comment-header">
+                                                    <h3><?php echo $postType === 'question' ? 'Answers' : 'Comments'; ?></h3>
+                                                    <button class="close-comments" type="button">
+                                                        <i class="fas fa-times"></i>
+                                                    </button>
+                                                </div>
+                                                <div id="comments-container-<?php echo (int)$post['post_id']; ?>" class="comments-container" data-post-id="<?php echo (int)$post['post_id']; ?>">
+                                                    <div class="comments-loading">Click to load <?php echo $postType === 'question' ? 'answers' : 'comments'; ?></div>
+                                                </div>
+                                                
+                                                <div class="add-comment-form">
+                                                    <form class="hf-form hf-inline" onsubmit="return false;">
+                                                    <div class="comment-input-container">
+                                                        <?php
+                                                        $currentUserAvatar = MediaHelper::resolveMediaPath($_SESSION['profile_picture'] ?? '', 'uploads/user_dp/default.png');
+                                                        ?>
+                                                        <img src="<?php echo htmlspecialchars($currentUserAvatar); ?>" alt="Your Avatar" class="current-user-avatar">
+                                                        <div class="comment-input-wrapper">
+                                                            <textarea class="comment-input" placeholder="<?php echo $postType === 'question' ? 'Write an answer...' : 'Write a comment...'; ?>" data-post-id="<?php echo (int)$post['post_id']; ?>"></textarea>
+                                                            <button class="comment-submit-btn" data-post-id="<?php echo (int)$post['post_id']; ?>"><?php echo $postType === 'question' ? 'Post Answer' : 'Post Comment'; ?></button>
+                                                        </div>
+                                                    </div>
+                                                    </form>
+                                                </div>
+                                            </div>
+                                        <?php endif; ?>
                                     </div>
                                 <?php endforeach; ?>
                             <?php else: ?>
@@ -1137,32 +1211,62 @@ if ($resolvedGroupId > 0) {
                         <span>Event</span>
                     </button>
                     <button type="button" class="post-type-btn" data-type="assignment">
-                        <i class="uil uil-file-check-alt"></i>
-                        <span>Assignment</span>
+                        <i class="uil uil-bell"></i>
+                        <span>Alert</span>
                     </button>
                 </div>
 
                 <!-- Common Fields -->
-                <div class="form-group">
+                <div class="form-group" id="groupCommonContentField">
                     <label for="postContent">Content</label>
                     <textarea id="postContent" name="content" rows="4" placeholder="Share your thoughts..." required></textarea>
                 </div>
 
                 <!-- Question-specific fields -->
-                <div id="questionFields" class="conditional-fields" style="display:none;">
+                <div id="groupQuestionFields" class="conditional-fields" style="display:none;">
+                    <section class="template-section">
+                        <div class="template-label-row">
+                            <label>Question style</label>
+                            <small>Select one to pre-fill your title</small>
+                        </div>
+                        <div class="question-type-grid" role="list">
+                            <button type="button" class="template-chip active" data-template-prefix="How do I">How do I...</button>
+                            <button type="button" class="template-chip" data-template-prefix="Why does">Why does...</button>
+                            <button type="button" class="template-chip" data-template-prefix="What is">What is...</button>
+                            <button type="button" class="template-chip" data-template-prefix="Best way to">Best way to...</button>
+                            <button type="button" class="template-chip" data-template-prefix="Troubleshooting">Troubleshooting...</button>
+                        </div>
+                    </section>
                     <div class="form-group">
-                        <label for="questionCategory">Category</label>
-                        <select id="questionCategory" name="question_category">
-                            <option value="general">General</option>
-                            <option value="technical">Technical</option>
-                            <option value="assignment">Assignment Help</option>
-                            <option value="exam">Exam Prep</option>
-                            <option value="project">Project Discussion</option>
+                        <label for="groupQuestionTitle">Question title <span class="required">*</span></label>
+                        <input type="text" id="groupQuestionTitle" name="title" placeholder="Summarize your question in one sentence">
+                        <small>Example: "How do I create a modal popup in PHP?"</small>
+                    </div>
+                    <div class="form-group">
+                        <label for="groupQuestionCategory">Category</label>
+                        <select id="groupQuestionCategory" name="question_category">
+                            <option value="General">General</option>
+                            <option value="Technology">Technology</option>
+                            <option value="Science">Science</option>
+                            <option value="Education">Education</option>
+                            <option value="Health">Health</option>
+                            <option value="Finance">Finance</option>
+                            <option value="Career">Career</option>
+                            <option value="Lifestyle">Lifestyle</option>
+                            <option value="Travel">Travel</option>
+                            <option value="Entertainment">Entertainment</option>
+                            <option value="Sports">Sports</option>
+                            <option value="Other">Other</option>
                         </select>
                     </div>
                     <div class="form-group">
-                        <label for="questionTags">Tags (comma separated)</label>
-                        <input type="text" id="questionTags" name="tags" placeholder="e.g., java, arrays, data-structures">
+                        <label for="groupProblemStatement">What problem are you facing? <span class="required">*</span></label>
+                        <textarea id="groupProblemStatement" name="problem_statement" maxlength="400" rows="4" placeholder="Describe the exact issue, error messages, or blockers."></textarea>
+                        <div class="char-count" data-for="problem_statement">0 / 400</div>
+                    </div>
+                    <div class="form-group">
+                        <label for="groupQuestionTopics">Topics (comma separated)</label>
+                        <input type="text" id="groupQuestionTopics" name="topics" placeholder="e.g., php, mysql, async">
                     </div>
                 </div>
 
@@ -1209,43 +1313,50 @@ if ($resolvedGroupId > 0) {
                 </div>
 
                 <!-- Event-specific fields -->
-                <div id="eventFields" class="conditional-fields" style="display:none;">
+                <div id="groupEventFields" class="conditional-fields" style="display:none;">
                     <div class="form-group">
-                        <label for="eventTitle">Event Title</label>
-                        <input type="text" id="eventTitle" name="event_title" placeholder="Event name">
+                        <label for="groupEventTitle">Event Title <span class="required">*</span></label>
+                        <input type="text" id="groupEventTitle" name="event_title" placeholder="Enter event title">
                     </div>
                     <div class="form-group">
-                        <label for="eventDate">Event Date</label>
-                        <input type="date" id="eventDate" name="event_date">
+                        <label>Event Image</label>
+                        <div class="event-image-upload" id="groupEventImageUploadBtn">
+                            <i class="uil uil-image-upload"></i>
+                            <p id="groupEventImageLabel">Click to add event image</p>
+                        </div>
                     </div>
                     <div class="form-group">
-                        <label for="eventTime">Event Time</label>
-                        <input type="time" id="eventTime" name="event_time">
+                        <label for="groupEventDescription">Description</label>
+                        <textarea id="groupEventDescription" name="event_description" rows="4" placeholder="Describe your event..."></textarea>
                     </div>
                     <div class="form-group">
-                        <label for="eventLocation">Location</label>
-                        <input type="text" id="eventLocation" name="event_location" placeholder="Where will this take place?">
+                        <label for="groupEventDate">Date <span class="required">*</span></label>
+                        <input type="date" id="groupEventDate" name="event_date">
+                    </div>
+                    <div class="form-group">
+                        <label for="groupEventTime">Time</label>
+                        <input type="time" id="groupEventTime" name="event_time">
+                    </div>
+                    <div class="form-group">
+                        <label for="groupEventLocation">Location</label>
+                        <input type="text" id="groupEventLocation" name="event_location" placeholder="Enter location">
                     </div>
                 </div>
 
-                <!-- Assignment-specific fields -->
+                <!-- Alert-specific fields -->
                 <div id="assignmentFields" class="conditional-fields" style="display:none;">
                     <div class="form-group">
-                        <label for="assignmentTitle">Assignment Title</label>
-                        <input type="text" id="assignmentTitle" name="assignment_title" placeholder="Assignment name">
+                        <label for="assignmentTitle">Alert Title <span class="required">*</span></label>
+                        <input type="text" id="assignmentTitle" name="assignment_title" placeholder="Enter alert title">
                     </div>
                     <div class="form-group">
-                        <label for="assignmentDeadline">Deadline</label>
+                        <label for="assignmentDeadline">Deadline (Optional)</label>
                         <input type="datetime-local" id="assignmentDeadline" name="assignment_deadline">
-                    </div>
-                    <div class="form-group">
-                        <label for="assignmentPoints">Points</label>
-                        <input type="number" id="assignmentPoints" name="assignment_points" min="0" placeholder="e.g., 100">
                     </div>
                 </div>
 
                 <!-- Image Upload -->
-                <div class="form-group">
+                <div class="form-group" id="groupImageUploadField">
                     <button type="button" class="upload-btn" id="uploadImageBtn">
                         <i class="uil uil-image"></i> Add Image
                     </button>
@@ -1260,14 +1371,14 @@ if ($resolvedGroupId > 0) {
 
                 <!-- File Upload (for resources) -->
                 <div id="fileUploadSection" class="form-group" style="display:none;">
-                    <button type="button" class="upload-btn" id="uploadFileBtn">
+                    <button type="button" class="upload-btn" id="groupPostUploadFileBtn">
                         <i class="uil uil-file"></i> Attach File
                     </button>
-                    <input type="file" id="postFileInput" name="file" style="display:none;">
-                    <div id="filePreviewContainer" style="display:none; margin-top:10px; padding:10px; background:var(--color-light); border-radius:8px;">
+                    <input type="file" id="groupPostFileInput" name="file" style="display:none;">
+                    <div id="groupPostFilePreviewContainer" style="display:none; margin-top:10px; padding:10px; background:var(--color-light); border-radius:8px;">
                         <i class="uil uil-file"></i>
-                        <span id="fileName"></span>
-                        <button type="button" id="removeFileBtn" style="margin-left:10px;">
+                        <span id="groupPostFileName"></span>
+                        <button type="button" id="groupPostRemoveFileBtn" style="margin-left:10px;">
                             <i class="uil uil-times"></i>
                         </button>
                     </div>
@@ -1308,7 +1419,7 @@ if ($resolvedGroupId > 0) {
     <script src="./js/vote.js"></script>
     <script src="./js/comment.js"></script>
     <script src="./js/report.js"></script>
-    <script src="./js/groupprofileview.js"></script>
+    <script src="./js/groupprofileview.js?v=20260412_poll_backend_native"></script>
     <script src="./js/group-poll-voting.js"></script>
     <script src="./js/group-post-interactions.js"></script>
     <script>
