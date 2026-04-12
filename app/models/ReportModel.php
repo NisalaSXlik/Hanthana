@@ -9,6 +9,41 @@ class ReportModel {
         $this->db = new Database();
     }
 
+    private function buildTargetLabel(?string $targetType, int $targetId): string {
+        $type = strtolower(trim((string)$targetType));
+        if ($targetId <= 0) {
+            return 'General';
+        }
+
+        $labels = [
+            'post' => 'Post',
+            'comment' => 'Comment',
+            'group' => 'Group',
+            'user' => 'User',
+            'question' => 'Question',
+            'answer' => 'Answer',
+            'bin' => 'File',
+            'bin_media' => 'File',
+            'media' => 'File',
+            'channel' => 'Channel',
+            'message' => 'Message',
+        ];
+
+        $label = $labels[$type] ?? ucfirst(str_replace('_', ' ', $type));
+        return $label . ' #' . $targetId;
+    }
+
+    private function hydrateReportRow(array $row): array {
+        $targetType = (string)($row['target_type'] ?? '');
+        $targetId = (int)($row['target_id'] ?? 0);
+
+        $row['target_type'] = $targetType;
+        $row['target_id'] = $targetId;
+        $row['target_label'] = $this->buildTargetLabel($targetType, $targetId);
+
+        return $row;
+    }
+
     public function getComplaintStats(int $days = 7): array {
         $days = max(1, min(30, $days));
         $connection = $this->db->getConnection();
@@ -90,25 +125,17 @@ class ReportModel {
     public function getRecentComplaints(int $limit = 6): array {
         $sql = "SELECT 
                     r.report_id,
+                    r.reporter_id,
+                    r.target_type,
+                    r.target_id,
+                    r.group_id,
+                    r.reported_user_id,
                     r.report_type,
                     r.status,
                     r.description,
                     r.created_at,
-                    r.reported_post_id,
-                    r.reported_comment_id,
-                    r.reported_group_id,
-                    r.reported_media_id,
-                    r.reported_user_id,
                     u.username AS reporter_username,
-                    reported.username AS reported_username,
-                    CASE 
-                        WHEN r.reported_post_id IS NOT NULL THEN CONCAT('Post #', r.reported_post_id)
-                        WHEN r.reported_comment_id IS NOT NULL THEN CONCAT('Comment #', r.reported_comment_id)
-                        WHEN r.reported_group_id IS NOT NULL THEN CONCAT('Group #', r.reported_group_id)
-                        WHEN r.reported_media_id IS NOT NULL THEN CONCAT('File #', r.reported_media_id)
-                        WHEN r.reported_user_id IS NOT NULL THEN CONCAT('User #', r.reported_user_id)
-                        ELSE 'General'
-                    END AS target_label
+                    reported.username AS reported_username
                 FROM {$this->table} r
                 LEFT JOIN Users u ON u.user_id = r.reporter_id
                 LEFT JOIN Users reported ON reported.user_id = r.reported_user_id
@@ -118,7 +145,9 @@ class ReportModel {
         $stmt = $this->db->getConnection()->prepare($sql);
         $stmt->bindValue(':limit', (int)$limit, PDO::PARAM_INT);
         $stmt->execute();
-        return $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
+        $rows = $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
+
+        return array_map([$this, 'hydrateReportRow'], $rows);
     }
 
     public function getComplaintsByStatus(?string $status = null, int $limit = 15): array {
@@ -127,27 +156,18 @@ class ReportModel {
 
         $sql = "SELECT 
                     r.report_id,
+                    r.reporter_id,
+                    r.target_type,
+                    r.target_id,
+                    r.group_id,
+                    r.reported_user_id,
                     r.report_type,
                     r.status,
                     r.description,
                     r.created_at,
-                    r.reported_post_id,
-                    r.reported_comment_id,
-                    r.reported_group_id,
-                    r.reported_media_id,
-                    r.reported_user_id,
-                    u.user_id AS reporter_id,
                     u.username AS reporter_username,
                     reported.username AS reported_username,
-                    reported.user_id AS reported_id,
-                    CASE 
-                        WHEN r.reported_post_id IS NOT NULL THEN CONCAT('Post #', r.reported_post_id)
-                        WHEN r.reported_comment_id IS NOT NULL THEN CONCAT('Comment #', r.reported_comment_id)
-                        WHEN r.reported_group_id IS NOT NULL THEN CONCAT('Group #', r.reported_group_id)
-                        WHEN r.reported_media_id IS NOT NULL THEN CONCAT('File #', r.reported_media_id)
-                        WHEN r.reported_user_id IS NOT NULL THEN CONCAT('User #', r.reported_user_id)
-                        ELSE 'General'
-                    END AS target_label
+                    reported.user_id AS reported_id
                 FROM {$this->table} r
                 LEFT JOIN Users u ON u.user_id = r.reporter_id
                 LEFT JOIN Users reported ON reported.user_id = r.reported_user_id";
@@ -155,9 +175,11 @@ class ReportModel {
         $conditions = [];
         $params = [];
 
-        if ($statusFilter === 'pending' || $statusFilter === 'resolved' || $statusFilter === 'reviewed') {
+        if ($statusFilter === 'pending' || $statusFilter === 'reviewed') {
             $conditions[] = 'LOWER(r.status) = :status';
             $params[':status'] = $statusFilter;
+        } elseif ($statusFilter === 'resolved') {
+            $conditions[] = "LOWER(r.status) IN ('resolved', 'reviewed')";
         } elseif ($statusFilter === 'received') {
             $conditions[] = 'r.created_at >= DATE_SUB(NOW(), INTERVAL 2 DAY)';
             $conditions[] = "LOWER(r.status) = 'pending'";
@@ -176,7 +198,8 @@ class ReportModel {
         $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
         $stmt->execute();
 
-        return $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
+        $rows = $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
+        return array_map([$this, 'hydrateReportRow'], $rows);
     }
 
     public function getReportById(int $reportId): ?array {

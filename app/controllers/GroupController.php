@@ -139,6 +139,14 @@ class GroupController {
     }
 
     /**
+     * Backwards-compatible alias for old discover route.
+     */
+    public function discover() {
+        header('Location: ' . BASE_PATH . 'index.php?controller=Discover&action=index');
+        exit();
+    }
+
+    /**
      * Admin manage page for group: view and act on pending join requests
      */
     public function manage() {
