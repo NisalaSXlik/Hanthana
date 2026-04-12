@@ -649,10 +649,28 @@ $complaintTypeCounts = array_map(fn($row) => (int)($row['count'] ?? 0), $complai
                         <?php foreach ($recentComplaints as $complaint): ?>
                             <?php
                                 $reportId = (int)($complaint['report_id'] ?? 0);
-                                $targetLabel = $complaint['target_label'] ?? 'General';
-                                $reportedPostId = (int)($complaint['reported_post_id'] ?? 0);
-                                $reportedGroupId = (int)($complaint['reported_group_id'] ?? 0);
+                                $targetType = strtolower((string)($complaint['target_type'] ?? ''));
+                                $targetId = (int)($complaint['target_id'] ?? 0);
+                                $groupId = (int)($complaint['group_id'] ?? 0);
                                 $reportedUserId = (int)($complaint['reported_user_id'] ?? 0);
+                                $targetLabel = trim((string)($complaint['target_label'] ?? ''));
+                                if ($targetLabel === '') {
+                                    $labelMap = [
+                                        'post' => 'Post',
+                                        'comment' => 'Comment',
+                                        'group' => 'Group',
+                                        'user' => 'User',
+                                        'question' => 'Question',
+                                        'answer' => 'Answer',
+                                        'bin' => 'File',
+                                        'bin_media' => 'File',
+                                        'channel' => 'Channel',
+                                        'message' => 'Message',
+                                    ];
+                                    $targetLabel = $targetId > 0
+                                        ? (($labelMap[$targetType] ?? ucfirst(str_replace('_', ' ', $targetType))) . ' #' . $targetId)
+                                        : 'General';
+                                }
                                 $status = strtolower($complaint['status'] ?? 'pending');
                             ?>
                             <li data-report-id="<?php echo $reportId; ?>">
@@ -665,15 +683,15 @@ $complaintTypeCounts = array_map(fn($row) => (int)($row['count'] ?? 0), $complai
                                 </div>
                                 <div class="trend-metrics">
                                     <div class="trend-actions">
-                                        <?php if ($reportedPostId): ?>
-                                            <button type="button" class="link-btn" data-preview-post="<?php echo $reportedPostId; ?>">Preview</button>
-                                            <button type="button" class="link-btn danger" data-remove-post="<?php echo $reportedPostId; ?>" data-target-label="<?php echo htmlspecialchars($targetLabel); ?>">Remove</button>
+                                        <?php if ($targetType === 'post' && $targetId > 0): ?>
+                                            <button type="button" class="link-btn" data-preview-post="<?php echo $targetId; ?>">Preview</button>
+                                            <button type="button" class="link-btn danger" data-remove-post="<?php echo $targetId; ?>" data-target-label="<?php echo htmlspecialchars($targetLabel); ?>">Remove</button>
                                         <?php endif; ?>
-                                        <?php if ($reportedGroupId): ?>
-                                            <button type="button" class="link-btn danger" data-disable-group="<?php echo $reportedGroupId; ?>" data-target-label="<?php echo htmlspecialchars($targetLabel); ?>">Disable group</button>
+                                        <?php if ($targetType === 'group' && $targetId > 0): ?>
+                                            <button type="button" class="link-btn danger" data-disable-group="<?php echo $targetId; ?>" data-target-label="<?php echo htmlspecialchars($targetLabel); ?>">Disable group</button>
                                         <?php endif; ?>
-                                        <?php if ($reportedUserId): ?>
-                                            <button type="button" class="link-btn danger" data-ban-user="<?php echo $reportedUserId; ?>" data-ban-username="<?php echo htmlspecialchars($complaint['reported_username'] ?? 'User'); ?>">Ban</button>
+                                        <?php if ($targetType === 'user' && $targetId > 0): ?>
+                                            <button type="button" class="link-btn danger" data-ban-user="<?php echo $targetId; ?>" data-ban-username="<?php echo htmlspecialchars($complaint['reported_username'] ?? 'User'); ?>">Ban</button>
                                         <?php endif; ?>
                                         <?php if ($status === 'pending'): ?>
                                             <button type="button" class="link-btn success" data-mark-reviewed="<?php echo $reportId; ?>">Mark reviewed</button>
@@ -729,23 +747,31 @@ $renderComplaintItems = function(array $items, string $emptyMessage) {
         $reportType = ucfirst($item['report_type'] ?? 'Complaint');
         $status = strtolower($item['status'] ?? 'pending');
         $reportId = (int)($item['report_id'] ?? 0);
+        $targetType = strtolower((string)($item['target_type'] ?? ''));
+        $targetId = (int)($item['target_id'] ?? 0);
+        $groupId = (int)($item['group_id'] ?? 0);
         $reportedUserId = (int)($item['reported_user_id'] ?? 0);
-        $reportedPostId = (int)($item['reported_post_id'] ?? 0);
-        $reportedGroupId = (int)($item['reported_group_id'] ?? 0);
-        $reportedCommentId = (int)($item['reported_comment_id'] ?? 0);
         $reporter = $item['reporter_username'] ?? 'Anonymous';
         $reportedUsername = $item['reported_username'] ?? null;
         $createdAt = $item['created_at'] ?? '';
 
-        $targetLabel = 'General';
-        if ($reportedPostId) {
-            $targetLabel = 'Post #' . $reportedPostId;
-        } elseif ($reportedCommentId) {
-            $targetLabel = 'Comment #' . $reportedCommentId;
-        } elseif ($reportedGroupId) {
-            $targetLabel = 'Group #' . $reportedGroupId;
-        } elseif ($reportedUserId) {
-            $targetLabel = 'User #' . $reportedUserId;
+        $targetLabel = trim((string)($item['target_label'] ?? ''));
+        if ($targetLabel === '') {
+            $targetMap = [
+                'post' => 'Post',
+                'comment' => 'Comment',
+                'group' => 'Group',
+                'user' => 'User',
+                'question' => 'Question',
+                'answer' => 'Answer',
+                'bin' => 'File',
+                'bin_media' => 'File',
+                'channel' => 'Channel',
+                'message' => 'Message'
+            ];
+            $targetLabel = $targetId > 0
+                ? (($targetMap[$targetType] ?? ucfirst(str_replace('_', ' ', $targetType))) . ' #' . $targetId)
+                : 'General';
         }
 
         $description = trim($item['description'] ?? '');
@@ -762,19 +788,19 @@ $renderComplaintItems = function(array $items, string $emptyMessage) {
         }
         echo '</div>';
         echo '<div class="complaint-actions">';
-        if ($reportedPostId) {
-            echo '<button type="button" class="link-btn" data-preview-post="' . $reportedPostId . '">View post</button>';
-            echo '<button type="button" class="link-btn danger" data-remove-post="' . $reportedPostId . '" data-target-label="' . htmlspecialchars($targetLabel) . '">Remove post</button>';
+        if ($targetType === 'post' && $targetId > 0) {
+            echo '<button type="button" class="link-btn" data-preview-post="' . $targetId . '">View post</button>';
+            echo '<button type="button" class="link-btn danger" data-remove-post="' . $targetId . '" data-target-label="' . htmlspecialchars($targetLabel) . '">Remove post</button>';
         }
 
-        if ($reportedGroupId) {
-            echo '<a class="link-btn" href="' . BASE_PATH . 'index.php?controller=Group&action=index&group_id=' . $reportedGroupId . '">Open group</a>';
-            echo '<button type="button" class="link-btn danger" data-disable-group="' . $reportedGroupId . '" data-target-label="' . htmlspecialchars($targetLabel) . '">Disable group</button>';
+        if ($targetType === 'group' && $targetId > 0) {
+            echo '<a class="link-btn" href="' . BASE_PATH . 'index.php?controller=Group&action=index&group_id=' . $targetId . '">Open group</a>';
+            echo '<button type="button" class="link-btn danger" data-disable-group="' . $targetId . '" data-target-label="' . htmlspecialchars($targetLabel) . '">Disable group</button>';
         }
 
-        if ($reportedUserId) {
-            $usernameAttr = htmlspecialchars($reportedUsername ?? ('User #' . $reportedUserId));
-            echo '<button type="button" class="link-btn danger" data-ban-user="' . $reportedUserId . '" data-ban-username="' . $usernameAttr . '">Ban user</button>';
+        if ($targetType === 'user' && $targetId > 0) {
+            $usernameAttr = htmlspecialchars($reportedUsername ?? ('User #' . $targetId));
+            echo '<button type="button" class="link-btn danger" data-ban-user="' . $targetId . '" data-ban-username="' . $usernameAttr . '">Ban user</button>';
         }
 
         if ($status === 'pending') {
@@ -1618,17 +1644,23 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     const buildComplaintTargetLabel = complaint => {
-        if (complaint.reported_post_id) {
-            return `Post #${complaint.reported_post_id}`;
-        }
-        if (complaint.reported_comment_id) {
-            return `Comment #${complaint.reported_comment_id}`;
-        }
-        if (complaint.reported_group_id) {
-            return `Group #${complaint.reported_group_id}`;
-        }
-        if (complaint.reported_user_id) {
-            return `User #${complaint.reported_user_id}`;
+        const targetType = String(complaint.target_type || '').toLowerCase();
+        const targetId = parseInt(complaint.target_id, 10) || 0;
+        if (targetId > 0) {
+            const labels = {
+                post: 'Post',
+                comment: 'Comment',
+                group: 'Group',
+                user: 'User',
+                question: 'Question',
+                answer: 'Answer',
+                bin: 'File',
+                bin_media: 'File',
+                channel: 'Channel',
+                message: 'Message'
+            };
+            const label = labels[targetType] || targetType.replace(/_/g, ' ');
+            return `${label ? label.charAt(0).toUpperCase() + label.slice(1) : 'Target'} #${targetId}`;
         }
         return 'General';
     };
@@ -1649,27 +1681,26 @@ document.addEventListener('DOMContentLoaded', () => {
             const status = (item.status || 'pending').toLowerCase();
             const statusLabel = status.charAt(0).toUpperCase() + status.slice(1);
             const description = item.description ? `<p class="complaint-description">${escapeHtml(truncateText(item.description))}</p>` : '';
+            const targetType = String(item.target_type || '').toLowerCase();
+            const targetId = parseInt(item.target_id, 10) || 0;
             const targetName = escapeHtml(item.target_label || buildComplaintTargetLabel(item));
             const targetLabel = `${targetName} · Reported by ${escapeHtml(item.reporter_username || 'Anonymous')}`;
 
             const actionButtons = [];
-            const reportedPostId = parseInt(item.reported_post_id, 10) || 0;
-            const reportedGroupId = parseInt(item.reported_group_id, 10) || 0;
-            const reportedUserId = parseInt(item.reported_user_id, 10) || 0;
 
-            if (reportedPostId) {
-                actionButtons.push(`<button type="button" class="link-btn" data-preview-post="${reportedPostId}">View post</button>`);
-                actionButtons.push(`<button type="button" class="link-btn danger" data-remove-post="${reportedPostId}" data-target-label="${targetName}">Remove post</button>`);
+            if (targetType === 'post' && targetId > 0) {
+                actionButtons.push(`<button type="button" class="link-btn" data-preview-post="${targetId}">View post</button>`);
+                actionButtons.push(`<button type="button" class="link-btn danger" data-remove-post="${targetId}" data-target-label="${targetName}">Remove post</button>`);
             }
 
-            if (reportedGroupId) {
-                actionButtons.push(`<a class="link-btn" href="${BASE_PATH}index.php?controller=Group&action=index&group_id=${reportedGroupId}">Open group</a>`);
-                actionButtons.push(`<button type="button" class="link-btn danger" data-disable-group="${reportedGroupId}" data-target-label="${targetName}">Disable group</button>`);
+            if (targetType === 'group' && targetId > 0) {
+                actionButtons.push(`<a class="link-btn" href="${BASE_PATH}index.php?controller=Group&action=index&group_id=${targetId}">Open group</a>`);
+                actionButtons.push(`<button type="button" class="link-btn danger" data-disable-group="${targetId}" data-target-label="${targetName}">Disable group</button>`);
             }
 
-            if (reportedUserId) {
-                const username = escapeHtml(item.reported_username || `User #${reportedUserId}`);
-                actionButtons.push(`<button type="button" class="link-btn danger" data-ban-user="${reportedUserId}" data-ban-username="${username}">Ban user</button>`);
+            if (targetType === 'user' && targetId > 0) {
+                const username = escapeHtml(item.reported_username || `User #${targetId}`);
+                actionButtons.push(`<button type="button" class="link-btn danger" data-ban-user="${targetId}" data-ban-username="${username}">Ban user</button>`);
             }
 
             if (status === 'pending') {
@@ -1713,22 +1744,22 @@ document.addEventListener('DOMContentLoaded', () => {
             const reportId = parseInt(item.report_id, 10) || 0;
             const status = (item.status || 'pending').toLowerCase();
             const targetLabel = escapeHtml(item.target_label || buildComplaintTargetLabel(item));
+            const targetType = String(item.target_type || '').toLowerCase();
+            const targetId = parseInt(item.target_id, 10) || 0;
             const actions = [];
 
-            if (item.reported_post_id) {
-                const postId = parseInt(item.reported_post_id, 10) || 0;
-                actions.push(`<button type="button" class="link-btn" data-preview-post="${postId}">Preview</button>`);
-                actions.push(`<button type="button" class="link-btn danger" data-remove-post="${postId}" data-target-label="${targetLabel}">Remove</button>`);
+            if (targetType === 'post' && targetId > 0) {
+                actions.push(`<button type="button" class="link-btn" data-preview-post="${targetId}">Preview</button>`);
+                actions.push(`<button type="button" class="link-btn danger" data-remove-post="${targetId}" data-target-label="${targetLabel}">Remove</button>`);
             }
 
-            if (item.reported_group_id) {
-                const groupId = parseInt(item.reported_group_id, 10) || 0;
-                actions.push(`<button type="button" class="link-btn danger" data-disable-group="${groupId}" data-target-label="${targetLabel}">Disable group</button>`);
+            if (targetType === 'group' && targetId > 0) {
+                actions.push(`<button type="button" class="link-btn danger" data-disable-group="${targetId}" data-target-label="${targetLabel}">Disable group</button>`);
             }
 
-            if (item.reported_user_id) {
+            if (targetType === 'user' && targetId > 0) {
                 const username = escapeHtml(item.reported_username || 'User');
-                actions.push(`<button type="button" class="link-btn danger" data-ban-user="${parseInt(item.reported_user_id, 10)}" data-ban-username="${username}">Ban</button>`);
+                actions.push(`<button type="button" class="link-btn danger" data-ban-user="${targetId}" data-ban-username="${username}">Ban</button>`);
             }
 
             if (status === 'pending') {
