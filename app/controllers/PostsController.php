@@ -118,13 +118,25 @@ class PostsController {
             return;
         }
 
-        // Handle image upload (only if provided)
+        // Handle media upload (image/video, if provided)
         $serverPath = null;
         $imageName = null;
         $imageSize = null;
         $dbPath = null;
+        $mediaType = null;
 
         if (isset($_FILES['image']) && $_FILES['image']['error'] === UPLOAD_ERR_OK) {
+            $mimeType = (string)($_FILES['image']['type'] ?? '');
+            if (strpos($mimeType, 'image/') === 0) {
+                $mediaType = 'image';
+            } elseif (strpos($mimeType, 'video/') === 0) {
+                $mediaType = 'video';
+            } else {
+                http_response_code(400);
+                echo json_encode(['success' => false, 'message' => 'Only image or video uploads are allowed.']);
+                return;
+            }
+
             $uploadDir = __DIR__ . '/../../public/uploads/post_media/';
             if (!is_dir($uploadDir)) mkdir($uploadDir, 0755, true);
 
@@ -154,7 +166,8 @@ class PostsController {
             'author_id' => $authorId,
             'image_path' => $dbPath,
             'image_name' => $imageName,
-            'image_size' => $imageSize
+            'image_size' => $imageSize,
+            'media_type' => $mediaType
         ];
 
         // Create post

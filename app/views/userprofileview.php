@@ -199,7 +199,13 @@ $currentUser = $userModel->findById($_SESSION['user_id']);
                                 <?php foreach ($personalPosts as $index => $post): ?>
                                     <a href="#" class="post-grid-item" data-post-index="<?php echo $index; ?>" data-post-type="personal" title="View post">
                                         <?php if (!empty($post['image_url'])): ?>
-                                            <img src="<?php echo htmlspecialchars($post['image_url']); ?>" alt="Post <?php echo (int)$post['post_id']; ?>">
+                                            <?php if (($post['media_type'] ?? 'image') === 'video'): ?>
+                                                <video preload="metadata" muted playsinline>
+                                                    <source src="<?php echo htmlspecialchars($post['image_url']); ?>" type="video/mp4">
+                                                </video>
+                                            <?php else: ?>
+                                                <img src="<?php echo htmlspecialchars($post['image_url']); ?>" alt="Post <?php echo (int)$post['post_id']; ?>">
+                                            <?php endif; ?>
                                         <?php else: ?>
                                             <div class="post-placeholder">
                                                 <i class="uil uil-file-info-alt"></i>
@@ -232,7 +238,13 @@ $currentUser = $userModel->findById($_SESSION['user_id']);
                                             <i class="uil uil-users-alt"></i>
                                         </div>
                                         <?php if (!empty($post['image_url'])): ?>
-                                            <img src="<?php echo htmlspecialchars($post['image_url']); ?>" alt="Post <?php echo (int)$post['post_id']; ?>">
+                                            <?php if (($post['media_type'] ?? 'image') === 'video'): ?>
+                                                <video preload="metadata" muted playsinline>
+                                                    <source src="<?php echo htmlspecialchars($post['image_url']); ?>" type="video/mp4">
+                                                </video>
+                                            <?php else: ?>
+                                                <img src="<?php echo htmlspecialchars($post['image_url']); ?>" alt="Post <?php echo (int)$post['post_id']; ?>">
+                                            <?php endif; ?>
                                         <?php else: ?>
                                             <div class="post-placeholder">
                                                 <i class="uil uil-file-info-alt"></i>
@@ -301,7 +313,13 @@ $currentUser = $userModel->findById($_SESSION['user_id']);
                                 <?php foreach ($savedPosts as $index => $post): ?>
                                     <a href="#" class="post-grid-item" data-post-index="<?php echo $index; ?>" data-post-type="saved" title="View saved post">
                                         <?php if (!empty($post['image_url'])): ?>
-                                            <img src="<?php echo htmlspecialchars($post['image_url']); ?>" alt="Saved post <?php echo (int)$post['post_id']; ?>">
+                                            <?php if (($post['media_type'] ?? 'image') === 'video'): ?>
+                                                <video preload="metadata" muted playsinline>
+                                                    <source src="<?php echo htmlspecialchars($post['image_url']); ?>" type="video/mp4">
+                                                </video>
+                                            <?php else: ?>
+                                                <img src="<?php echo htmlspecialchars($post['image_url']); ?>" alt="Saved post <?php echo (int)$post['post_id']; ?>">
+                                            <?php endif; ?>
                                         <?php else: ?>
                                             <div class="post-placeholder">
                                                 <i class="uil uil-bookmark"></i>

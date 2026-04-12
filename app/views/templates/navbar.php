@@ -91,7 +91,7 @@ if (isset($_SESSION['user_id'])) {
                                 <div class="image-upload">
                                     <i class="uil uil-image-upload"></i>
                                     <p>Drag photos and videos here or click to browse</p>
-                                    <input type="file" id="postImage" accept="image/*" style="display: none;">
+                                    <input type="file" id="postImage" accept="image/*,video/*" style="display: none;">
                                 </div>
                                 
                                 <div class="post-details">

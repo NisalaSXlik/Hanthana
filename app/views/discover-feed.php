@@ -319,8 +319,14 @@ if (!isset($posts)) {
 
                                     <?php if (!empty($post['image_url'])): ?>
                                         <?php $postImage = MediaHelper::resolveMediaPath($post['image_url'], ''); ?>
-                                        <div class="photo post-image">
-                                            <img src="<?php echo htmlspecialchars($postImage); ?>" alt="Post image" onerror="this.style.display='none'; console.log('Failed to load image: <?php echo htmlspecialchars($post['image_url']); ?>');">
+                                        <div class="photo post-image <?php echo (($post['media_type'] ?? 'image') === 'video') ? 'post-media-video' : ''; ?>">
+                                            <?php if (($post['media_type'] ?? 'image') === 'video'): ?>
+                                                <video controls preload="metadata" playsinline>
+                                                    <source src="<?php echo htmlspecialchars($postImage); ?>" type="video/mp4">
+                                                </video>
+                                            <?php else: ?>
+                                                <img src="<?php echo htmlspecialchars($postImage); ?>" alt="Post image" onerror="this.style.display='none'; console.log('Failed to load image: <?php echo htmlspecialchars($post['image_url']); ?>');">
+                                            <?php endif; ?>
                                         </div>
                                     <?php endif; ?>
                                 <?php endif; ?>

@@ -63,6 +63,7 @@ $incomingFriendRequests = $friendModel->getIncomingRequests($currentUserId);
                                 <?php
                                     $postId = (int)($post['post_id'] ?? 0);
                                     $imageUrl = trim((string)($post['image_url'] ?? ''));
+                                    $mediaType = trim((string)($post['media_type'] ?? 'image'));
                                     $caption = trim((string)($post['content'] ?? ''));
                                     $shortText = $caption !== '' ? mb_strimwidth($caption, 0, 110, '...') : 'No preview available';
                                 ?>
@@ -70,7 +71,13 @@ $incomingFriendRequests = $friendModel->getIncomingRequests($currentUserId);
                                 class="discover-item <?php echo empty($imageUrl) ? 'discover-item-text' : ''; ?>">
 
                                     <?php if (!empty($imageUrl)): ?>
-                                        <img src="<?php echo htmlspecialchars($imageUrl); ?>" alt="Post image">
+                                        <?php if ($mediaType === 'video'): ?>
+                                            <video preload="metadata" muted playsinline>
+                                                <source src="<?php echo htmlspecialchars($imageUrl); ?>" type="video/mp4">
+                                            </video>
+                                        <?php else: ?>
+                                            <img src="<?php echo htmlspecialchars($imageUrl); ?>" alt="Post image">
+                                        <?php endif; ?>
                                     <?php else: ?>
                                         <div class="discover-text-card">
                                             <div class="discover-text-meta">

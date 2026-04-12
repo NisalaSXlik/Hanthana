@@ -67,6 +67,20 @@
     transition: transform 0.3s ease; /* Optional: for hover effects */
 }
 
+.feed .photo.post-media-video {
+    aspect-ratio: auto;
+    height: auto;
+    background: #000;
+}
+
+.feed .photo.post-media-video video {
+    width: 100%;
+    height: auto;
+    max-height: 32rem;
+    object-fit: contain;
+    display: block;
+}
+
 
 .feed .action-buttons {
     display: flex;
