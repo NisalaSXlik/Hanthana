@@ -119,10 +119,6 @@ if ($resolvedGroupId > 0) {
                                         <i class="uil uil-ellipsis-v"></i>
                                     </button>
                                     <div class="dropdown-menu" id="groupDropdownMenu">
-                                        <button type="button" class="dropdown-item" id="aboutGroupBtn">
-                                            <i class="uil uil-info-circle"></i>
-                                            <span>About Group</span>
-                                        </button>
                                         <button type="button" class="dropdown-item danger" data-report-type="group" data-target-id="<?php echo (int)$groupId; ?>" data-target-label="<?php echo htmlspecialchars('group ' . $group['name'], ENT_QUOTES); ?>">
                                             <i class="uil uil-exclamation-circle"></i>
                                             <span>Report Group</span>
@@ -152,28 +148,26 @@ if ($resolvedGroupId > 0) {
                             </div>
                         </div>
                     </div>
-
+                    
+                    <?php if ($isJoined || $isPublicGroup): ?>
                     <div class="profile-tabs">
                         <ul>
                             <li class="active">
                                 <a href="#" data-tab="posts">Posts</a>
                             </li>
                             <li>
-                                <a href="#" data-tab="files">Files</a>
-                            </li>
-                            <li>
                                 <a href="#" data-tab="events">Events</a>
                             </li>
-                            <li>
-                                <a href="#" data-tab="members">Members</a>
                             </li>
                             <li>
-                                <a href="#" data-tab="photos">Photos</a>
+                                <a href="#" data-tab="about">About</a>
                             </li>
                         </ul>
                     </div>
+                    <?php endif; ?>
                 </div>
 
+                <?php if ($isJoined || $isPublicGroup): ?>
                 <div class="group-content">
                     <div class="tab-content active" id="posts-content">
                         <div class="create-post">
@@ -558,163 +552,7 @@ if ($resolvedGroupId > 0) {
                             <?php endif; ?>
                         </div>
                     </div>
-
-                    <div class="tab-content" id="about-content">
-                        <div class="about-grid">
-                            <div class="about-card about-overview">
-                                <h3>About This Group</h3>
-                                <p><?php echo htmlspecialchars($group['description'] ?? 'This group does not have a description yet.'); ?></p>
-                            </div>
-
-                            <div class="about-card about-details">
-                                <h4>Key Details</h4>
-                                <ul class="about-detail-list">
-                                    <li>
-                                        <i class="uil uil-shield-check"></i>
-                                        <span>Privacy</span>
-                                        <strong><?php echo ucfirst(htmlspecialchars($group['privacy_status'] ?? 'public')); ?></strong>
-                                    </li>
-                                    <li>
-                                        <i class="uil uil-calendar-alt"></i>
-                                        <span>Created</span>
-                                        <strong><?php echo htmlspecialchars(date('F Y', strtotime($group['created_at']))); ?></strong>
-                                    </li>
-                                    <li>
-                                        <i class="uil uil-users-alt"></i>
-                                        <span>Members</span>
-                                        <strong><?php echo (int)($group['member_count'] ?? 0); ?></strong>
-                                    </li>
-                                    <li>
-                                        <i class="uil uil-compass"></i>
-                                        <span>Focus</span>
-                                        <strong><?php echo htmlspecialchars($group['focus'] ?? 'General'); ?></strong>
-                                    </li>
-                                    <li>
-                                        <i class="uil uil-tag"></i>
-                                        <span>Group Tag</span>
-                                        <strong><?php echo htmlspecialchars($group['tag'] ?? 'N/A'); ?></strong>
-                                    </li>
-                                </ul>
-                            </div>
-
-                            <?php if (!empty($groupRulesList)): ?>
-                            <div class="about-card about-rules">
-                                <h4>Group Rules</h4>
-                                <ul class="rules-list">
-                                    <?php foreach ($groupRulesList as $rule): ?>
-                                        <li><i class="uil uil-check-circle"></i><?php echo htmlspecialchars($rule); ?></li>
-                                    <?php endforeach; ?>
-                                </ul>
-                            </div>
-                            <?php endif; ?>
-                        </div>
-                    </div>
-
-                    <!-- Files tab -->
-                    <div class="tab-content" id="files-content">
-                        <div class="files-list">
-                            <?php if (!empty($groupResourceBuckets)): ?>
-                                <?php
-                                    $resourceLabels = [
-                                        'notes' => 'Lecture Notes',
-                                        'slides' => 'Slides & Presentations',
-                                        'document' => 'Documents',
-                                        'link' => 'External Links',
-                                        'video' => 'Videos',
-                                        'book' => 'Books & Papers',
-                                        'other' => 'Other Resources'
-                                    ];
-                                    $resourceIcons = [
-                                        'notes' => 'uil-notes',
-                                        'slides' => 'uil-presentation',
-                                        'document' => 'uil-file-alt',
-                                        'link' => 'uil-link-h',
-                                        'video' => 'uil-video',
-                                        'book' => 'uil-book',
-                                        'other' => 'uil-file-info'
-                                    ];
-                                    $resourceColorClasses = [
-                                        'notes' => 'files-theme-notes',
-                                        'slides' => 'files-theme-slides',
-                                        'document' => 'files-theme-document',
-                                        'link' => 'files-theme-link',
-                                        'video' => 'files-theme-video',
-                                        'book' => 'files-theme-book',
-                                        'other' => 'files-theme-other'
-                                    ];
-                                ?>
-                                <?php foreach ($groupResourceBuckets as $typeKey => $resources): ?>
-                                    <?php
-                                        $label = $resourceLabels[$typeKey] ?? ucfirst($typeKey);
-                                        $icon = $resourceIcons[$typeKey] ?? 'uil-file-info';
-                                        $itemCount = count($resources);
-                                        $themeClass = $resourceColorClasses[$typeKey] ?? 'files-theme-document';
-                                    ?>
-                                    <div class="file-category <?php echo $themeClass; ?>">
-                                        <div class="file-category-header">
-                                            <div class="file-category-icon">
-                                                <i class="uil <?php echo $icon; ?>"></i>
-                                            </div>
-                                            <div>
-
-                                                <p class="file-category-label"><?php echo htmlspecialchars($label); ?></p>
-                                                <small><?php echo $itemCount; ?> item<?php echo $itemCount === 1 ? '' : 's'; ?></small>
-                                            </div>
-                                        </div>
-                                        <div class="file-category-items">
-                                            <?php foreach ($resources as $resource): ?>
-                                                <?php
-                                                    $downloadUrl = !empty($resource['file_path']) ? BASE_PATH . ltrim($resource['file_path'], '/') : '';
-                                                    $externalLink = $resource['link'] ?? '';
-                                                    $uploadedAt = !empty($resource['uploaded_at']) ? date('M j, Y g:i A', strtotime($resource['uploaded_at'])) : '';
-                                                    $resourceTitle = $resource['title'] ?? 'Shared Resource';
-                                                    $resourceDescription = $resource['description'] ?? '';
-                                                ?>
-                                                <div class="file-item">
-                                                    <div class="file-meta">
-                                                        <i class="uil <?php echo $icon; ?>"></i>
-                                                        <div class="file-info">
-                                                            <div class="file-title-row">
-                                                                <strong><?php echo htmlspecialchars($resourceTitle); ?></strong>
-                                                                <span class="file-type-chip"><?php echo htmlspecialchars($label); ?></span>
-                                                            </div>
-                                                            <?php if (!empty($resourceDescription)): ?>
-                                                                <p class="file-description"><?php echo nl2br(htmlspecialchars($resourceDescription)); ?></p>
-                                                            <?php endif; ?>
-                                                            <small>Uploaded <?php echo $uploadedAt ? htmlspecialchars($uploadedAt) : 'recently'; ?> by <?php echo htmlspecialchars($resource['uploader_name'] ?? 'Member'); ?></small>
-                                                            <div class="file-actions">
-                                                                <?php if (!empty($downloadUrl)): ?>
-                                                                    <a href="<?php echo htmlspecialchars($downloadUrl); ?>" download target="_blank">
-                                                                        <i class="uil uil-download-alt"></i> Download
-                                                                    </a>
-                                                                <?php endif; ?>
-                                                                <?php if (!empty($externalLink)): ?>
-                                                                    <a href="<?php echo htmlspecialchars($externalLink); ?>" target="_blank" rel="noopener noreferrer">
-                                                                        <i class="uil uil-external-link-alt"></i> Open Link
-                                                                    </a>
-                                                                <?php endif; ?>
-                                                                <?php if (empty($downloadUrl) && empty($externalLink)): ?>
-                                                                    <span class="file-missing-note">No file or link attached</span>
-                                                                <?php endif; ?>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            <?php endforeach; ?>
-                                        </div>
-                                    </div>
-                                <?php endforeach; ?>
-                            <?php else: ?>
-                                <div class="file-empty">
-                                    <i class="uil uil-folder-slash"></i>
-                                    <p>No resources shared yet</p>
-                                    <small>Upload lecture notes, slides, videos or helpful links via the Resource post type.</small>
-                                </div>
-                            <?php endif; ?>
-                        </div>
-                    </div>
-
-                    <!-- Events tab -->
+                    
                     <div class="tab-content" id="events-content">
                         <div class="events-list">
                             <?php if (!empty($groupEvents)): ?>
@@ -773,250 +611,59 @@ if ($resolvedGroupId > 0) {
                         </div>
                     </div>
 
-                    <!-- Members tab -->
-                    <div class="tab-content" id="members-content">
-                        <div class="members-grid">
-                            <?php
-                                $adminMembers = [];
-                                $regularMembers = [];
-                                foreach (($groupMembers ?? []) as $gm) {
-                                    if (($gm['role'] ?? '') === 'admin') {
-                                        $adminMembers[] = $gm;
-                                    } else {
-                                        $regularMembers[] = $gm;
-                                    }
-                                }
-                            ?>
-
-                            <?php if ($isAdmin): ?>
-                                <div class="governance-panel">
-                                    <h4>Group Governance</h4>
-                                    <div class="governance-meta">
-                                        <?php
-                                            $approvedCount = (int)($deleteApprovalStatus['approved_count'] ?? 0);
-                                            $adminCount = (int)($deleteApprovalStatus['admin_count'] ?? 0);
-                                            $viewerApproved = !empty($deleteApprovalStatus['viewer_approved']);
-                                        ?>
-                                        <p class="muted">Delete approvals: <strong><?php echo $approvedCount; ?>/<?php echo $adminCount; ?></strong> admins</p>
-                                        <button class="btn btn-danger" id="approveDeleteGroupBtn" <?php echo $viewerApproved ? 'disabled' : ''; ?>>
-                                            <?php echo $viewerApproved ? 'Deletion Approval Sent' : 'Approve Group Deletion'; ?>
-                                        </button>
-                                    </div>
-                                    <?php if (!empty($roleChangeRequests)): ?>
-                                        <div class="role-vote-list">
-                                            <?php foreach ($roleChangeRequests as $voteReq): ?>
-                                                <div class="role-vote-item <?php echo ($voteReq['status'] ?? '') === 'pending' ? 'pending' : 'resolved'; ?>">
-                                                    <div>
-                                                        <strong><?php echo htmlspecialchars(trim(($voteReq['target_first_name'] ?? '') . ' ' . ($voteReq['target_last_name'] ?? ''))); ?></strong>
-                                                        <small>@<?php echo htmlspecialchars($voteReq['target_username'] ?? ''); ?></small>
-                                                        <p>Change role to <strong><?php echo htmlspecialchars(ucfirst($voteReq['requested_role'] ?? 'member')); ?></strong></p>
-                                                    </div>
-                                                    <div class="role-vote-actions">
-                                                        <span class="vote-count"><?php echo (int)($voteReq['vote_count'] ?? 0); ?>/<?php echo (int)($voteReq['votes_needed'] ?? 1); ?> votes</span>
-                                                        <?php if (($voteReq['status'] ?? '') === 'pending' && empty($voteReq['viewer_voted'])): ?>
-                                                            <button
-                                                                class="btn btn-primary vote-role-change-btn"
-                                                                data-request-id="<?php echo (int)$voteReq['request_id']; ?>">
-                                                                Approve
-                                                            </button>
-                                                        <?php else: ?>
-                                                            <span class="vote-status-chip"><?php echo htmlspecialchars(ucfirst((string)($voteReq['status'] ?? 'pending'))); ?></span>
-                                                        <?php endif; ?>
-                                                    </div>
-                                                </div>
-                                            <?php endforeach; ?>
-                                        </div>
-                                    <?php endif; ?>
-                                </div>
-                            <?php endif; ?>
-
-                            <?php if ($isAdmin && !empty($pendingRequests)): ?>
-                                <div class="pending-requests">
-                                    <h4>Pending Join Requests</h4>
-                                    <?php foreach ($pendingRequests as $req): ?>
-                                        <?php $reqUserId = (int)$req['user_id']; ?>
-                                        <div class="request-item" data-user-id="<?php echo $reqUserId; ?>">
-                                            <div class="requester">
-                                                <img src="<?php echo htmlspecialchars(MediaHelper::resolveMediaPath($req['profile_picture'] ?? '', 'uploads/user_dp/default.png')); ?>" alt="<?php echo htmlspecialchars($req['first_name'] . ' ' . $req['last_name']); ?>">
-                                                <div class="requester-info">
-                                                    <strong><?php echo htmlspecialchars($req['first_name'] . ' ' . $req['last_name']); ?></strong>
-                                                    <small>@<?php echo htmlspecialchars($req['username']); ?> · <?php echo !empty($req['requested_at']) ? htmlspecialchars(date('M j, H:i', strtotime($req['requested_at']))) : 'Recently'; ?></small>
-                                                </div>
-                                            </div>
-                                            <div class="request-actions">
-                                                <button class="btn btn-primary approve-request" data-user-id="<?php echo $reqUserId; ?>">Approve</button>
-                                                <button class="btn btn-secondary reject-request" data-user-id="<?php echo $reqUserId; ?>">Reject</button>
-                                            </div>
-                                        </div>
-                                    <?php endforeach; ?>
-                                </div>
-                            <?php endif; ?>
-
-                            <?php if (!empty($groupMembers)): ?>
-                                <div class="member-section-block">
-                                    <h4>Admins</h4>
-                                </div>
-                                <?php foreach ($adminMembers as $member): ?>
-                                    <?php
-                                        $memberId = isset($member['user_id']) ? (int)$member['user_id'] : (int)($member['id'] ?? 0);
-                                        $profileUrl = rtrim(BASE_PATH, '/') . '/index.php?controller=Profile&action=view&user_id=' . $memberId;
-                                        $dp = MediaHelper::resolveMediaPath($member['profile_picture'] ?? '', 'uploads/user_dp/default.png');
-                                    ?>
-                                    <div class="member-link">
-                                        <div class="member-card" data-member-id="<?php echo $memberId; ?>" data-member-role="<?php echo htmlspecialchars($member['role'] ?? 'member'); ?>">
-                                            <div class="member-dp">
-                                                <a href="<?php echo htmlspecialchars($profileUrl); ?>">
-                                                    <img src="<?php echo htmlspecialchars($dp); ?>" alt="<?php echo htmlspecialchars($member['first_name'] . ' ' . $member['last_name']); ?>">
-                                                </a>
-                                            </div>
-                                            <div class="member-info">
-                                                <p class="member-name"><a href="<?php echo htmlspecialchars($profileUrl); ?>"><?php echo htmlspecialchars($member['first_name'] . ' ' . $member['last_name']); ?></a></p>
-                                                <small class="member-username">@<?php echo htmlspecialchars($member['username'] ?? ''); ?></small>
-                                                <?php if (!empty($member['role'])): ?>
-                                                    <span class="member-role"><?php echo htmlspecialchars(ucfirst($member['role'])); ?></span>
-                                                <?php endif; ?>
-                                            </div>
-                                            <?php if ($isAdmin && $memberId !== (int)$currentUserId): ?>
-                                                <div class="member-admin-actions">
-                                                    <button class="btn btn-secondary propose-role-change-btn" data-target-user-id="<?php echo $memberId; ?>" data-requested-role="member">Start Demotion Vote</button>
-                                                </div>
-                                            <?php endif; ?>
-                                        </div>
-                                    </div>
-                                <?php endforeach; ?>
-
-                                <div class="member-section-block">
-                                    <h4>Members</h4>
-                                </div>
-                                <?php foreach ($regularMembers as $member): ?>
-                                    <?php
-                                        $memberId = isset($member['user_id']) ? (int)$member['user_id'] : (int)($member['id'] ?? 0);
-                                        $profileUrl = rtrim(BASE_PATH, '/') . '/index.php?controller=Profile&action=view&user_id=' . $memberId;
-                                        $dp = MediaHelper::resolveMediaPath($member['profile_picture'] ?? '', 'uploads/user_dp/default.png');
-                                    ?>
-                                    <div class="member-link">
-                                        <div class="member-card" data-member-id="<?php echo $memberId; ?>" data-member-role="<?php echo htmlspecialchars($member['role'] ?? 'member'); ?>">
-                                            <div class="member-dp">
-                                                <a href="<?php echo htmlspecialchars($profileUrl); ?>">
-                                                    <img src="<?php echo htmlspecialchars($dp); ?>" alt="<?php echo htmlspecialchars($member['first_name'] . ' ' . $member['last_name']); ?>">
-                                                </a>
-                                            </div>
-                                            <div class="member-info">
-                                                <p class="member-name"><a href="<?php echo htmlspecialchars($profileUrl); ?>"><?php echo htmlspecialchars($member['first_name'] . ' ' . $member['last_name']); ?></a></p>
-                                                <small class="member-username">@<?php echo htmlspecialchars($member['username'] ?? ''); ?></small>
-                                                <?php if (!empty($member['role'])): ?>
-                                                    <span class="member-role"><?php echo htmlspecialchars(ucfirst($member['role'])); ?></span>
-                                                <?php endif; ?>
-                                            </div>
-                                            <?php if ($isAdmin && $memberId !== (int)$currentUserId): ?>
-                                                <div class="member-admin-actions">
-                                                    <button class="btn btn-primary propose-role-change-btn" data-target-user-id="<?php echo $memberId; ?>" data-requested-role="admin">Start Promotion Vote</button>
-                                                </div>
-                                            <?php endif; ?>
-                                        </div>
-                                    </div>
-                                <?php endforeach; ?>
-                            <?php else: ?>
-                                <div class="no-members-centered">
-                                    <i class="uil uil-users-alt" style="font-size:36px;color:var(--color-primary)"></i>
-                                    <p>No members yet — be the first to join this group.</p>
-                                </div>
-                            <?php endif; ?>
-                        </div>
-                    </div>
-
-                    <!-- Photos tab -->
-                    <div class="tab-content" id="photos-content">
-                        <div class="photos-grid">
-                            <?php if (!empty($groupPhotos)): ?>
-                                <?php foreach ($groupPhotos as $photo): ?>
-                                    <div class="photo-item">
-                                        <img src="<?php echo htmlspecialchars($photo['file_url'] ?? $photo['thumbnail_url'] ?? ''); ?>" alt="<?php echo htmlspecialchars($photo['file_name'] ?? 'Photo'); ?>">
-                                        <div class="photo-meta">
-                                            <small><?php echo htmlspecialchars($photo['uploaded_at'] ?? ''); ?> by <?php echo htmlspecialchars($photo['uploader_name'] ?? ''); ?></small>
-                                        </div>
-                                    </div>
-                                <?php endforeach; ?>
-                            <?php else: ?>
-                                <!-- Dummy photos grid -->
-                                <div class="photo-item">
-                                    <img src="./images/gpvpost_content1.jpg" alt="Photo 1">
-                                    <div class="photo-meta"><small>2 days ago · by Alex</small></div>
-                                </div>
-                                <div class="photo-item">
-                                    <img src="./images/gpvpost_content2.jpg" alt="Photo 2">
-                                    <div class="photo-meta"><small>1 week ago · by Sam</small></div>
-                                </div>
-                                <div class="photo-item">
-                                    <img src="./images/gpvpost_content3.jpg" alt="Photo 3">
-                                    <div class="photo-meta"><small>3 weeks ago · by Priya</small></div>
-                                </div>
-                            <?php endif; ?>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-                <div id="aboutGroupModal" class="modal-overlay about-group-modal" style="display:none;">
-                    <div class="modal-content about-group-modal-content">
-                        <div class="modal-header about-group-modal-header">
-                            <h3>About Group</h3>
-                            <button class="modal-close" id="closeAboutGroupModal" aria-label="Close About Group popup">
-                                <i class="uil uil-times"></i>
-                            </button>
-                        </div>
-                        <div class="modal-body about-group-modal-body">
-                            <div class="about-grid about-group-grid">
-                                <div class="about-card about-overview">
-                                    <h3>About This Group</h3>
-                                    <p><?php echo htmlspecialchars($group['description'] ?? 'This group does not have a description yet.'); ?></p>
-                                </div>
-
-                                <div class="about-card about-details">
-                                    <h4>Key Details</h4>
-                                    <ul class="about-detail-list about-detail-list-compact">
-                                        <li>
-                                            <i class="uil uil-shield-check"></i>
-                                            <span>Privacy</span>
-                                            <strong><?php echo ucfirst(htmlspecialchars($group['privacy_status'] ?? 'public')); ?></strong>
-                                        </li>
-                                        <li>
-                                            <i class="uil uil-calendar-alt"></i>
-                                            <span>Created</span>
-                                            <strong><?php echo htmlspecialchars(date('F Y', strtotime($group['created_at'] ?? date('Y-m-d')))); ?></strong>
-                                        </li>
-                                        <li>
-                                            <i class="uil uil-users-alt"></i>
-                                            <span>Members</span>
-                                            <strong><?php echo (int)($group['member_count'] ?? 0); ?></strong>
-                                        </li>
-                                        <li>
-                                            <i class="uil uil-compass"></i>
-                                            <span>Focus</span>
-                                            <strong><?php echo htmlspecialchars($group['focus'] ?? 'General'); ?></strong>
-                                        </li>
-                                        <li>
-                                            <i class="uil uil-tag"></i>
-                                            <span>Group Tag</span>
-                                            <strong><?php echo htmlspecialchars($group['tag'] ?? 'N/A'); ?></strong>
-                                        </li>
-                                    </ul>
-                                </div>
-
-                                <?php if (!empty($groupRulesList)): ?>
-                                <div class="about-card about-rules">
-                                    <h4>Group Rules</h4>
-                                    <ul class="rules-list">
-                                        <?php foreach ($groupRulesList as $rule): ?>
-                                            <li><i class="uil uil-check-circle"></i><?php echo htmlspecialchars($rule); ?></li>
-                                        <?php endforeach; ?>
-                                    </ul>
-                                </div>
-                                <?php endif; ?>
+                    <div class="tab-content" id="about-content">
+                        <div class="about-grid">
+                            <div class="about-card about-overview">
+                                <h3>About This Group</h3>
+                                <p><?php echo htmlspecialchars($group['description'] ?? 'This group does not have a description yet.'); ?></p>
                             </div>
+
+                            <div class="about-card about-details">
+                                <h3>Key Details</h3>
+                                <ul class="about-detail-list">
+                                    <li>
+                                        <i class="uil uil-shield-check"></i>
+                                        <span>Privacy</span>
+                                        <strong><?php echo ucfirst(htmlspecialchars($group['privacy_status'] ?? 'public')); ?></strong>
+                                    </li>
+                                    <li>
+                                        <i class="uil uil-calendar-alt"></i>
+                                        <span>Created</span>
+                                        <strong><?php echo htmlspecialchars(date('F Y', strtotime($group['created_at']))); ?></strong>
+                                    </li>
+                                    <li>
+                                        <i class="uil uil-users-alt"></i>
+                                        <span>Members</span>
+                                        <strong><?php echo (int)($group['member_count'] ?? 0); ?></strong>
+                                    </li>
+                                    <li>
+                                        <i class="uil uil-compass"></i>
+                                        <span>Focus</span>
+                                        <strong><?php echo htmlspecialchars($group['focus'] ?? 'General'); ?></strong>
+                                    </li>
+                                    <li>
+                                        <i class="uil uil-tag"></i>
+                                        <span>Group Tag</span>
+                                        <strong><?php echo htmlspecialchars($group['tag'] ?? 'N/A'); ?></strong>
+                                    </li>
+                                </ul>
+                            </div>
+
+                            <?php if (!empty($groupRulesList)): ?>
+                            <div class="about-card about-rules">
+                                <h4>Group Rules</h4>
+                                <ul class="rules-list">
+                                    <?php foreach ($groupRulesList as $rule): ?>
+                                        <li><i class="uil uil-check-circle"></i><?php echo htmlspecialchars($rule); ?></li>
+                                    <?php endforeach; ?>
+                                </ul>
+                            </div>
+                            <?php endif; ?>
                         </div>
                     </div>
                 </div>
+                <?php endif; ?>
+            </div>
 
             <?php include __DIR__ . '/templates/group-right.php'; ?>
         </div>
@@ -1428,7 +1075,6 @@ if ($resolvedGroupId > 0) {
     <script>
         const GROUP_ID = <?php echo $groupId; ?>;
         window.CURRENT_GROUP_ID = <?php echo (int)($groupId ?? 0); ?>;
-        const IS_CREATOR = <?php echo $isCreator ? 'true' : 'false'; ?>;
         const IS_ADMIN = <?php echo $isAdmin ? 'true' : 'false'; ?>;
         const HAS_PENDING_REQUEST = <?php echo !empty($hasPendingRequest) ? 'true' : 'false'; ?>;
         const MEMBERSHIP_STATE = '<?php echo isset($membershipState) ? addslashes($membershipState) : 'unknown'; ?>';

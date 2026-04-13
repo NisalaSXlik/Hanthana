@@ -1070,6 +1070,33 @@
         }
     }
 
+    async function openConversationByTarget(targetId, type) {
+        const normalizedTarget = Number(targetId || 0);
+        if (!normalizedTarget || !type) {
+            return;
+        }
+
+        openChat();
+        await initiateChat(normalizedTarget, type);
+    }
+
+    async function openDirectConversation(targetUserId) {
+        await openConversationByTarget(targetUserId, 'direct');
+    }
+
+    async function openGroupConversation(channelId) {
+        await openConversationByTarget(channelId, 'group');
+    }
+
+    function openConversationById(conversationId) {
+        const normalizedId = Number(conversationId || 0);
+        if (!normalizedId) {
+            return;
+        }
+        openChat();
+        selectConversation(normalizedId);
+    }
+
     async function startConversationInChannel() {
         
     }
@@ -1892,6 +1919,42 @@
             console.error('Failed to initialize chat conversations', error);
         }
     }
+
+    window.HanthanaChat = {
+        openChat,
+        closeChat,
+        selectConversation: openConversationById,
+        openDirectConversation,
+        openGroupConversation,
+    };
+
+    window.addEventListener('hanthana:open-chat', async (event) => {
+        const detail = event && event.detail ? event.detail : {};
+        const conversationId = Number(detail.conversationId || 0);
+        const targetId = Number(detail.targetId || 0);
+        const conversationType = String(detail.type || '').trim();
+
+        try {
+            if (conversationId > 0) {
+                openConversationById(conversationId);
+                return;
+            }
+
+            if (targetId > 0 && conversationType) {
+                await openConversationByTarget(targetId, conversationType);
+                return;
+            }
+
+            openChat();
+        } catch (error) {
+            const message = error?.message || 'Unable to open chat right now.';
+            if (typeof window.showToast === 'function') {
+                window.showToast(message, 'error');
+            } else {
+                alert(message);
+            }
+        }
+    });
 
     initChatWidget();
 })();

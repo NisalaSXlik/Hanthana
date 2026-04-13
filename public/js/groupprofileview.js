@@ -1439,7 +1439,10 @@
 
                 if (result.success) {
                     if (typeof showToast === 'function') {
-                        showToast('Post created successfully!', 'success');
+                        const queued = Boolean(result.queued);
+                        const successMessage = result.message
+                            || (queued ? 'Post submitted for admin approval.' : 'Post created successfully!');
+                        showToast(successMessage, 'success');
                     }
                     closeCreatePostModalFn();
                     
