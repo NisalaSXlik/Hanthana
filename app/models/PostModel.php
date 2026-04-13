@@ -8,6 +8,7 @@ class PostModel {
     private $hasEventTimeColumn = false;
     private $hasPostBookmarkTable = false;
     private $hasPollVoteTable = false;
+    private $hasPostMediaFileTypeColumn = false;
 
     public function __construct() {
         $this->db = new Database();
@@ -15,9 +16,38 @@ class PostModel {
         $this->hasEventTimeColumn = $this->columnExists('Post', 'event_time');
         $this->hasPostBookmarkTable = $this->tableExists('PostBookmark');
         $this->hasPollVoteTable = $this->tableExists('GroupPostPollVote');
+        $this->hasPostMediaFileTypeColumn = $this->columnExists('PostMedia', 'file_type');
         if (!$this->hasPostBookmarkTable) {
             $this->ensurePostBookmarkTable();
         }
+    }
+
+    private function mediaTypeSelectSql(string $alias = 'pm'): string {
+        return $this->hasPostMediaFileTypeColumn ? "{$alias}.file_type" : "'image'";
+    }
+
+    private function mediaTypeFilterSql(string $column = 'file_type'): string {
+        return $this->hasPostMediaFileTypeColumn
+            ? "WHERE {$column} IN ('image', 'video')"
+            : '';
+    }
+
+    private function buildFirstPostMediaJoinSql(string $alias = 'pm'): string {
+        $mediaTypeField = $this->hasPostMediaFileTypeColumn ? ', pm1.file_type' : '';
+        $firstMediaFilter = $this->mediaTypeFilterSql('file_type');
+
+        return "
+            LEFT JOIN (
+                SELECT pm1.post_id, pm1.file_url{$mediaTypeField}
+                FROM PostMedia pm1
+                INNER JOIN (
+                    SELECT post_id, MIN(postmedia_id) AS first_media_id
+                    FROM PostMedia
+                    {$firstMediaFilter}
+                    GROUP BY post_id
+                ) x ON x.first_media_id = pm1.postmedia_id
+            ) {$alias} ON {$alias}.post_id = p.post_id
+        ";
     }
 
     private function columnExists(string $table, string $column): bool {
@@ -293,8 +323,8 @@ class PostModel {
         $groupEventFilter = "";
         if ($excludeEvents) {
             $groupEventFilter = $this->hasGroupPostColumns 
-                ? "AND (p.group_post_type NOT IN ('event', 'assignment') OR p.group_post_type IS NULL)" 
-                : "AND (p.post_type NOT IN ('event', 'assignment') OR p.post_type IS NULL)";
+                ? "AND (p.group_post_type NOT IN ('event', 'question') OR p.group_post_type IS NULL)" 
+                : "AND (p.post_type NOT IN ('event', 'question') OR p.post_type IS NULL)";
         }
 
         $groupWhere = "(
@@ -440,7 +470,8 @@ class PostModel {
                 u.first_name,
                 u.last_name,
                 u.profile_picture,
-                pm.file_url AS image_url
+                pm.file_url AS image_url,
+                {$this->mediaTypeSelectSql('pm')} AS media_type
                 {$userVoteSql}
                 {$pollVoteSql}
                 {$bookmarkSql}
@@ -449,16 +480,7 @@ class PostModel {
                 {$interestedCountSql}
             FROM Post p
             JOIN Users u ON u.user_id = p.author_id
-            LEFT JOIN (
-                SELECT pm1.post_id, pm1.file_url
-                FROM PostMedia pm1
-                INNER JOIN (
-                    SELECT post_id, MIN(postmedia_id) AS first_media_id
-                    FROM PostMedia
-                    WHERE file_type = 'image'
-                    GROUP BY post_id
-                ) x ON x.first_media_id = pm1.postmedia_id
-            ) pm ON pm.post_id = p.post_id
+            {$this->buildFirstPostMediaJoinSql('pm')}
             LEFT JOIN GroupsTable g ON g.group_id = p.group_id
         ";
     }
@@ -500,20 +522,34 @@ class PostModel {
 
             $postId = $conn->lastInsertId();
 
-            // If there's an image, insert into PostMedia table
+            // If there's media, insert into PostMedia table
             if (!empty($data['image_path'])) {
-                $stmt = $conn->prepare("
-                    INSERT INTO PostMedia (post_id, uploader_id, file_name, file_type, file_url, file_size)
-                    VALUES (?, ?, ?, ?, ?, ?)
-                ");
-                $stmt->execute([
-                    $postId,
-                    $data['author_id'],
-                    $data['image_name'],
-                    'image',
-                    $data['image_path'],
-                    $data['image_size']
-                ]);
+                if ($this->hasPostMediaFileTypeColumn) {
+                    $stmt = $conn->prepare("
+                        INSERT INTO PostMedia (post_id, uploader_id, file_name, file_type, file_url, file_size)
+                        VALUES (?, ?, ?, ?, ?, ?)
+                    ");
+                    $stmt->execute([
+                        $postId,
+                        $data['author_id'],
+                        $data['image_name'],
+                        $data['media_type'] ?? 'image',
+                        $data['image_path'],
+                        $data['image_size']
+                    ]);
+                } else {
+                    $stmt = $conn->prepare("
+                        INSERT INTO PostMedia (post_id, uploader_id, file_name, file_url, file_size)
+                        VALUES (?, ?, ?, ?, ?)
+                    ");
+                    $stmt->execute([
+                        $postId,
+                        $data['author_id'],
+                        $data['image_name'],
+                        $data['image_path'],
+                        $data['image_size']
+                    ]);
+                }
             }
 
             return ['success' => true, 'post_id' => $postId];
@@ -607,6 +643,7 @@ class PostModel {
                 u.last_name,
                 u.profile_picture,
                 pm.file_url AS image_url,
+                {$this->mediaTypeSelectSql('pm')} AS media_type,
                 (COALESCE(vt_recent.upvotes, 0) * 2 + COALESCE(ct_recent.comment_count, 0)) AS engagement_score
                 {$userVoteSql}
                 {$pollVoteSql}
@@ -642,16 +679,7 @@ class PostModel {
                 WHERE created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)
                 GROUP BY post_id
             ) ct_recent ON ct_recent.post_id = p.post_id
-            LEFT JOIN (
-                SELECT pm1.post_id, pm1.file_url
-                FROM PostMedia pm1
-                INNER JOIN (
-                    SELECT post_id, MIN(postmedia_id) AS first_media_id
-                    FROM PostMedia
-                    WHERE file_type = 'image'
-                    GROUP BY post_id
-                ) x ON x.first_media_id = pm1.postmedia_id
-            ) pm ON pm.post_id = p.post_id
+            {$this->buildFirstPostMediaJoinSql('pm')}
             WHERE (p.group_id IS NULL OR COALESCE(g.is_active, 1) = 1)
             ORDER BY
                 CASE WHEN p.created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY) THEN 0 ELSE 1 END,
@@ -837,6 +865,7 @@ class PostModel {
                 u.last_name,
                 u.profile_picture,
                 pm.file_url AS image_url,
+                {$this->mediaTypeSelectSql('pm')} AS media_type,
                 pb.created_at AS saved_at,
                 1 AS is_bookmarked
                 {$viewerVoteSql}
@@ -845,16 +874,7 @@ class PostModel {
             INNER JOIN Post p ON p.post_id = pb.post_id
             INNER JOIN Users u ON u.user_id = p.author_id
             LEFT JOIN GroupsTable g ON g.group_id = p.group_id
-            LEFT JOIN (
-                SELECT pm1.post_id, pm1.file_url
-                FROM PostMedia pm1
-                INNER JOIN (
-                    SELECT post_id, MIN(postmedia_id) AS first_media_id
-                    FROM PostMedia
-                    WHERE file_type = 'image'
-                    GROUP BY post_id
-                ) x ON x.first_media_id = pm1.postmedia_id
-            ) pm ON pm.post_id = p.post_id
+            {$this->buildFirstPostMediaJoinSql('pm')}
             WHERE pb.user_id = :user_id
               AND (p.group_id IS NULL OR COALESCE(g.is_active, 1) = 1)
             ORDER BY pb.created_at DESC
@@ -911,20 +931,12 @@ class PostModel {
                 u.first_name,
                 u.last_name,
                 u.profile_picture,
-                pm.file_url AS image_url
+                pm.file_url AS image_url,
+                {$this->mediaTypeSelectSql('pm')} AS media_type
             FROM Post p
             JOIN Users u ON u.user_id = p.author_id
             LEFT JOIN GroupsTable g ON g.group_id = p.group_id
-            LEFT JOIN (
-                SELECT pm1.post_id, pm1.file_url
-                FROM PostMedia pm1
-                INNER JOIN (
-                    SELECT post_id, MIN(postmedia_id) AS first_media_id
-                    FROM PostMedia
-                    WHERE file_type = 'image'
-                    GROUP BY post_id
-                ) x ON x.first_media_id = pm1.postmedia_id
-            ) pm ON pm.post_id = p.post_id
+            {$this->buildFirstPostMediaJoinSql('pm')}
             WHERE p.post_id = :post_id
             LIMIT 1";
 
@@ -1035,21 +1047,13 @@ class PostModel {
                     u.first_name,
                     u.last_name,
                     u.profile_picture,
-                    pm.file_url AS image_url
+                    pm.file_url AS image_url,
+                    {$this->mediaTypeSelectSql('pm')} AS media_type
                     {$userVoteSql}
                     {$pollVoteSql}
                 FROM Post p
                 JOIN Users u ON u.user_id = p.author_id
-                LEFT JOIN (
-                    SELECT pm1.post_id, pm1.file_url
-                    FROM PostMedia pm1
-                    INNER JOIN (
-                        SELECT post_id, MIN(postmedia_id) AS first_media_id
-                        FROM PostMedia
-                        WHERE file_type = 'image'
-                        GROUP BY post_id
-                    ) x ON x.first_media_id = pm1.postmedia_id
-                ) pm ON pm.post_id = p.post_id
+                {$this->buildFirstPostMediaJoinSql('pm')}
                                 LEFT JOIN GroupsTable g ON g.group_id = p.group_id
                                 WHERE p.author_id = :author_id
                                     AND (p.group_id IS NULL OR COALESCE(g.is_active, 1) = 1)
@@ -1083,7 +1087,9 @@ class PostModel {
     public function getUserPosts(int $userId): array {
         try {
             $groupColumns = $this->selectGroupPostColumns();
-            $sql = "SELECT p.post_id, p.content, p.post_type, p.visibility, p.created_at, p.updated_at, p.upvote_count, p.downvote_count, p.comment_count, p.share_count, p.is_edited, p.edited_at, {$groupColumns} p.event_title, p.event_date, p.event_time, p.event_location, p.is_group_post, p.author_id, u.user_id, u.username, u.first_name, u.last_name, u.profile_picture, pm.file_url AS image_url FROM Post p JOIN Users u ON u.user_id = p.author_id LEFT JOIN (SELECT pm1.post_id, pm1.file_url FROM PostMedia pm1 INNER JOIN (SELECT post_id, MIN(postmedia_id) AS first_media_id FROM PostMedia WHERE file_type = 'image' GROUP BY post_id) x ON x.first_media_id = pm1.postmedia_id) pm ON pm.post_id = p.post_id LEFT JOIN GroupsTable g ON g.group_id = p.group_id WHERE p.author_id = ? AND COALESCE(p.is_group_post, 0) = 0 ORDER BY p.created_at DESC";
+            $mediaTypeSelect = $this->mediaTypeSelectSql('pm');
+            $mediaJoinSql = $this->buildFirstPostMediaJoinSql('pm');
+            $sql = "SELECT p.post_id, p.content, p.post_type, p.visibility, p.created_at, p.updated_at, p.upvote_count, p.downvote_count, p.comment_count, p.share_count, p.is_edited, p.edited_at, {$groupColumns} p.event_title, p.event_date, p.event_time, p.event_location, p.is_group_post, p.author_id, u.user_id, u.username, u.first_name, u.last_name, u.profile_picture, pm.file_url AS image_url, {$mediaTypeSelect} AS media_type FROM Post p JOIN Users u ON u.user_id = p.author_id {$mediaJoinSql} LEFT JOIN GroupsTable g ON g.group_id = p.group_id WHERE p.author_id = ? AND COALESCE(p.is_group_post, 0) = 0 ORDER BY p.created_at DESC";
             $stmt = $this->getConnection()->prepare($sql);
             $stmt->execute([$userId]);
             $posts = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -1116,12 +1122,13 @@ class PostModel {
 
     public function getUserPhotoPosts(int $userId): array {
         try {
+                        $photoFilter = $this->hasPostMediaFileTypeColumn ? "AND pm.file_type = 'image'" : '';
                         $sql = "SELECT DISTINCT p.post_id, pm.file_url AS image_url, p.created_at
                                         FROM Post p
                                         INNER JOIN PostMedia pm ON pm.post_id = p.post_id
                                         LEFT JOIN GroupsTable g ON g.group_id = p.group_id
                                         WHERE p.author_id = ?
-                                            AND pm.file_type = 'image'
+                                            {$photoFilter}
                                             AND (p.group_id IS NULL OR COALESCE(g.is_active, 1) = 1)
                                         ORDER BY p.created_at DESC";
             $stmt = $this->getConnection()->prepare($sql);

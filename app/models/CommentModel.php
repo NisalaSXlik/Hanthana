@@ -11,7 +11,7 @@ class CommentModel {
 
     public function getCommentsByPost($postId) {
         $stmt = $this->db->prepare("
-            SELECT c.*, u.username, u.profile_picture
+              SELECT c.*, u.username, u.first_name, u.last_name, u.profile_picture
             FROM Comment c
             JOIN Users u ON c.commenter_id = u.user_id
             WHERE c.post_id = ?
@@ -110,6 +110,20 @@ class CommentModel {
         $stmt->execute([$postId]);
         $row = $stmt->fetch(PDO::FETCH_ASSOC);
         return $row ? (int)$row['author_id'] : null;
+    }
+
+    public function getCommentAuthorId(int $commentId): ?int {
+        $stmt = $this->db->prepare("SELECT commenter_id FROM Comment WHERE comment_id = ? LIMIT 1");
+        $stmt->execute([$commentId]);
+        $authorId = $stmt->fetchColumn();
+        return $authorId !== false ? (int)$authorId : null;
+    }
+
+    public function getPostIdByComment(int $commentId): ?int {
+        $stmt = $this->db->prepare("SELECT post_id FROM Comment WHERE comment_id = ? LIMIT 1");
+        $stmt->execute([$commentId]);
+        $postId = $stmt->fetchColumn();
+        return $postId !== false ? (int)$postId : null;
     }
 
     private function canUserModerateComment($commentId, $userId) {

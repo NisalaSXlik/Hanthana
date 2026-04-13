@@ -2,7 +2,7 @@
 .acedemicdashboard-page {
     display: flex;
     flex-direction: column;
-    gap: 1rem;
+    gap: 1.1rem;
 }
 
 .acd-right-panel {
@@ -15,7 +15,7 @@
     background: var(--color-white);
     border-radius: var(--card-border-radius);
     border: 1px solid rgba(14, 165, 233, 0.12);
-    padding: 1.1rem;
+    padding: 1.2rem;
 }
 
 .acd-card-head,
@@ -28,7 +28,7 @@
 
 .acd-card-head h4,
 .acd-section-title h4 {
-    font-size: 1.08rem;
+    font-size: 1.12rem;
     font-weight: 700;
     color: var(--color-dark);
     margin: 0;
@@ -45,9 +45,9 @@
     background: var(--color-light);
     color: var(--color-gray);
     border-radius: 999px;
-    font-size: 0.8rem;
+    font-size: 0.83rem;
     font-weight: 600;
-    padding: 0.28rem 0.72rem;
+    padding: 0.32rem 0.8rem;
     line-height: 1.1;
     cursor: pointer;
 }
@@ -74,9 +74,9 @@
     display: flex;
     align-items: center;
     gap: 0.35rem;
-    padding: 0.34rem 0.56rem 0.46rem;
+    padding: 0.38rem 0.6rem 0.5rem;
     border-bottom: 1px solid var(--color-light);
-    font-size: 0.78rem;
+    font-size: 0.81rem;
     color: var(--color-gray);
     background: rgba(14, 165, 233, 0.1);
 }
@@ -90,7 +90,7 @@
     border: none;
     background: none;
     color: var(--color-primary);
-    font-size: 0.78rem;
+    font-size: 0.81rem;
     font-weight: 600;
     padding: 0;
     cursor: pointer;
@@ -201,13 +201,13 @@
 .acd-list-title {
     display: block;
     margin-bottom: 0.14rem;
-    font-size: 0.82rem;
+    font-size: 0.86rem;
     font-weight: 700;
     color: var(--color-dark);
 }
 
 .acd-list-btn small {
-    font-size: 0.73rem;
+    font-size: 0.76rem;
     color: var(--color-gray);
 }
 
@@ -218,9 +218,9 @@
     align-items: center;
     padding: 0.58rem 0.75rem;
     font-size: 0.72rem;
-    font-weight: 700;
+    font-weight: 500;
     color: var(--color-dark);
-    text-transform: uppercase;
+    text-transform: none;
     letter-spacing: 0.02em;
     background: var(--color-white);
     border-bottom: 1px solid rgba(14, 165, 233, 0.14);
@@ -233,7 +233,7 @@
     grid-template-columns: minmax(0, 1.6fr) minmax(90px, 1fr) 64px;
     gap: 0.5rem;
     align-items: center;
-    min-height: 2.75rem;
+    min-height: 2.9rem;
     width: 100%;
     box-sizing: border-box;
     margin: 0;
@@ -262,13 +262,13 @@
 
 .acd-group-category-col,
 .acd-group-files-col {
-    font-size: 0.78rem;
+    font-size: 0.8rem;
     color: var(--color-dark);
+    font-weight: 400;
 }
 
 .acd-group-files-col {
     text-align: right;
-    font-weight: 700;
     color: var(--color-dark);
 }
 
@@ -279,9 +279,9 @@
     align-items: center;
     padding: 0.58rem 0.75rem;
     font-size: 0.72rem;
-    font-weight: 700;
+    font-weight: 500;
     color: var(--color-dark);
-    text-transform: uppercase;
+    text-transform: none;
     letter-spacing: 0.02em;
     background: var(--color-white);
     border-bottom: 1px solid rgba(14, 165, 233, 0.14);
@@ -291,10 +291,10 @@
 
 .acd-bin-row {
     display: grid;
-    grid-template-columns: minmax(0, 1.4fr) 72px 56px minmax(102px, 1fr);
-    gap: 0.5rem;
+    grid-template-columns: minmax(0, 1.4fr) 72px 56px minmax(112px, 1fr);
+    gap: 0.62rem;
     align-items: center;
-    min-height: 2.7rem;
+    min-height: 2.85rem;
     width: 100%;
     box-sizing: border-box;
     margin: 0;
@@ -306,8 +306,9 @@
 
 .acd-bin-col {
     min-width: 0;
-    font-size: 0.78rem;
+    font-size: 0.8rem;
     color: var(--color-dark);
+    font-weight: 400;
 }
 
 .acd-bin-name-col {
@@ -318,7 +319,6 @@
 
 .acd-bin-files-col {
     text-align: right;
-    font-weight: 700;
     color: var(--color-dark);
 }
 
@@ -328,14 +328,14 @@
 
 .acd-file-table-head {
     display: grid;
-    grid-template-columns: minmax(0, 2.25fr) 65px 78px minmax(108px, 0.95fr) 96px;
-    gap: 0.48rem;
+    grid-template-columns: minmax(0, 2.25fr) 65px 78px minmax(118px, 1fr) 96px;
+    gap: 0.62rem;
     align-items: center;
     padding: 0.58rem 0.75rem;
     font-size: 0.72rem;
-    font-weight: 700;
+    font-weight: 500;
     color: var(--color-dark);
-    text-transform: uppercase;
+    text-transform: none;
     letter-spacing: 0.02em;
     background: var(--color-white);
     border-bottom: 1px solid rgba(14, 165, 233, 0.14);
@@ -344,19 +344,19 @@
 }
 
 .acd-resource-browser.recent-mode .acd-file-table-head {
-    grid-template-columns: minmax(0, 2.15fr) minmax(0, 1.8fr) 65px 78px minmax(108px, 0.95fr) 96px;
+    grid-template-columns: minmax(0, 2.15fr) minmax(0, 1.8fr) 65px 78px minmax(118px, 1fr) 96px;
 }
 
 .acd-file-downloads-col {
     text-align: right;
-    font-weight: 700;
+    font-weight: 400;
     color: var(--color-dark);
 }
 
 .acd-file-row {
     display: grid;
-    grid-template-columns: minmax(0, 2.25fr) 65px 78px minmax(108px, 0.95fr) 96px;
-    gap: 0.48rem;
+    grid-template-columns: minmax(0, 2.25fr) 65px 78px minmax(118px, 1fr) 96px;
+    gap: 0.62rem;
     align-items: center;
     border: 1px solid var(--color-light);
     border-radius: 0;
@@ -368,7 +368,7 @@
 }
 
 .acd-resource-browser.recent-mode .acd-file-row {
-    grid-template-columns: minmax(0, 2.15fr) minmax(0, 1.8fr) 65px 78px minmax(108px, 0.95fr) 96px;
+    grid-template-columns: minmax(0, 2.15fr) minmax(0, 1.8fr) 65px 78px minmax(118px, 1fr) 96px;
 }
 
 .acd-resource-browser.recent-mode .acd-file-row,
@@ -383,8 +383,9 @@
 
 .acd-file-col {
     min-width: 0;
-    font-size: 0.78rem;
+    font-size: 0.8rem;
     color: var(--color-dark);
+    font-weight: 400;
 }
 
 .acd-file-name-col {
@@ -418,6 +419,7 @@
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    font-weight: 400;
 }
 
 .acd-file-actions-col {
@@ -463,7 +465,7 @@
 }
 
 .acd-resource-main h5 {
-    font-size: 0.86rem;
+    font-size: 0.9rem;
     font-weight: 700;
     margin: 0 0 0.12rem;
     white-space: nowrap;
@@ -472,7 +474,7 @@
 }
 
 .acd-resource-main p {
-    font-size: 0.73rem;
+    font-size: 0.76rem;
     color: var(--color-gray);
     margin: 0 0 0.2rem;
 }
@@ -481,7 +483,7 @@
     display: flex;
     gap: 0.65rem;
     align-items: center;
-    font-size: 0.69rem;
+    font-size: 0.72rem;
     color: var(--color-gray);
 }
 
@@ -496,8 +498,8 @@
 }
 
 .acd-action-icon {
-    width: 1.72rem;
-    height: 1.72rem;
+    width: 1.8rem;
+    height: 1.8rem;
     border: 1px solid rgba(14, 165, 233, 0.24);
     border-radius: 0.52rem;
     background: var(--color-white);
@@ -520,9 +522,9 @@
 
 .acd-btn {
     border-radius: 0.6rem;
-    font-size: 0.72rem;
+    font-size: 0.75rem;
     line-height: 1;
-    padding: 0.4rem 0.72rem;
+    padding: 0.44rem 0.78rem;
 }
 
 .acd-btn-outline {
@@ -530,10 +532,10 @@
     border-radius: 0.6rem;
     background: var(--color-white);
     color: var(--color-primary);
-    font-size: 0.72rem;
+    font-size: 0.75rem;
     font-weight: 600;
     line-height: 1;
-    padding: 0.4rem 0.72rem;
+    padding: 0.44rem 0.78rem;
     cursor: pointer;
 }
 

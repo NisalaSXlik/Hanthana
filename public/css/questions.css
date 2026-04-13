@@ -615,7 +615,7 @@ main .container.questions-layout .left {
 .inline-answers-panel .comment-actions {
     display: flex;
     align-items: center;
-    justify-content: space-between;
+    justify-content: flex-start;
     gap: 0.75rem;
 }
 
@@ -643,15 +643,7 @@ main .container.questions-layout .left {
     color: var(--color-primary);
 }
 
-.inline-answers-panel .answer-menu-wrap {
-    margin-left: auto;
-}
-
-.inline-answers-panel .answer-menu-trigger {
-    width: 34px;
-    height: 34px;
-    border-radius: 8px;
-}
+/* Inline answers now use direct comment-style actions only */
 
 .question-title {
     margin-bottom: 0.25rem;

@@ -257,8 +257,9 @@ class UserModel
     }
 
     public function getRecentUsers($limit = 5) {
-        $sql = "SELECT user_id, first_name, last_name, username, email, created_at, role
+        $sql = "SELECT user_id, first_name, last_name, username, email, profile_picture, created_at, role
                 FROM Users
+                WHERE is_active = TRUE
                 ORDER BY created_at DESC
                 LIMIT :limit";
         $stmt = $this->db->prepare($sql);
@@ -442,7 +443,7 @@ class UserModel
 
     // Search users with privacy check
     public function searchUsersWithPrivacy($term, $viewerId, $limit = 10) {
-        $sql = "SELECT user_id, username, first_name, last_name, profile_picture, is_online
+        $sql = "SELECT user_id, username, first_name, last_name, profile_picture, NULL AS is_online
                 FROM Users
                 WHERE is_active = TRUE
                 AND (username LIKE :query OR first_name LIKE :query OR last_name LIKE :query)

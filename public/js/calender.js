@@ -223,11 +223,20 @@ function showEventsPopup(month, day, year, dateKey) {
             const title = event.title || 'Scheduled event';
             const timeLabel = formatEventTimeLabel(event.event_time);
             const location = event.location ? `<div class="event-location"><i class="uil uil-location-point"></i> ${event.location}</div>` : '';
+            const eventId = Number(event.post_id || 0);
             eventElement.innerHTML = `
                 <div class="event-time">${timeLabel}</div>
                 <div class="event-title">${title}</div>
                 ${location}
             `;
+            if (eventId) {
+                eventElement.style.cursor = 'pointer';
+                eventElement.title = 'Open this event';
+                eventElement.addEventListener('click', () => {
+                    const basePath = (typeof BASE_PATH === 'string' ? BASE_PATH : '/').replace(/\/$/, '');
+                    window.location.href = `${basePath}/index.php?controller=Events&action=index&filter=added_to_calendar&target_event_id=${eventId}`;
+                });
+            }
             eventsContainer.appendChild(eventElement);
         });
     } else {

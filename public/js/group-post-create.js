@@ -71,10 +71,10 @@ document.addEventListener('DOMContentLoaded', function() {
         });
         
         const fieldMap = {
-            'question': 'questionFields',
+            'question': 'groupQuestionFields',
             'resource': 'resourceFields',
             'poll': 'pollFields',
-            'event': 'eventFields',
+            'event': 'groupEventFields',
             'assignment': 'assignmentFields'
         };
         
@@ -86,6 +86,18 @@ document.addEventListener('DOMContentLoaded', function() {
 
         if (fileUploadSection) {
             fileUploadSection.style.display = type === 'resource' ? 'block' : 'none';
+        }
+        
+        // Hide image upload for alerts
+        const groupImageUploadField = document.getElementById('groupImageUploadField');
+        if (groupImageUploadField) {
+            groupImageUploadField.style.display = type === 'assignment' ? 'none' : 'block';
+        }
+
+        if (type === 'assignment') {
+            if (postImageInput) postImageInput.value = '';
+            if (imagePreview) imagePreview.src = '';
+            if (imagePreviewContainer) imagePreviewContainer.style.display = 'none';
         }
     }
 

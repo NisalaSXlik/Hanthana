@@ -173,6 +173,12 @@ import { api } from './utils/api.js';
                     <p class="channel-description">${escapeHtml(channel.description)}</p>
                     <div class="channel-actions">
                         <button class="${actionClass}" type="button" data-channel-id="${channel.id}">${actionLabel}</button>
+                        <button class="btn btn-secondary channel-report-btn" type="button"
+                            data-report-type="channel"
+                            data-target-id="${channel.id}"
+                            data-target-label="channel ${escapeHtml(channel.name)}">
+                            Report
+                        </button>
                     </div>
                 </article>`;
         }).join('');
@@ -253,16 +259,20 @@ import { api } from './utils/api.js';
         }
 
         try {
-            await api('ChannelPage', 'createChannel', payload);
-            toast(`Channel "${name}" created in ${groupName}.`, 'success');
+            const response = await api('ChannelPage', 'createChannel', payload);
+            const queued = Boolean(response && response.queued);
+            const message = response && response.message
+                ? response.message
+                : (queued ? 'Channel request submitted for admin approval.' : `Channel "${name}" created in ${groupName}.`);
+            toast(message, 'success');
             closeModal();
 
             if (searchInput) {
                 searchInput.value = '';
             }
             searchValue = '';
-            activeFilter = 'joined';
-            filterButtons.forEach((item) => item.classList.toggle('active', item.dataset.filter === 'joined'));
+            activeFilter = queued ? 'all' : 'joined';
+            filterButtons.forEach((item) => item.classList.toggle('active', item.dataset.filter === activeFilter));
             await loadChannels();
         } catch (error) {
             toast(error.message || 'Failed to create channel.', 'error');

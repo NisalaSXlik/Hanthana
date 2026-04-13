@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/../../config/config.php';
+require_once __DIR__ . '/../models/UserModel.php';
 
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
@@ -11,6 +12,8 @@ if (!isset($_SESSION['user_id'])) {
 }
 
 $userId = $_SESSION['user_id'];
+$userModel = new UserModel();
+$currentUser = $userModel->findById((int)$userId);
 
 require_once __DIR__ . '/../models/FriendModel.php';
 $friendModel = new FriendModel();
@@ -66,12 +69,13 @@ function parseStructuredQuestionContent(?string $content): array {
 
 function renderAnswerNode(array $answer, int $currentUserId, int $questionOwnerId, int $level = 0): string {
     $answerId = (int)($answer['answer_id'] ?? 0);
+    $authorId = (int)($answer['user_id'] ?? 0);
     $authorName = htmlspecialchars(trim(($answer['first_name'] ?? '') . ' ' . ($answer['last_name'] ?? '')));
     $time = htmlspecialchars(timeAgo($answer['created_at'] ?? 'now'));
     $profilePic = BASE_PATH . ($answer['profile_picture'] ?: 'public/images/default-avatar.png');
+    $authorProfileUrl = BASE_PATH . 'index.php?controller=Profile&action=view&user_id=' . $authorId;
     $content = nl2br(htmlspecialchars($answer['content'] ?? ''));
-    $canModerate = (int)($answer['user_id'] ?? 0) === $currentUserId
-        || $questionOwnerId === $currentUserId;
+    $canModerate = (int)($answer['user_id'] ?? 0) === $currentUserId;
     $accepted = !empty($answer['is_accepted']);
     $replyStyle = $level > 0 ? ' style="margin-left: 40px;"' : '';
 
@@ -85,8 +89,8 @@ function renderAnswerNode(array $answer, int $currentUserId, int $questionOwnerI
     return '
         <div class="comment' . ($level > 0 ? ' reply' : '') . '" data-answer-id="' . $answerId . '"' . $replyStyle . '>
             <div class="comment-header-info">
-                <img src="' . htmlspecialchars($profilePic) . '" class="comment-avatar" alt="' . $authorName . '">
-                <span class="comment-author">' . $authorName . '</span>
+                <a href="' . htmlspecialchars($authorProfileUrl) . '" class="comment-author-link"><img src="' . htmlspecialchars($profilePic) . '" class="comment-avatar" alt="' . $authorName . '"></a>
+                <a href="' . htmlspecialchars($authorProfileUrl) . '" class="comment-author comment-author-link">' . $authorName . '</a>
                 <span class="comment-time">' . $time . '</span>
                 ' . ($accepted ? '<span class="answer-badge">Accepted</span>' : '') . '
             </div>
@@ -114,6 +118,7 @@ function renderAnswerNode(array $answer, int $currentUserId, int $questionOwnerI
     <link rel="stylesheet" href="./css/calender.css?v=20250209_zindex">
     <link rel="stylesheet" href="./css/post.css">
     <link rel="stylesheet" href="./css/notificationpopup.css">
+    <link rel="stylesheet" href="./css/notification-center.css">
     <link rel="stylesheet" href="./css/questions.css">
     <link rel="stylesheet" href="./css/forms.css">
     <link rel="stylesheet" href="https://unicons.iconscout.com/release/v4.0.8/css/line.css">
@@ -279,7 +284,8 @@ function renderAnswerNode(array $answer, int $currentUserId, int $questionOwnerI
 
     <script>
         const BASE_PATH = '<?php echo rtrim(BASE_PATH, '/'); ?>';
-        const USER_ID = <?php echo $userId; ?>;
+        window.USER_ID = <?php echo $userId; ?>;
+        const USER_ID = window.USER_ID;
     </script>
     <script src="./js/calender.js?v=20250209_syntax"></script>
     <script src="./js/general.js"></script>

@@ -1,5 +1,20 @@
 ﻿document.addEventListener('DOMContentLoaded', function() {
     console.log('=== GROUP PROFILE VIEW JS LOADED ===');
+    const basePath = typeof BASE_PATH !== 'undefined' ? BASE_PATH : '/';
+
+    const toast = (message, type = 'info') => {
+        if (typeof window.showToast === 'function') {
+            window.showToast(message, type);
+            return;
+        }
+
+        if (type === 'error') {
+            window.alert(message);
+            return;
+        }
+
+        console.log(message);
+    };
     
     // ===== HIGHLIGHT ACTIVE GROUP IN SIDEBAR =====
     const currentUrl = window.location.href;
@@ -24,8 +39,8 @@
     const aboutGroupBtn = document.getElementById('aboutGroupBtn');
     const editGroupBtn = document.getElementById('editGroupBtn');
     const manageGroupBtn = document.getElementById('manageGroupBtn');
-    const deleteGroupBtn = document.getElementById('deleteGroupBtn');
     const groupSettingsNavBtn = document.getElementById('groupSettingsNavBtn');
+    const deleteGroupBtn = document.getElementById('deleteGroupBtn');
 
     // Dropdown toggle
     if (groupMenuBtn && groupDropdownMenu) {
@@ -94,19 +109,94 @@
     const joinGroupBtn = document.getElementById('joinGroupBtn');
     const leaveGroupBtn = document.getElementById('leaveGroupBtn');
 
+    const setButtonLoading = (button, loading, loadingLabel) => {
+        if (!button) return;
+
+        if (loading) {
+            if (!button.dataset.originalLabel) {
+                button.dataset.originalLabel = button.innerHTML;
+            }
+            button.disabled = true;
+            button.innerHTML = `<i class="uil uil-spinner-alt"></i><span>${loadingLabel}</span>`;
+            return;
+        }
+
+        button.disabled = false;
+        if (button.dataset.originalLabel) {
+            button.innerHTML = button.dataset.originalLabel;
+            delete button.dataset.originalLabel;
+        }
+    };
+
+    const postGroupAction = async (subAction, groupId) => {
+        const body = new URLSearchParams();
+        body.append('sub_action', subAction);
+        body.append('group_id', String(groupId));
+
+        const response = await fetch(`${basePath}index.php?controller=Group&action=handleAjax`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: body.toString(),
+            credentials: 'same-origin'
+        });
+
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok || !data.success) {
+            throw new Error(data.message || 'Unable to update group membership.');
+        }
+
+        return data;
+    };
+
     if (joinGroupBtn) {
         joinGroupBtn.addEventListener('click', (e) => {
             e.preventDefault();
-            console.log('Join group clicked');
-            // TODO: Implement join group action
+            const groupId = Number((typeof GROUP_ID !== 'undefined' ? GROUP_ID : window.GROUP_ID) || document.querySelector('input[name="group_id"]')?.value || 0);
+            if (!groupId) {
+                toast('Missing group context.', 'error');
+                return;
+            }
+
+            setButtonLoading(joinGroupBtn, true, 'Joining...');
+            postGroupAction('join', groupId)
+                .then((data) => {
+                    toast(data.message || 'Group updated successfully.', 'success');
+                    window.location.reload();
+                })
+                .catch((error) => {
+                    toast(error.message || 'Failed to join group.', 'error');
+                })
+                .finally(() => {
+                    setButtonLoading(joinGroupBtn, false);
+                });
         });
     }
 
     if (leaveGroupBtn) {
         leaveGroupBtn.addEventListener('click', (e) => {
             e.preventDefault();
-            console.log('Leave group clicked');
-            // TODO: Implement leave group action
+            const groupId = Number((typeof GROUP_ID !== 'undefined' ? GROUP_ID : window.GROUP_ID) || document.querySelector('input[name="group_id"]')?.value || 0);
+            if (!groupId) {
+                toast('Missing group context.', 'error');
+                return;
+            }
+
+            if (!window.confirm('Leave this group?')) {
+                return;
+            }
+
+            setButtonLoading(leaveGroupBtn, true, 'Leaving...');
+            postGroupAction('leave', groupId)
+                .then((data) => {
+                    toast(data.message || 'Group updated successfully.', 'success');
+                    window.location.reload();
+                })
+                .catch((error) => {
+                    toast(error.message || 'Failed to leave group.', 'error');
+                })
+                .finally(() => {
+                    setButtonLoading(leaveGroupBtn, false);
+                });
         });
     }
 
@@ -454,6 +544,11 @@
         link.addEventListener('click', function(e) {
             e.preventDefault();
             const tabId = this.getAttribute('data-tab');
+            const targetContent = document.getElementById(tabId + '-content');
+
+            if (!targetContent) {
+                return;
+            }
 
             // Remove active class from all tabs
             tabLinks.forEach(l => l.parentElement.classList.remove('active'));
@@ -461,7 +556,7 @@
 
             // Add active class to clicked tab
             this.parentElement.classList.add('active');
-            document.getElementById(tabId + '-content').classList.add('active');
+            targetContent.classList.add('active');
         });
     });
 
@@ -498,13 +593,20 @@
                 if (result.success) {
                     const interested = !!result.interested;
                     button.classList.toggle('interested', interested);
+                    button.classList.toggle('added', interested);
                     
                     const icon = button.querySelector('i');
                     if (icon) {
-                        icon.className = interested ? 'uis uis-bookmark' : 'uil uil-star';
+                        icon.className = interested ? 'uis uis-bookmark' : 'uil uil-calendar-alt';
+                    }
+
+                    const label = button.querySelector('span');
+                    if (label) {
+                        label.textContent = interested ? 'Added' : 'Add Calendar';
                     }
                     
                     button.setAttribute('aria-pressed', interested ? 'true' : 'false');
+                    button.setAttribute('title', interested ? 'Added to Calendar' : 'Add to Calendar');
                     const toastType = interested ? 'success' : 'info';
                     const toastMessage = result.message || (interested ? 'Event saved to your calendar' : 'Removed from your calendar');
                     if (typeof window.showToast === 'function') {
@@ -992,25 +1094,41 @@
     const createPostModal = document.getElementById('createPostModal');
     const quickPostTrigger = document.getElementById('quickPostTrigger');
     const photoQuickBtn = document.getElementById('photoQuickBtn');
-    const videoQuickBtn = document.getElementById('videoQuickBtn');
-    const eventQuickBtn = document.getElementById('eventQuickBtn');
+    const pollQuickBtn = document.getElementById('pollQuickBtn');
+    const questionQuickBtn = document.getElementById('questionQuickBtn');
+    const resourceQuickBtn = document.getElementById('resourceQuickBtn');
     const openCreatePostBtn = document.getElementById('openCreatePostBtn');
     const closeCreatePostModal = document.getElementById('closeCreatePostModal');
     const cancelCreatePostBtn = document.getElementById('cancelCreatePostBtn');
     const createGroupPostForm = document.getElementById('createGroupPostForm');
-    const postTypeBtns = document.querySelectorAll('.post-type-btn');
+    const postTypeBtns = createGroupPostForm ? createGroupPostForm.querySelectorAll('.post-type-btn') : [];
     const selectedPostType = document.getElementById('selectedPostType');
     const postImageInput = document.getElementById('postImageInput');
     const imagePreview = document.getElementById('imagePreview');
     const imagePreviewContainer = document.getElementById('imagePreviewContainer');
     const removeImageBtn = document.getElementById('removeImageBtn');
     const uploadImageBtn = document.getElementById('uploadImageBtn');
-    const postFileInput = document.getElementById('postFileInput');
-    const filePreviewContainer = document.getElementById('filePreviewContainer');
-    const fileName = document.getElementById('fileName');
-    const removeFileBtn = document.getElementById('removeFileBtn');
-    const uploadFileBtn = document.getElementById('uploadFileBtn');
+    const postFileInput = document.getElementById('groupPostFileInput');
+    const filePreviewContainer = document.getElementById('groupPostFilePreviewContainer');
+    const fileName = document.getElementById('groupPostFileName');
+    const removeFileBtn = document.getElementById('groupPostRemoveFileBtn');
+    const uploadFileBtn = document.getElementById('groupPostUploadFileBtn');
     const fileUploadSection = document.getElementById('fileUploadSection');
+    const commonContentField = document.getElementById('groupCommonContentField');
+    const groupImageUploadField = document.getElementById('groupImageUploadField');
+    const postContentField = document.getElementById('postContent');
+    const groupProblemStatement = document.getElementById('groupProblemStatement');
+    const groupQuestionTitle = document.getElementById('groupQuestionTitle');
+    const groupQuestionFields = document.getElementById('groupQuestionFields');
+    const assignmentTitleField = document.getElementById('assignmentTitle');
+    const pollQuestionField = document.getElementById('pollQuestion');
+    const pollOption1Field = createGroupPostForm ? createGroupPostForm.querySelector('input[name="poll_option_1"]') : null;
+    const pollOption2Field = createGroupPostForm ? createGroupPostForm.querySelector('input[name="poll_option_2"]') : null;
+    const resourceTitleField = document.getElementById('resourceTitle');
+    const questionTemplateChips = groupQuestionFields ? groupQuestionFields.querySelectorAll('.template-chip') : [];
+    const groupEventDescription = document.getElementById('groupEventDescription');
+    const groupEventImageUploadBtn = document.getElementById('groupEventImageUploadBtn');
+    const groupEventImageLabel = document.getElementById('groupEventImageLabel');
 
     // Open modal with specific post type
     function openCreatePostModal(type = 'discussion') {
@@ -1020,10 +1138,10 @@
             
             if (type) {
                 postTypeBtns.forEach(btn => btn.classList.remove('active'));
-                const typeBtn = document.querySelector(`.post-type-btn[data-type="${type}"]`);
+                const typeBtn = createGroupPostForm ? createGroupPostForm.querySelector(`.post-type-btn[data-type="${type}"]`) : null;
                 if (typeBtn) {
                     typeBtn.classList.add('active');
-                    selectedPostType.value = type;
+                        if (selectedPostType) selectedPostType.value = type;
                     showConditionalFields(type);
                 }
             }
@@ -1043,41 +1161,111 @@
     function resetCreatePostForm() {
         if (createGroupPostForm) {
             createGroupPostForm.reset();
-            selectedPostType.value = 'discussion';
+            if (selectedPostType) selectedPostType.value = 'discussion';
             postTypeBtns.forEach(btn => btn.classList.remove('active'));
             postTypeBtns[0].classList.add('active');
-            document.querySelectorAll('.conditional-fields').forEach(field => {
+            createGroupPostForm.querySelectorAll('.conditional-fields').forEach(field => {
                 field.style.display = 'none';
             });
+            if (commonContentField) commonContentField.style.display = 'block';
+            if (postContentField) postContentField.required = true;
+            if (groupImageUploadField) groupImageUploadField.style.display = 'block';
             if (imagePreviewContainer) imagePreviewContainer.style.display = 'none';
             if (filePreviewContainer) filePreviewContainer.style.display = 'none';
             if (fileUploadSection) fileUploadSection.style.display = 'none';
+            if (groupEventImageLabel) groupEventImageLabel.textContent = 'Click to add event image';
+
+            questionTemplateChips.forEach(chip => chip.classList.remove('active'));
+            if (questionTemplateChips[0]) questionTemplateChips[0].classList.add('active');
+
+            const problemCount = createGroupPostForm.querySelector('.char-count[data-for="problem_statement"]');
+            if (problemCount) problemCount.textContent = '0 / 400';
+
+            syncConditionalFieldValidation('');
         }
+    }
+
+    function syncConditionalFieldValidation(activeFieldId) {
+        if (!createGroupPostForm) return;
+
+        createGroupPostForm.querySelectorAll('.conditional-fields').forEach(section => {
+            const isActiveSection = section.id === activeFieldId;
+            section.querySelectorAll('input, select, textarea').forEach(control => {
+                if (!control.hasAttribute('data-original-required')) {
+                    control.setAttribute('data-original-required', control.required ? '1' : '0');
+                }
+
+                if (isActiveSection) {
+                    control.disabled = false;
+                    control.required = control.getAttribute('data-original-required') === '1';
+                } else {
+                    control.required = false;
+                    control.disabled = true;
+                }
+            });
+        });
     }
 
     // Show conditional fields based on post type
     function showConditionalFields(type) {
-        document.querySelectorAll('.conditional-fields').forEach(field => {
+        if (!createGroupPostForm) return;
+
+        createGroupPostForm.querySelectorAll('.conditional-fields').forEach(field => {
             field.style.display = 'none';
         });
         
         const fieldMap = {
-            'question': 'questionFields',
+            'question': 'groupQuestionFields',
             'resource': 'resourceFields',
             'poll': 'pollFields',
-            'event': 'eventFields',
+            'event': 'groupEventFields',
             'assignment': 'assignmentFields'
         };
         
         const fieldId = fieldMap[type];
         if (fieldId) {
-            const field = document.getElementById(fieldId);
+            const field = createGroupPostForm.querySelector(`#${fieldId}`);
             if (field) field.style.display = 'block';
         }
+
+        syncConditionalFieldValidation(fieldId || '');
+
+        if (commonContentField && postContentField) {
+            const hideCommon = type === 'question' || type === 'event' || type === 'poll';
+            commonContentField.style.display = hideCommon ? 'none' : 'block';
+            postContentField.required = !hideCommon;
+        }
+
+        if (assignmentTitleField) assignmentTitleField.required = (type === 'assignment');
+        if (groupQuestionTitle) groupQuestionTitle.required = (type === 'question');
+        if (groupProblemStatement) groupProblemStatement.required = (type === 'question');
+        if (resourceTitleField) resourceTitleField.required = (type === 'resource');
+        if (pollQuestionField) pollQuestionField.required = (type === 'poll');
+        if (pollOption1Field) pollOption1Field.required = (type === 'poll');
+        if (pollOption2Field) pollOption2Field.required = (type === 'poll');
 
         if (fileUploadSection) {
             fileUploadSection.style.display = type === 'resource' ? 'block' : 'none';
         }
+
+        if (groupImageUploadField) {
+            const hideGenericImage = type === 'question' || type === 'event' || type === 'resource' || type === 'poll' || type === 'assignment';
+            groupImageUploadField.style.display = hideGenericImage ? 'none' : 'block';
+            if (hideGenericImage && postImageInput) {
+                postImageInput.value = '';
+                if (imagePreview) imagePreview.src = '';
+                if (imagePreviewContainer) imagePreviewContainer.style.display = 'none';
+                if (groupEventImageLabel) groupEventImageLabel.textContent = 'Click to add event image';
+            }
+        }
+    }
+
+    if (groupEventImageUploadBtn && uploadImageBtn) {
+        groupEventImageUploadBtn.addEventListener('click', () => uploadImageBtn.click());
+    }
+
+    if (selectedPostType) {
+        showConditionalFields(selectedPostType.value || 'discussion');
     }
 
     // Event listeners for opening modal
@@ -1092,23 +1280,25 @@
     if (photoQuickBtn) {
         photoQuickBtn.addEventListener('click', () => {
             openCreatePostModal('discussion');
-            setTimeout(() => {
-                if (uploadImageBtn) uploadImageBtn.click();
-            }, 100);
         });
     }
 
-    if (videoQuickBtn) {
-        videoQuickBtn.addEventListener('click', () => {
-            openCreatePostModal('discussion');
-            if (typeof showToast === 'function') {
-                showToast('Video upload coming soon!', 'info');
-            }
+    if (pollQuickBtn) {
+        pollQuickBtn.addEventListener('click', () => {
+            openCreatePostModal('poll');
         });
     }
 
-    if (eventQuickBtn) {
-        eventQuickBtn.addEventListener('click', () => openCreatePostModal('event'));
+    if (questionQuickBtn) {
+        questionQuickBtn.addEventListener('click', () => {
+            openCreatePostModal('question');
+        });
+    }
+
+    if (resourceQuickBtn) {
+        resourceQuickBtn.addEventListener('click', () => {
+            openCreatePostModal('resource');
+        });
     }
 
     // Event listeners for closing modal
@@ -1148,6 +1338,7 @@
                     if (imagePreviewContainer) imagePreviewContainer.style.display = 'block';
                 };
                 reader.readAsDataURL(file);
+                if (groupEventImageLabel) groupEventImageLabel.textContent = file.name;
             }
         });
     }
@@ -1157,8 +1348,36 @@
             if (postImageInput) postImageInput.value = '';
             if (imagePreview) imagePreview.src = '';
             if (imagePreviewContainer) imagePreviewContainer.style.display = 'none';
+            if (groupEventImageLabel) groupEventImageLabel.textContent = 'Click to add event image';
         });
     }
+
+    if (groupProblemStatement) {
+        groupProblemStatement.addEventListener('input', function() {
+            const max = Number(this.getAttribute('maxlength')) || 400;
+            const target = createGroupPostForm ? createGroupPostForm.querySelector('.char-count[data-for="problem_statement"]') : null;
+            if (target) target.textContent = `${this.value.length} / ${max}`;
+        });
+    }
+
+    function applyQuestionTemplate(chip, force = false) {
+        if (!chip || !groupQuestionTitle) return;
+        const prefix = (chip.dataset.templatePrefix || '').trim();
+        if (!prefix) return;
+        const current = groupQuestionTitle.value.trim();
+        if (!force && current.length > 0) return;
+        groupQuestionTitle.value = `${prefix} `;
+        groupQuestionTitle.focus();
+        groupQuestionTitle.setSelectionRange(groupQuestionTitle.value.length, groupQuestionTitle.value.length);
+    }
+
+    questionTemplateChips.forEach(chip => {
+        chip.addEventListener('click', function() {
+            questionTemplateChips.forEach(item => item.classList.remove('active'));
+            this.classList.add('active');
+            applyQuestionTemplate(this, true);
+        });
+    });
 
     // File upload (for resources)
     if (uploadFileBtn) {
@@ -1198,9 +1417,17 @@
             submitBtn.disabled = true;
 
             try {
-                const formData = new FormData(createGroupPostForm);
+                const selectedType = selectedPostType ? selectedPostType.value : 'discussion';
+                if (postContentField && selectedType === 'question') {
+                    postContentField.value = (groupProblemStatement?.value || '').trim();
+                } else if (postContentField && selectedType === 'event') {
+                    postContentField.value = (groupEventDescription?.value || '').trim();
+                }
 
-                const response = await fetch(BASE_PATH + 'index.php?controller=Group&action=createPost', {
+                const formData = new FormData(createGroupPostForm);
+                formData.set('sub_action', 'createPost');
+
+                const response = await fetch(BASE_PATH + 'index.php?controller=Group&action=handleAjax', {
                     method: 'POST',
                     body: formData
                 });
@@ -1352,19 +1579,7 @@
         postViewCommentToggle: !!postViewCommentToggle
     });
 
-    document.querySelectorAll('.group-post-clickable').forEach(postCard => {
-        postCard.addEventListener('click', function(e) {
-            if (e.target.closest('.action-buttons, .comment-section, .poll-option, button, a')) {
-                return;
-            }
-            const contentArea = e.target.closest('.post-body');
-            if (!contentArea || !postCard.contains(contentArea)) {
-                return;
-            }
-            const index = parseInt(this.dataset.postIndex, 10);
-            openPostModal(Number.isFinite(index) ? index : 0);
-        });
-    });
+    // Group post cards should not open the popup modal on click.
 
     function openPostModal(index) {
         currentPosts = window.GROUP_POSTS || [];

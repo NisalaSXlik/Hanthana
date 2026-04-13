@@ -35,6 +35,10 @@ public/uploads/channel_dp/*
 !public/uploads/group_cover/default.png
 !public/uploads/channel_dp/default.png
 
+.env
+.env.local
+.env.production
+
 # Logs and temporary files
 *.log
 tmp/
@@ -54,7 +58,6 @@ npm-debug.log*
 vendor/
 
 # Environment files
-.env
 .env.local
 .env.production
 

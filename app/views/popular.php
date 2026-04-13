@@ -38,6 +38,7 @@ function timeAgo($timestamp) {
     <link rel="stylesheet" href="./css/calender.css?v=20250209_zindex">
     <link rel="stylesheet" href="./css/post.css">
     <link rel="stylesheet" href="./css/notificationpopup.css">
+    <link rel="stylesheet" href="./css/notification-center.css">
     <link rel="stylesheet" href="./css/questions.css">
     <link rel="stylesheet" href="./css/forms.css">
     <link rel="stylesheet" href="./css/report.css">
@@ -96,60 +97,72 @@ function timeAgo($timestamp) {
                                             ($q['title'] ?? '') . ' ' .
                                             strip_tags($q['content'] ?? '') . ' ' .
                                             ($q['topics'] ?? '') . ' ' .
-                                            ($q['category'] ?? '')
+                                            ($q['category'] ?? '') . ' ' .
+                                            ($q['group_name'] ?? '')
                                         );
                                         $normalizedSearchBlob = function_exists('mb_strtolower')
                                             ? mb_strtolower($searchBlob)
                                             : strtolower($searchBlob);
                                     ?>
                                     <?php $isOwner = (int)$q['user_id'] === (int)$currentUserId; ?>
-                                    <article id="question-card-<?php echo (int)$q['question_id']; ?>" class="question-card" data-question-id="<?php echo (int)$q['question_id']; ?>" data-search-text="<?php echo htmlspecialchars($normalizedSearchBlob, ENT_QUOTES, 'UTF-8'); ?>">
+                                    <?php $isGroupQuestion = (($q['source_type'] ?? 'question') === 'group_question'); ?>
+                                    <article id="question-card-<?php echo (int)$q['question_id']; ?>" class="question-card" data-question-id="<?php echo (int)$q['question_id']; ?>" data-source-type="<?php echo htmlspecialchars((string)($q['source_type'] ?? 'question')); ?>" data-group-id="<?php echo (int)($q['group_id'] ?? 0); ?>" data-search-text="<?php echo htmlspecialchars($normalizedSearchBlob, ENT_QUOTES, 'UTF-8'); ?>">
                                         <div class="question-card-head">
                                             <div class="question-author">
-                                                <a href="<?php echo BASE_PATH; ?>index.php?controller=Profile&action=view&user_id=<?php echo (int)$q['user_id']; ?>" class="question-author-link">
-                                                    <img src="<?php echo BASE_PATH . ($q['profile_picture'] ?: 'public/images/default-avatar.png'); ?>"
-                                                         alt="<?php echo htmlspecialchars($q['first_name']); ?>">
-                                                    <div>
-                                                        <span class="author-name"><?php echo htmlspecialchars($q['first_name'] . ' ' . $q['last_name']); ?></span>
-                                                        <small class="question-time"><?php echo timeAgo($q['created_at']); ?></small>
+                                                <img src="<?php echo BASE_PATH . ($q['profile_picture'] ?: 'public/images/default-avatar.png'); ?>"
+                                                     alt="<?php echo htmlspecialchars($q['first_name']); ?>">
+                                                <div>
+                                                    <div style="display: flex; align-items: center; gap: 0.35rem; flex-wrap: wrap;">
+                                                        <a href="<?php echo BASE_PATH; ?>index.php?controller=Profile&action=view&user_id=<?php echo (int)$q['user_id']; ?>" class="question-author-link" style="display: inline-flex; align-items: center; gap: 0.25rem;">
+                                                            <span class="author-name"><?php echo htmlspecialchars($q['first_name'] . ' ' . $q['last_name']); ?></span>
+                                                        </a>
+                                                        <?php if ($isGroupQuestion && !empty($q['group_name'])): ?>
+                                                            <i class="uil uil-angle-right" style="color: var(--color-gray);"></i>
+                                                            <a href="<?php echo BASE_PATH; ?>index.php?controller=Group&action=index&group_id=<?php echo (int)$q['group_id']; ?>" class="group-link" style="color: var(--color-gray); text-decoration: none; font-weight: 600;" title="Go to group">
+                                                                <?php echo htmlspecialchars($q['group_name']); ?>
+                                                            </a>
+                                                        <?php endif; ?>
                                                     </div>
-                                                </a>
+                                                    <small class="question-time"><?php echo timeAgo($q['created_at']); ?></small>
+                                                </div>
                                             </div>
 
                                             <div class="question-card-meta">
                                                 <span><i class="uil uil-eye"></i> <?php echo (int)$q['views']; ?> views</span>
 
                                                 <div class="question-menu-wrap">
-                                                    <button type="button" class="question-menu-trigger" aria-label="Question menu">
-                                                        <i class="uil uil-ellipsis-h"></i>
-                                                    </button>
+                                                    <?php if (!$isGroupQuestion): ?>
+                                                        <button type="button" class="question-menu-trigger" aria-label="Question menu">
+                                                            <i class="uil uil-ellipsis-h"></i>
+                                                        </button>
 
-                                                    <div class="question-menu">
-                                                        <?php if ($isOwner): ?>
-                                                            <button type="button" class="question-menu-item edit-question" data-question-id="<?php echo (int)$q['question_id']; ?>">
-                                                                <i class="uil uil-edit"></i> Edit
-                                                            </button>
-                                                            <button type="button" class="question-menu-item delete-question" data-question-id="<?php echo (int)$q['question_id']; ?>">
-                                                                <i class="uil uil-trash-alt"></i> Delete
-                                                            </button>
-                                                        <?php endif; ?>
+                                                        <div class="question-menu">
+                                                            <?php if ($isOwner): ?>
+                                                                <button type="button" class="question-menu-item edit-question" data-question-id="<?php echo (int)$q['question_id']; ?>">
+                                                                    <i class="uil uil-edit"></i> Edit
+                                                                </button>
+                                                                <button type="button" class="question-menu-item delete-question" data-question-id="<?php echo (int)$q['question_id']; ?>">
+                                                                    <i class="uil uil-trash-alt"></i> Delete
+                                                                </button>
+                                                            <?php endif; ?>
 
-                                                        <?php if (!$isOwner): ?>
-                                                            <button type="button"
-                                                                    class="question-menu-item report-trigger"
-                                                                    data-report-type="question"
-                                                                    data-target-id="<?php echo (int)$q['question_id']; ?>"
-                                                                    data-target-label="<?php echo htmlspecialchars($q['title'], ENT_QUOTES); ?>">
-                                                                <i class="uil uil-exclamation-circle"></i> Report
-                                                            </button>
-                                                        <?php endif; ?>
-                                                    </div>
+                                                            <?php if (!$isOwner): ?>
+                                                                <button type="button"
+                                                                        class="question-menu-item report-trigger"
+                                                                        data-report-type="question"
+                                                                        data-target-id="<?php echo (int)$q['question_id']; ?>"
+                                                                        data-target-label="<?php echo htmlspecialchars($q['title'], ENT_QUOTES); ?>">
+                                                                    <i class="uil uil-exclamation-circle"></i> Report
+                                                                </button>
+                                                            <?php endif; ?>
+                                                        </div>
+                                                    <?php endif; ?>
                                                 </div>
                                             </div>
                                         </div>
 
                                         <h2 class="question-title">
-                                            <a href="<?php echo BASE_PATH; ?>index.php?controller=QnA&action=view&id=<?php echo $q['question_id']; ?>">
+                                            <a href="<?php echo $isGroupQuestion && !empty($q['group_id']) ? BASE_PATH . 'index.php?controller=Group&action=index&group_id=' . (int)$q['group_id'] . '#post-' . (int)$q['question_id'] : BASE_PATH . 'index.php?controller=QnA&action=view&id=' . $q['question_id']; ?>">
                                                 <?php echo htmlspecialchars($q['title']); ?>
                                             </a>
                                         </h2>
@@ -290,7 +303,8 @@ function timeAgo($timestamp) {
     <?php include __DIR__ . '/templates/chat-clean.php'; ?>
 
     <script>
-        const USER_ID = <?php echo $currentUserId; ?>;
+        window.USER_ID = <?php echo $currentUserId; ?>;
+        const USER_ID = window.USER_ID;
 
         (function focusQuestionCardFromQuery() {
             const params = new URLSearchParams(window.location.search);

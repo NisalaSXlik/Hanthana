@@ -19,6 +19,14 @@ if (isset($currentUser) && is_array($currentUser) && isset($currentUser['user_id
 $resolvedUser = $resolvedUserId > 0 ? $userModel->findById($resolvedUserId) : null;
 $currentUser = is_array($resolvedUser) ? $resolvedUser : [];
 $currentUserAvatar = MediaHelper::resolveMediaPath($currentUser['profile_picture'] ?? '', 'uploads/user_dp/default.png');
+$sidebarDisplayName = trim((string)($currentUser['first_name'] ?? '') . ' ' . (string)($currentUser['last_name'] ?? ''));
+if ($sidebarDisplayName === '') {
+    $sidebarDisplayName = trim((string)($_SESSION['first_name'] ?? '') . ' ' . (string)($_SESSION['last_name'] ?? ''));
+}
+if ($sidebarDisplayName === '') {
+    $sidebarDisplayName = (string)($currentUser['username'] ?? ($_SESSION['username'] ?? 'User'));
+}
+$sidebarUsername = (string)($currentUser['username'] ?? ($_SESSION['username'] ?? 'username'));
 
 $explicitSidebarKey = isset($activeSidebar) && is_string($activeSidebar) ? strtolower($activeSidebar) : null;
 
@@ -113,8 +121,8 @@ $groupMessagesUnreadTotal = array_sum(array_column($dummyGroupMessages, 'unread_
                 <img src="<?php echo htmlspecialchars($currentUserAvatar); ?>" alt="Your profile picture">
             </div>
             <div class="handle">
-                <h4><?php echo htmlspecialchars(($_SESSION['first_name'] ?? '') . ' ' . ($_SESSION['last_name'] ?? '')); ?></h4>
-                <p>@<?php echo htmlspecialchars($_SESSION['username'] ?? 'username'); ?></p>
+                <h4><?php echo htmlspecialchars($sidebarDisplayName); ?></h4>
+                <p>@<?php echo htmlspecialchars($sidebarUsername); ?></p>
             </div>
         </div>
     </a>

@@ -292,7 +292,7 @@ function setupAddFriendButtons() {
         pending_outgoing: {
             label: 'Request Sent',
             icon: 'uil uil-clock',
-            disabled: true,
+            disabled: false,
             variant: 'secondary',
         },
         incoming_pending: {
@@ -317,6 +317,14 @@ function setupAddFriendButtons() {
 
     const applyState = (button, stateKey) => {
         const config = stateConfig[stateKey] || stateConfig.none;
+        const labelOverrides = {
+            none: button.dataset.labelNone,
+            pending_outgoing: button.dataset.labelPendingOutgoing,
+            incoming_pending: button.dataset.labelIncomingPending,
+            friends: button.dataset.labelFriends,
+            blocked: button.dataset.labelBlocked,
+        };
+
         button.dataset.state = stateKey;
         button.disabled = !!config.disabled;
 
@@ -325,14 +333,15 @@ function setupAddFriendButtons() {
 
         const iconElement = button.querySelector('i');
         const textElement = button.querySelector('span');
+        const label = labelOverrides[stateKey] || config.label;
 
         if (iconElement) {
             iconElement.className = config.icon;
         }
         if (textElement) {
-            textElement.textContent = config.label;
+            textElement.textContent = label;
         } else {
-            button.textContent = config.label;
+            button.textContent = label;
         }
     };
 
@@ -351,8 +360,9 @@ function setupAddFriendButtons() {
             if ((button.dataset.state || 'none') === 'friends') {
                 const iconElement = button.querySelector('i');
                 const textElement = button.querySelector('span');
+                const friendLabel = button.dataset.labelFriends || 'Friends';
                 if (iconElement) iconElement.className = 'uil uil-user-check';
-                if (textElement) textElement.textContent = 'Friends';
+                if (textElement) textElement.textContent = friendLabel;
             }
         });
     };
@@ -414,6 +424,33 @@ function setupAddFriendButtons() {
                     notifyFriendAction(data.message || 'Friend removed.', 'success');
                 } catch (err) {
                     notifyFriendAction(err?.message || 'Unable to remove friend.', 'error');
+                } finally {
+                    button.classList.remove('is-loading');
+                    button.disabled = false;
+                }
+                return;
+            }
+
+            if (currentState === 'pending_outgoing') {
+                button.disabled = true;
+                button.classList.add('is-loading');
+                try {
+                    const resp = await fetch(`${FRIENDS_BASE_PATH}index.php?controller=Friend&action=removeFriend`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                        body: `target_user_id=${encodeURIComponent(targetId)}`,
+                    });
+                    const data = await resp.json();
+                    if (!resp.ok || !data?.success) {
+                        throw new Error(data?.message || 'Unable to cancel request.');
+                    }
+                    applyState(button, 'none');
+                    if (typeof window.__hanthanaUpdateFriendButtonState === 'function') {
+                        window.__hanthanaUpdateFriendButtonState(targetId, 'none');
+                    }
+                    notifyFriendAction(data.message || 'Friend request cancelled.', 'info');
+                } catch (err) {
+                    notifyFriendAction(err?.message || 'Unable to cancel request.', 'error');
                 } finally {
                     button.classList.remove('is-loading');
                     button.disabled = false;
