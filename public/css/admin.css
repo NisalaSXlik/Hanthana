@@ -2199,3 +2199,52 @@ table tbody tr:nth-child(even) {
 table tbody tr:hover {
     background: #f3f7fc !important;
 }
+
+/* Complaint card overflow guards */
+.complaint-list li,
+.complaint-board-item {
+    min-width: 0;
+}
+
+.complaint-list li > div:first-child,
+.complaint-summary {
+    min-width: 0;
+}
+
+.complaint-list .trend-metrics,
+.complaint-actions {
+    min-width: 0;
+    max-width: 100%;
+}
+
+.complaint-list .trend-actions,
+.complaint-actions {
+    width: auto;
+    max-width: 100%;
+    flex-wrap: wrap;
+    row-gap: 0.35rem;
+}
+
+.complaint-list .trend-actions .link-btn,
+.complaint-actions .link-btn {
+    flex: 0 0 auto;
+    white-space: nowrap;
+}
+
+.complaint-list small,
+.complaint-actions small {
+    max-width: 100%;
+    white-space: nowrap;
+}
+
+@media (max-width: 768px) {
+    .complaint-list .trend-actions,
+    .complaint-actions {
+        justify-content: flex-start;
+    }
+
+    .complaint-list small,
+    .complaint-actions small {
+        align-self: flex-start;
+    }
+}

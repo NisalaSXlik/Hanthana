@@ -2,6 +2,7 @@
 require_once __DIR__ . '/../../config/config.php';
 require_once __DIR__ . '/../models/FriendModel.php';
 require_once __DIR__ . '/../models/NotificationsModel.php';
+require_once __DIR__ . '/../models/SettingsModel.php';
 
 use Throwable;
 
@@ -9,6 +10,7 @@ class FriendController
 {
     private FriendModel $friendModel;
     private NotificationsModel $notificationsModel;
+    private SettingsModel $settingsModel;
 
     public function __construct()
     {
@@ -18,6 +20,7 @@ class FriendController
 
         $this->friendModel = new FriendModel();
         $this->notificationsModel = new NotificationsModel();
+        $this->settingsModel = new SettingsModel();
     }
 
     public function sendRequest(): void
@@ -53,6 +56,12 @@ class FriendController
         if ($targetId === $viewerId) {
             http_response_code(400);
             echo json_encode(['success' => false, 'message' => 'You cannot send a friend request to yourself.']);
+            exit;
+        }
+
+        if ($this->settingsModel->isBlockedBetween($viewerId, $targetId)) {
+            http_response_code(403);
+            echo json_encode(['success' => false, 'message' => 'Friend requests are unavailable because one of you has blocked the other.']);
             exit;
         }
 

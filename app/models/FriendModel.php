@@ -28,6 +28,10 @@ class FriendModel
 
     public function getFriendshipStatus(int $userId, int $otherUserId): string
     {
+        if ($this->isBlockedBetween($userId, $otherUserId)) {
+            return 'blocked';
+        }
+
         $friendship = $this->getFriendship($userId, $otherUserId);
         
         if (!$friendship) {
@@ -55,6 +59,13 @@ class FriendModel
 
     public function sendFriendRequest(int $requesterId, int $targetId): array
     {
+        if ($this->isBlockedBetween($requesterId, $targetId)) {
+            return [
+                'status' => 'blocked',
+                'message' => 'You cannot send a friend request to this user.',
+            ];
+        }
+
         $existing = $this->getFriendship($requesterId, $targetId);
 
         if ($existing) {
@@ -351,6 +362,40 @@ class FriendModel
         }
 
         return $counts;
+    }
+
+    private function isBlockedBetween(int $userId, int $otherUserId): bool
+    {
+        if ($userId <= 0 || $otherUserId <= 0 || $userId === $otherUserId) {
+            return false;
+        }
+
+        $queries = [
+            "SELECT 1
+             FROM BlockedUsers
+             WHERE (blocker_id = ? AND blocked_id = ?)
+                OR (blocker_id = ? AND blocked_id = ?)
+             LIMIT 1",
+            "SELECT 1
+             FROM BlockedUsers
+             WHERE (user_id = ? AND blocked_user_id = ?)
+                OR (user_id = ? AND blocked_user_id = ?)
+             LIMIT 1"
+        ];
+
+        foreach ($queries as $sql) {
+            try {
+                $stmt = $this->db->prepare($sql);
+                $stmt->execute([$userId, $otherUserId, $otherUserId, $userId]);
+                if ($stmt->fetchColumn() !== false) {
+                    return true;
+                }
+            } catch (PDOException $e) {
+                continue;
+            }
+        }
+
+        return false;
     }
 
     /**

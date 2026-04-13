@@ -50,6 +50,20 @@ class ProfileController {
         }
 
         $isOwner = ($viewerId === $profileUserId);
+        $isViewerBlockedByProfileUser = !$isOwner && $this->settingsModel->isBlockedBy($profileUserId, $viewerId);
+        $isViewerHasBlockedProfileUser = !$isOwner && $this->settingsModel->isBlockedBy($viewerId, $profileUserId);
+        $isBlockedRelationship = $isViewerBlockedByProfileUser || $isViewerHasBlockedProfileUser;
+        $blockedViewMessage = '';
+
+        if (!$isOwner && $isBlockedRelationship) {
+            if ($isViewerBlockedByProfileUser && $isViewerHasBlockedProfileUser) {
+                $blockedViewMessage = 'You and this user have blocked each other.';
+            } elseif ($isViewerBlockedByProfileUser) {
+                $blockedViewMessage = 'This user has blocked you.';
+            } else {
+                $blockedViewMessage = 'You have blocked this user. Unblock them in Settings to view their content.';
+            }
+        }
         
         // Get user's display information
         $displayName = trim(($profileUser['first_name'] ?? '') . ' ' . ($profileUser['last_name'] ?? ''));
@@ -58,22 +72,22 @@ class ProfileController {
         }
         $displayHandle = !empty($profileUser['username']) ? '@' . $profileUser['username'] : '';
         
-        // Get user details
-        $bio = $profileUser['bio'] ?? '';
-        $location = $profileUser['location'] ?? 'Not specified';
-        $university = $profileUser['university'] ?? 'Not specified';
+        // Get user details (limited when either side has blocked the other)
+        $bio = $isBlockedRelationship ? '' : ($profileUser['bio'] ?? '');
+        $location = $isBlockedRelationship ? 'Hidden' : ($profileUser['location'] ?? 'Not specified');
+        $university = $isBlockedRelationship ? 'Hidden' : ($profileUser['university'] ?? 'Not specified');
 
         $rawEmail = $profileUser['email'] ?? '';
         $rawPhone = $profileUser['phone_number'] ?? '';
-        $canViewEmail = $this->settingsModel->shouldShowEmail($profileUserId, $viewerId);
-        $canViewPhone = $this->settingsModel->shouldShowPhone($profileUserId, $viewerId);
+        $canViewEmail = !$isBlockedRelationship && $this->settingsModel->shouldShowEmail($profileUserId, $viewerId);
+        $canViewPhone = !$isBlockedRelationship && $this->settingsModel->shouldShowPhone($profileUserId, $viewerId);
         $email = $canViewEmail ? $rawEmail : '';
         $phone = $canViewPhone ? $rawPhone : '';
         
         // Format date of birth
         $dob = '';
         $dobValue = '';
-        if (!empty($profileUser['date_of_birth'])) {
+        if (!$isBlockedRelationship && !empty($profileUser['date_of_birth'])) {
             $dob = date('F j, Y', strtotime($profileUser['date_of_birth']));
             $dobValue = $profileUser['date_of_birth'];
         }
@@ -82,18 +96,26 @@ class ProfileController {
         
         // Get interest tags
         $interestTags = [];
-        if (!empty($profileUser['interests'])) {
+        if (!$isBlockedRelationship && !empty($profileUser['interests'])) {
             $interestTags = explode(',', $profileUser['interests']);
             $interestTags = array_map('trim', $interestTags);
             $interestTags = array_filter($interestTags);
         }
 
         // Get friend information
-        $friendsCount = $this->friendModel->getFriendsCount($profileUserId);
-        $friendListLimit = max(50, $friendsCount);
-        $friendList = $this->friendModel->getAcceptedFriends($profileUserId, $friendListLimit);
-        $friendListCount = count($friendList);
-        $hasMoreFriends = false;
+        if ($isBlockedRelationship) {
+            $friendsCount = 0;
+            $friendListLimit = 0;
+            $friendList = [];
+            $friendListCount = 0;
+            $hasMoreFriends = false;
+        } else {
+            $friendsCount = $this->friendModel->getFriendsCount($profileUserId);
+            $friendListLimit = max(50, $friendsCount);
+            $friendList = $this->friendModel->getAcceptedFriends($profileUserId, $friendListLimit);
+            $friendListCount = count($friendList);
+            $hasMoreFriends = false;
+        }
 
         // Friend relationship status for non-owners
         $friendButtonState = 'none';
@@ -104,38 +126,47 @@ class ProfileController {
         $canSendFriendRequest = true;
 
         if (!$isOwner) {
-            $friendStatus = $this->friendModel->getFriendshipStatus($viewerId, $profileUserId);
-            
-            switch ($friendStatus) {
-                case 'friends':
-                    $friendButtonState = 'friends';
-                    $friendButtonLabel = 'Friends';
-                    $friendButtonIcon = 'uil uil-user-check';
-                    $friendButtonVariant = 'btn-secondary';
-                    $canSendFriendRequest = false;
-                    break;
-                case 'pending_them':
-                    $friendButtonState = 'pending_outgoing';
-                    $friendButtonLabel = 'Request Sent';
-                    $friendButtonIcon = 'uil uil-clock';
-                    $friendButtonVariant = 'btn-secondary';
-                    $friendButtonDisabled = true;
-                    $canSendFriendRequest = false;
-                    break;
-                case 'pending_me':
-                    $friendButtonState = 'incoming_pending';
-                    $friendButtonLabel = 'Request Pending';
-                    $friendButtonIcon = 'uil uil-user-plus';
-                    $friendButtonVariant = 'btn-secondary';
-                    $friendButtonDisabled = true;
-                    $canSendFriendRequest = false;
-                    break;
-                default:
-                    $friendButtonState = 'none';
-                    $friendButtonLabel = 'Add Friend';
-                    $friendButtonIcon = 'uil uil-user-plus';
-                    $friendButtonVariant = 'btn-primary';
-                    $canSendFriendRequest = true;
+            if ($isBlockedRelationship) {
+                $friendButtonState = 'blocked';
+                $friendButtonLabel = 'Unavailable';
+                $friendButtonIcon = 'uil uil-ban';
+                $friendButtonVariant = 'btn-secondary';
+                $friendButtonDisabled = true;
+                $canSendFriendRequest = false;
+            } else {
+                $friendStatus = $this->friendModel->getFriendshipStatus($viewerId, $profileUserId);
+
+                switch ($friendStatus) {
+                    case 'friends':
+                        $friendButtonState = 'friends';
+                        $friendButtonLabel = 'Friends';
+                        $friendButtonIcon = 'uil uil-user-check';
+                        $friendButtonVariant = 'btn-secondary';
+                        $canSendFriendRequest = false;
+                        break;
+                    case 'pending_them':
+                        $friendButtonState = 'pending_outgoing';
+                        $friendButtonLabel = 'Request Sent';
+                        $friendButtonIcon = 'uil uil-clock';
+                        $friendButtonVariant = 'btn-secondary';
+                        $friendButtonDisabled = true;
+                        $canSendFriendRequest = false;
+                        break;
+                    case 'pending_me':
+                        $friendButtonState = 'incoming_pending';
+                        $friendButtonLabel = 'Request Pending';
+                        $friendButtonIcon = 'uil uil-user-plus';
+                        $friendButtonVariant = 'btn-secondary';
+                        $friendButtonDisabled = true;
+                        $canSendFriendRequest = false;
+                        break;
+                    default:
+                        $friendButtonState = 'none';
+                        $friendButtonLabel = 'Add Friend';
+                        $friendButtonIcon = 'uil uil-user-plus';
+                        $friendButtonVariant = 'btn-primary';
+                        $canSendFriendRequest = true;
+                }
             }
         }
 
@@ -144,10 +175,14 @@ class ProfileController {
         $profileVisibility = $profileUser['profile_visibility'] ?? 'public';
         
         $postsArePrivate = false;
+        $postsAreBlockedByRelationship = false;
         $personalPosts = [];
         $personalPostCount = 0;
         
-        if ($isOwner) {
+        if ($isBlockedRelationship && !$isOwner) {
+            $postsArePrivate = true;
+            $postsAreBlockedByRelationship = true;
+        } elseif ($isOwner) {
             // Owner can see all their posts
             $personalPosts = $this->postModel->getUserPosts($profileUserId);
             $personalPostCount = $this->postModel->getUserPostsCount($profileUserId);
@@ -198,10 +233,17 @@ class ProfileController {
         $incomingFriendRequests = $this->friendModel->getIncomingRequests($viewerId);
 
         // GET REAL GROUP DATA - NO MORE DUMMY DATA
-        $joinedGroupsCount = $this->groupModel->getUserJoinedGroupsCount($profileUserId);
-        $groupListLimit = max(5, $joinedGroupsCount);
-        $userGroups = $this->groupModel->getUserGroupsWithDetails($profileUserId, $groupListLimit);
-        $groupListCount = count($userGroups);
+        if ($isBlockedRelationship && !$isOwner) {
+            $joinedGroupsCount = 0;
+            $groupListLimit = 0;
+            $userGroups = [];
+            $groupListCount = 0;
+        } else {
+            $joinedGroupsCount = $this->groupModel->getUserJoinedGroupsCount($profileUserId);
+            $groupListLimit = max(5, $joinedGroupsCount);
+            $userGroups = $this->groupModel->getUserGroupsWithDetails($profileUserId, $groupListLimit);
+            $groupListCount = count($userGroups);
+        }
 
         // Pass all variables to view
         require __DIR__ . '/../views/userprofileview.php';
@@ -496,6 +538,11 @@ class ProfileController {
 
             if ($userId === $friendId) {
                 echo json_encode(['success' => false, 'message' => 'Cannot add yourself as a friend']);
+                return;
+            }
+
+            if ($this->settingsModel->isBlockedBetween($userId, $friendId)) {
+                echo json_encode(['success' => false, 'message' => 'Friend requests are unavailable because one of you has blocked the other.']);
                 return;
             }
 
