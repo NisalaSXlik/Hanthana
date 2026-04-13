@@ -73,8 +73,11 @@ $currentUser = $userModel->findById($_SESSION['user_id']);
                             <?php else: ?>
                                 <h2 class="profile-handle-large"><?php echo htmlspecialchars($displayName); ?></h2>
                             <?php endif; ?>
-                            <p class="profile-bio"><?php echo htmlspecialchars($bio); ?></p>
-                            
+                            <?php if ($isBlockedRelationship && !$isOwner): ?>
+                                <p class="profile-bio"><?php echo htmlspecialchars($blockedViewMessage); ?></p>
+                            <?php else: ?>
+                                <p class="profile-bio"><?php echo htmlspecialchars($bio); ?></p>
+                            <?php endif; ?>
                             <div class="profile-meta">
                                 <span class="meta-location"><?php echo htmlspecialchars($university !== '' ? $university : 'University not specified'); ?></span>
                             </div>
@@ -90,6 +93,8 @@ $currentUser = $userModel->findById($_SESSION['user_id']);
                                         <i class="uil uil-users-alt"></i>
                                         Groups
                                     </button>
+                                <?php elseif ($isBlockedRelationship): ?>
+                                    <span class="btn btn-outline" style="pointer-events: none; opacity: 0.8;">Interactions unavailable</span>
                                 <?php else: ?>
                                     <button
                                         type="button"
@@ -133,7 +138,7 @@ $currentUser = $userModel->findById($_SESSION['user_id']);
                             </div>
 
                             <!-- Privacy Indicator -->
-                            <?php if (!$isOwner): ?>
+                            <?php if (!$isOwner && !$isBlockedRelationship): ?>
                             <div class="privacy-indicator" style="margin-top: 1rem; text-align: left;">
                                 <?php if ($profileVisibility === 'only_me'): ?>
                                     <div class="privacy-badge" style="display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.5rem 1rem; background: var(--color-light); border-radius: 2rem; color: var(--color-gray);">
@@ -164,7 +169,13 @@ $currentUser = $userModel->findById($_SESSION['user_id']);
                 <div class="group-content">
                     <!-- Personal Posts Tab -->
                     <div class="tab-content active" id="tab-posts">
-                        <?php if ($postsArePrivate && !$isOwner): ?>
+                        <?php if ($isBlockedRelationship && !$isOwner): ?>
+                            <div class="private-posts-message" style="text-align: center; padding: 3rem; background: var(--color-light); border-radius: 1rem; margin: 2rem 0;">
+                                <i class="uil uil-ban" style="font-size: 3rem; color: var(--color-gray); margin-bottom: 1rem;"></i>
+                                <h3 style="color: var(--color-dark); margin-bottom: 0.5rem;">Content unavailable</h3>
+                                <p style="color: var(--color-gray);"><?php echo htmlspecialchars($blockedViewMessage); ?></p>
+                            </div>
+                        <?php elseif ($postsArePrivate && !$isOwner): ?>
                             <div class="private-posts-message" style="text-align: center; padding: 3rem; background: var(--color-light); border-radius: 1rem; margin: 2rem 0;">
                                 <i class="uil uil-lock" style="font-size: 3rem; color: var(--color-gray); margin-bottom: 1rem;"></i>
                                 <h3 style="color: var(--color-dark); margin-bottom: 0.5rem;">
@@ -223,7 +234,13 @@ $currentUser = $userModel->findById($_SESSION['user_id']);
 
                     <!-- Group Posts Tab -->
                     <div class="tab-content" id="tab-group-posts">
-                        <?php if ($postsArePrivate && !$isOwner): ?>
+                        <?php if ($isBlockedRelationship && !$isOwner): ?>
+                            <div class="private-posts-message" style="text-align: center; padding: 3rem; background: var(--color-light); border-radius: 1rem; margin: 2rem 0;">
+                                <i class="uil uil-ban" style="font-size: 3rem; color: var(--color-gray); margin-bottom: 1rem;"></i>
+                                <h3 style="color: var(--color-dark); margin-bottom: 0.5rem;">Content unavailable</h3>
+                                <p style="color: var(--color-gray);"><?php echo htmlspecialchars($blockedViewMessage); ?></p>
+                            </div>
+                        <?php elseif ($postsArePrivate && !$isOwner): ?>
                             <div class="private-posts-message" style="text-align: center; padding: 3rem; background: var(--color-light); border-radius: 1rem; margin: 2rem 0;">
                                 <i class="uil uil-lock" style="font-size: 3rem; color: var(--color-gray); margin-bottom: 1rem;"></i>
                                 <h3 style="color: var(--color-dark); margin-bottom: 0.5rem;">Group Posts are Private</h3>
@@ -260,48 +277,60 @@ $currentUser = $userModel->findById($_SESSION['user_id']);
                         <?php endif; ?>
                     </div>
 
-
-
                     <!-- About Tab -->
                     <div class="tab-content" id="tab-about">
-                        <div class="about-section">
-                            <h3>About</h3>
-                            <p><?php echo htmlspecialchars($bio); ?></p>
-                        </div>
-                        <div class="about-section">
-                            <h3>Details</h3>
-                            <ul class="detail-list">
-                                <?php if ($email): ?>
-                                    <li><i class="uil uil-envelope"></i> <?php echo htmlspecialchars($email); ?></li>
-                                <?php endif; ?>
-                                <?php if ($phone): ?>
-                                    <li><i class="uil uil-phone"></i> <?php echo htmlspecialchars($phone); ?></li>
-                                <?php endif; ?>
-                                <?php if ($dob): ?>
-                                    <li><i class="uil uil-gift"></i> Born on <?php echo htmlspecialchars($dob); ?></li>
-                                <?php endif; ?>
-                                <li><i class="uil uil-location-point"></i> <?php echo htmlspecialchars($location); ?></li>
-                                <li><i class="uil uil-university"></i> <?php echo htmlspecialchars($university); ?></li>
-                                <li><i class="uil uil-calendar-alt"></i> Member since <?php echo htmlspecialchars($joinedAt); ?></li>
-                            </ul>
-                        </div>
-                        <?php if (!empty($interestTags)): ?>
-                            <div class="about-section">
-                                <h3>Interests</h3>
-                                <div class="interest-tags">
-                                    <?php foreach ($interestTags as $tag): ?>
-                                        <?php if ($tag !== ''): ?>
-                                            <span class="interest-tag"><?php echo htmlspecialchars($tag); ?></span>
-                                        <?php endif; ?>
-                                    <?php endforeach; ?>
-                                </div>
+                        <?php if ($isBlockedRelationship && !$isOwner): ?>
+                            <div class="private-posts-message" style="text-align: center; padding: 3rem; background: var(--color-light); border-radius: 1rem; margin: 2rem 0;">
+                                <i class="uil uil-ban" style="font-size: 3rem; color: var(--color-gray); margin-bottom: 1rem;"></i>
+                                <h3 style="color: var(--color-dark); margin-bottom: 0.5rem;">Content unavailable</h3>
+                                <p style="color: var(--color-gray);"><?php echo htmlspecialchars($blockedViewMessage); ?></p>
                             </div>
+                        <?php else: ?>
+                            <div class="about-section">
+                                <h3>About</h3>
+                                <p><?php echo htmlspecialchars($bio); ?></p>
+                            </div>
+                            <div class="about-section">
+                                <h3>Details</h3>
+                                <ul class="detail-list">
+                                    <?php if ($email): ?>
+                                        <li><i class="uil uil-envelope"></i> <?php echo htmlspecialchars($email); ?></li>
+                                    <?php endif; ?>
+                                    <?php if ($phone): ?>
+                                        <li><i class="uil uil-phone"></i> <?php echo htmlspecialchars($phone); ?></li>
+                                    <?php endif; ?>
+                                    <?php if ($dob): ?>
+                                        <li><i class="uil uil-gift"></i> Born on <?php echo htmlspecialchars($dob); ?></li>
+                                    <?php endif; ?>
+                                    <li><i class="uil uil-location-point"></i> <?php echo htmlspecialchars($location); ?></li>
+                                    <li><i class="uil uil-university"></i> <?php echo htmlspecialchars($university); ?></li>
+                                    <li><i class="uil uil-calendar-alt"></i> Member since <?php echo htmlspecialchars($joinedAt); ?></li>
+                                </ul>
+                            </div>
+                            <?php if (!empty($interestTags)): ?>
+                                <div class="about-section">
+                                    <h3>Interests</h3>
+                                    <div class="interest-tags">
+                                        <?php foreach ($interestTags as $tag): ?>
+                                            <?php if ($tag !== ''): ?>
+                                                <span class="interest-tag"><?php echo htmlspecialchars($tag); ?></span>
+                                            <?php endif; ?>
+                                        <?php endforeach; ?>
+                                    </div>
+                                </div>
+                            <?php endif; ?>
                         <?php endif; ?>
                     </div>
 
                     <!-- Saved Tab -->
                     <div class="tab-content" id="tab-saved">
-                        <?php if (!$isOwner): ?>
+                        <?php if ($isBlockedRelationship && !$isOwner): ?>
+                            <div class="private-posts-message" style="text-align: center; padding: 3rem; background: var(--color-light); border-radius: 1rem; margin: 2rem 0;">
+                                <i class="uil uil-ban" style="font-size: 3rem; color: var(--color-gray); margin-bottom: 1rem;"></i>
+                                <h3 style="color: var(--color-dark); margin-bottom: 0.5rem;">Content unavailable</h3>
+                                <p style="color: var(--color-gray);"><?php echo htmlspecialchars($blockedViewMessage); ?></p>
+                            </div>
+                        <?php elseif (!$isOwner): ?>
                             <div class="private-posts-message" style="text-align: center; padding: 3rem; background: var(--color-light); border-radius: 1rem; margin: 2rem 0;">
                                 <i class="uil uil-lock" style="font-size: 3rem; color: var(--color-gray); margin-bottom: 1rem;"></i>
                                 <h3 style="color: var(--color-dark); margin-bottom: 0.5rem;">Saved posts are private</h3>

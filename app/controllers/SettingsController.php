@@ -265,6 +265,72 @@ class SettingsController {
             echo json_encode(['success' => false, 'message' => 'Error: ' . $e->getMessage()]);
         }
     }
+
+    public function deleteAccount() {
+        if (session_status() === PHP_SESSION_NONE) {
+            session_start();
+        }
+
+        header('Content-Type: application/json');
+
+        if (!isset($_SESSION['user_id'])) {
+            echo json_encode(['success' => false, 'message' => 'Not authenticated']);
+            exit();
+        }
+
+        $userId = (int)$_SESSION['user_id'];
+        $currentPassword = $_POST['current_password'] ?? '';
+        $confirmText = strtoupper(trim($_POST['confirm_text'] ?? ''));
+
+        if ($currentPassword === '') {
+            echo json_encode(['success' => false, 'message' => 'Current password is required']);
+            exit();
+        }
+
+        if ($confirmText !== 'DELETE') {
+            echo json_encode(['success' => false, 'message' => 'Please type DELETE to confirm']);
+            exit();
+        }
+
+        $user = $this->userModel->findById($userId);
+        if (!$user || !password_verify($currentPassword, $user['password_hash'])) {
+            echo json_encode(['success' => false, 'message' => 'Current password is incorrect']);
+            exit();
+        }
+
+        try {
+            $deleted = $this->userModel->delete($userId);
+            if (!$deleted) {
+                echo json_encode(['success' => false, 'message' => 'Failed to delete account']);
+                exit();
+            }
+
+            $_SESSION = [];
+
+            if (ini_get('session.use_cookies')) {
+                $params = session_get_cookie_params();
+                setcookie(
+                    session_name(),
+                    '',
+                    time() - 42000,
+                    $params['path'],
+                    $params['domain'],
+                    $params['secure'],
+                    $params['httponly']
+                );
+            }
+
+            session_destroy();
+
+            echo json_encode([
+                'success' => true,
+                'message' => 'Account deleted successfully',
+                'redirect' => BASE_PATH . 'index.php?controller=Login&action=index'
+            ]);
+        } catch (Exception $e) {
+            echo json_encode(['success' => false, 'message' => 'Error: ' . $e->getMessage()]);
+        }
+    }
     
     public function getBlockedUsers() {
         if (session_status() === PHP_SESSION_NONE) {
