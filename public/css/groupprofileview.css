@@ -147,7 +147,6 @@
   margin-top: 1.5rem;
   margin-bottom: 0;
   padding: 0;
-  align-items: start;
 }
 
 .profile-meta .detail-item {
@@ -157,6 +156,7 @@
   padding: 0;
   background: none;
   border-radius: 0;
+  align-items: center;
 }
 
 .profile-meta .detail-item:hover {
@@ -605,11 +605,10 @@
   gap: 14px;
 }
 
-.about-card h3,
-.about-card h4 {
+.about-card h3 {
   margin: 0;
   color: var(--color-primary);
-  font-size: 18px;
+  font-size: 1rem;
   font-weight: 700;
 }
 
@@ -646,7 +645,7 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-size: 18px;
+  font-size: 0.8rem;
 }
 
 .about-detail-list li span {

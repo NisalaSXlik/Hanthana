@@ -388,8 +388,12 @@ import { api } from "./utils/api.js";
                 await api('Bin', 'updateBin', { bin_id: binId, group_id: groupId, name });
                 notify('Bin updated successfully.', 'success');
             } else {
-                await api('Bin', 'createBin', { group_id: groupId, name });
-                notify('Bin created successfully.', 'success');
+                const result = await api('Bin', 'createBin', { group_id: groupId, name });
+                if (result && result.queued) {
+                    notify(result.message || 'Bin request submitted for admin approval.', 'success');
+                } else {
+                    notify(result.message || 'Bin created successfully.', 'success');
+                }
             }
 
             closeModal('createBinModal');
@@ -431,8 +435,12 @@ import { api } from "./utils/api.js";
                 await api('Bin', 'editMedia', payload);
                 notify('File updated successfully.', 'success');
             } else {
-                await api('Bin', 'addMedia', payload);
-                notify('File added successfully.', 'success');
+                const result = await api('Bin', 'addMedia', payload);
+                if (result && result.queued) {
+                    notify(result.message || 'File request submitted for admin approval.', 'success');
+                } else {
+                    notify(result.message || 'File added successfully.', 'success');
+                }
             }
 
             closeModal('fileModal');

@@ -30,10 +30,10 @@ class GroupSettingsController extends BaseController
 
         $currentUserId = (int)$_SESSION['user_id'];
         $currentUser = $this->userModel->findById($currentUserId);
-        $isCreator = (int)($group['created_by'] ?? 0) === $currentUserId;
-        $isGroupAdmin = $this->groupModel->isGroupAdmin($groupId, $currentUserId);
-        $isAdmin = $isCreator || $isGroupAdmin;
+        $isAdmin = $this->groupModel->isGroupAdmin($groupId, $currentUserId);
         $canModerateFileBank = $isAdmin;
+        $membershipState = $this->groupModel->getUserMembershipState($groupId, $currentUserId);
+        $isJoined = ($membershipState === 'active');
 
         if (!$isAdmin) {
             header('Location: ' . rtrim(BASE_PATH, '/') . '/index.php?controller=Group&action=index&group_id=' . $groupId);
