@@ -40,6 +40,15 @@
             type: '',
             previewUrl: null,
         },
+        pendingDelete: null,
+        mediaCollections: {
+            files: [],
+            photos: [],
+            videos: [],
+            documents: [],
+        },
+        mediaSearchTerm: '',
+        mediaDetailSection: null,
     };
 
     const refs = {
@@ -95,6 +104,36 @@
         ].filter(Boolean),
         attachmentPreview: document.getElementById('chat-attachment-preview'),
         attachmentPreviewMax: document.getElementById('chat-attachment-preview-max'),
+        deleteConfirmModal: document.getElementById('chatDeleteConfirmModal'),
+        deleteConfirmText: document.getElementById('chatDeleteConfirmText'),
+        deleteConfirmBtn: document.getElementById('chatConfirmDeleteBtn'),
+        deleteCancelBtn: document.getElementById('chatCancelDeleteBtn'),
+        mediaSubtitle: document.getElementById('media-subtitle'),
+        mediaEmptyState: document.getElementById('media-empty-state'),
+        mediaContentWrapper: document.getElementById('media-content-wrapper'),
+        mediaTabButtons: Array.from(document.querySelectorAll('.chat-media-tab')),
+        mediaAboutPanel: document.getElementById('media-about-panel'),
+        mediaMainPanel: document.getElementById('media-main-panel'),
+        mediaGrid: document.getElementById('media-grid'),
+        mediaPhotosRow: document.getElementById('media-photos-row'),
+        mediaVideosRow: document.getElementById('media-videos-row'),
+        mediaDocumentsRow: document.getElementById('media-documents-row'),
+        mediaOpenAllButtons: Array.from(document.querySelectorAll('.media-open-all')),
+        mediaSearchInput: document.getElementById('mediaSearch'),
+        mediaSearchClear: document.getElementById('mediaSearchClear'),
+        mediaDetailView: document.getElementById('media-detail-view'),
+        mediaDetailTitle: document.getElementById('media-detail-title'),
+        mediaDetailList: document.getElementById('media-detail-list'),
+        mediaDetailEmpty: document.getElementById('media-detail-empty'),
+        mediaDetailBackBtn: document.getElementById('mediaDetailBackBtn'),
+        aboutCard: document.getElementById('chat-about-card'),
+        aboutCoverImg: document.getElementById('chat-about-cover-img'),
+        aboutAvatarImg: document.getElementById('chat-about-avatar-img'),
+        aboutName: document.getElementById('chat-about-name'),
+        aboutTag: document.getElementById('chat-about-tag'),
+        aboutCount: document.getElementById('chat-about-count'),
+        aboutProfileBtn: document.getElementById('chat-about-profile-btn'),
+        aboutReportBtn: document.getElementById('chat-about-report-btn'),
     };
 
     const api = {
@@ -142,36 +181,43 @@
             const params = new URLSearchParams({ conversation_id: conversationId });
             return request(`index.php?controller=Chat&action=fetchSharedMedia&${params.toString()}`);
         },
-        async fetchFileStructure(conversationId, folderId) {
-            const params = new URLSearchParams({ conversation_id: conversationId, folder_id: folderId });
-            return request(`index.php?controller=Chat&action=fetchFileStructure&${params.toString()}`);
-        },
-        async createFolder(conversationId, parentFolderId, folderName) {
-            return request('index.php?controller=Chat&action=createFolder', {
+        async deleteMessage(messageId) {
+            return request('index.php?controller=Chat&action=deleteMessage', {
                 method: 'POST',
-                body: JSON.stringify({ conversation_id: conversationId, parent_folder_id: parentFolderId, folder_name: folderName }),
-            });
-        },
-        async uploadFile(formData) {
-            return request('index.php?controller=Chat&action=uploadFile', {
-                method: 'POST',
-                body: formData,
-                headers: {},
-            });
-        },
-        async deleteFolder(folderId) {
-            return request('index.php?controller=Chat&action=deleteFolder', {
-                method: 'POST',
-                body: JSON.stringify({ folder_id: folderId }),
-            });
-        },
-        async deleteFile(fileId) {
-            return request('index.php?controller=Chat&action=deleteFile', {
-                method: 'POST',
-                body: JSON.stringify({ file_id: fileId }),
+                body: JSON.stringify({ message_id: messageId }),
             });
         },
     };
+
+    function openDeleteConfirm(message) {
+        state.pendingDelete = message;
+        if (!refs.deleteConfirmModal) {
+            return;
+        }
+
+        const senderName = message?.is_own ? 'your message' : `message by ${message?.sender_name || 'this user'}`;
+        if (refs.deleteConfirmText) {
+            refs.deleteConfirmText.textContent = `Delete ${senderName}? This cannot be undone.`;
+        }
+
+        refs.deleteConfirmModal.classList.add('active');
+    }
+
+    function closeDeleteConfirm() {
+        if (refs.deleteConfirmModal) {
+            refs.deleteConfirmModal.classList.remove('active');
+        }
+        state.pendingDelete = null;
+    }
+
+    function removeMessageFromViews(messageId) {
+        if (!messageId) {
+            return;
+        }
+        document.querySelectorAll(`.message[data-message-id="${messageId}"]`).forEach((messageEl) => {
+            messageEl.remove();
+        });
+    }
 
     function normalizeBaseUrl(base) {
         if (!base.endsWith('/')) {
@@ -1082,6 +1128,9 @@
     function appendMessageBubble(container, message) {
         const bubble = document.createElement('div');
         bubble.className = 'message';
+        if (message.message_id) {
+            bubble.dataset.messageId = String(message.message_id);
+        }
         if (message.is_own) {
             bubble.classList.add('own');
         }
@@ -1103,12 +1152,17 @@
         const content = document.createElement('div');
         content.className = 'message-content';
 
+        const senderRow = document.createElement('div');
+        senderRow.className = 'message-sender-row';
+
         const sender = document.createElement('div');
         sender.className = 'message-sender';
         sender.textContent = message.is_own
             ? 'You'
             : (message.sender_name || 'Unknown');
-        content.appendChild(sender);
+        senderRow.appendChild(sender);
+        senderRow.appendChild(buildMessageActionsMenu(bubble, message));
+        content.appendChild(senderRow);
 
         if (message.content) {
             const text = document.createElement('div');
@@ -1131,6 +1185,80 @@
         bubble.appendChild(content);
 
         container.appendChild(bubble);
+    }
+
+    function closeAllMessageActionMenus() {
+        document.querySelectorAll('.message-actions.is-open').forEach((menu) => {
+            menu.classList.remove('is-open');
+        });
+    }
+
+    function buildMessageActionsMenu(messageBubble, message) {
+        const wrapper = document.createElement('div');
+        wrapper.className = 'message-actions';
+
+        const toggleButton = document.createElement('button');
+        toggleButton.type = 'button';
+        toggleButton.className = 'message-actions-toggle';
+        toggleButton.setAttribute('aria-label', 'Open message actions');
+        toggleButton.innerHTML = '<i class="uil uil-angle-down"></i>';
+
+        const menu = document.createElement('div');
+        menu.className = 'message-actions-menu';
+
+        const deleteButton = document.createElement('button');
+        deleteButton.type = 'button';
+        deleteButton.className = 'message-action-item danger';
+        deleteButton.innerHTML = '<i class="uil uil-trash-alt"></i><span>Delete</span>';
+
+        const reportButton = document.createElement('button');
+        reportButton.type = 'button';
+        reportButton.className = 'message-action-item';
+        reportButton.innerHTML = '<i class="uil uil-info-circle"></i><span>Report</span>';
+
+        const messageId = Number(message?.message_id || 0);
+        const senderName = message?.is_own ? 'you' : (message?.sender_name || 'user');
+        if (messageId > 0) {
+            reportButton.setAttribute('data-report-type', 'message');
+            reportButton.setAttribute('data-target-id', String(messageId));
+            reportButton.setAttribute('data-target-label', `message by ${senderName}`);
+        } else {
+            reportButton.disabled = true;
+            reportButton.title = 'Message id unavailable';
+        }
+
+        menu.appendChild(deleteButton);
+        menu.appendChild(reportButton);
+        wrapper.appendChild(toggleButton);
+        wrapper.appendChild(menu);
+
+        toggleButton.addEventListener('click', (event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            const open = !wrapper.classList.contains('is-open');
+            closeAllMessageActionMenus();
+            if (open) {
+                wrapper.classList.add('is-open');
+            }
+        });
+
+        deleteButton.addEventListener('click', (event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            wrapper.classList.remove('is-open');
+
+            openDeleteConfirm({
+                message_id: messageId,
+                sender_name: message?.sender_name || 'user',
+                is_own: Boolean(message?.is_own),
+            });
+        });
+
+        reportButton.addEventListener('click', (event) => {
+            wrapper.classList.remove('is-open');
+        });
+
+        return wrapper;
     }
 
     function buildMessageAttachment(message) {
@@ -1277,7 +1405,62 @@
         // await api.deleteConversation(conversationId);
     }
 
+    function switchMediaTab(tabName) {
+        const activeTab = tabName === 'about' ? 'about' : 'media';
+
+        refs.mediaTabButtons.forEach((button) => {
+            button.classList.toggle('active', button.dataset.tab === activeTab);
+        });
+
+        if (refs.mediaAboutPanel) {
+            refs.mediaAboutPanel.classList.toggle('active', activeTab === 'about');
+        }
+        if (refs.mediaMainPanel) {
+            refs.mediaMainPanel.classList.toggle('active', activeTab === 'media');
+        }
+    }
+
     function attachEventListeners() {
+        document.addEventListener('click', () => {
+            closeAllMessageActionMenus();
+        });
+
+        refs.deleteCancelBtn?.addEventListener('click', (event) => {
+            event.preventDefault();
+            closeDeleteConfirm();
+        });
+
+        refs.deleteConfirmModal?.addEventListener('click', (event) => {
+            if (event.target === refs.deleteConfirmModal) {
+                closeDeleteConfirm();
+            }
+        });
+
+        refs.deleteConfirmBtn?.addEventListener('click', async (event) => {
+            event.preventDefault();
+            const pending = state.pendingDelete;
+            const messageId = Number(pending?.message_id || 0);
+            if (messageId <= 0) {
+                closeDeleteConfirm();
+                return;
+            }
+
+            refs.deleteConfirmBtn.disabled = true;
+            refs.deleteConfirmBtn.textContent = 'Deleting...';
+
+            try {
+                await api.deleteMessage(messageId);
+                removeMessageFromViews(messageId);
+                closeDeleteConfirm();
+                fetchConversations();
+            } catch (error) {
+                alert(error.message || 'Failed to delete message.');
+            } finally {
+                refs.deleteConfirmBtn.disabled = false;
+                refs.deleteConfirmBtn.textContent = 'Delete';
+            }
+        });
+
         refs.icon?.addEventListener('click', openChat);
         refs.overlay?.addEventListener('click', closeChat);
         refs.closeBtns.forEach((btn) => btn.addEventListener('click', closeChat));
@@ -1295,7 +1478,7 @@
             syncViewsWithState();
         });
         refs.maximizeBtns.forEach((btn) => btn.addEventListener('click', () => setMaximized(true)));
-        refs.minimizeBtn?.addEventListener('click', () => setMaximized(false));
+        refs.minimizeBtns.forEach((btn) => btn.addEventListener('click', () => setMaximized(false)));
         refs.sendBtn?.addEventListener('click', () => handleSendMessage(false));
         refs.sendBtnMax?.addEventListener('click', () => handleSendMessage(true));
         refs.messageInput?.addEventListener('input', (event) => autosize(event.target));
@@ -1334,163 +1517,361 @@
         if (refs.searchResults) {
             document.addEventListener('click', handleSearchOutsideClick);
         }
+
+        refs.mediaTabButtons.forEach((button) => {
+            button.addEventListener('click', () => {
+                switchMediaTab(button.dataset.tab || 'media');
+            });
+        });
+
+        refs.mediaOpenAllButtons.forEach((button) => {
+            button.addEventListener('click', () => openMediaDetailView(button.dataset.section || 'photos'));
+        });
+
+        refs.mediaDetailBackBtn?.addEventListener('click', () => {
+            state.mediaDetailSection = null;
+            renderMediaCollections();
+        });
+
+        refs.mediaSearchInput?.addEventListener('input', (event) => {
+            state.mediaSearchTerm = (event.target.value || '').trim().toLowerCase();
+            renderMediaCollections();
+        });
+
+        refs.mediaSearchClear?.addEventListener('click', (event) => {
+            event.preventDefault();
+            state.mediaSearchTerm = '';
+            if (refs.mediaSearchInput) {
+                refs.mediaSearchInput.value = '';
+            }
+            renderMediaCollections();
+        });
     }
     
     async function loadSharedMedia(conversationId) {
-        const mediaEmptyState = document.getElementById('media-empty-state');
-        const mediaContentWrapper = document.getElementById('media-content-wrapper');
-        const mediaSubtitle = document.getElementById('media-subtitle');
-        
         if (!conversationId) {
-            if (mediaEmptyState) mediaEmptyState.style.display = 'flex';
-            if (mediaContentWrapper) mediaContentWrapper.style.display = 'none';
-            if (mediaSubtitle) mediaSubtitle.textContent = 'Select a chat to view shared files';
+            state.mediaCollections = { files: [], photos: [], videos: [], documents: [] };
+            state.mediaDetailSection = null;
+            renderAboutCard(null);
+            switchMediaTab('media');
+            if (refs.mediaSubtitle) {
+                refs.mediaSubtitle.textContent = 'Select a chat to view shared files';
+            }
+            if (refs.mediaEmptyState) {
+                refs.mediaEmptyState.style.display = 'flex';
+            }
+            if (refs.mediaContentWrapper) {
+                refs.mediaContentWrapper.style.display = 'none';
+            }
             return;
         }
 
         try {
             const conversation = state.conversationMap.get(conversationId);
             const conversationName = conversation ? conversation.display_name : 'this chat';
-            
-            if (mediaSubtitle) mediaSubtitle.textContent = `Shared in ${conversationName}`;
-            if (mediaEmptyState) mediaEmptyState.style.display = 'none';
-            if (mediaContentWrapper) mediaContentWrapper.style.display = 'block';
+
+            if (refs.mediaSubtitle) {
+                refs.mediaSubtitle.textContent = `Shared in ${conversationName}`;
+            }
+            if (refs.mediaEmptyState) {
+                refs.mediaEmptyState.style.display = 'none';
+            }
+            if (refs.mediaContentWrapper) {
+                refs.mediaContentWrapper.style.display = 'block';
+            }
 
             const media = await api.fetchSharedMedia(conversationId);
-            renderSharedMedia(media);
+            const normalized = normalizeMediaPayload(media);
+            state.mediaCollections = normalized;
+            state.mediaDetailSection = null;
+            switchMediaTab('media');
+            renderAboutCard(media?.about || null);
+            renderMediaCollections();
         } catch (error) {
             console.error('Failed to load shared media:', error);
-            if (mediaEmptyState) mediaEmptyState.style.display = 'flex';
-            if (mediaContentWrapper) mediaContentWrapper.style.display = 'none';
+            if (refs.mediaEmptyState) {
+                refs.mediaEmptyState.style.display = 'flex';
+            }
+            if (refs.mediaContentWrapper) {
+                refs.mediaContentWrapper.style.display = 'none';
+            }
         }
     }
 
-    function renderSharedMedia(media) {
-        const photosContainer = document.getElementById('media-photos');
-        const videosContainer = document.getElementById('media-videos');
-        const documentsContainer = document.getElementById('media-documents');
+    function normalizeMediaPayload(media) {
+        const files = Array.isArray(media?.files) ? media.files : [];
+        const photos = Array.isArray(media?.photos) ? media.photos : [];
+        const videos = Array.isArray(media?.videos) ? media.videos : [];
+        const documents = Array.isArray(media?.documents) ? media.documents : [];
 
-        // Calculate total storage used
-        let totalBytes = 0;
-        const allItems = [...(media.photos || []), ...(media.videos || []), ...(media.documents || [])];
-        allItems.forEach(item => {
-            totalBytes += parseInt(item.file_size || 0);
+        return {
+            files,
+            photos,
+            videos,
+            documents,
+        };
+    }
+
+    function renderAboutCard(about) {
+        if (!refs.aboutCard) {
+            return;
+        }
+
+        if (!about || !about.type || about.type === 'unknown') {
+            refs.aboutCard.style.display = 'none';
+            if (refs.aboutReportBtn) {
+                refs.aboutReportBtn.hidden = true;
+            }
+            return;
+        }
+
+        refs.aboutCard.style.display = 'block';
+
+        const fallbackAvatar = buildUrl('uploads/user_dp/default.png');
+        const fallbackCover = buildUrl('images/default_cover.png');
+        const avatar = about.avatar ? buildUrl(about.avatar) : fallbackAvatar;
+        const cover = about.cover_image ? buildUrl(about.cover_image) : fallbackCover;
+
+        if (refs.aboutAvatarImg) {
+            refs.aboutAvatarImg.src = avatar;
+            refs.aboutAvatarImg.alt = about.name || 'Conversation avatar';
+        }
+
+        if (refs.aboutCoverImg) {
+            refs.aboutCoverImg.src = cover;
+            refs.aboutCoverImg.alt = about.name || 'Conversation cover';
+        }
+
+        if (refs.aboutName) {
+            refs.aboutName.textContent = about.name || 'Conversation';
+        }
+
+        if (refs.aboutTag) {
+            if (about.type === 'group' && about.group_tag) {
+                refs.aboutTag.textContent = `#${about.group_tag}`;
+                refs.aboutTag.hidden = false;
+            } else {
+                refs.aboutTag.hidden = true;
+            }
+        }
+
+        if (refs.aboutCount) {
+            if (about.type === 'group' && Number.isFinite(Number(about.member_count))) {
+                refs.aboutCount.textContent = `${Number(about.member_count)} members`;
+                refs.aboutCount.hidden = false;
+            } else if (about.type === 'direct' && Number.isFinite(Number(about.friend_count))) {
+                refs.aboutCount.textContent = `${Number(about.friend_count)} friends`;
+                refs.aboutCount.hidden = false;
+            } else {
+                refs.aboutCount.hidden = true;
+            }
+        }
+
+        if (refs.aboutProfileBtn) {
+            if (about.type === 'group' && Number(about.group_id) > 0) {
+                refs.aboutProfileBtn.href = buildUrl(`index.php?controller=Group&action=index&group_id=${Number(about.group_id)}`);
+            } else if (about.type === 'direct' && Number(about.profile_user_id) > 0) {
+                refs.aboutProfileBtn.href = buildUrl(`index.php?controller=Profile&action=view&user_id=${Number(about.profile_user_id)}`);
+            } else {
+                refs.aboutProfileBtn.href = '#';
+            }
+        }
+
+        if (refs.aboutReportBtn) {
+            refs.aboutReportBtn.hidden = false;
+            refs.aboutReportBtn.removeAttribute('data-report-type');
+            refs.aboutReportBtn.removeAttribute('data-target-id');
+            refs.aboutReportBtn.removeAttribute('data-target-label');
+
+            if (about.type === 'group' && Number(about.channel_id) > 0) {
+                refs.aboutReportBtn.setAttribute('data-report-type', 'channel');
+                refs.aboutReportBtn.setAttribute('data-target-id', String(Number(about.channel_id)));
+                refs.aboutReportBtn.setAttribute('data-target-label', `channel ${about.name || 'channel'}`);
+            } else if (about.type === 'direct' && Number(about.profile_user_id) > 0) {
+                refs.aboutReportBtn.setAttribute('data-report-type', 'user');
+                refs.aboutReportBtn.setAttribute('data-target-id', String(Number(about.profile_user_id)));
+                refs.aboutReportBtn.setAttribute('data-target-label', `user ${about.name || 'user'}`);
+            } else {
+                refs.aboutReportBtn.hidden = true;
+            }
+        }
+    }
+
+    function renderMediaCollections() {
+        if (!refs.mediaGrid || !refs.mediaDetailView) {
+            return;
+        }
+
+        if (state.mediaDetailSection) {
+            refs.mediaGrid.style.display = 'none';
+            refs.mediaDetailView.style.display = 'block';
+            renderMediaDetail(state.mediaDetailSection);
+            return;
+        }
+
+        refs.mediaGrid.style.display = 'block';
+        refs.mediaDetailView.style.display = 'none';
+
+        renderMediaStrip(refs.mediaPhotosRow, filterMediaItems(state.mediaCollections.photos), 'photos');
+        renderMediaStrip(refs.mediaVideosRow, filterMediaItems(state.mediaCollections.videos), 'videos');
+        renderMediaStrip(refs.mediaDocumentsRow, filterMediaItems(state.mediaCollections.documents), 'documents');
+    }
+
+    function filterMediaItems(items) {
+        if (!state.mediaSearchTerm) {
+            return items;
+        }
+        return items.filter((item) => {
+            const name = (item.file_name || '').toLowerCase();
+            return name.includes(state.mediaSearchTerm);
         });
-
-        if (photosContainer) {
-            clearElement(photosContainer);
-            const photos = (media.photos || []);
-            if (photos.length > 0) {
-                photos.forEach(item => {
-                    const div = document.createElement('div');
-                    div.className = 'media-item';
-                    div.innerHTML = `
-                        <img src="${buildUrl(item.file_url)}" alt="${escapeHtml(item.file_name || 'Photo')}" loading="lazy">
-                        <div class="media-item-overlay">
-                            <a href="${buildUrl(item.file_url)}" target="_blank" class="media-item-action" title="View">
-                                <i class="uil uil-eye"></i>
-                            </a>
-                        </div>
-                    `;
-                    photosContainer.appendChild(div);
-                });
-            } else {
-                photosContainer.innerHTML = '<p class="empty-media">No photos shared yet</p>';
-            }
-        }
-
-        if (videosContainer) {
-            clearElement(videosContainer);
-            const videos = (media.videos || []);
-            if (videos.length > 0) {
-                videos.forEach(item => {
-                    const div = document.createElement('div');
-                    div.className = 'media-item';
-                    div.innerHTML = `
-                        <video src="${buildUrl(item.file_url)}" controls></video>
-                        <div class="media-item-overlay">
-                            <a href="${buildUrl(item.file_url)}" target="_blank" class="media-item-action" title="View">
-                                <i class="uil uil-play"></i>
-                            </a>
-                        </div>
-                    `;
-                    videosContainer.appendChild(div);
-                });
-            } else {
-                videosContainer.innerHTML = '<p class="empty-media">No videos shared yet</p>';
-            }
-        }
-
-        if (documentsContainer) {
-            clearElement(documentsContainer);
-            const documents = (media.documents || []);
-            if (documents.length > 0) {
-                documents.forEach(item => {
-                    const div = document.createElement('div');
-                    div.className = 'document-item';
-                    const fileExt = (item.file_name || '').split('.').pop().toUpperCase();
-                    const fileSize = formatFileSize(item.file_size || 0);
-                    div.innerHTML = `
-                        <div class="document-icon">
-                            <i class="uil uil-file-alt"></i>
-                            <span class="file-type">${fileExt}</span>
-                        </div>
-                        <div class="document-info">
-                            <div class="document-name">${escapeHtml(item.file_name || 'Document')}</div>
-                            <div class="document-meta">${fileSize}</div>
-                        </div>
-                        <a href="${buildUrl(item.file_url)}" target="_blank" class="btn btn-sm" download>
-                            <i class="uil uil-download-alt"></i>
-                        </a>
-                    `;
-                    documentsContainer.appendChild(div);
-                });
-            } else {
-                documentsContainer.innerHTML = '<p class="empty-media">No documents shared yet</p>';
-            }
-        }
-
-        // Update storage bar
-        updateStorageBar(totalBytes);
     }
 
-    function updateStorageBar(usedBytes) {
-        const maxBytes = 500 * 1024 * 1024; // 500 MB
-        const percentage = Math.min((usedBytes / maxBytes) * 100, 100);
-        
-        const usageFill = document.querySelector('.usage-fill');
-        const usageText = document.querySelector('.usage-text span:first-child');
-        const usagePercentage = document.querySelector('.usage-percentage');
+    function renderMediaStrip(container, items, sectionType) {
+        if (!container) {
+            return;
+        }
+        clearElement(container);
 
-        if (usageFill) {
-            usageFill.style.width = percentage + '%';
+        if (!items.length) {
+            const empty = document.createElement('p');
+            empty.className = 'empty-media';
+            empty.textContent = 'No items yet';
+            container.appendChild(empty);
+            return;
         }
 
-        if (usageText) {
-            const usedMB = (usedBytes / (1024 * 1024)).toFixed(2);
-            usageText.textContent = `${usedMB} MB used of 500 MB`;
+        const previewItems = items.slice(0, 4);
+        previewItems.forEach((item, index) => {
+            const card = buildMediaCard(item, sectionType);
+            card.classList.add('media-row-item');
+            if (index === 3) {
+                card.classList.add('peek-item');
+            }
+            container.appendChild(card);
+        });
+    }
+
+    function openMediaDetailView(sectionType) {
+        state.mediaDetailSection = sectionType;
+        renderMediaCollections();
+    }
+
+    function renderMediaDetail(sectionType) {
+        const sectionMap = {
+            photos: { title: 'All Photos', items: filterMediaItems(state.mediaCollections.photos) },
+            videos: { title: 'All Videos', items: filterMediaItems(state.mediaCollections.videos) },
+            documents: { title: 'All Documents', items: filterMediaItems(state.mediaCollections.documents) },
+        };
+
+        const selected = sectionMap[sectionType] || sectionMap.photos;
+
+        if (refs.mediaDetailTitle) {
+            refs.mediaDetailTitle.textContent = selected.title;
         }
 
-        if (usagePercentage) {
-            usagePercentage.textContent = percentage.toFixed(1) + '%';
+        if (!refs.mediaDetailList) {
+            return;
         }
+
+        clearElement(refs.mediaDetailList);
+
+        if (!selected.items.length) {
+            if (refs.mediaDetailEmpty) {
+                refs.mediaDetailEmpty.hidden = false;
+            }
+            return;
+        }
+
+        if (refs.mediaDetailEmpty) {
+            refs.mediaDetailEmpty.hidden = true;
+        }
+
+        selected.items.forEach((item) => {
+            const detailItem = buildMediaCard(item, sectionType);
+            detailItem.classList.add('media-detail-item');
+            refs.mediaDetailList.appendChild(detailItem);
+        });
+    }
+
+    function buildMediaCard(item, sectionType) {
+        const card = document.createElement('a');
+        card.className = 'media-card';
+        card.href = buildUrl(item.file_url || '');
+        card.target = '_blank';
+        card.rel = 'noopener noreferrer';
+
+        if (sectionType === 'photos' || item.message_type === 'image') {
+            const img = document.createElement('img');
+            img.src = buildUrl(item.file_url || '');
+            img.alt = item.file_name || 'Photo';
+            img.loading = 'lazy';
+            card.appendChild(img);
+            return card;
+        }
+
+        if (sectionType === 'videos' || item.message_type === 'video') {
+            const video = document.createElement('video');
+            video.src = buildUrl(item.file_url || '');
+            video.muted = true;
+            video.playsInline = true;
+            card.appendChild(video);
+            return card;
+        }
+
+        const doc = document.createElement('div');
+        doc.className = 'media-doc-card';
+        doc.innerHTML = `
+            <div class="media-doc-icon ${resolveDocClass(item.file_name || '')}">
+                <i class="uil uil-file-alt"></i>
+            </div>
+            <div class="media-doc-info">
+                <div class="media-doc-name">${escapeHtml(item.file_name || 'Document')}</div>
+                <div class="media-doc-meta">${formatFileSize(Number(item.file_size || 0))}</div>
+            </div>
+        `;
+        card.appendChild(doc);
+        return card;
+    }
+
+    function resolveDocClass(fileName) {
+        const ext = String(fileName).split('.').pop()?.toLowerCase() || '';
+        if (['pdf'].includes(ext)) {
+            return 'doc-pdf';
+        }
+        if (['doc', 'docx', 'txt', 'rtf'].includes(ext)) {
+            return 'doc-text';
+        }
+        if (['xls', 'xlsx', 'csv'].includes(ext)) {
+            return 'doc-sheet';
+        }
+        if (['ppt', 'pptx'].includes(ext)) {
+            return 'doc-slide';
+        }
+        if (['zip', 'rar', '7z'].includes(ext)) {
+            return 'doc-archive';
+        }
+        return 'doc-default';
     }
 
     function updateMediaSidebarState() {
-        const mediaEmptyState = document.getElementById('media-empty-state');
-        const mediaContentWrapper = document.getElementById('media-content-wrapper');
-        const mediaSubtitle = document.getElementById('media-subtitle');
-
         if (!state.activeConversationId) {
-            // No conversation selected - show empty state
-            if (mediaEmptyState) mediaEmptyState.style.display = 'flex';
-            if (mediaContentWrapper) mediaContentWrapper.style.display = 'none';
-            if (mediaSubtitle) mediaSubtitle.textContent = 'Select a chat to view shared files';
+            if (refs.mediaEmptyState) {
+                refs.mediaEmptyState.style.display = 'flex';
+            }
+            if (refs.mediaContentWrapper) {
+                refs.mediaContentWrapper.style.display = 'none';
+            }
+            if (refs.mediaSubtitle) {
+                refs.mediaSubtitle.textContent = 'Select a chat to view shared files';
+            }
         } else {
-            // Conversation is selected - media should already be loaded by loadSharedMedia
-            // Just ensure the visibility states are correct
-            if (mediaEmptyState) mediaEmptyState.style.display = 'none';
-            if (mediaContentWrapper) mediaContentWrapper.style.display = 'block';
+            if (refs.mediaEmptyState) {
+                refs.mediaEmptyState.style.display = 'none';
+            }
+            if (refs.mediaContentWrapper) {
+                refs.mediaContentWrapper.style.display = 'block';
+            }
         }
     }
 
@@ -1500,325 +1881,9 @@
         return div.innerHTML;
     }
 
-    function formatFileSize(bytes) {
-        if (bytes === 0) return '0 Bytes';
-        const k = 1024;
-        const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-        const i = Math.floor(Math.log(bytes) / Math.log(k));
-        return Math.round((bytes / Math.pow(k, i)) * 100) / 100 + ' ' + sizes[i];
-    }
-
-    // File Management System
-    let currentFolderId = 'root';
-    let currentFolderName = 'All Files';
-    let fileStructure = {};
-    let folderHistory = [];
-    let historyIndex = -1;
-
-    function initFileManagement() {
-        const mediaTabs = document.querySelectorAll('.media-tab');
-        const mediaGrid = document.getElementById('media-grid');
-        const filesContent = document.getElementById('files-content');
-        const createFolderBtn = document.getElementById('createFolderBtn');
-        const uploadFileBtn = document.getElementById('uploadFileBtn');
-        const fileUploadInput = document.getElementById('fileUploadInput');
-        const navBackBtn = document.getElementById('navBackBtn');
-        const navForwardBtn = document.getElementById('navForwardBtn');
-        const navHomeBtn = document.getElementById('navHomeBtn');
-
-        // Tab switching
-        mediaTabs.forEach(tab => {
-            tab.addEventListener('click', () => {
-                mediaTabs.forEach(t => t.classList.remove('active'));
-                tab.classList.add('active');
-                
-                const tabType = tab.dataset.tab;
-                if (tabType === 'media') {
-                    if (mediaGrid) mediaGrid.style.display = 'block';
-                    if (filesContent) filesContent.style.display = 'none';
-                } else if (tabType === 'files') {
-                    if (mediaGrid) mediaGrid.style.display = 'none';
-                    if (filesContent) {
-                        filesContent.style.display = 'flex';
-                        // Reset to root when switching to Files tab
-                        if (folderHistory.length === 0) {
-                            currentFolderId = 'root';
-                            currentFolderName = 'All Files';
-                            folderHistory = [{ id: 'root', name: 'All Files' }];
-                            historyIndex = 0;
-                        }
-                        // Always reload file structure when switching to Files tab
-                        loadFileStructure();
-                    }
-                }
-            });
-        });
-
-        // Navigation buttons
-        if (navBackBtn) {
-            navBackBtn.addEventListener('click', () => navigateBack());
-        }
-
-        if (navForwardBtn) {
-            navForwardBtn.addEventListener('click', () => navigateForward());
-        }
-
-        if (navHomeBtn) {
-            navHomeBtn.addEventListener('click', () => navigateHome());
-        }
-
-        // Create folder
-        if (createFolderBtn) {
-            createFolderBtn.addEventListener('click', () => createFolder());
-        }
-
-        // Upload file
-        if (uploadFileBtn) {
-            uploadFileBtn.addEventListener('click', () => {
-                if (fileUploadInput) fileUploadInput.click();
-            });
-        }
-
-        if (fileUploadInput) {
-            fileUploadInput.addEventListener('change', (e) => {
-                handleFileUpload(e.target.files);
-            });
-        }
-    }
-
-    async function loadFileStructure() {
-        const filesGrid = document.getElementById('filesGrid');
-        const currentFolderPath = document.getElementById('currentFolderPath');
-        
-        if (!state.activeConversationId) {
-            // Show empty state when no conversation selected
-            if (filesGrid) {
-                filesGrid.innerHTML = `
-                    <div class="empty-files">
-                        <i class="uil uil-comments"></i>
-                        <p>Select a conversation to manage shared files</p>
-                    </div>
-                `;
-            }
-            if (currentFolderPath) {
-                currentFolderPath.textContent = 'All Files';
-            }
-            return;
-        }
-
-        try {
-            const data = await api.fetchFileStructure(state.activeConversationId, currentFolderId);
-            fileStructure = data;
-            renderFileStructure();
-            updateNavigationButtons();
-        } catch (error) {
-            console.error('Failed to load file structure:', error);
-            if (filesGrid) {
-                filesGrid.innerHTML = `
-                    <div class="empty-files">
-                        <i class="uil uil-exclamation-triangle"></i>
-                        <p>Failed to load files. Please try again.</p>
-                    </div>
-                `;
-            }
-        }
-    }
-
-    function renderFileStructure() {
-        const filesGrid = document.getElementById('filesGrid');
-        const currentFolderPath = document.getElementById('currentFolderPath');
-        if (!filesGrid) return;
-
-        clearElement(filesGrid);
-
-        const folders = fileStructure.folders || [];
-        const files = fileStructure.files || [];
-
-        // Update current folder name display
-        if (currentFolderPath) {
-            currentFolderPath.textContent = currentFolderName;
-        }
-
-        if (folders.length === 0 && files.length === 0) {
-            filesGrid.innerHTML = `
-                <div class="empty-files">
-                    <i class="uil uil-folder-open"></i>
-                    <p>No files or folders yet. Create a folder or upload files to get started.</p>
-                </div>
-            `;
-            return;
-        }
-
-        // Render folders
-        folders.forEach(folder => {
-            const folderEl = document.createElement('div');
-            folderEl.className = 'folder-item';
-            folderEl.innerHTML = `
-                <div class="item-actions">
-                    <button class="action-icon-btn delete" onclick="deleteFolder(${folder.id})" title="Delete">
-                        <i class="uil uil-trash-alt"></i>
-                    </button>
-                </div>
-                <i class="uil uil-folder folder-icon"></i>
-                <div class="folder-name">${escapeHtml(folder.name)}</div>
-            `;
-            folderEl.addEventListener('click', (e) => {
-                if (!e.target.closest('.item-actions')) {
-                    openFolder(folder.id, folder.name);
-                }
-            });
-            filesGrid.appendChild(folderEl);
-        });
-
-        // Render files
-        files.forEach(file => {
-            const fileEl = document.createElement('div');
-            fileEl.className = 'file-item-card';
-            fileEl.innerHTML = `
-                <div class="item-actions">
-                    <a href="${buildUrl(file.file_url)}" download class="action-icon-btn" title="Download">
-                        <i class="uil uil-download-alt"></i>
-                    </a>
-                    <button class="action-icon-btn delete" onclick="deleteFile(${file.id})" title="Delete">
-                        <i class="uil uil-trash-alt"></i>
-                    </button>
-                </div>
-                <i class="uil uil-file-alt file-icon-large"></i>
-                <div class="file-name-card">${escapeHtml(file.file_name)}</div>
-                <div class="file-size-card">${formatFileSize(file.file_size)}</div>
-            `;
-            filesGrid.appendChild(fileEl);
-        });
-    }
-
-    async function createFolder() {
-        const folderName = prompt('Enter folder name:');
-        if (!folderName || !folderName.trim()) return;
-
-        if (!state.activeConversationId) {
-            alert('Please select a conversation first');
-            return;
-        }
-
-        try {
-            await api.createFolder(state.activeConversationId, currentFolderId, folderName.trim());
-            loadFileStructure();
-        } catch (error) {
-            console.error('Failed to create folder:', error);
-            alert('Failed to create folder');
-        }
-    }
-
-    async function handleFileUpload(files) {
-        if (!files || files.length === 0) return;
-        if (!state.activeConversationId) {
-            alert('Please select a conversation first');
-            return;
-        }
-
-        for (const file of files) {
-            try {
-                const formData = new FormData();
-                formData.append('conversation_id', state.activeConversationId);
-                formData.append('folder_id', currentFolderId);
-                formData.append('file', file);
-
-                await api.uploadFile(formData);
-            } catch (error) {
-                console.error('Failed to upload file:', error);
-                alert(`Failed to upload ${file.name}`);
-            }
-        }
-
-        loadFileStructure();
-        const fileUploadInput = document.getElementById('fileUploadInput');
-        if (fileUploadInput) fileUploadInput.value = '';
-    }
-
-    function openFolder(folderId, folderName = 'Folder') {
-        // Add to history when navigating to a new folder
-        if (historyIndex < folderHistory.length - 1) {
-            // Clear forward history if we're navigating from middle of history
-            folderHistory = folderHistory.slice(0, historyIndex + 1);
-        }
-        folderHistory.push({ id: folderId, name: folderName });
-        historyIndex = folderHistory.length - 1;
-        
-        currentFolderId = folderId;
-        currentFolderName = folderName;
-        loadFileStructure();
-        updateNavigationButtons();
-    }
-
-    function navigateBack() {
-        if (historyIndex > 0) {
-            historyIndex--;
-            const folder = folderHistory[historyIndex];
-            currentFolderId = folder.id;
-            currentFolderName = folder.name;
-            loadFileStructure();
-            updateNavigationButtons();
-        }
-    }
-
-    function navigateForward() {
-        if (historyIndex < folderHistory.length - 1) {
-            historyIndex++;
-            const folder = folderHistory[historyIndex];
-            currentFolderId = folder.id;
-            currentFolderName = folder.name;
-            loadFileStructure();
-            updateNavigationButtons();
-        }
-    }
-
-    function navigateHome() {
-        openFolder('root', 'All Files');
-    }
-
-    function updateNavigationButtons() {
-        const navBackBtn = document.getElementById('navBackBtn');
-        const navForwardBtn = document.getElementById('navForwardBtn');
-        
-        if (navBackBtn) {
-            navBackBtn.disabled = historyIndex <= 0;
-        }
-        if (navForwardBtn) {
-            navForwardBtn.disabled = historyIndex >= folderHistory.length - 1;
-        }
-    }
-
-    async function deleteFolder(folderId) {
-        if (!confirm('Delete this folder and all its contents?')) return;
-
-        try {
-            await api.deleteFolder(folderId);
-            loadFileStructure();
-        } catch (error) {
-            console.error('Failed to delete folder:', error);
-            alert('Failed to delete folder');
-        }
-    }
-
-    async function deleteFile(fileId) {
-        if (!confirm('Delete this file?')) return;
-
-        try {
-            await api.deleteFile(fileId);
-            loadFileStructure();
-        } catch (error) {
-            console.error('Failed to delete file:', error);
-            alert('Failed to delete file');
-        }
-    }
-
-    // Make functions globally accessible for inline onclick handlers
-    window.deleteFolder = deleteFolder;
-    window.deleteFile = deleteFile;
-
     async function initChatWidget() {
         attachEventListeners();
-        initFileManagement();
+        switchMediaTab('media');
         try {
             const data = await api.listConversations();
             const normalized = Array.isArray(data) ? data : [];

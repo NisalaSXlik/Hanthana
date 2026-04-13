@@ -202,7 +202,7 @@ class ChatController {
             $this->errorResponse('Conversation not found', 404);
         }
 
-        $sharedMedia = $this->messageModel->getSharedMedia($conversationId);
+        $sharedMedia = $this->messageModel->getSharedMedia($conversationId, $userId);
         $this->jsonResponse(['data' => $sharedMedia]);
     }
 
@@ -308,6 +308,26 @@ class ChatController {
         }
 
         $this->messageModel->deleteChatFile($fileId, $userId);
+        $this->jsonResponse(['status' => 'ok']);
+    }
+
+    public function deleteMessage(): void {
+        $userId = $this->requireAuth();
+        $this->enforceMethod('POST');
+
+        $payload = $this->getJsonBody();
+        $messageId = isset($payload['message_id']) ? (int)$payload['message_id'] : 0;
+
+        if ($messageId <= 0) {
+            $this->errorResponse('message_id is required', 422);
+        }
+
+        $result = $this->messageModel->deleteMessage($messageId, $userId);
+        if (!$result['success']) {
+            $status = (int)($result['status'] ?? 400);
+            $this->errorResponse((string)($result['message'] ?? 'Unable to delete message'), $status);
+        }
+
         $this->jsonResponse(['status' => 'ok']);
     }
 

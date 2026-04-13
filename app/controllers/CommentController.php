@@ -104,7 +104,7 @@ class CommentController {
             // Check if comment was added (lastInsertId returns string, so check if it's not false and not empty)
             if ($commentId !== false && $commentId !== null) {
                 $count = $this->commentModel->getCommentCount($postId);
-                $this->notifyAboutNewComment($postId, (int)$_SESSION['user_id']);
+                $this->notifyAboutNewComment($postId, (int)$_SESSION['user_id'], $parentId);
                 
                 // Get user's profile picture
                 $profilePicture = $this->commentModel->getUserProfilePicture($_SESSION['user_id']);
@@ -180,24 +180,41 @@ class CommentController {
         }
     }
 
-    private function notifyAboutNewComment(int $postId, int $commenterId): void {
+    private function notifyAboutNewComment(int $postId, int $commenterId, ?int $parentCommentId = null): void {
         $postOwnerId = $this->commentModel->getPostOwnerId($postId);
-        if (!$postOwnerId || $postOwnerId === $commenterId) {
-            return;
+        $commenterName = $this->getCurrentUserDisplayName();
+        $actionUrl = $this->buildPostActionUrl($postId, true);
+
+        if ($postOwnerId && $postOwnerId !== $commenterId) {
+            $this->notificationsModel->createNotification(
+                $postOwnerId,
+                $commenterId,
+                'post_comment',
+                'New comment on your post',
+                $commenterName . ' commented on your post.',
+                $actionUrl,
+                'medium',
+                $postId,
+                'post'
+            );
         }
 
-        $commenterName = $this->getCurrentUserDisplayName();
-        $message = $commenterName . ' commented on your post.';
-        $actionUrl = $this->buildPostActionUrl($postId, true);
-        $this->notificationsModel->createNotification(
-            $postOwnerId,
-            $commenterId,
-            'post_comment',
-            'New comment on your post',
-            $message,
-            $actionUrl,
-            'medium'
-        );
+        if ($parentCommentId && $parentCommentId > 0) {
+            $parentAuthorId = $this->commentModel->getCommentAuthorId($parentCommentId);
+            if ($parentAuthorId && $parentAuthorId !== $commenterId) {
+                $this->notificationsModel->createNotification(
+                    $parentAuthorId,
+                    $commenterId,
+                    'post_comment',
+                    'New reply to your comment',
+                    $commenterName . ' replied to your comment.',
+                    $actionUrl,
+                    'medium',
+                    $parentCommentId,
+                    'comment'
+                );
+            }
+        }
     }
 
     private function getCurrentUserDisplayName(): string {

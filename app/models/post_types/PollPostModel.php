@@ -8,12 +8,12 @@ class PollPostModel extends BaseGroupPostModel {
     }
 
     public function create(int $userId, int $groupId, array $data): ?int {
-        $content = trim($data['content'] ?? '');
+        $form = $data['request'] ?? [];
+        $content = trim($data['content'] ?? ($form['poll_question'] ?? ''));
         if ($content === '') {
             return null;
         }
 
-        $form = $data['request'] ?? [];
         $options = [];
         for ($i = 1; $i <= 4; $i++) {
             $label = trim($form['poll_option_' . $i] ?? '');

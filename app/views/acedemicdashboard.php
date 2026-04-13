@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/../../config/config.php';
+require_once __DIR__ . '/../models/UserModel.php';
 
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
@@ -9,6 +10,10 @@ if (!isset($_SESSION['user_id'])) {
     header('Location: ' . BASE_PATH . 'index.php?controller=Login&action=index');
     exit();
 }
+
+$currentUserId = (int)$_SESSION['user_id'];
+$userModel = new UserModel();
+$currentUser = $userModel->findById($currentUserId);
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -23,6 +28,7 @@ if (!isset($_SESSION['user_id'])) {
     <link rel="stylesheet" href="./css/calender.css?v=20250209_zindex">
     <link rel="stylesheet" href="./css/post.css">
     <link rel="stylesheet" href="./css/notificationpopup.css">
+    <link rel="stylesheet" href="./css/notification-center.css">
     <link rel="stylesheet" href="./css/acedemicdashboard.css">
     <link rel="stylesheet" href="https://unicons.iconscout.com/release/v4.0.8/css/line.css">
     <link rel="stylesheet" href="./css/report.css">

@@ -176,10 +176,16 @@
 .channel-actions {
     display: flex;
     justify-content: flex-end;
+    align-items: center;
+    gap: 0.5rem;
 }
 
 .channel-actions .btn {
     min-width: 8.2rem;
+}
+
+.channel-actions .channel-report-btn {
+    min-width: 6.5rem;
 }
 
 .channel-empty {

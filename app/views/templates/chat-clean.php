@@ -196,11 +196,33 @@ $avatarPath = $currentUser['profile_picture'] ?? 'uploads/user_dp/default.png';
                 </div>
 
                 <div class="media-content-wrapper" id="media-content-wrapper" style="display: none;">
-                    <div class="media-tabs">
-                        <div class="media-tab active" data-tab="media">Media</div>
-                        <div class="media-tab" data-tab="files">Files</div>
+                    <div class="chat-media-tabs" id="chat-media-tabs">
+                        <button type="button" class="chat-media-tab active" data-tab="about">About</button>
+                        <button type="button" class="chat-media-tab" data-tab="media">Media</button>
                     </div>
+
                     <div class="media-content">
+                        <div class="media-tab-panel media-tab-panel-about active" id="media-about-panel">
+                        <div class="chat-about-card" id="chat-about-card">
+                            <div class="chat-about-cover">
+                                <img id="chat-about-cover-img" src="" alt="About cover">
+                            </div>
+                            <div class="chat-about-avatar-wrap">
+                                <img id="chat-about-avatar-img" src="" alt="About avatar">
+                            </div>
+                            <div class="chat-about-body">
+                                <h4 id="chat-about-name">Conversation</h4>
+                                <p class="chat-about-tag" id="chat-about-tag" hidden></p>
+                                <p class="chat-about-count" id="chat-about-count" hidden></p>
+                                <a class="btn btn-secondary btn-sm chat-about-profile-btn" id="chat-about-profile-btn" href="#">View profile</a>
+                                <button type="button" class="btn btn-secondary btn-sm chat-about-report-btn" id="chat-about-report-btn" hidden>
+                                    Report
+                                </button>
+                            </div>
+                        </div>
+                        </div>
+
+                        <div class="media-tab-panel media-tab-panel-media" id="media-main-panel">
                         <div class="media-toolbar">
                             <div class="toolbar-left"></div>
                             <div class="toolbar-right">
@@ -216,58 +238,52 @@ $avatarPath = $currentUser['profile_picture'] ?? 'uploads/user_dp/default.png';
                             </div>
                         </div>
                         <div class="media-grid" id="media-grid">
-                            <div class="media-section">
-                                <h4>Photos</h4>
-                                <div class="media-photos" id="media-photos"></div>
-                            </div>
-                            <div class="media-section">
-                                <h4>Videos</h4>
-                                <div class="media-videos" id="media-videos"></div>
-                            </div>
-                            <div class="media-section">
-                                <h4>Documents</h4>
-                                <div class="media-documents" id="media-documents"></div>
-                            </div>
-                            <div class="storage-info">
-                                <div class="storage-usage">
-                                    <div class="usage-bar">
-                                        <div class="usage-fill" style="width: 0"></div>
-                                    </div>
-                                    <div class="usage-text">
-                                        <span>0 MB used of 500 MB</span>
-                                        <span class="usage-percentage">0%</span>
-                                    </div>
+                            <div class="media-section media-strip" data-section="photos">
+                                <div class="media-section-header">
+                                    <h4>Photos</h4>
+                                    <button type="button" class="media-open-all" data-section="photos" aria-label="View all photos">
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                                            <path d="M9 6L15 12L9 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                                        </svg>
+                                    </button>
                                 </div>
+                                <div class="media-row" id="media-photos-row"></div>
+                            </div>
+                            <div class="media-section media-strip" data-section="videos">
+                                <div class="media-section-header">
+                                    <h4>Videos</h4>
+                                    <button type="button" class="media-open-all" data-section="videos" aria-label="View all videos">
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                                            <path d="M9 6L15 12L9 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                                        </svg>
+                                    </button>
+                                </div>
+                                <div class="media-row" id="media-videos-row"></div>
+                            </div>
+                            <div class="media-section media-strip" data-section="documents">
+                                <div class="media-section-header">
+                                    <h4>Documents</h4>
+                                    <button type="button" class="media-open-all" data-section="documents" aria-label="View all documents">
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                                            <path d="M9 6L15 12L9 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                                        </svg>
+                                    </button>
+                                </div>
+                                <div class="media-row" id="media-documents-row"></div>
                             </div>
                         </div>
-                        <div id="files-content" class="files-content" style="display: none;">
-                            <div class="files-toolbar">
-                                <div class="toolbar-actions">
-                                    <button class="btn btn-primary btn-sm" id="createFolderBtn">
-                                        <i class="uil uil-folder-plus"></i> New Folder
-                                    </button>
-                                    <button class="btn btn-secondary btn-sm" id="uploadFileBtn">
-                                        <i class="uil uil-upload"></i> Upload File
-                                    </button>
-                                    <input type="file" id="fileUploadInput" style="display: none;" multiple>
-                                </div>
-                                <div class="breadcrumb-path">
-                                    <button class="path-nav-btn" id="navBackBtn" title="Go back">
-                                        <i class="uil uil-arrow-left"></i>
-                                    </button>
-                                    <button class="path-nav-btn" id="navForwardBtn" title="Go forward">
-                                        <i class="uil uil-arrow-right"></i>
-                                    </button>
-                                    <button class="path-nav-btn" id="navHomeBtn" title="Go to root">
-                                        <i class="uil uil-home"></i>
-                                    </button>
-                                    <span class="path-separator">/</span>
-                                    <span class="path-item active" id="currentFolderPath">All Files</span>
-                                </div>
+                        <div class="media-detail-view" id="media-detail-view" style="display: none;">
+                            <div class="media-detail-header">
+                                <button type="button" class="back-btn" id="mediaDetailBackBtn" aria-label="Back to media sections">
+                                    <i class="uil uil-arrow-left"></i>
+                                </button>
+                                <h4 id="media-detail-title">All items</h4>
                             </div>
-                            <div class="files-grid" id="filesGrid">
-                                <!-- Files will be loaded dynamically -->
+                            <div class="media-detail-list" id="media-detail-list"></div>
+                            <div class="media-detail-empty" id="media-detail-empty" hidden>
+                                <p>No items found.</p>
                             </div>
+                        </div>
                         </div>
                     </div>
                 </div>
@@ -356,6 +372,17 @@ $avatarPath = $currentUser['profile_picture'] ?? 'uploads/user_dp/default.png';
        id="chatAttachmentInput"
        accept="image/*,video/*,.pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.txt,.zip"
        style="position:absolute;left:-9999px;opacity:0;pointer-events:none;" />
+
+<div id="chatDeleteConfirmModal" class="confirm-modal" aria-hidden="true">
+    <div class="modal-content" role="dialog" aria-modal="true" aria-labelledby="chatDeleteConfirmTitle">
+        <h3 id="chatDeleteConfirmTitle">Delete message?</h3>
+        <p id="chatDeleteConfirmText">This action cannot be undone.</p>
+        <div class="modal-actions">
+            <button type="button" class="btn btn-secondary" id="chatCancelDeleteBtn">Cancel</button>
+            <button type="button" class="btn btn-danger" id="chatConfirmDeleteBtn">Delete</button>
+        </div>
+    </div>
+</div>
 
 <?php if (!defined('CHAT_SCRIPT_REGISTERED')): ?>
     <?php define('CHAT_SCRIPT_REGISTERED', true); ?>

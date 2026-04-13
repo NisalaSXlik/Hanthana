@@ -28,15 +28,19 @@ class ChannelPageController extends BaseController
         }
 
         $userId = (int) $_SESSION['user_id'];
-        if (!$this->channelModel->isActiveGroupMember($groupId, $userId)) {
+        $groupPrivacy = strtolower(trim((string)($group['privacy_status'] ?? 'public')));
+        if ($groupPrivacy !== 'public' && !$this->channelModel->isActiveGroupMember($groupId, $userId)) {
             $this->redirect('Feed');
         }
 
         $_SESSION['current_group_id'] = $groupId;
         $currentUserId = $userId;
         $currentUser = $this->userModel->findById($currentUserId);
+        $isCreator = (int)($group['created_by'] ?? 0) === $userId;
+        $isGroupAdmin = $this->groupModel->isGroupAdmin($groupId, $userId);
+        $isAdmin = $isCreator || $isGroupAdmin;
 
-        require_once __DIR__ . '/../views/channelpage.php';
+        require_once __DIR__ . '/../views/groupchannels.php';
     }
 
     public function listChannels()
@@ -49,7 +53,13 @@ class ChannelPageController extends BaseController
             return $this->response(['status' => 'error', 'errors' => ['Valid group ID is required.']], 400);
         }
 
-        if (!$this->channelModel->isActiveGroupMember($groupId, $userId)) {
+        $group = $this->groupModel->getById($groupId);
+        if (!$group) {
+            return $this->response(['status' => 'error', 'errors' => ['Group not found.']], 404);
+        }
+
+        $groupPrivacy = strtolower(trim((string)($group['privacy_status'] ?? 'public')));
+        if ($groupPrivacy !== 'public' && !$this->channelModel->isActiveGroupMember($groupId, $userId)) {
             return $this->response(['status' => 'error', 'errors' => ['You are not a member of this group.']], 403);
         }
 
@@ -90,6 +100,14 @@ class ChannelPageController extends BaseController
             return $this->response(['status' => 'error', 'errors' => ['You are not a member of this group.']], 403);
         }
 
+        $group = $this->groupModel->getById($groupId);
+        if (!$group) {
+            return $this->response(['status' => 'error', 'errors' => ['Group not found.']], 404);
+        }
+
+        $isAdmin = $this->groupModel->isGroupAdmin($groupId, $userId)
+            || (int)($group['created_by'] ?? 0) === $userId;
+
         if ($this->channelModel->isChannelNameTaken($groupId, $name)) {
             return $this->response(['status' => 'error', 'errors' => ['A channel with this name already exists.']], 400);
         }
@@ -97,6 +115,24 @@ class ChannelPageController extends BaseController
         $displayPicture = $this->handleDisplayPictureUpload();
         if (isset($displayPicture['errors'])) {
             return $this->response(['status' => 'error', 'errors' => $displayPicture['errors']], 400);
+        }
+
+        if (!$isAdmin) {
+            $queued = $this->groupModel->queueChannelCreationRequest($groupId, $userId, [
+                'name' => $name,
+                'description' => $description,
+                'display_picture' => $displayPicture['path'] ?? 'uploads/channel_dp/default.png',
+            ]);
+
+            if (!$queued) {
+                return $this->response(['status' => 'error', 'errors' => ['Failed to submit channel request.']], 500);
+            }
+
+            return $this->response([
+                'status' => 'success',
+                'queued' => true,
+                'message' => 'Channel request submitted for admin approval.',
+            ]);
         }
 
         $created = $this->channelModel->createChannel([

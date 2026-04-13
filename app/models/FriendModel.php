@@ -28,6 +28,10 @@ class FriendModel
 
     public function getFriendshipStatus(int $userId, int $otherUserId): string
     {
+        if ($this->isBlockedBetween($userId, $otherUserId)) {
+            return 'blocked';
+        }
+
         $friendship = $this->getFriendship($userId, $otherUserId);
         
         if (!$friendship) {
@@ -55,6 +59,13 @@ class FriendModel
 
     public function sendFriendRequest(int $requesterId, int $targetId): array
     {
+        if ($this->isBlockedBetween($requesterId, $targetId)) {
+            return [
+                'status' => 'blocked',
+                'message' => 'You cannot send a friend request to this user.',
+            ];
+        }
+
         $existing = $this->getFriendship($requesterId, $targetId);
 
         if ($existing) {
@@ -80,12 +91,20 @@ class FriendModel
                     return [
                         'status' => 'pending_outgoing',
                         'message' => 'Friend request already sent.',
+                        'friendship_id' => (int)$existing['friendship_id'],
+                        'requester_id' => (int)$existing['user_id'],
+                        'target_id' => (int)$existing['friend_id'],
+                        'is_new_request' => false,
                     ];
                 }
 
                 return [
                     'status' => 'incoming_pending',
                     'message' => 'This user has already sent you a friend request.',
+                    'friendship_id' => (int)$existing['friendship_id'],
+                    'requester_id' => (int)$existing['user_id'],
+                    'target_id' => (int)$existing['friend_id'],
+                    'is_new_request' => false,
                 ];
             }
         }
@@ -97,10 +116,29 @@ class FriendModel
             ':friend' => $targetId,
         ]);
 
+        $friendshipId = (int)$this->db->lastInsertId();
+
         return [
             'status' => 'pending_outgoing',
             'message' => 'Friend request sent successfully.',
+            'friendship_id' => $friendshipId,
+            'requester_id' => $requesterId,
+            'target_id' => $targetId,
+            'is_new_request' => true,
         ];
+    }
+
+    public function getFriendshipById(int $friendshipId): ?array
+    {
+        $stmt = $this->db->prepare(
+            "SELECT friendship_id, user_id, friend_id, status, requested_at, accepted_at
+             FROM Friends
+             WHERE friendship_id = :id
+             LIMIT 1"
+        );
+        $stmt->execute([':id' => $friendshipId]);
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+        return $row ?: null;
     }
 
     public function getIncomingRequests(int $userId, int $limit = 10): array
@@ -196,6 +234,9 @@ class FriendModel
                 'message' => 'Friend request accepted.',
                 'friend_count' => $counts[$targetId] ?? null,
                 'friend_count_other' => $counts[$requesterId] ?? null,
+                'friendship_id' => $friendshipId,
+                'requester_id' => $requesterId,
+                'target_id' => $targetId,
             ];
         } catch (\Throwable $e) {
             if ($this->db->inTransaction()) {
@@ -323,8 +364,42 @@ class FriendModel
         return $counts;
     }
 
+    private function isBlockedBetween(int $userId, int $otherUserId): bool
+    {
+        if ($userId <= 0 || $otherUserId <= 0 || $userId === $otherUserId) {
+            return false;
+        }
+
+        $queries = [
+            "SELECT 1
+             FROM BlockedUsers
+             WHERE (blocker_id = ? AND blocked_id = ?)
+                OR (blocker_id = ? AND blocked_id = ?)
+             LIMIT 1",
+            "SELECT 1
+             FROM BlockedUsers
+             WHERE (user_id = ? AND blocked_user_id = ?)
+                OR (user_id = ? AND blocked_user_id = ?)
+             LIMIT 1"
+        ];
+
+        foreach ($queries as $sql) {
+            try {
+                $stmt = $this->db->prepare($sql);
+                $stmt->execute([$userId, $otherUserId, $otherUserId, $userId]);
+                if ($stmt->fetchColumn() !== false) {
+                    return true;
+                }
+            } catch (PDOException $e) {
+                continue;
+            }
+        }
+
+        return false;
+    }
+
     /**
-     * Remove an accepted friendship between two users and decrement their friends_count.
+     * Remove an accepted friendship or cancel a pending request between two users.
      */
     public function removeFriendship(int $userId, int $otherUserId): array
     {
@@ -344,26 +419,30 @@ class FriendModel
             ]);
             $friendship = $stmt->fetch(PDO::FETCH_ASSOC);
 
-            if (!$friendship || $friendship['status'] !== 'accepted') {
-                throw new \RuntimeException('You are not friends.');
+            if (!$friendship) {
+                throw new \RuntimeException('No friendship found.');
             }
+
+            $status = (string)($friendship['status'] ?? '');
 
             // Delete friendship
             $del = $this->db->prepare('DELETE FROM Friends WHERE friendship_id = :id');
             $del->execute([':id' => (int)$friendship['friendship_id']]);
 
-            // Decrement both users' counts
-            $dec = $this->db->prepare(
-                'UPDATE Users SET friends_count = CASE WHEN friends_count > 0 THEN friends_count - 1 ELSE 0 END WHERE user_id IN (:a, :b)'
-            );
-            $dec->execute([':a' => $userId, ':b' => $otherUserId]);
+            if ($status === 'accepted') {
+                // Decrement both users' counts only when removing an accepted friendship
+                $dec = $this->db->prepare(
+                    'UPDATE Users SET friends_count = CASE WHEN friends_count > 0 THEN friends_count - 1 ELSE 0 END WHERE user_id IN (:a, :b)'
+                );
+                $dec->execute([':a' => $userId, ':b' => $otherUserId]);
+            }
 
             $counts = $this->getFriendCounts($userId, $otherUserId);
             $this->db->commit();
 
             return [
-                'status' => 'removed',
-                'message' => 'Friend removed successfully.',
+                'status' => $status === 'accepted' ? 'removed' : 'cancelled',
+                'message' => $status === 'accepted' ? 'Friend removed successfully.' : 'Friend request cancelled.',
                 'friend_count' => $counts[$userId] ?? null,
                 'friend_count_other' => $counts[$otherUserId] ?? null,
             ];

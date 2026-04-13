@@ -164,6 +164,10 @@ class SettingsModel {
     // Privacy check methods
     public function canViewProfile($profileUserId, $viewerId) {
         if ($profileUserId == $viewerId) return true;
+
+        if ($this->isBlockedBetween($profileUserId, $viewerId)) {
+            return false;
+        }
         
         $settings = $this->getUserSettings($profileUserId);
         
@@ -180,6 +184,10 @@ class SettingsModel {
 
     public function canViewPosts($profileUserId, $viewerId) {
         if ($profileUserId == $viewerId) return true;
+
+        if ($this->isBlockedBetween($profileUserId, $viewerId)) {
+            return false;
+        }
         
         $settings = $this->getUserSettings($profileUserId);
         
@@ -196,6 +204,10 @@ class SettingsModel {
 
     public function canSendFriendRequest($profileUserId, $viewerId) {
         if ($profileUserId == $viewerId) return false;
+
+        if ($this->isBlockedBetween($profileUserId, $viewerId)) {
+            return false;
+        }
         
         $settings = $this->getUserSettings($profileUserId);
         
@@ -222,6 +234,52 @@ class SettingsModel {
         
         $settings = $this->getUserSettings($profileUserId);
         return $settings['show_phone'] == 1 && $this->canViewProfile($profileUserId, $viewerId);
+    }
+
+    public function isBlockedBetween($userId1, $userId2) {
+        $firstUserId = (int)$userId1;
+        $secondUserId = (int)$userId2;
+
+        if ($firstUserId <= 0 || $secondUserId <= 0 || $firstUserId === $secondUserId) {
+            return false;
+        }
+
+        return $this->isBlockedBy($firstUserId, $secondUserId)
+            || $this->isBlockedBy($secondUserId, $firstUserId);
+    }
+
+    public function isBlockedBy($blockerId, $blockedId) {
+        $firstUserId = (int)$blockerId;
+        $secondUserId = (int)$blockedId;
+
+        if ($firstUserId <= 0 || $secondUserId <= 0 || $firstUserId === $secondUserId) {
+            return false;
+        }
+
+        $queries = [
+            "SELECT 1
+             FROM BlockedUsers
+             WHERE blocker_id = ? AND blocked_id = ?
+             LIMIT 1",
+            "SELECT 1
+             FROM BlockedUsers
+             WHERE user_id = ? AND blocked_user_id = ?
+             LIMIT 1"
+        ];
+
+        foreach ($queries as $sql) {
+            try {
+                $stmt = $this->db->getConnection()->prepare($sql);
+                $stmt->execute([$firstUserId, $secondUserId]);
+                if ($stmt->fetchColumn() !== false) {
+                    return true;
+                }
+            } catch (PDOException $e) {
+                continue;
+            }
+        }
+
+        return false;
     }
 
     // Helper methods

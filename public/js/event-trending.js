@@ -48,6 +48,28 @@ function renderTrendingButton(event) {
     `;
 }
 
+async function openEventInRecentTab(eventId) {
+    const normalizedEventId = Number(eventId || 0);
+    if (!normalizedEventId || typeof loadEvents !== 'function') return;
+
+    document.querySelectorAll('.filter-tab').forEach(tab => {
+        const isRecent = tab.dataset.filter === 'recent';
+        tab.classList.toggle('active', isRecent);
+    });
+
+    await loadEvents('recent');
+
+    const card = document.querySelector(`#eventsContainer .event-card[data-event-id="${normalizedEventId}"]`);
+    if (!card) {
+        notifyTrending('Event not found in recent list', 'info');
+        return;
+    }
+
+    card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    card.classList.add('event-card-focus');
+    setTimeout(() => card.classList.remove('event-card-focus'), 1600);
+}
+
 async function loadTrendingEvents() {
     const listContainer = document.getElementById('trendingEventsList');
     if (!listContainer) return;
@@ -68,7 +90,7 @@ async function loadTrendingEvents() {
             const details = [date, `${goingCount} going`].filter(Boolean).join(' • ');
 
             return `
-                <div class="request trending-event-item">
+                <div class="request trending-event-item" data-event-id="${Number(event.post_id || event.id || 0)}">
                     <div class="info">
                         <div class="trending-event-text" title="${title}">
                             <h5>${title}</h5>
@@ -81,7 +103,8 @@ async function loadTrendingEvents() {
         }).join('');
 
         listContainer.querySelectorAll('.btn-add-trending').forEach((button) => {
-            button.addEventListener('click', async () => {
+            button.addEventListener('click', async (event) => {
+                event.stopPropagation();
                 const postId = Number(button.dataset.id || 0);
                 if (!postId) {
                     notifyTrending('Invalid event', 'error');
@@ -134,6 +157,14 @@ async function loadTrendingEvents() {
                 } finally {
                     button.disabled = false;
                 }
+            });
+        });
+
+        listContainer.querySelectorAll('.trending-event-item').forEach((item) => {
+            item.addEventListener('click', async (event) => {
+                if (event.target.closest('.btn-add-trending')) return;
+                const eventId = Number(item.dataset.eventId || 0);
+                await openEventInRecentTab(eventId);
             });
         });
     } catch (error) {

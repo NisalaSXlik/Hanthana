@@ -408,13 +408,12 @@ document.addEventListener('DOMContentLoaded', function() {
     };
 
     const renderAnswerNode = (answer, level = 0) => {
-        const id = Number(answer.answer_id || 0);
-        const author = `${answer.first_name || ''} ${answer.last_name || ''}`.trim() || 'Unknown';
+        const id = Number(answer.answer_id || answer.comment_id || 0);
+        const author = `${answer.first_name || ''} ${answer.last_name || ''}`.trim() || answer.username || 'Unknown';
         const profile = answer.profile_picture || `${QUESTIONS_BASE_PATH}public/images/default-avatar.png`;
         const currentUserId = Number(window.USER_ID || 0);
-        const canModerate =
-            currentUserId === Number(answer.user_id || 0) ||
-            currentUserId === Number(answer.question_user_id || 0);
+        const answerUserId = Number(answer.user_id || answer.commenter_id || 0);
+        const canModerate = currentUserId === answerUserId;
         const replies = Array.isArray(answer.replies) ? answer.replies.map((reply) => renderAnswerNode(reply, level + 1)).join('') : '';
         const replyStyle = level > 0 ? ' style="margin-left: 40px;"' : '';
 
@@ -428,24 +427,14 @@ document.addEventListener('DOMContentLoaded', function() {
                 </div>
                 <div class="comment-text">${escapeHtml(answer.content || '').replace(/\n/g, '<br>')}</div>
                 <div class="comment-actions">
-                    ${level === 0 ? `<button class="comment-action reply-btn" data-answer-id="${id}"><i class="uil uil-corner-up-left"></i><span>Reply</span></button>` : '<span></span>'}
-                    <div class="question-menu-wrap answer-menu-wrap">
-                        <button type="button" class="question-menu-trigger answer-menu-trigger" aria-label="Answer menu">
-                            <i class="uil uil-ellipsis-h"></i>
-                        </button>
-                        <div class="question-menu">
-                            ${canModerate ? `<button type="button" class="question-menu-item edit-answer-btn" data-answer-id="${id}"><i class="uil uil-edit"></i> Edit</button><button type="button" class="question-menu-item delete-answer-btn" data-answer-id="${id}"><i class="uil uil-trash-alt"></i> Delete</button>` : ''}
-                            <button type="button" class="question-menu-item report-trigger" data-report-type="answer" data-target-id="${id}" data-target-label="${escapeHtml(author)} answer">
-                                <i class="uil uil-exclamation-circle"></i> Report
-                            </button>
-                        </div>
-                    </div>
+                    ${level === 0 ? `<button class="comment-action reply-btn" data-answer-id="${id}"><i class="fas fa-reply"></i><span>Reply</span></button>` : ''}
+                    ${canModerate ? `<button class="comment-action edit-answer-btn" data-answer-id="${id}">Edit</button><button class="comment-action delete-answer-btn" data-answer-id="${id}">Delete</button>` : ''}
                 </div>
                 ${level === 0 ? `
                 <div class="reply-form" id="reply-form-${id}">
                     <div class="reply-input-container">
                         <input type="text" class="reply-input" placeholder="Write a reply..." data-answer-id="${id}">
-                        <button class="reply-submit-btn" data-answer-id="${id}"><i class="uil uil-message"></i></button>
+                        <button class="reply-submit-btn" data-answer-id="${id}"><i class="fas fa-paper-plane"></i></button>
                     </div>
                 </div>
                 ` : ''}
@@ -468,7 +457,54 @@ document.addEventListener('DOMContentLoaded', function() {
         return match ? parseInt(match[1], 10) : 0;
     };
 
-    const fetchAnswers = async (questionId) => {
+    const isGroupQuestionPanel = (panelEl) => {
+        const card = panelEl?.closest('.question-card');
+        return (card?.dataset.sourceType || '') === 'group_question';
+    };
+
+    const normalizeGroupCommentToAnswer = (comment) => {
+        const replies = Array.isArray(comment?.replies)
+            ? comment.replies.map((reply) => normalizeGroupCommentToAnswer(reply))
+            : [];
+
+        return {
+            answer_id: Number(comment?.comment_id || 0),
+            parent_answer_id: comment?.parent_comment_id ? Number(comment.parent_comment_id) : null,
+            user_id: Number(comment?.commenter_id || comment?.user_id || 0),
+            first_name: comment?.first_name || '',
+            last_name: comment?.last_name || '',
+            username: comment?.username || '',
+            profile_picture: comment?.profile_picture || '',
+            created_at: comment?.created_at || '',
+            content: comment?.content || '',
+            replies,
+        };
+    };
+
+    const fetchAnswers = async (questionId, sourceType = 'question') => {
+        if (sourceType === 'group_question') {
+            const formData = new FormData();
+            formData.append('sub_action', 'load');
+            formData.append('post_id', questionId);
+
+            const response = await fetch(QUESTIONS_BASE_PATH + 'index.php?controller=Comment&action=handleAjax', {
+                method: 'POST',
+                body: formData
+            });
+
+            if (!response.ok) {
+                throw new Error(`Failed to fetch group answers (${response.status})`);
+            }
+
+            const data = await response.json();
+            return {
+                success: !!data.success,
+                answers: Array.isArray(data.comments) ? data.comments.map((comment) => normalizeGroupCommentToAnswer(comment)) : [],
+                currentUserId: Number(data.currentUserId || 0),
+                postOwnerId: Number(data.postOwnerId || 0),
+            };
+        }
+
         const formData = new FormData();
         formData.append('sub_action', 'getAnswers');
         formData.append('question_id', questionId);
@@ -492,7 +528,27 @@ document.addEventListener('DOMContentLoaded', function() {
         return data;
     };
 
-    const submitAnswer = async (questionId, content, parentAnswerId = '') => {
+    const submitAnswer = async (questionId, content, parentAnswerId = '', sourceType = 'question') => {
+        if (sourceType === 'group_question') {
+            const formData = new FormData();
+            formData.append('sub_action', 'add');
+            formData.append('post_id', questionId);
+            formData.append('content', content);
+            if (parentAnswerId) formData.append('parent_comment_id', parentAnswerId);
+
+            const response = await fetch(QUESTIONS_BASE_PATH + 'index.php?controller=Comment&action=handleAjax', {
+                method: 'POST',
+                body: formData
+            });
+            const data = await response.json();
+            return {
+                success: !!data.success,
+                answer: null,
+                comment_count: Number(data.comment_count || 0),
+                message: data.message || ''
+            };
+        }
+
         const formData = new FormData();
         formData.append('sub_action', 'createAnswer');
         formData.append('question_id', questionId);
@@ -540,13 +596,14 @@ document.addEventListener('DOMContentLoaded', function() {
 
     const loadInlineAnswers = async (panelEl) => {
         const questionId = panelEl.dataset.questionId;
+        const sourceType = isGroupQuestionPanel(panelEl) ? 'group_question' : 'question';
         const listEl = panelEl.querySelector('.inline-answers-list');
         if (!questionId || !listEl) return false;
 
         listEl.innerHTML = '<div class="no-comments">Loading answers...</div>';
         let result;
         try {
-            result = await fetchAnswers(questionId);
+            result = await fetchAnswers(questionId, sourceType);
         } catch (error) {
             console.error('Failed to load answers:', error);
             listEl.innerHTML = '<div class="no-comments">Failed to load answers. Please try again.</div>';
@@ -617,6 +674,7 @@ document.addEventListener('DOMContentLoaded', function() {
             event.preventDefault();
             const panel = form.closest('.inline-answers-panel');
             if (!panel) return;
+            const sourceType = isGroupQuestionPanel(panel) ? 'group_question' : 'question';
 
             const questionId = form.querySelector('[name="question_id"]')?.value;
             const parentField = form.querySelector('[name="parent_answer_id"]');
@@ -624,17 +682,26 @@ document.addEventListener('DOMContentLoaded', function() {
             const content = contentField?.value.trim() || '';
             if (!questionId || !content) return;
 
-            const result = await submitAnswer(questionId, content, parentField?.value || '');
-            if (!result.success || !result.answer) {
+            const result = await submitAnswer(questionId, content, parentField?.value || '', sourceType);
+            if (!result.success) {
                 alert(result.message || 'Failed to post answer');
                 return;
             }
 
-            insertAnswerInPanel(panel, result.answer);
+            if (sourceType === 'group_question') {
+                await loadInlineAnswers(panel);
+            } else if (result.answer) {
+                insertAnswerInPanel(panel, result.answer);
+            }
             if (contentField) contentField.value = '';
             if (parentField) parentField.value = '';
 
-            if (!result.answer.parent_answer_id) {
+            if (sourceType === 'group_question') {
+                const toggleBtn = document.querySelector(`.toggle-inline-answers[data-target="${panel.id}"]`);
+                if (toggleBtn && Number.isFinite(result.comment_count)) {
+                    setAnswerLabel(toggleBtn, result.comment_count);
+                }
+            } else if (!result.answer.parent_answer_id) {
                 const toggleBtn = document.querySelector(`.toggle-inline-answers[data-target="${panel.id}"]`);
                 if (toggleBtn) {
                     const count = getAnswerCountFromLabel(toggleBtn);
@@ -662,16 +729,23 @@ document.addEventListener('DOMContentLoaded', function() {
             const replyForm = document.getElementById(`reply-form-${answerId}`);
             const input = replyForm?.querySelector('.reply-input');
             const questionId = panel?.dataset.questionId;
+            const sourceType = panel && isGroupQuestionPanel(panel) ? 'group_question' : 'question';
             const content = input?.value.trim() || '';
             if (!questionId || !content) return;
 
-            const result = await submitAnswer(questionId, content, answerId);
-            if (!result.success || !result.answer) {
+            const result = await submitAnswer(questionId, content, answerId, sourceType);
+            if (!result.success) {
                 alert(result.message || 'Failed to post reply');
                 return;
             }
 
-            if (panel) insertAnswerInPanel(panel, result.answer);
+            if (panel) {
+                if (sourceType === 'group_question') {
+                    await loadInlineAnswers(panel);
+                } else if (result.answer) {
+                    insertAnswerInPanel(panel, result.answer);
+                }
+            }
             if (input) input.value = '';
             if (replyForm) replyForm.classList.remove('active');
             return;
@@ -682,17 +756,19 @@ document.addEventListener('DOMContentLoaded', function() {
             event.preventDefault();
             const answerId = editBtn.dataset.answerId;
             const answerEl = document.querySelector(`.comment[data-answer-id="${answerId}"]`);
+            const panel = answerEl?.closest('.inline-answers-panel');
+            const sourceType = panel && isGroupQuestionPanel(panel) ? 'group_question' : 'question';
             const textEl = answerEl?.querySelector('.comment-text');
             const current = (textEl?.textContent || '').trim();
             const next = window.prompt('Edit answer:', current);
             if (next === null) return;
 
             const formData = new FormData();
-            formData.append('sub_action', 'editAnswer');
-            formData.append('answer_id', answerId);
+            formData.append('sub_action', sourceType === 'group_question' ? 'edit' : 'editAnswer');
+            formData.append(sourceType === 'group_question' ? 'comment_id' : 'answer_id', answerId);
             formData.append('content', next.trim());
 
-            const response = await fetch(QUESTIONS_BASE_PATH + 'index.php?controller=Popular&action=handleAjax', {
+            const response = await fetch(QUESTIONS_BASE_PATH + `index.php?controller=${sourceType === 'group_question' ? 'Comment' : 'Popular'}&action=handleAjax`, {
                 method: 'POST',
                 body: formData
             });
@@ -712,13 +788,15 @@ document.addEventListener('DOMContentLoaded', function() {
             if (!window.confirm('Delete this answer?')) return;
 
             const answerEl = document.querySelector(`.comment[data-answer-id="${answerId}"]`);
+            const panel = answerEl?.closest('.inline-answers-panel');
+            const sourceType = panel && isGroupQuestionPanel(panel) ? 'group_question' : 'question';
             const isReply = !!answerEl?.closest('.comment-replies');
 
             const formData = new FormData();
-            formData.append('sub_action', 'deleteAnswer');
-            formData.append('answer_id', answerId);
+            formData.append('sub_action', sourceType === 'group_question' ? 'delete' : 'deleteAnswer');
+            formData.append(sourceType === 'group_question' ? 'comment_id' : 'answer_id', answerId);
 
-            const response = await fetch(QUESTIONS_BASE_PATH + 'index.php?controller=Popular&action=handleAjax', {
+            const response = await fetch(QUESTIONS_BASE_PATH + `index.php?controller=${sourceType === 'group_question' ? 'Comment' : 'Popular'}&action=handleAjax`, {
                 method: 'POST',
                 body: formData
             });
@@ -728,14 +806,17 @@ document.addEventListener('DOMContentLoaded', function() {
                 return;
             }
 
-            const panel = answerEl?.closest('.inline-answers-panel');
             if (answerEl) answerEl.remove();
 
             if (!isReply && panel) {
                 const toggleBtn = document.querySelector(`.toggle-inline-answers[data-target="${panel.id}"]`);
                 if (toggleBtn) {
-                    const count = getAnswerCountFromLabel(toggleBtn);
-                    setAnswerLabel(toggleBtn, Math.max(0, count - 1));
+                    if (sourceType === 'group_question' && Number.isFinite(Number(result.comment_count))) {
+                        setAnswerLabel(toggleBtn, Number(result.comment_count));
+                    } else {
+                        const count = getAnswerCountFromLabel(toggleBtn);
+                        setAnswerLabel(toggleBtn, Math.max(0, count - 1));
+                    }
                 }
             }
         }

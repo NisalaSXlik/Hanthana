@@ -2,60 +2,9 @@
 
 class AcedemicDashboardModel extends BaseModel
 {
-    private bool $tablesEnsured = false;
-    private bool $hasGroupPostColumns = false;
-
     public function __construct()
     {
         parent::__construct();
-        $this->hasGroupPostColumns = $this->columnExists('Post', 'group_post_type') && $this->columnExists('Post', 'metadata');
-        $this->ensureResourceTables();
-    }
-
-    private function columnExists(string $table, string $column): bool
-    {
-        try {
-            $stmt = $this->dbInstance->prepare("SHOW COLUMNS FROM {$table} LIKE ?");
-            $stmt->execute([$column]);
-            return (bool)$stmt->fetch(PDO::FETCH_ASSOC);
-        } catch (PDOException $e) {
-            return false;
-        }
-    }
-
-    private function ensureResourceTables(): void
-    {
-        if ($this->tablesEnsured) {
-            return;
-        }
-
-        $this->dbInstance->exec(
-            "CREATE TABLE IF NOT EXISTS BinMediaDownload (
-                download_id INT AUTO_INCREMENT PRIMARY KEY,
-                media_id INT NOT NULL,
-                user_id INT NULL,
-                downloaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                INDEX idx_binmedia_download_media (media_id),
-                INDEX idx_binmedia_download_user (user_id),
-                CONSTRAINT fk_binmedia_download_media FOREIGN KEY (media_id) REFERENCES BinMedia(media_id) ON DELETE CASCADE,
-                CONSTRAINT fk_binmedia_download_user FOREIGN KEY (user_id) REFERENCES Users(user_id) ON DELETE SET NULL
-            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4"
-        );
-
-        $this->dbInstance->exec(
-            "CREATE TABLE IF NOT EXISTS BinMediaSave (
-                save_id INT AUTO_INCREMENT PRIMARY KEY,
-                media_id INT NOT NULL,
-                user_id INT NOT NULL,
-                saved_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                UNIQUE KEY uniq_binmedia_save (media_id, user_id),
-                INDEX idx_binmedia_save_user (user_id),
-                CONSTRAINT fk_binmedia_save_media FOREIGN KEY (media_id) REFERENCES BinMedia(media_id) ON DELETE CASCADE,
-                CONSTRAINT fk_binmedia_save_user FOREIGN KEY (user_id) REFERENCES Users(user_id) ON DELETE CASCADE
-            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4"
-        );
-
-        $this->tablesEnsured = true;
     }
 
     public function getGroupsByLatestUpload(int $userId): array
@@ -125,7 +74,7 @@ class AcedemicDashboardModel extends BaseModel
                         bm.bin_id,
                         bm.file_name,
                         bm.file_type,
-                        bm.file_path,
+                        bm.file_url AS file_path,
                         bm.file_size,
                         bm.added_at,
                         COALESCE(dl.download_count, 0) AS download_count,
@@ -165,7 +114,7 @@ class AcedemicDashboardModel extends BaseModel
                     bm.bin_id,
                     bm.file_name,
                     bm.file_type,
-                    bm.file_path,
+                    bm.file_url AS file_path,
                     bm.file_size,
                     bm.added_at,
                     b.name AS bin_name,
@@ -203,7 +152,7 @@ class AcedemicDashboardModel extends BaseModel
                     bm.bin_id,
                     bm.file_name,
                     bm.file_type,
-                    bm.file_path,
+                    bm.file_url AS file_path,
                     bm.file_size,
                     bm.added_at,
                     b.name AS bin_name,
@@ -242,7 +191,7 @@ class AcedemicDashboardModel extends BaseModel
                     bm.bin_id,
                     bm.file_name,
                     bm.file_type,
-                    bm.file_path,
+                    bm.file_url AS file_path,
                     bm.file_size,
                     bm.added_at,
                     b.name AS bin_name,
@@ -272,10 +221,6 @@ class AcedemicDashboardModel extends BaseModel
 
     public function getPriorityAcademicAlerts(int $userId, int $limit = 6): array
     {
-        if (!$this->hasGroupPostColumns) {
-            return [];
-        }
-
         $limit = max(1, min($limit, 20));
 
         $sql = "SELECT
@@ -396,7 +341,7 @@ class AcedemicDashboardModel extends BaseModel
 
     private function getFileByIdForUser(int $userId, int $mediaId): ?array
     {
-        $sql = "SELECT bm.media_id, bm.file_path
+        $sql = "SELECT bm.media_id, bm.file_url AS file_path
                 FROM BinMedia bm
                 INNER JOIN Bin b ON b.bin_id = bm.bin_id
                 INNER JOIN GroupMember gm ON gm.group_id = b.group_id

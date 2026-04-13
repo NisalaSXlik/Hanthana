@@ -130,20 +130,36 @@ document.addEventListener('DOMContentLoaded', function() {
     postImageInput.addEventListener('change', function(e) {
         if (e.target.files && e.target.files[0]) {
             selectedFile = e.target.files[0];
-            let preview = imageUpload.querySelector('.image-preview');
-            if (!preview) {
-                preview = document.createElement('img');
-                preview.className = 'image-preview';
-                imageUpload.innerHTML = '';
-                imageUpload.appendChild(preview);
-            }
+            const isVideo = selectedFile.type && selectedFile.type.startsWith('video/');
 
-            const reader = new FileReader();
-            reader.onload = function(event) {
-                preview.src = event.target.result;
+            imageUpload.innerHTML = '';
+
+            if (isVideo) {
+                const preview = document.createElement('video');
+                preview.className = 'image-preview';
+                preview.controls = true;
+                preview.muted = true;
+                preview.playsInline = true;
                 preview.style.display = 'block';
-            };
-            reader.readAsDataURL(e.target.files[0]);
+                imageUpload.appendChild(preview);
+
+                const reader = new FileReader();
+                reader.onload = function(event) {
+                    preview.src = event.target.result;
+                };
+                reader.readAsDataURL(selectedFile);
+            } else {
+                const preview = document.createElement('img');
+                preview.className = 'image-preview';
+                imageUpload.appendChild(preview);
+
+                const reader = new FileReader();
+                reader.onload = function(event) {
+                    preview.src = event.target.result;
+                    preview.style.display = 'block';
+                };
+                reader.readAsDataURL(selectedFile);
+            }
         }
     });
 

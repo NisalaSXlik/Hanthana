@@ -1,397 +1,345 @@
-document.addEventListener('DOMContentLoaded', function() {
-    // Settings Navigation
-    const navItems = document.querySelectorAll('.settings-nav .menu-item');
-    const sections = document.querySelectorAll('.settings-section');
-
-    navItems.forEach(item => {
-        item.addEventListener('click', function(e) {
-            e.preventDefault();
-            navItems.forEach(nav => nav.classList.remove('active'));
-            sections.forEach(section => section.classList.remove('active'));
-            this.classList.add('active');
-            const sectionId = this.getAttribute('data-section') + '-section';
-            document.getElementById(sectionId).classList.add('active');
-        });
-    });
-    
-    // Profile Form Submission
-    const profileForm = document.getElementById('profileForm');
-    if (profileForm) {
-        profileForm.addEventListener('submit', async function(e) {
-            e.preventDefault();
-            await submitForm(this, 'updateProfile');
-        });
-    }
-    
-    // Password Form Submission
-    const passwordForm = document.getElementById('passwordForm');
-    if (passwordForm) {
-        passwordForm.addEventListener('submit', async function(e) {
-            e.preventDefault();
-            
-            const newPassword = document.getElementById('newPassword').value;
-            const confirmPassword = document.getElementById('confirmPassword').value;
-            
-            if (newPassword !== confirmPassword) {
-                showMessage('Passwords do not match', 'error');
-                return;
-            }
-            
-            if (newPassword.length < 8) {
-                showMessage('Password must be at least 8 characters long', 'error');
-                return;
-            }
-            
-            await submitForm(this, 'updatePassword');
-        });
-    }
-    
-    // Privacy Form Submission
-    const privacyForm = document.getElementById('privacyForm');
-    if (privacyForm) {
-        privacyForm.addEventListener('submit', async function(e) {
-            e.preventDefault();
-            await submitForm(this, 'updatePrivacy');
-        });
-    }
-    
-    // Notification Form Submission
-    const notificationForm = document.getElementById('notificationForm');
-    if (notificationForm) {
-        notificationForm.addEventListener('submit', async function(e) {
-            e.preventDefault();
-            await submitForm(this, 'updateNotifications');
-        });
-    }
-    
-    // Push Form Submission
-    const pushForm = document.getElementById('pushForm');
-    if (pushForm) {
-        pushForm.addEventListener('change', async function(e) {
-            const formData = new FormData();
-            formData.append('push_enabled', e.target.checked ? '1' : '0');
-            await submitFormData(formData, 'updateNotifications');
-        });
-    }
-    
-    // Appearance Form Submission
-    const appearanceForm = document.getElementById('appearanceForm');
-    if (appearanceForm) {
-        appearanceForm.addEventListener('submit', async function(e) {
-            e.preventDefault();
-            await submitForm(this, 'updateAppearance');
-        });
-    }
-    
-    // Theme Selection with real-time preview
-    const themeSelect = document.getElementById('theme-select');
-    if (themeSelect) {
-        const currentTheme = localStorage.getItem('theme') || 'light';
-        themeSelect.value = currentTheme;
-        applyTheme(currentTheme);
-        
-        themeSelect.addEventListener('change', function() {
-            const selectedTheme = this.value;
-            applyTheme(selectedTheme);
-            localStorage.setItem('theme', selectedTheme);
-            
-            // Auto-save theme preference
-            const formData = new FormData();
-            formData.append('theme', selectedTheme);
-            formData.append('font_size', document.getElementById('font-size').value);
-            submitFormData(formData, 'updateAppearance');
-        });
-    }
-    
-    // Font Size Selection with real-time preview
-    const fontSizeSelect = document.getElementById('font-size');
-    if (fontSizeSelect) {
-        const currentFontSize = localStorage.getItem('fontSize') || 'medium';
-        fontSizeSelect.value = currentFontSize;
-        applyFontSize(currentFontSize);
-        
-        fontSizeSelect.addEventListener('change', function() {
-            const selectedSize = this.value;
-            applyFontSize(selectedSize);
-            localStorage.setItem('fontSize', selectedSize);
-            
-            // Auto-save font size preference
-            const formData = new FormData();
-            formData.append('theme', document.getElementById('theme-select').value);
-            formData.append('font_size', selectedSize);
-            submitFormData(formData, 'updateAppearance');
-        });
-    }
-    
-    // Password Visibility Toggle
-    const passwordInputs = document.querySelectorAll('input[type="password"]');
-    passwordInputs.forEach(input => {
-        const parent = input.parentElement;
-        const toggleBtn = document.createElement('button');
-        toggleBtn.type = 'button';
-        toggleBtn.innerHTML = '<i class="uil uil-eye"></i>';
-        toggleBtn.className = 'password-toggle';
-        toggleBtn.style.cssText = 'background: none; border: none; cursor: pointer; color: var(--color-gray); position: absolute; right: 10px; top: 50%; transform: translateY(-50%);';
-        
-        parent.style.position = 'relative';
-        parent.appendChild(toggleBtn);
-        
-        toggleBtn.addEventListener('click', function() {
-            if (input.type === 'password') {
-                input.type = 'text';
-                this.innerHTML = '<i class="uil uil-eye-slash"></i>';
-            } else {
-                input.type = 'password';
-                this.innerHTML = '<i class="uil uil-eye"></i>';
-            }
-        });
-    });
-    
-    // Password Strength Indicator
-    const newPasswordInput = document.getElementById('newPassword');
-    if (newPasswordInput) {
-        newPasswordInput.addEventListener('input', function() {
-            const password = this.value;
-            const strength = calculatePasswordStrength(password);
-            updatePasswordStrengthIndicator(strength);
-        });
-    }
-    
-    // Load blocked users
-    loadBlockedUsers();
-    
-    // Real-time form validation
+document.addEventListener('DOMContentLoaded', () => {
+    initializeToast();
+    bindProfileForm();
+    bindPasswordForm();
+    bindDeleteAccountForm();
+    initializePasswordToggles();
+    initializePasswordStrength();
     initializeFormValidation();
-    initializePrivacyExplanations();
-
+    loadBlockedUsers();
 });
 
-// Helper function to submit forms
-async function submitForm(form, action) {
-    const formData = new FormData(form);
-    await submitFormData(formData, action);
+function bindProfileForm() {
+    const profileForm = document.getElementById('profileForm');
+    if (!profileForm) {
+        return;
+    }
+
+    profileForm.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        await submitForm(profileForm, 'updateProfile');
+    });
 }
 
-// Helper function to submit form data
-async function submitFormData(formData, action) {
-    const submitButton = document.querySelector(`#${action.replace('update', '').toLowerCase()}-section button[type="submit"]`);
-    
+function bindPasswordForm() {
+    const passwordForm = document.getElementById('passwordForm');
+    if (!passwordForm) {
+        return;
+    }
+
+    passwordForm.addEventListener('submit', async (event) => {
+        event.preventDefault();
+
+        const newPassword = document.getElementById('newPassword')?.value || '';
+        const confirmPassword = document.getElementById('confirmPassword')?.value || '';
+
+        if (newPassword !== confirmPassword) {
+            showMessage('Passwords do not match', 'error');
+            return;
+        }
+
+        if (newPassword.length < 8) {
+            showMessage('Password must be at least 8 characters long', 'error');
+            return;
+        }
+
+        const result = await submitForm(passwordForm, 'updatePassword');
+        if (result && result.success) {
+            passwordForm.reset();
+            updatePasswordStrengthIndicator('empty');
+        }
+    });
+}
+
+function bindDeleteAccountForm() {
+    const deleteForm = document.getElementById('deleteAccountForm');
+    if (!deleteForm) {
+        return;
+    }
+
+    deleteForm.addEventListener('submit', async (event) => {
+        event.preventDefault();
+
+        const confirmText = (document.getElementById('deleteAccountConfirm')?.value || '').trim().toUpperCase();
+        if (confirmText !== 'DELETE') {
+            showMessage('Please type DELETE to confirm account deletion', 'error');
+            return;
+        }
+
+        const confirmed = confirm('This will permanently deactivate your account. Do you want to continue?');
+        if (!confirmed) {
+            return;
+        }
+
+        const result = await submitForm(deleteForm, 'deleteAccount');
+        if (result && result.success) {
+            const redirectUrl = result.redirect || (BASE_PATH + 'index.php?controller=Login&action=index');
+            window.location.href = redirectUrl;
+        }
+    });
+}
+
+async function submitForm(form, action) {
+    const formData = new FormData(form);
+    return submitFormData(formData, action, form);
+}
+
+async function submitFormData(formData, action, form) {
+    const submitButton = form ? form.querySelector('button[type="submit"]') : null;
+    const originalText = submitButton ? submitButton.textContent : '';
+
     if (submitButton) {
-        const originalText = submitButton.textContent;
         submitButton.textContent = 'Saving...';
         submitButton.disabled = true;
     }
-    
+
     try {
         const response = await fetch(BASE_PATH + 'index.php?controller=Settings&action=' + action, {
             method: 'POST',
             body: formData
         });
-        
+
         const data = await response.json();
-        
+
         if (data.success) {
-            showMessage(data.message, 'success');
-            if (action === 'updatePassword') {
-                document.getElementById('passwordForm').reset();
-            }
+            showMessage(data.message || 'Saved successfully', 'success');
         } else {
-            showMessage(data.message, 'error');
+            showMessage(data.message || 'Failed to save changes', 'error');
         }
+
+        return data;
     } catch (error) {
-        console.error('Error:', error);
+        console.error('Settings request failed:', error);
         showMessage('Failed to save changes', 'error');
+        return { success: false };
     } finally {
         if (submitButton) {
-            submitButton.textContent = submitButton.getAttribute('data-original-text') || 'Save Changes';
+            submitButton.textContent = originalText;
             submitButton.disabled = false;
         }
     }
 }
 
-// Helper function to show messages
-function showMessage(message, type) {
-    if (window.showToast) {
-        window.showToast(message, type);
-    } else {
-        // Fallback alert
-        alert(message);
-    }
-}
-
-// Apply theme
-function applyTheme(theme) {
-    if (theme === 'dark') {
-        document.body.classList.add('dark-theme');
-    } else {
-        document.body.classList.remove('dark-theme');
-    }
-}
-
-// Apply font size
-function applyFontSize(size) {
-    const sizes = {
-        'small': '14px',
-        'medium': '16px',
-        'large': '18px'
-    };
-    document.documentElement.style.fontSize = sizes[size] || '16px';
-}
-
-// Calculate password strength
-function calculatePasswordStrength(password) {
-    let strength = 0;
-    if (password.length >= 8) strength++;
-    if (password.length >= 12) strength++;
-    if (/[a-z]/.test(password) && /[A-Z]/.test(password)) strength++;
-    if (/\d/.test(password)) strength++;
-    if (/[^a-zA-Z\d]/.test(password)) strength++;
-    
-    if (strength <= 2) return 'weak';
-    if (strength <= 4) return 'medium';
-    return 'strong';
-}
-
-// Update password strength indicator
-function updatePasswordStrengthIndicator(strength) {
-    const input = document.getElementById('newPassword');
-    if (!input) return;
-    
-    // Remove existing strength classes
-    input.classList.remove('password-weak', 'password-medium', 'password-strong');
-    
-    // Remove existing strength indicator
-    const existingIndicator = input.parentNode.querySelector('.password-strength');
-    if (existingIndicator) {
-        existingIndicator.remove();
-    }
-    
-    // Add appropriate class and indicator
-    if (input.value.length > 0) {
-        input.classList.add('password-' + strength);
-        
-        const strengthText = {
-            'weak': 'Weak',
-            'medium': 'Medium', 
-            'strong': 'Strong'
-        };
-        
-        const strengthColors = {
-            'weak': 'var(--color-danger)',
-            'medium': 'orange',
-            'strong': 'var(--color-success)'
-        };
-        
-        const indicator = document.createElement('div');
-        indicator.className = 'password-strength';
-        indicator.style.cssText = `
-            font-size: 0.8rem;
-            margin-top: 0.25rem;
-            color: ${strengthColors[strength]};
-            font-weight: 500;
-        `;
-        indicator.textContent = `Password strength: ${strengthText[strength]}`;
-        
-        input.parentNode.appendChild(indicator);
-    }
-}
-
-// Load blocked users
 async function loadBlockedUsers() {
     const container = document.getElementById('blockedUsersList');
-    if (!container) return;
-    
+    if (!container) {
+        return;
+    }
+
     try {
         const response = await fetch(BASE_PATH + 'index.php?controller=Settings&action=getBlockedUsers');
         const data = await response.json();
-        
-        if (data.success && data.users && data.users.length > 0) {
-            container.innerHTML = data.users.map(user => `
-                <div class="blocked-user">
-                    <div class="user-info">
-                        <img src="${user.avatar || BASE_PATH + 'uploads/user_dp/default_user_dp.jpg'}" alt="${user.first_name}" onerror="this.src='${BASE_PATH + 'uploads/user_dp/default_user_dp.jpg'}'">
-                        <div>
-                            <h4>${user.first_name} ${user.last_name}</h4>
-                            <p>@${user.username}</p>
+
+        if (!data.success || !Array.isArray(data.users) || data.users.length === 0) {
+            container.innerHTML = '<p class="settings-blocked-empty">No blocked users</p>';
+            return;
+        }
+
+        const rows = data.users.map((user) => {
+            const userId = user.user_id || user.id;
+            const avatarPath = user.profile_picture || user.avatar || 'uploads/user_dp/default_user_dp.jpg';
+            const avatar = avatarPath.startsWith('http') ? avatarPath : BASE_PATH + avatarPath;
+            const firstName = escapeHtml(user.first_name || '');
+            const lastName = escapeHtml(user.last_name || '');
+            const username = escapeHtml(user.username || 'unknown');
+
+            return `
+                <div class="settings-blocked-row">
+                    <div class="settings-blocked-meta">
+                        <img class="settings-blocked-avatar" src="${avatar}" alt="${username}" onerror="this.src='${BASE_PATH + 'uploads/user_dp/default.png'}'">
+                        <div class="settings-blocked-text">
+                            <h4 class="settings-blocked-name">${firstName} ${lastName}</h4>
+                            <p class="settings-blocked-username">@${username}</p>
                         </div>
                     </div>
-                    <button class="btn-secondary unblock-btn" data-user-id="${user.id}">Unblock</button>
+                    <button class="settings-unblock-btn" type="button" data-user-id="${userId}">Unblock</button>
                 </div>
-            `).join('');
-            
-            // Add unblock event listeners
-            container.querySelectorAll('.unblock-btn').forEach(btn => {
-                btn.addEventListener('click', unblockUser);
+            `;
+        });
+
+        container.innerHTML = rows.join('');
+
+        container.querySelectorAll('.settings-unblock-btn').forEach((button) => {
+            button.addEventListener('click', async () => {
+                const userId = button.getAttribute('data-user-id');
+                await unblockUser(userId, button);
             });
-        } else {
-            container.innerHTML = '<p style="color: var(--color-gray); text-align: center; padding: 2rem;">No blocked users</p>';
-        }
+        });
     } catch (error) {
         console.error('Failed to load blocked users:', error);
-        container.innerHTML = '<p style="color: var(--color-danger); text-align: center; padding: 2rem;">Failed to load blocked users</p>';
+        container.innerHTML = '<p class="settings-blocked-empty settings-blocked-empty-error">Failed to load blocked users</p>';
     }
 }
 
-// Unblock user
-async function unblockUser(e) {
-    const userId = e.target.getAttribute('data-user-id');
-    
-    if (!confirm('Are you sure you want to unblock this user?')) {
+async function unblockUser(userId, button) {
+    if (!userId) {
         return;
     }
-    
-    const button = e.target;
-    const originalText = button.textContent;
-    button.textContent = 'Unblocking...';
-    button.disabled = true;
-    
+
+    const confirmed = confirm('Are you sure you want to unblock this user?');
+    if (!confirmed) {
+        return;
+    }
+
+    const originalText = button ? button.textContent : '';
+    if (button) {
+        button.textContent = 'Unblocking...';
+        button.disabled = true;
+    }
+
     try {
+        const formData = new FormData();
+        formData.append('user_id', userId);
+
         const response = await fetch(BASE_PATH + 'index.php?controller=Settings&action=unblockUser', {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/x-www-form-urlencoded',
-            },
-            body: 'user_id=' + userId
+            body: formData
         });
-        
+
         const data = await response.json();
-        
+
         if (data.success) {
             showMessage('User unblocked successfully', 'success');
-            loadBlockedUsers(); // Reload the list
+            await loadBlockedUsers();
         } else {
-            showMessage(data.message, 'error');
-            button.textContent = originalText;
-            button.disabled = false;
+            showMessage(data.message || 'Failed to unblock user', 'error');
+            if (button) {
+                button.textContent = originalText;
+                button.disabled = false;
+            }
         }
     } catch (error) {
         console.error('Failed to unblock user:', error);
         showMessage('Failed to unblock user', 'error');
-        button.textContent = originalText;
-        button.disabled = false;
+        if (button) {
+            button.textContent = originalText;
+            button.disabled = false;
+        }
     }
 }
 
-// Initialize form validation
+function initializePasswordToggles() {
+    const passwordInputs = document.querySelectorAll('input[type="password"]');
+
+    passwordInputs.forEach((input) => {
+        if (input.dataset.toggleReady === '1') {
+            return;
+        }
+
+        const parent = input.parentElement;
+        if (!parent) {
+            return;
+        }
+
+        let wrapper = input.closest('.password-input-wrap');
+        if (!wrapper) {
+            wrapper = document.createElement('div');
+            wrapper.className = 'password-input-wrap';
+            parent.insertBefore(wrapper, input);
+            wrapper.appendChild(input);
+        }
+
+        const toggleButton = document.createElement('button');
+        toggleButton.type = 'button';
+        toggleButton.className = 'password-toggle';
+        toggleButton.innerHTML = '<i class="uil uil-eye"></i>';
+        toggleButton.setAttribute('aria-label', 'Toggle password visibility');
+
+        toggleButton.addEventListener('click', () => {
+            const isHidden = input.type === 'password';
+            input.type = isHidden ? 'text' : 'password';
+            toggleButton.innerHTML = isHidden ? '<i class="uil uil-eye-slash"></i>' : '<i class="uil uil-eye"></i>';
+        });
+
+        wrapper.appendChild(toggleButton);
+        input.dataset.toggleReady = '1';
+    });
+}
+
+function initializePasswordStrength() {
+    const input = document.getElementById('newPassword');
+    if (!input) {
+        return;
+    }
+
+    input.addEventListener('input', () => {
+        const strength = evaluatePasswordStrength(input.value);
+        updatePasswordStrengthIndicator(strength);
+    });
+}
+
+function evaluatePasswordStrength(password) {
+    if (!password) {
+        return 'empty';
+    }
+
+    let score = 0;
+
+    if (password.length >= 8) score += 1;
+    if (password.length >= 12) score += 1;
+    if (/[a-z]/.test(password) && /[A-Z]/.test(password)) score += 1;
+    if (/\d/.test(password)) score += 1;
+    if (/[^a-zA-Z\d]/.test(password)) score += 1;
+
+    if (score <= 2) return 'weak';
+    if (score <= 4) return 'medium';
+    return 'strong';
+}
+
+function updatePasswordStrengthIndicator(strength) {
+    const input = document.getElementById('newPassword');
+    if (!input) {
+        return;
+    }
+
+    input.classList.remove('password-weak', 'password-medium', 'password-strong');
+
+    const formGroup = input.closest('.form-group') || input.parentElement;
+    const existing = formGroup ? formGroup.querySelector('.password-strength') : null;
+    if (existing) {
+        existing.remove();
+    }
+
+    if (strength === 'empty') {
+        return;
+    }
+
+    const labels = {
+        weak: 'Weak',
+        medium: 'Medium',
+        strong: 'Strong'
+    };
+
+    input.classList.add('password-' + strength);
+
+    const indicator = document.createElement('div');
+    indicator.className = 'password-strength strength-' + strength;
+    indicator.textContent = 'Password strength: ' + labels[strength];
+
+    if (formGroup) {
+        formGroup.appendChild(indicator);
+    }
+}
+
 function initializeFormValidation() {
-    // Email validation
     const emailInput = document.getElementById('email');
     if (emailInput) {
-        emailInput.addEventListener('blur', function() {
-            const email = this.value;
-            if (email && !isValidEmail(email)) {
-                showFieldError(this, 'Please enter a valid email address');
+        emailInput.addEventListener('input', function validateEmailInput() {
+            const email = this.value.trim();
+            if (email && !isValidUniversityEmail(email)) {
+                showFieldError(this, 'Use university email ending with .ac.lk');
+                this.setCustomValidity('Use university email ending with .ac.lk');
             } else {
                 clearFieldError(this);
+                this.setCustomValidity('');
             }
         });
     }
-    
-    // Phone validation
+
     const phoneInput = document.getElementById('phone');
     if (phoneInput) {
-        phoneInput.addEventListener('blur', function() {
-            const phone = this.value;
+        phoneInput.addEventListener('blur', function validatePhoneInput() {
+            const phone = this.value.trim();
             if (phone && !isValidPhone(phone)) {
                 showFieldError(this, 'Please enter a valid phone number');
             } else {
@@ -401,167 +349,99 @@ function initializeFormValidation() {
     }
 }
 
-// Email validation helper
-function isValidEmail(email) {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return emailRegex.test(email);
+function isValidUniversityEmail(email) {
+    const regex = /^[^@\s]+@[a-z0-9-]+(?:\.[a-z0-9-]+)*\.ac\.lk$/i;
+    return regex.test(email);
 }
 
-// Phone validation helper
 function isValidPhone(phone) {
-    const phoneRegex = /^[\+]?[1-9][\d]{0,15}$/;
-    return phoneRegex.test(phone.replace(/[\s\-\(\)]/g, ''));
+    const sanitized = phone.replace(/[\s\-()]/g, '');
+    return /^\+?[1-9]\d{6,15}$/.test(sanitized);
 }
 
-// Show field error
 function showFieldError(field, message) {
     clearFieldError(field);
     field.classList.add('error');
-    
+
     const errorDiv = document.createElement('div');
     errorDiv.className = 'error-message';
     errorDiv.textContent = message;
-    errorDiv.style.cssText = 'color: var(--color-danger); font-size: 0.8rem; margin-top: 0.25rem;';
-    
-    field.parentNode.appendChild(errorDiv);
+
+    if (field.parentElement) {
+        field.parentElement.appendChild(errorDiv);
+    }
 }
 
-// Clear field error
 function clearFieldError(field) {
     field.classList.remove('error');
-    const existingError = field.parentNode.querySelector('.error-message');
-    if (existingError) {
-        existingError.remove();
+
+    const parent = field.parentElement;
+    if (!parent) {
+        return;
+    }
+
+    const errorDiv = parent.querySelector('.error-message');
+    if (errorDiv) {
+        errorDiv.remove();
     }
 }
 
-function initializePrivacyExplanations() {
-    const privacyForm = document.getElementById('privacyForm');
-    if (!privacyForm) return;
+function initializeToast() {
+    if (typeof window.showToast === 'function') {
+        return;
+    }
 
-    const explanations = {
-        profile_visibility: {
-            'everyone': 'Your profile is visible to everyone on Hanthana',
-            'friends': 'Only your friends can see your profile',
-            'private': 'Only you can see your profile'
-        },
-        post_visibility: {
-            'everyone': 'Your posts are visible to everyone',
-            'friends': 'Only your friends can see your posts', 
-            'private': 'Only you can see your posts'
-        },
-        friend_request_visibility: {
-            'everyone': 'Anyone can send you friend requests',
-            'friends_of_friends': 'Only friends of your friends can send requests',
-            'none': 'No one can send you friend requests'
+    window.showToast = (message, type = 'info') => {
+        const container = document.getElementById('toastContainer');
+        if (!container) {
+            alert(message);
+            return;
         }
-    };
 
-    // Create explanation container
-    const explanationContainer = document.createElement('div');
-    explanationContainer.id = 'privacyExplanations';
-    explanationContainer.style.cssText = `
-        background: var(--color-light);
-        padding: 1.5rem;
-        border-radius: 0.5rem;
-        margin-top: 1rem;
-        border-left: 4px solid var(--color-primary);
-    `;
-    
-    privacyForm.appendChild(explanationContainer);
-
-    // Update explanations when settings change
-    const updateExplanations = () => {
-        const profileVis = document.querySelector('select[name="profile_visibility"]').value;
-        const postVis = document.querySelector('select[name="post_visibility"]').value;
-        const friendReqVis = document.querySelector('select[name="friend_request_visibility"]').value;
-
-        explanationContainer.innerHTML = `
-            <h4 style="margin-top: 0; color: var(--color-dark);">Current Privacy Settings:</h4>
-            <div style="display: grid; gap: 0.5rem;">
-                <div>
-                    <strong>Profile:</strong> ${explanations.profile_visibility[profileVis]}
-                </div>
-                <div>
-                    <strong>Posts:</strong> ${explanations.post_visibility[postVis]}
-                </div>
-                <div>
-                    <strong>Friend Requests:</strong> ${explanations.friend_request_visibility[friendReqVis]}
-                </div>
+        const icon = type === 'success' ? 'check-circle' : (type === 'error' ? 'exclamation-circle' : 'info-circle');
+        const toast = document.createElement('div');
+        toast.className = 'toast toast-' + type;
+        toast.innerHTML = `
+            <div class="toast-content">
+                <i class="uil uil-${icon}"></i>
+                <span>${escapeHtml(message)}</span>
             </div>
-            <div style="margin-top: 1rem; padding: 0.75rem; background: rgba(79, 70, 229, 0.1); border-radius: 0.25rem;">
-                <small style="color: var(--color-primary);">
-                    <i class="uil uil-info-circle"></i>
-                    These settings take effect immediately and apply to all new content.
-                </small>
-            </div>
+            <button class="toast-close" type="button">
+                <i class="uil uil-times"></i>
+            </button>
         `;
+
+        container.appendChild(toast);
+
+        const removeToast = () => {
+            if (toast.parentElement) {
+                toast.remove();
+            }
+        };
+
+        const closeButton = toast.querySelector('.toast-close');
+        if (closeButton) {
+            closeButton.addEventListener('click', removeToast);
+        }
+
+        setTimeout(removeToast, 5000);
     };
-
-    // Listen for changes
-    const privacySelects = privacyForm.querySelectorAll('select');
-    privacySelects.forEach(select => {
-        select.addEventListener('change', updateExplanations);
-    });
-
-    // Initial update
-    updateExplanations();
 }
 
-// Enhanced form submission with privacy feedback
-async function submitFormData(formData, action) {
-    const submitButton = document.querySelector(`#${action.replace('update', '').toLowerCase()}-section button[type="submit"]`);
-    
-    if (submitButton) {
-        const originalText = submitButton.textContent;
-        submitButton.textContent = 'Saving...';
-        submitButton.disabled = true;
+function showMessage(message, type) {
+    if (typeof window.showToast === 'function') {
+        window.showToast(message, type);
+        return;
     }
-    
-    try {
-        const response = await fetch(BASE_PATH + 'index.php?controller=Settings&action=' + action, {
-            method: 'POST',
-            body: formData
-        });
-        
-        const data = await response.json();
-        
-        if (data.success) {
-            showMessage(data.message, 'success');
-            
-            // Special handling for privacy settings
-            if (action === 'updatePrivacy') {
-                showMessage('Privacy settings updated successfully! These changes are now active.', 'success');
-                
-                // Update any visible UI elements if needed
-                updatePrivacyUI();
-            }
-            
-            if (action === 'updatePassword') {
-                document.getElementById('passwordForm').reset();
-            }
-        } else {
-            showMessage(data.message, 'error');
-        }
-    } catch (error) {
-        console.error('Error:', error);
-        showMessage('Failed to save changes', 'error');
-    } finally {
-        if (submitButton) {
-            submitButton.textContent = submitButton.getAttribute('data-original-text') || 'Save Changes';
-            submitButton.disabled = false;
-        }
-    }
+
+    alert(message);
 }
 
-function updatePrivacyUI() {
-    // This function can update any real-time UI elements based on privacy changes
-    console.log('Privacy settings updated - UI refresh may be needed');
-    
-    // Example: Update friend request button states if visible
-    const friendButtons = document.querySelectorAll('.friend-request-btn');
-    friendButtons.forEach(btn => {
-        // You might want to refresh friend request buttons
-        btn.disabled = false; // Reset any disabled states
-    });
+function escapeHtml(value) {
+    return String(value)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
 }

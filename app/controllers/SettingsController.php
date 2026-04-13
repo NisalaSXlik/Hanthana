@@ -5,6 +5,10 @@ require_once __DIR__ . '/../models/SettingsModel.php';
 class SettingsController {
     private $userModel;
     private $settingsModel;
+
+    private function isValidUniversityEmail(string $email): bool {
+        return (bool) preg_match('/^[^@\s]+@[a-z0-9-]+(?:\.[a-z0-9-]+)*\.ac\.lk$/i', $email);
+    }
     
     public function __construct() {
         $this->userModel = new UserModel();
@@ -69,9 +73,18 @@ class SettingsController {
             echo json_encode(['success' => false, 'message' => 'First name, last name, and email are required']);
             exit();
         }
+
+        $email = trim((string)$data['email']);
+        if (!filter_var($email, FILTER_VALIDATE_EMAIL) || !$this->isValidUniversityEmail($email)) {
+            echo json_encode([
+                'success' => false,
+                'message' => 'Please use a university email ending with .ac.lk (e.g., 2023cs140@stu.ucsc.cmb.ac.lk).'
+            ]);
+            exit();
+        }
         
         // Check if email is already taken by another user
-        $existingUser = $this->userModel->findByEmail($data['email']);
+        $existingUser = $this->userModel->findByEmail($email);
         if ($existingUser && $existingUser['user_id'] != $userId) {
             echo json_encode(['success' => false, 'message' => 'Email is already taken']);
             exit();
@@ -91,7 +104,7 @@ class SettingsController {
                 'first_name' => $data['first_name'],
                 'last_name' => $data['last_name'],
                 'username' => $data['username'],
-                'email' => $data['email'],
+                'email' => $email,
                 'phone_number' => $data['phone_number'] ?? null,
                 'bio' => $data['bio'] ?? null,
                 'university' => $data['university'] ?? null,
@@ -248,6 +261,72 @@ class SettingsController {
             } else {
                 echo json_encode(['success' => false, 'message' => 'Failed to update appearance settings']);
             }
+        } catch (Exception $e) {
+            echo json_encode(['success' => false, 'message' => 'Error: ' . $e->getMessage()]);
+        }
+    }
+
+    public function deleteAccount() {
+        if (session_status() === PHP_SESSION_NONE) {
+            session_start();
+        }
+
+        header('Content-Type: application/json');
+
+        if (!isset($_SESSION['user_id'])) {
+            echo json_encode(['success' => false, 'message' => 'Not authenticated']);
+            exit();
+        }
+
+        $userId = (int)$_SESSION['user_id'];
+        $currentPassword = $_POST['current_password'] ?? '';
+        $confirmText = strtoupper(trim($_POST['confirm_text'] ?? ''));
+
+        if ($currentPassword === '') {
+            echo json_encode(['success' => false, 'message' => 'Current password is required']);
+            exit();
+        }
+
+        if ($confirmText !== 'DELETE') {
+            echo json_encode(['success' => false, 'message' => 'Please type DELETE to confirm']);
+            exit();
+        }
+
+        $user = $this->userModel->findById($userId);
+        if (!$user || !password_verify($currentPassword, $user['password_hash'])) {
+            echo json_encode(['success' => false, 'message' => 'Current password is incorrect']);
+            exit();
+        }
+
+        try {
+            $deleted = $this->userModel->delete($userId);
+            if (!$deleted) {
+                echo json_encode(['success' => false, 'message' => 'Failed to delete account']);
+                exit();
+            }
+
+            $_SESSION = [];
+
+            if (ini_get('session.use_cookies')) {
+                $params = session_get_cookie_params();
+                setcookie(
+                    session_name(),
+                    '',
+                    time() - 42000,
+                    $params['path'],
+                    $params['domain'],
+                    $params['secure'],
+                    $params['httponly']
+                );
+            }
+
+            session_destroy();
+
+            echo json_encode([
+                'success' => true,
+                'message' => 'Account deleted successfully',
+                'redirect' => BASE_PATH . 'index.php?controller=Login&action=index'
+            ]);
         } catch (Exception $e) {
             echo json_encode(['success' => false, 'message' => 'Error: ' . $e->getMessage()]);
         }

@@ -8,12 +8,12 @@ class EventPostModel extends BaseGroupPostModel {
     }
 
     public function create(int $userId, int $groupId, array $data): ?int {
-        $content = trim($data['content'] ?? '');
+        $form = $data['request'] ?? [];
+        $content = trim($data['content'] ?? ($form['event_description'] ?? ''));
         if ($content === '') {
             return null;
         }
 
-        $form = $data['request'] ?? [];
         $event = [
             'title' => $form['event_title'] ?? ($form['event_name'] ?? ''),
             'date' => $form['event_date'] ?? '',
