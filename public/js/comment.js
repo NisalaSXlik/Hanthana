@@ -192,6 +192,10 @@ class CommentSystem {
         const currentUserId = meta.currentUserId;
         const postOwnerId = meta.postOwnerId;
         const canModerate = (Number(comment.commenter_id) === Number(currentUserId)) || (Number(postOwnerId) === Number(currentUserId));
+        const commenterId = Number(comment.commenter_id || comment.user_id || 0);
+        const commenterProfileUrl = commenterId > 0
+            ? `${BASE_PATH}index.php?controller=Profile&action=view&user_id=${commenterId}`
+            : '';
         
         // Profile picture is already resolved by MediaHelper on the server side
         const profilePic = comment.profile_picture || BASE_PATH + 'uploads/user_dp/default_user_dp.jpg';
@@ -201,6 +205,10 @@ class CommentSystem {
             repliesHtml = comment.replies.map(reply => {
                 reply.author = reply.username || 'Unknown';
                 const replyCanModerate = (Number(reply.commenter_id) === Number(currentUserId)) || (Number(postOwnerId) === Number(currentUserId));
+                const replyUserId = Number(reply.commenter_id || reply.user_id || 0);
+                const replyProfileUrl = replyUserId > 0
+                    ? `${BASE_PATH}index.php?controller=Profile&action=view&user_id=${replyUserId}`
+                    : '';
                 
                 // Profile picture is already resolved by MediaHelper on the server side
                 const replyProfilePic = reply.profile_picture || BASE_PATH + 'uploads/user_dp/default_user_dp.jpg';
@@ -208,8 +216,8 @@ class CommentSystem {
                 return `
                 <div class="comment reply" data-comment-id="${reply.comment_id}" style="margin-left: 40px;">
                     <div class="comment-header-info">
-                        <img src="${replyProfilePic}" alt="${reply.author}" class="comment-avatar">
-                        <span class="comment-author">${reply.author}</span>
+                        ${replyProfileUrl ? `<a href="${replyProfileUrl}" class="comment-author-link"><img src="${replyProfilePic}" alt="${reply.author}" class="comment-avatar"></a>` : `<img src="${replyProfilePic}" alt="${reply.author}" class="comment-avatar">`}
+                        ${replyProfileUrl ? `<a href="${replyProfileUrl}" class="comment-author comment-author-link">${reply.author}</a>` : `<span class="comment-author">${reply.author}</span>`}
                         <span class="comment-time">${this.getTimeAgo(reply.created_at)}</span>
                     </div>
                     <div class="comment-text" data-comment-content>${this.escapeHtml(reply.content)}</div>
@@ -225,8 +233,8 @@ class CommentSystem {
         return `
         <div class="comment" data-comment-id="${comment.comment_id}">
             <div class="comment-header-info">
-                <img src="${profilePic}" alt="${comment.author}" class="comment-avatar">
-                <span class="comment-author">${comment.author}</span>
+                ${commenterProfileUrl ? `<a href="${commenterProfileUrl}" class="comment-author-link"><img src="${profilePic}" alt="${comment.author}" class="comment-avatar"></a>` : `<img src="${profilePic}" alt="${comment.author}" class="comment-avatar">`}
+                ${commenterProfileUrl ? `<a href="${commenterProfileUrl}" class="comment-author comment-author-link">${comment.author}</a>` : `<span class="comment-author">${comment.author}</span>`}
                 <span class="comment-time">${timeAgo}</span>
             </div>
             <div class="comment-text" data-comment-content>${this.escapeHtml(comment.content)}</div>

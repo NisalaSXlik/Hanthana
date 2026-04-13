@@ -208,6 +208,7 @@ if ($resolvedGroupId > 0) {
                                         $postType = $post['group_post_type'] ?? 'discussion';
                                         $postMetadata = is_array($post['metadata']) ? $post['metadata'] : [];
                                         $postId = (int)$post['post_id'];
+                                        $postAuthorId = (int)($post['author_id'] ?? $post['user_id'] ?? 0);
                                         $isPostOwner = (int)($_SESSION['user_id'] ?? 0) === (int)($post['author_id'] ?? $post['user_id'] ?? 0);
                                         $postReportLabel = 'post in ' . ($group['name'] ?? 'group');
                                         $badgeIcons = ['discussion' => '💬', 'question' => '❓', 'resource' => '📚', 'poll' => '📊', 'event' => '📅', 'assignment' => '🔔'];
@@ -245,9 +246,11 @@ if ($resolvedGroupId > 0) {
                                                 </div>
                                                 <div class="event-header-content">
                                                     <div class="event-card-author">
-                                                        <img src="<?php echo htmlspecialchars(MediaHelper::resolveMediaPath($post['profile_picture'] ?? '', 'uploads/user_dp/default.png')); ?>" alt="<?php echo htmlspecialchars($post['first_name'] . ' ' . $post['last_name']); ?>" class="event-author-avatar">
+                                                        <a href="<?php echo BASE_PATH; ?>index.php?controller=Profile&action=view&user_id=<?php echo $postAuthorId; ?>" onclick="event.stopPropagation();" style="display:inline-flex;">
+                                                            <img src="<?php echo htmlspecialchars(MediaHelper::resolveMediaPath($post['profile_picture'] ?? '', 'uploads/user_dp/default.png')); ?>" alt="<?php echo htmlspecialchars($post['first_name'] . ' ' . $post['last_name']); ?>" class="event-author-avatar">
+                                                        </a>
                                                         <div class="event-author-info">
-                                                            <h4 class="event-author-name"><?php echo htmlspecialchars($post['first_name'] . ' ' . $post['last_name']); ?></h4>
+                                                            <h4 class="event-author-name"><a href="<?php echo BASE_PATH; ?>index.php?controller=Profile&action=view&user_id=<?php echo $postAuthorId; ?>" onclick="event.stopPropagation();" style="color: inherit; text-decoration: none;"><?php echo htmlspecialchars($post['first_name'] . ' ' . $post['last_name']); ?></a></h4>
                                                             <p class="event-author-time"><?php echo htmlspecialchars($post['created_at'] ?? ''); ?></p>
                                                         </div>
                                                     </div>
@@ -260,11 +263,11 @@ if ($resolvedGroupId > 0) {
                                         <?php else: ?>
                                             <div class="head">
                                                 <div class="user">
-                                                    <div class="profile-picture">
+                                                    <a class="profile-picture" href="<?php echo BASE_PATH; ?>index.php?controller=Profile&action=view&user_id=<?php echo $postAuthorId; ?>" onclick="event.stopPropagation();">
                                                         <img src="<?php echo htmlspecialchars(MediaHelper::resolveMediaPath($post['profile_picture'] ?? '', 'uploads/user_dp/default.png')); ?>" alt="<?php echo htmlspecialchars($post['first_name'] . ' ' . $post['last_name']); ?>">
-                                                    </div>
+                                                    </a>
                                                     <div class="info">
-                                                        <h3><?php echo htmlspecialchars($post['first_name'] . ' ' . $post['last_name']); ?></h3>
+                                                        <h3><a href="<?php echo BASE_PATH; ?>index.php?controller=Profile&action=view&user_id=<?php echo $postAuthorId; ?>" onclick="event.stopPropagation();" style="color: inherit; text-decoration: none;"><?php echo htmlspecialchars($post['first_name'] . ' ' . $post['last_name']); ?></a></h3>
                                                         <small><?php echo htmlspecialchars($post['created_at'] ?? ''); ?></small>
                                                     </div>
                                                 </div>

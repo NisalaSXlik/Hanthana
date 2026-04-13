@@ -69,9 +69,11 @@ function parseStructuredQuestionContent(?string $content): array {
 
 function renderAnswerNode(array $answer, int $currentUserId, int $questionOwnerId, int $level = 0): string {
     $answerId = (int)($answer['answer_id'] ?? 0);
+    $authorId = (int)($answer['user_id'] ?? 0);
     $authorName = htmlspecialchars(trim(($answer['first_name'] ?? '') . ' ' . ($answer['last_name'] ?? '')));
     $time = htmlspecialchars(timeAgo($answer['created_at'] ?? 'now'));
     $profilePic = BASE_PATH . ($answer['profile_picture'] ?: 'public/images/default-avatar.png');
+    $authorProfileUrl = BASE_PATH . 'index.php?controller=Profile&action=view&user_id=' . $authorId;
     $content = nl2br(htmlspecialchars($answer['content'] ?? ''));
     $canModerate = (int)($answer['user_id'] ?? 0) === $currentUserId;
     $accepted = !empty($answer['is_accepted']);
@@ -87,8 +89,8 @@ function renderAnswerNode(array $answer, int $currentUserId, int $questionOwnerI
     return '
         <div class="comment' . ($level > 0 ? ' reply' : '') . '" data-answer-id="' . $answerId . '"' . $replyStyle . '>
             <div class="comment-header-info">
-                <img src="' . htmlspecialchars($profilePic) . '" class="comment-avatar" alt="' . $authorName . '">
-                <span class="comment-author">' . $authorName . '</span>
+                <a href="' . htmlspecialchars($authorProfileUrl) . '" class="comment-author-link"><img src="' . htmlspecialchars($profilePic) . '" class="comment-avatar" alt="' . $authorName . '"></a>
+                <a href="' . htmlspecialchars($authorProfileUrl) . '" class="comment-author comment-author-link">' . $authorName . '</a>
                 <span class="comment-time">' . $time . '</span>
                 ' . ($accepted ? '<span class="answer-badge">Accepted</span>' : '') . '
             </div>

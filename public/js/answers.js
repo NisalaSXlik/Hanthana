@@ -48,6 +48,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const renderAnswer = (answer, level = 0) => {
         const id = Number(answer.answer_id || 0);
+        const authorId = Number(answer.user_id || 0);
+        const authorProfileUrl = authorId > 0
+            ? `${ANSWERS_BASE_PATH}index.php?controller=Profile&action=view&user_id=${authorId}`
+            : '';
         const author = `${answer.first_name || ''} ${answer.last_name || ''}`.trim() || 'Unknown';
         const profile = answer.profile_picture || `${ANSWERS_BASE_PATH}public/images/default-avatar.png`;
         const currentUserId = Number(window.USER_ID || 0);
@@ -58,8 +62,8 @@ document.addEventListener('DOMContentLoaded', () => {
         return `
             <div class="comment${level > 0 ? ' reply' : ''}" data-answer-id="${id}" data-level="${level}"${replyStyle}>
                 <div class="comment-header-info">
-                    <img src="${profile}" class="comment-avatar" alt="${escapeHtml(author)}">
-                    <span class="comment-author">${escapeHtml(author)}</span>
+                    ${authorProfileUrl ? `<a href="${authorProfileUrl}" class="comment-author-link"><img src="${profile}" class="comment-avatar" alt="${escapeHtml(author)}"></a>` : `<img src="${profile}" class="comment-avatar" alt="${escapeHtml(author)}">`}
+                    ${authorProfileUrl ? `<a href="${authorProfileUrl}" class="comment-author comment-author-link">${escapeHtml(author)}</a>` : `<span class="comment-author">${escapeHtml(author)}</span>`}
                     <span class="comment-time">${escapeHtml(getTimeAgo(answer.created_at || ''))}</span>
                     ${answer.is_accepted ? '<span class="answer-badge">Accepted</span>' : ''}
                 </div>
