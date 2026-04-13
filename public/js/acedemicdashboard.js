@@ -166,8 +166,16 @@
 
         showPane('groups');
 
+        const headerHtml = `
+            ${renderInlinePathRow()}
+            <div class="acd-group-table-head" role="presentation">
+                <span class="acd-group-col acd-group-name-col">Group</span>
+                <span class="acd-group-col acd-group-category-col">Category</span>
+                <span class="acd-group-col acd-group-files-col">Files</span>
+            </div>`;
+
         if (!state.groups.length) {
-            groupsList.innerHTML = '<div class="acd-empty">No groups with resources yet.</div>';
+            groupsList.innerHTML = `${headerHtml}<div class="acd-empty">No groups with resources yet.</div>`;
             return;
         }
 
@@ -185,15 +193,7 @@
                 </button>`;
         }).join('');
 
-        groupsList.innerHTML = `
-            ${renderInlinePathRow()}
-            <div class="acd-group-table-head" role="presentation">
-                <span class="acd-group-col acd-group-name-col">Group</span>
-                <span class="acd-group-col acd-group-category-col">Category</span>
-                <span class="acd-group-col acd-group-files-col">Files</span>
-            </div>
-            ${rowsHtml}
-        `;
+        groupsList.innerHTML = `${headerHtml}${rowsHtml}`;
     }
 
     function renderBins() {
@@ -203,8 +203,17 @@
 
         showPane('bins');
 
+        const headerHtml = `
+            ${renderInlinePathRow()}
+            <div class="acd-bin-table-head" role="presentation">
+                <span class="acd-bin-col acd-bin-name-col">Name</span>
+                <span class="acd-bin-col">Kind</span>
+                <span class="acd-bin-col acd-bin-files-col">Files</span>
+                <span class="acd-bin-col acd-bin-date-col">Date Added</span>
+            </div>`;
+
         if (!state.bins.length) {
-            binsList.innerHTML = '<div class="acd-empty">No bins available in this group.</div>';
+            binsList.innerHTML = `${headerHtml}<div class="acd-empty">No bins available in this group.</div>`;
             return;
         }
 
@@ -223,16 +232,7 @@
                 </button>`;
         }).join('');
 
-        binsList.innerHTML = `
-            ${renderInlinePathRow()}
-            <div class="acd-bin-table-head" role="presentation">
-                <span class="acd-bin-col acd-bin-name-col">Name</span>
-                <span class="acd-bin-col">Kind</span>
-                <span class="acd-bin-col acd-bin-files-col">Files</span>
-                <span class="acd-bin-col acd-bin-date-col">Date Added</span>
-            </div>
-            ${rowsHtml}
-        `;
+        binsList.innerHTML = `${headerHtml}${rowsHtml}`;
     }
 
     function renderFiles() {
