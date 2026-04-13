@@ -2,6 +2,24 @@
     max-width: 100%;
 }
 
+.page-search nav .nav-right #openPostModal.btn,
+.page-search nav .nav-right #openPostModal.btn-primary {
+    padding: var(--btn-padding) !important;
+    border-radius: var(--border-radius) !important;
+    font-size: 0.9rem !important;
+    font-weight: 500 !important;
+    background: var(--color-primary) !important;
+    color: var(--color-white) !important;
+    border: none !important;
+}
+
+.page-search nav .nav-right #openPostModal.btn:hover,
+.page-search nav .nav-right #openPostModal.btn-primary:hover {
+    background: var(--color-primary) !important;
+    color: var(--color-white) !important;
+    opacity: 0.9 !important;
+}
+
 .search-page-wrap {
     display: flex;
     flex-direction: column;

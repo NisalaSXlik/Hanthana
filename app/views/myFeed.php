@@ -58,10 +58,10 @@ if (!isset($posts)) {
 							// Profile picture is already resolved by PostModel
 							$avatarUrl = MediaHelper::resolveMediaPath($post['profile_picture'], 'uploads/user_dp/default.png');
 							$fullName = trim(($post['first_name'] ?? '') . ' ' . ($post['last_name'] ?? ''));
-							$displayName = $post['username'] ?? '';
+							$displayName = $fullName !== '' ? $fullName : ($post['username'] ?? '');
 
 							if ($displayName === '' || $displayName === null) {
-								$displayName = $fullName !== '' ? $fullName : 'Unknown';
+								$displayName = 'Unknown';
 							}
 
 							$isOwner = isset($_SESSION['user_id']) && (int)$_SESSION['user_id'] === (int)($post['author_id'] ?? $post['user_id'] ?? 0);

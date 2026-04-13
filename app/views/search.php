@@ -660,17 +660,21 @@ foreach ($streamPosts as $post) {
     </div>
 </main>
 
+<?php include __DIR__ . '/templates/chat-clean.php'; ?>
 <?php include __DIR__ . '/templates/report-modal.php'; ?>
 
-<script src="./js/navbar.js"></script>
-<script src="./js/calender.js"></script>
-<script src="./js/notificationpopup.js"></script>
-<script src="./js/general.js"></script>
+<script> const BASE_PATH = '<?php echo BASE_PATH; ?>'; </script>
+<script src="./js/calender.js?v=20250209_syntax"></script>
 <script src="./js/friends.js"></script>
+<script src="./js/general.js"></script>
 <script src="./js/vote.js"></script>
+<script src="./js/notificationpopup.js"></script>
+<script src="./js/navbar.js"></script>
+<script src="./js/post.js"></script>
+<script src="./js/comment.js"></script>
+<script src="./js/poll.js"></script>
 <script src="./js/bookmark.js"></script>
 <script src="./js/report.js"></script>
 <script src="./js/search-page.js"></script>
-<script src="./js/comment.js"></script>
 </body>
 </html>
