@@ -33,6 +33,29 @@ import { api } from './utils/api.js';
         alert(message);
     }
 
+    async function openChannelChat(channel) {
+        if (!channel || !channel.id) {
+            return;
+        }
+
+        try {
+            if (window.HanthanaChat && typeof window.HanthanaChat.openGroupConversation === 'function') {
+                await window.HanthanaChat.openGroupConversation(channel.id);
+                return;
+            }
+
+            window.dispatchEvent(new CustomEvent('hanthana:open-chat', {
+                detail: {
+                    type: 'group',
+                    targetId: channel.id,
+                    conversationId: channel.conversation_id || 0,
+                }
+            }));
+        } catch (error) {
+            toast(error?.message || 'Unable to open channel chat.', 'error');
+        }
+    }
+
     function escapeHtml(value) {
         return String(value || '')
             .replace(/&/g, '&amp;')
@@ -308,7 +331,7 @@ import { api } from './utils/api.js';
                 return;
             }
 
-            toast(`Opening chat for ${channel.name}.`, 'info');
+            await openChannelChat(channel);
         }
     });
 

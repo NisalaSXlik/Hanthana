@@ -35,11 +35,10 @@ class FileBankController extends BaseController
 
         $currentUserId = $_SESSION['user_id'];
         $currentUser = $this->userModel->findById($currentUserId);
-        $isGroupCreator = (int)($group['created_by'] ?? 0) === (int)$currentUserId;
-        $isGroupAdmin = $this->groupModel->isGroupAdmin($groupId, (int)$currentUserId);
-        $isCreator = $isGroupCreator;
-        $isAdmin = $isGroupCreator || $isGroupAdmin;
+        $isAdmin = $this->groupModel->isGroupAdmin($groupId, (int)$currentUserId);
         $canModerateFileBank = $isAdmin;
+        $membershipState = $this->groupModel->getUserMembershipState($groupId, $currentUserId);
+        $isJoined = ($membershipState === 'active');
 
         require_once __DIR__ . '/../views/filebank.php';
     }

@@ -146,9 +146,6 @@ $groupMessagesUnreadTotal = array_sum(array_column($dummyGroupMessages, 'unread_
         <button type="button" class="menu-item menu-item-group-messages<?php echo menuActiveClass('acedemicdashboard', $resolvedMenuKey); ?>" data-target="acedemicdashboard" data-url="<?php echo rtrim(BASE_PATH, '/'); ?>/index.php?controller=AcedemicDashboard&action=index" onclick="window.location.href=this.getAttribute('data-url')">
             <i class="uil uil-comments"></i>
             <h3>Dashboard</h3>
-            <?php if ($groupMessagesUnreadTotal > 0): ?>
-                <span class="menu-badge"><?php echo (int)$groupMessagesUnreadTotal; ?></span>
-            <?php endif; ?>
         </button>
     </div>
 

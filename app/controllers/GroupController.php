@@ -43,12 +43,12 @@ class GroupController {
 
         // Persist active group context for cross-page navigation (e.g. File Bank).
         $_SESSION['current_group_id'] = (int)$group['group_id'];
-
-        $isCreator = (int)$group['created_by'] === $userId;
+        
         $isAdmin = $this->groupModel->isGroupAdmin($groupId, $userId);
         $joinedGroups = $this->groupModel->getGroupsJoinedBy($userId);
         $membershipState = $this->groupModel->getUserMembershipState($groupId, $userId);
-        $isJoined = ($membershipState === 'active' || $isCreator);
+        $isJoined = ($membershipState === 'active');
+        $isPublicGroup = $group && strtolower(trim((string)($group['privacy_status'] ?? 'public'))) === 'public';
 
         $groupPostModel = new GroupPostModel();
         $groupPosts = $groupPostModel->getGroupPosts($groupId, $userId);
@@ -113,7 +113,7 @@ class GroupController {
         // Load group members for the members tab
         $groupMembers = $this->groupModel->getMembers($groupId);
 
-        $hasPendingRequest = (!$isCreator && !$isJoined && $membershipState === 'pending');
+        $hasPendingRequest = (!$isJoined && $membershipState === 'pending');
 
         // If admin, load pending join requests to surface in view
         $pendingRequests = [];
@@ -180,6 +180,8 @@ class GroupController {
         $postRequests = $this->groupModel->getPendingPostCreationRequests($groupId);
         $binRequests = $this->groupModel->getPendingBinCreationRequests($groupId);
         $channelRequests = $this->groupModel->getPendingChannelCreationRequests($groupId);
+        $membershipState = $this->groupModel->getUserMembershipState($groupId, $userId);
+        $isJoined = ($membershipState === 'active');
 
         require __DIR__ . '/../views/grouprequests.php';
     }
@@ -218,6 +220,8 @@ class GroupController {
         $roleChangeRequests = $this->groupModel->getRoleChangeRequests($groupId, $userId);
         $deleteApprovalStatus = $this->groupModel->getDeleteApprovalStatus($groupId, $userId);
         $voteEvents = $this->groupModel->getGovernanceVoteEvents($groupId, $userId);
+        $membershipState = $this->groupModel->getUserMembershipState($groupId, $userId);
+        $isJoined = ($membershipState === 'active');
 
         $votingRequests = [];
         $deleteRequests = [];
@@ -255,11 +259,9 @@ class GroupController {
         }
 
         $membershipState = $this->groupModel->getUserMembershipState($groupId, $userId);
-        $isCreator = (int)($group['created_by'] ?? 0) === $userId;
-        $isGroupAdmin = $this->groupModel->isGroupAdmin($groupId, $userId);
-        $isAdmin = $isCreator || $isGroupAdmin;
+        $isAdmin = $this->groupModel->isGroupAdmin($groupId, $userId);
         $groupPrivacy = strtolower(trim((string)($group['privacy_status'] ?? 'public')));
-        $isJoined = ($membershipState === 'active' || $isCreator);
+        $isJoined = ($membershipState === 'active');
         $canViewGroupPages = $groupPrivacy === 'public' || $isJoined || $isAdmin;
 
         if (!$canViewGroupPages) {
@@ -339,7 +341,7 @@ class GroupController {
                 return;
             }
 
-            $fields = ['name', 'tag', 'description', 'focus', 'privacy_status', 'rules'];
+            $fields = ['name', 'tag', 'description', 'focus', 'rules'];
             $updateData = [];
             foreach ($fields as $field) {
                 if (isset($_POST[$field]) && $_POST[$field] !== '') {
@@ -713,10 +715,9 @@ class GroupController {
                 echo json_encode(['success' => false, 'message' => 'Group not found']);
                 return;
             }
-
-            $isCreator = (int)($group['created_by'] ?? 0) === $adminId;
+            
             $isAdmin = $this->groupModel->isGroupAdmin($groupId, $adminId);
-            if (!$isCreator && !$isAdmin) {
+            if (!$isAdmin) {
                 echo json_encode(['success' => false, 'message' => 'Unauthorized']);
                 return;
             }
@@ -732,7 +733,7 @@ class GroupController {
                 return;
             }
 
-            if (($membership['role'] ?? '') === 'admin' && !$isCreator) {
+            if (($membership['role'] ?? '') === 'admin') {
                 echo json_encode(['success' => false, 'message' => 'Only the group creator can remove an admin']);
                 return;
             }
@@ -1127,10 +1128,9 @@ class GroupController {
 
             // Check if user is a member of the group (creator is always allowed)
             $membershipState = $this->groupModel->getUserMembershipState($groupId, $userId);
-            $isCreator = (int)($group['created_by'] ?? 0) === $userId;
             $isAdmin = $this->groupModel->isGroupAdmin($groupId, $userId);
             
-            if ($membershipState !== 'active' && !$isCreator) {
+            if ($membershipState !== 'active') {
                 echo json_encode(['success' => false, 'message' => 'You must be a member to post']);
                 return;
             }
@@ -1428,6 +1428,35 @@ class GroupController {
             $targetId = $groupId;
         }
 
+        if (in_array($voteTypeNormalized, ['group_visibility_change', 'visibility'], true)) {
+            $group = $this->groupModel->getById($groupId);
+            if (!$group) {
+                echo json_encode(['success' => false, 'message' => 'Group not found.']);
+                return;
+            }
+
+            $fromVisibility = strtolower($fromVisibility !== '' ? $fromVisibility : (string)($group['privacy_status'] ?? 'public'));
+            $toVisibility = strtolower($toVisibility);
+
+            if (!in_array($toVisibility, ['public', 'private', 'secret'], true)) {
+                echo json_encode(['success' => false, 'message' => 'A valid target visibility is required.']);
+                return;
+            }
+
+            if ($fromVisibility === $toVisibility) {
+                echo json_encode(['success' => false, 'message' => 'Selected visibility is already active.']);
+                return;
+            }
+        }
+
+        if (in_array($voteTypeNormalized, ['group_deletion', 'delete'], true)) {
+            $confirmText = strtolower(trim((string)($_POST['confirm_text'] ?? '')));
+            if ($confirmText !== 'delete') {
+                echo json_encode(['success' => false, 'message' => 'Type DELETE to confirm deletion proposal.']);
+                return;
+            }
+        }
+
         $meta = [];
         if ($fromRole !== '' || $toRole !== '') {
             $meta['from_role'] = $fromRole;
@@ -1460,6 +1489,7 @@ class GroupController {
         $result = $this->groupModel->castGovernanceVote($groupId, $eventId, $voterId, $voteChoice);
         if (!empty($result['success'])) {
             $result['events'] = $this->groupModel->getGovernanceVoteEvents($groupId, $voterId);
+            $result['group_id'] = $groupId;
         }
         echo json_encode($result);
     }

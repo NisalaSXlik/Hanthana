@@ -32,12 +32,12 @@ class GroupReportsController extends BaseController
 
         $currentUserId = (int)$_SESSION['user_id'];
         $currentUser = $this->userModel->findById($currentUserId);
-        $isCreator = (int)($group['created_by'] ?? 0) === $currentUserId;
-        $isGroupAdmin = $this->groupModel->isGroupAdmin($groupId, $currentUserId);
-        $isAdmin = $isCreator || $isGroupAdmin;
+        $isAdmin = $this->groupModel->isGroupAdmin($groupId, $currentUserId);
         $canModerateFileBank = $isAdmin;
+        $membershipState = $this->groupModel->getUserMembershipState($groupId, $currentUserId);
+        $isJoined = ($membershipState === 'active');
 
-        if (!$isCreator && !$isAdmin) {
+        if (!$isAdmin) {
             $this->redirect('GroupProfileView');
         }
 
@@ -186,10 +186,9 @@ class GroupReportsController extends BaseController
         if (!$group) {
             return false;
         }
-
-        $isCreator = (int)($group['created_by'] ?? 0) === $userId;
+        
         $isAdmin = $this->groupModel->isGroupAdmin($groupId, $userId);
-        return $isCreator || $isAdmin;
+        return $isAdmin;
     }
 
     private function isReportInScope(array $report, int $groupId): bool

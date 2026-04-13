@@ -17,7 +17,12 @@ body.page-discover main .container {
 body.page-discover .right {
     position: sticky;
     top: 6rem;
-    height: fit-content;
+    height: calc(100vh - 6.6rem);
+    display: flex;
+    flex-direction: column;
+    gap: 0.55rem;
+    overflow: hidden;
+    min-height: 0;
 }
 
 body.page-discover .friend-requests .request .info {
@@ -96,6 +101,23 @@ body.page-discover .friend-requests .request .info {
 @media (max-width: 768px) {
     body.page-discover main .container {
         grid-template-columns: 1fr !important;
+    }
+
+    body.page-discover .right {
+        position: static;
+        height: auto;
+        overflow: visible;
+    }
+
+    body.page-discover .right > .suggested-section {
+        overflow: visible;
+        min-height: auto;
+    }
+
+    body.page-discover .right > .suggested-section .creator-list {
+        overflow: visible;
+        margin-right: 0;
+        max-height: none;
     }
 
     .discover-header {
@@ -232,7 +254,47 @@ body.page-discover .friend-requests .request .info {
 
 .discover-sidebar-section .trending-list,
 .discover-sidebar-section .creator-list {
-    gap: 0.85rem;
+    gap: 0.65rem;
+}
+
+body.page-discover .right > .suggested-section {
+    flex: 1 1 0;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    scrollbar-gutter: stable;
+}
+
+body.page-discover .right > .suggested-section .section-header {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    background: inherit;
+    padding-bottom: 0.25rem;
+    margin-bottom: 0.75rem;
+}
+
+body.page-discover .right > .suggested-section .creator-list {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    padding-right: 0;
+    margin-right: -0.2rem;
+    scrollbar-gutter: stable;
+}
+
+body.page-discover .right > .suggested-section .creator-list::-webkit-scrollbar {
+    width: 8px;
+}
+
+body.page-discover .right > .suggested-section .creator-list::-webkit-scrollbar-thumb {
+    background: rgba(15, 23, 42, 0.18);
+    border-radius: 999px;
+}
+
+body.page-discover .right > .suggested-section .creator-list::-webkit-scrollbar-track {
+    background: transparent;
 }
 
         .trending-section {
@@ -324,7 +386,7 @@ body.page-discover .friend-requests .request .info {
         .creator-list {
             display: flex;
             flex-direction: column;
-            gap: 8px;
+            gap: 6px;
         }
 
         .creator-card {
@@ -379,7 +441,7 @@ body.page-discover .friend-requests .request .info {
         }
 
         .follow-btn {
-            background: black;
+            background: #0754e6;
             color: white;
             border: none;
             padding: 7px 14px;
@@ -406,8 +468,17 @@ body.page-discover .friend-requests .request .info {
         }
 
         .follow-btn:hover {
-            background: #333;
+            background: #0543bb;
             transform: translateY(-1px);
+        }
+
+        .follow-btn.followed,
+        .follow-btn:disabled {
+            background: #0754e6;
+            color: #fff;
+            opacity: 0.9;
+            cursor: default;
+            transform: none;
         }
 
         .follow-btn:active {

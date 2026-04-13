@@ -105,7 +105,7 @@ $currentUser = $userModel->findById($_SESSION['user_id']);
                                     >
                                         <span><?php echo htmlspecialchars($friendButtonState === 'none' ? '+ Follow' : $friendButtonLabel); ?></span>
                                     </button>
-                                    <button class="btn btn-outline" type="button">Message</button>
+                                    <button class="btn btn-outline profile-message-btn" type="button" data-user-id="<?php echo (int)$profileUserId; ?>">Message</button>
                                     <div class="profile-more" data-profile-more>
                                         <button class="btn btn-outline btn-more" type="button" data-profile-more-trigger aria-haspopup="true" aria-expanded="false" aria-controls="profileMoreMenu">
                                             More

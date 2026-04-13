@@ -39,7 +39,7 @@ if (!isset($posts)) {
     <link rel="stylesheet" href="https://unicons.iconscout.com/release/v4.0.8/css/line.css">
     <link rel="stylesheet" href="https://unicons.iconscout.com/release/v4.0.8/css/solid.css">
 </head>
-<body>
+<body class="page-discover">
     <?php include __DIR__ . '/templates/navbar.php'; ?>
 
     <main>
@@ -403,7 +403,7 @@ if (!isset($posts)) {
             </div>
 
             <div class="right">
-                <div class="suggested-section">
+                <div class="suggested-section discover-sidebar-section">
                     <div class="section-header">
                         <h4>Popular Groups</h4>
                     </div>
@@ -437,7 +437,7 @@ if (!isset($posts)) {
                     </div>
                 </div>
 
-                <div class="suggested-section" style="margin-top: 1rem;">
+                <div class="suggested-section discover-sidebar-section">
                     <div class="section-header">
                         <h4>Recently Joined</h4>
                     </div>

@@ -325,9 +325,6 @@ if (isset($_SESSION['user_id'])) {
             Notifications
         </h2>
         <div class="notification-center-actions">
-            <button class="notif-header-btn" id="settingsNotifBtn" title="Notification settings">
-                <i class="uil uil-setting"></i>
-            </button>
             <button class="notif-header-btn notif-close-btn" id="closeNotificationCenter">
                 <i class="uil uil-times"></i>
             </button>
