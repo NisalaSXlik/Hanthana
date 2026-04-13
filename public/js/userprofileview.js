@@ -164,6 +164,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     const profileMore = document.querySelector('[data-profile-more]');
+    const messageButton = document.querySelector('.profile-message-btn[data-user-id]');
     const profileMoreTrigger = profileMore ? profileMore.querySelector('[data-profile-more-trigger]') : null;
     const profileMoreMenu = profileMore ? profileMore.querySelector('[data-profile-more-menu]') : null;
     const blockUserBtn = profileMore ? profileMore.querySelector('[data-profile-block-user]') : null;
@@ -281,6 +282,33 @@ document.addEventListener('DOMContentLoaded', () => {
                 blockUserBtn.innerHTML = originalHtml;
                 blockUserBtn.disabled = false;
                 showToast(error?.message || 'Unable to block this user right now.', 'error');
+            }
+        });
+    }
+
+    if (messageButton) {
+        messageButton.addEventListener('click', async (event) => {
+            event.preventDefault();
+            const targetUserId = Number(messageButton.dataset.userId || 0);
+            if (!targetUserId) {
+                showToast('Unable to open chat for this user.', 'error');
+                return;
+            }
+
+            try {
+                if (window.HanthanaChat && typeof window.HanthanaChat.openDirectConversation === 'function') {
+                    await window.HanthanaChat.openDirectConversation(targetUserId);
+                    return;
+                }
+
+                window.dispatchEvent(new CustomEvent('hanthana:open-chat', {
+                    detail: {
+                        type: 'direct',
+                        targetId: targetUserId,
+                    }
+                }));
+            } catch (error) {
+                showToast(error?.message || 'Unable to open chat for this user.', 'error');
             }
         });
     }

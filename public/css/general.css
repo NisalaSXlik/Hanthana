@@ -1448,7 +1448,8 @@ button.menu-item h3 {
     position: fixed;
     bottom: 20px;
     right: 20px;
-    z-index: 1000;
+    z-index: 12050;
+    pointer-events: none;
 }
 
 .toast {
@@ -1461,6 +1462,7 @@ button.menu-item h3 {
     margin-top: 10px;
     animation: slideIn 0.3s ease-out;
     box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+    pointer-events: auto;
 }
 
 .toast.success {

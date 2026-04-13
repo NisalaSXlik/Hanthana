@@ -228,12 +228,14 @@ document.addEventListener('DOMContentLoaded', function() {
                 const result = JSON.parse(text);
 
                 if (result.success) {
+                    const queued = Boolean(result.queued);
+                    const successMessage = result.message || (queued ? 'Post request submitted for admin approval.' : 'Post created successfully!');
                     if (window.showToast) {
-                        window.showToast('Post created successfully!', 'success');
+                        window.showToast(successMessage, 'success');
                     } else if (typeof showToast === 'function') {
-                        showToast('Post created successfully!', 'success');
+                        showToast(successMessage, 'success');
                     } else {
-                        alert('Post created successfully!');
+                        alert(successMessage);
                     }
                     closeCreatePostModalFn();
                     
