@@ -476,6 +476,42 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    const connectionsCard = document.querySelector('.profile-connections-card');
+    if (connectionsCard) {
+        const tabButtons = connectionsCard.querySelectorAll('[data-connections-tab]');
+        const panels = connectionsCard.querySelectorAll('[data-connections-panel]');
+        const seeMoreLinks = connectionsCard.querySelectorAll('[data-connections-see-more]');
+
+        const setConnectionsTab = (tabName) => {
+            tabButtons.forEach((button) => {
+                const isActive = button.dataset.connectionsTab === tabName;
+                button.classList.toggle('active', isActive);
+                button.setAttribute('aria-selected', isActive ? 'true' : 'false');
+            });
+
+            panels.forEach((panel) => {
+                const isActive = panel.dataset.connectionsPanel === tabName;
+                panel.classList.toggle('active', isActive);
+                panel.hidden = !isActive;
+            });
+
+            seeMoreLinks.forEach((link) => {
+                const isActive = link.dataset.connectionsSeeMore === tabName;
+                link.classList.toggle('active', isActive);
+            });
+        };
+
+        tabButtons.forEach((button) => {
+            button.addEventListener('click', () => {
+                const tabName = button.dataset.connectionsTab;
+                if (!tabName) return;
+                setConnectionsTab(tabName);
+            });
+        });
+
+        setConnectionsTab('friends');
+    }
+
     const friendListModal = document.getElementById('friendListModal');
     const groupListModal = document.getElementById('groupListModal');
     let lastFriendTrigger = null;

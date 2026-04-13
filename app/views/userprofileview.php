@@ -77,7 +77,6 @@ $currentUser = $userModel->findById($_SESSION['user_id']);
                             
                             <div class="profile-meta">
                                 <span class="meta-location"><?php echo htmlspecialchars($university !== '' ? $university : 'University not specified'); ?></span>
-                                <a href="#" class="meta-contact-link">Contact info</a>
                             </div>
 
                             <div class="profile-actions">
@@ -335,9 +334,13 @@ $currentUser = $userModel->findById($_SESSION['user_id']);
                     </div>
                 </div>
             </div>
+            <?php
+                $recentFriends = array_slice($friendList ?? [], 0, 3);
+                $recentGroups = array_slice($userGroups ?? [], 0, 3);
+            ?>
             <div class="right profile-sidebar">
                 <div class="group-details">
-                    <h4>Profile Snapshot</h4>
+                    <h4>Connections</h4>
                     <div class="detail-list">
                         <div class="detail-item">
                             <i class="uil uil-user"></i>
@@ -354,41 +357,73 @@ $currentUser = $userModel->findById($_SESSION['user_id']);
                     </div>
                 </div>
 
-                <div class="top-collaborators">
-                    <div class="heading">
-                        <h4>Contact</h4>
+                <div class="top-collaborators profile-connections-card">
+                    <div class="heading profile-connections-heading">
+                        <div class="profile-connections-tabs" role="tablist" aria-label="Connections tabs">
+                            <button type="button" class="profile-connections-tab active" data-connections-tab="friends" role="tab" aria-selected="true">Friends</button>
+                            <button type="button" class="profile-connections-tab" data-connections-tab="groups" role="tab" aria-selected="false">Groups</button>
+                        </div>
                     </div>
-                    <div class="creator-list">
-                        <?php if ($email): ?>
-                        <div class="creator-card">
-                            <div class="creator-info">
-                                <i class="uil uil-envelope"></i>
-                                <div class="creator-details">
-                                    <h5>Email</h5>
-                                    <p class="creator-bio"><?php echo htmlspecialchars($email); ?></p>
-                                </div>
-                            </div>
+
+                    <div class="profile-connections-panel active" data-connections-panel="friends" role="tabpanel">
+                        <div class="creator-list">
+                            <?php if (!empty($recentFriends)): ?>
+                                <?php foreach ($recentFriends as $friend): ?>
+                                    <?php
+                                        $friendUserId = (int)($friend['friend_user_id'] ?? 0);
+                                        $friendName = trim(($friend['first_name'] ?? '') . ' ' . ($friend['last_name'] ?? ''));
+                                        if ($friendName === '') {
+                                            $friendName = $friend['username'] ?? 'Unknown User';
+                                        }
+                                        $friendAvatar = MediaHelper::resolveMediaPath($friend['profile_picture'] ?? '', 'uploads/user_dp/default.png');
+                                        $friendProfileUrl = rtrim(BASE_PATH, '/') . '/index.php?controller=Profile&action=view&user_id=' . $friendUserId;
+                                    ?>
+                                    <a class="creator-card" href="<?php echo htmlspecialchars($friendProfileUrl); ?>" style="text-decoration:none; color:inherit;">
+                                        <div class="creator-info">
+                                            <img src="<?php echo htmlspecialchars($friendAvatar); ?>" alt="<?php echo htmlspecialchars($friendName); ?>" class="creator-avatar">
+                                            <div class="creator-details">
+                                                <h5><?php echo htmlspecialchars($friendName); ?></h5>
+                                                <p class="creator-bio"><?php echo !empty($friend['username']) ? '@' . htmlspecialchars($friend['username']) : 'View profile'; ?></p>
+                                            </div>
+                                        </div>
+                                    </a>
+                                <?php endforeach; ?>
+                            <?php else: ?>
+                                <p class="creator-bio">No friends yet.</p>
+                            <?php endif; ?>
                         </div>
-                        <?php endif; ?>
-                        <?php if ($phone): ?>
-                        <div class="creator-card">
-                            <div class="creator-info">
-                                <i class="uil uil-phone"></i>
-                                <div class="creator-details">
-                                    <h5>Phone</h5>
-                                    <p class="creator-bio"><?php echo htmlspecialchars($phone); ?></p>
-                                </div>
-                            </div>
+                        <div class="connections-see-more-wrap">
+                            <a href="#" class="connections-see-more" data-friend-count-trigger>See more</a>
                         </div>
-                        <?php endif; ?>
-                        <div class="creator-card friend-count-card" data-friend-count-trigger role="button" tabindex="0">
-                            <div class="creator-info">
-                                <i class="uil uil-users-alt"></i>
-                                <div class="creator-details">
-                                    <h5>Friends</h5>
-                                    <p class="creator-bio" data-friend-count-label><?php echo $friendsCount; ?> total friends</p>
-                                </div>
-                            </div>
+                    </div>
+
+                    <div class="profile-connections-panel" data-connections-panel="groups" role="tabpanel" hidden>
+                        <div class="creator-list">
+                            <?php if (!empty($recentGroups)): ?>
+                                <?php foreach ($recentGroups as $group): ?>
+                                    <?php
+                                        $groupId = (int)($group['group_id'] ?? 0);
+                                        $groupName = $group['group_name'] ?? 'Unnamed Group';
+                                        $groupPhoto = MediaHelper::resolveMediaPath($group['group_photo'] ?? '', 'images/default_group.png');
+                                        $groupMembers = (int)($group['member_count'] ?? 0);
+                                        $groupUrl = rtrim(BASE_PATH, '/') . '/index.php?controller=Group&action=index&group_id=' . $groupId;
+                                    ?>
+                                    <a class="creator-card" href="<?php echo htmlspecialchars($groupUrl); ?>" style="text-decoration:none; color:inherit;">
+                                        <div class="creator-info">
+                                            <img src="<?php echo htmlspecialchars($groupPhoto); ?>" alt="<?php echo htmlspecialchars($groupName); ?>" class="creator-avatar">
+                                            <div class="creator-details">
+                                                <h5><?php echo htmlspecialchars($groupName); ?></h5>
+                                                <p class="creator-bio"><?php echo $groupMembers; ?> member<?php echo $groupMembers === 1 ? '' : 's'; ?></p>
+                                            </div>
+                                        </div>
+                                    </a>
+                                <?php endforeach; ?>
+                            <?php else: ?>
+                                <p class="creator-bio">No groups yet.</p>
+                            <?php endif; ?>
+                        </div>
+                        <div class="connections-see-more-wrap">
+                            <a href="#" class="connections-see-more" data-group-count-trigger>See more</a>
                         </div>
                     </div>
                 </div>
