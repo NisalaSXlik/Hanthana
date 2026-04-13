@@ -106,7 +106,7 @@ function timeAgo($timestamp) {
                                     ?>
                                     <?php $isOwner = (int)$q['user_id'] === (int)$currentUserId; ?>
                                     <?php $isGroupQuestion = (($q['source_type'] ?? 'question') === 'group_question'); ?>
-                                    <article id="question-card-<?php echo (int)$q['question_id']; ?>" class="question-card" data-question-id="<?php echo (int)$q['question_id']; ?>" data-search-text="<?php echo htmlspecialchars($normalizedSearchBlob, ENT_QUOTES, 'UTF-8'); ?>">
+                                    <article id="question-card-<?php echo (int)$q['question_id']; ?>" class="question-card" data-question-id="<?php echo (int)$q['question_id']; ?>" data-source-type="<?php echo htmlspecialchars((string)($q['source_type'] ?? 'question')); ?>" data-group-id="<?php echo (int)($q['group_id'] ?? 0); ?>" data-search-text="<?php echo htmlspecialchars($normalizedSearchBlob, ENT_QUOTES, 'UTF-8'); ?>">
                                         <div class="question-card-head">
                                             <div class="question-author">
                                                 <img src="<?php echo BASE_PATH . ($q['profile_picture'] ?: 'public/images/default-avatar.png'); ?>"
@@ -213,51 +213,42 @@ function timeAgo($timestamp) {
                                             </div>
 
                                             <div class="question-card-stats">
-                                                <?php if ($isGroupQuestion && !empty($q['group_id'])): ?>
-                                                    <a href="<?php echo BASE_PATH . 'index.php?controller=Group&action=index&group_id=' . (int)$q['group_id'] . '#post-' . (int)$q['question_id']; ?>"
-                                                       class="question-answer-link question-answer-link-btn">
-                                                        <i class="uil uil-comment"></i> <?php echo (int)$q['answer_count']; ?> answers
-                                                    </a>
-                                                <?php else: ?>
-                                                    <button type="button"
-                                                            class="question-answer-link question-answer-link-btn toggle-inline-answers"
-                                                            data-question-id="<?php echo (int)$q['question_id']; ?>"
-                                                            data-target="inlineAnswers-<?php echo (int)$q['question_id']; ?>"
-                                                            aria-expanded="false">
-                                                        <i class="uil uil-comment"></i> <?php echo (int)$q['answer_count']; ?> answers
-                                                    </button>
-                                                <?php endif; ?>
+                                                <button type="button"
+                                                        class="question-answer-link question-answer-link-btn toggle-inline-answers"
+                                                        data-question-id="<?php echo (int)$q['question_id']; ?>"
+                                                        data-target="inlineAnswers-<?php echo (int)$q['question_id']; ?>"
+                                                        aria-expanded="false">
+                                                    <i class="uil uil-comment"></i> <?php echo (int)$q['answer_count']; ?> answers
+                                                </button>
                                             </div>
                                         </div>
 
-                                        <?php if (!$isGroupQuestion): ?>
-                                            <div id="inlineAnswers-<?php echo (int)$q['question_id']; ?>"
-                                                 class="inline-answers-panel collapsed"
-                                                 data-question-id="<?php echo (int)$q['question_id']; ?>"
-                                                 aria-hidden="true">
-                                                <div class="inline-answers-header">
-                                                    <h4>Answers</h4>
-                                                    <button type="button" class="close-inline-answers" aria-label="Close answers">
-                                                        <i class="uil uil-times"></i>
-                                                    </button>
-                                                </div>
-
-                                                <div class="inline-answers-list comments-container">
-                                                    <div class="no-comments">Loading answers...</div>
-                                                </div>
-
-                                                <div class="add-comment-form inline-answer-form-wrap">
-                                                    <form class="inline-answer-form">
-                                                        <input type="hidden" name="question_id" value="<?php echo (int)$q['question_id']; ?>">
-                                                        <input type="hidden" name="parent_answer_id" value="">
-                                                        <div class="comment-input-wrapper">
-                                                            <textarea name="content" class="comment-input" rows="3" placeholder="Write your answer..." required></textarea>
-                                                            <button type="submit" class="comment-submit-btn">Post Answer</button>
-                                                        </div>
-                                                    </form>
-                                                </div>
+                                        <div id="inlineAnswers-<?php echo (int)$q['question_id']; ?>"
+                                             class="inline-answers-panel collapsed"
+                                             data-question-id="<?php echo (int)$q['question_id']; ?>"
+                                             aria-hidden="true">
+                                            <div class="inline-answers-header">
+                                                <h4>Answers</h4>
+                                                <button type="button" class="close-inline-answers" aria-label="Close answers">
+                                                    <i class="uil uil-times"></i>
+                                                </button>
                                             </div>
-                                        <?php endif; ?>
+
+                                            <div class="inline-answers-list comments-container">
+                                                <div class="no-comments">Loading answers...</div>
+                                            </div>
+
+                                            <div class="add-comment-form inline-answer-form-wrap">
+                                                <form class="inline-answer-form">
+                                                    <input type="hidden" name="question_id" value="<?php echo (int)$q['question_id']; ?>">
+                                                    <input type="hidden" name="parent_answer_id" value="">
+                                                    <div class="comment-input-wrapper">
+                                                        <textarea name="content" class="comment-input" rows="3" placeholder="Write your answer..." required></textarea>
+                                                        <button type="submit" class="comment-submit-btn">Post Answer</button>
+                                                    </div>
+                                                </form>
+                                            </div>
+                                        </div>
                                     </article>
                                 <?php endforeach; ?>
                                 <div class="empty-state" id="questionSearchEmpty" style="display:none;">

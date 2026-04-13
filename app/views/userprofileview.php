@@ -632,6 +632,9 @@ $currentUser = $userModel->findById($_SESSION['user_id']);
                             <i class="uil uil-comment-dots"></i>
                             <span id="postViewCommentCount">0</span>
                         </button>
+                        <button type="button" class="modal-vote bookmark-btn" id="postViewSaveBtn" data-post-id="" aria-label="Save post" aria-pressed="false">
+                            <i class="uil uil-bookmark"></i>
+                        </button>
                     </div>
                 </div>
                 <div class="post-view-comments" id="postViewCommentsPanel">
@@ -681,6 +684,7 @@ $currentUser = $userModel->findById($_SESSION['user_id']);
     <script src="./js/post.js"></script>
     <script src="./js/vote.js"></script>
     <script src="./js/comment.js"></script>
+    <script src="./js/bookmark.js"></script>
     <script src="./js/poll.js"></script>
     <script src="./js/report.js"></script>
     <script src="./js/userprofileview.js?v=20260410_commentprofile"></script>

@@ -2217,6 +2217,15 @@ html {
     color: var(--color-primary);
 }
 
+.modal-vote.bookmark-btn.bookmarked {
+    background: rgba(7, 92, 230, 0.16);
+    border-color: rgba(7, 92, 230, 0.5);
+}
+
+.modal-vote.bookmark-btn.bookmarked i {
+    color: var(--color-primary);
+}
+
 .post-view-comments {
     flex: 1;
     display: flex;

@@ -117,21 +117,27 @@ if (!isset($posts)) {
                                             </small>
                                         </div>
                                     </div>
-                                    <?php if ($isOwner): ?>
-                                        <div class="post-menu">
-                                            <button class="menu-trigger" aria-label="Post menu"><i class="uil uil-ellipsis-h"></i></button>
-                                            <div class="menu">
+                                    <div class="post-menu">
+                                        <button class="menu-trigger" aria-label="Post menu"><i class="uil uil-ellipsis-h"></i></button>
+                                        <div class="menu">
+                                            <?php if ($isOwner): ?>
                                                 <button class="menu-item edit-post" data-post-id="<?php echo (int)$post['post_id']; ?>">
                                                     <i class="uil uil-edit"></i> Edit
                                                 </button>
                                                 <button class="menu-item delete-post" data-post-id="<?php echo (int)$post['post_id']; ?>">
                                                     <i class="uil uil-trash-alt"></i> Delete
                                                 </button>
-                                            </div>
+                                            <?php else: ?>
+                                                <button type="button"
+                                                    class="menu-item report-trigger"
+                                                    data-report-type="post"
+                                                    data-target-id="<?php echo (int)$post['post_id']; ?>"
+                                                    data-target-label="<?php echo htmlspecialchars($reportLabel, ENT_QUOTES); ?>">
+                                                    <i class="uil uil-exclamation-circle"></i> Report
+                                                </button>
+                                            <?php endif; ?>
                                         </div>
-                                    <?php else: ?>
-                                        <i class="uil uil-ellipsis-h"></i>
-                                    <?php endif; ?>
+                                    </div>
                                 </div>
 
                                 <?php 
@@ -357,18 +363,6 @@ if (!isset($posts)) {
                                             <i class="<?php echo !empty($post['is_bookmarked']) ? 'uis uis-bookmark bookmarked' : 'uil uil-bookmark'; ?>" aria-hidden="true"></i>
                                         </button>
                                     </div>
-                                    <?php if (!$isOwner): ?>
-                                        <div class="interaction-item report-item">
-                                            <button type="button"
-                                                class="report-trigger"
-                                                data-report-type="post"
-                                                data-target-id="<?php echo (int)$post['post_id']; ?>"
-                                                data-target-label="<?php echo htmlspecialchars($reportLabel, ENT_QUOTES); ?>">
-                                                <i class="uil uil-exclamation-circle"></i>
-                                                <span>Report</span>
-                                            </button>
-                                        </div>
-                                    <?php endif; ?>
                                 </div>
 
 

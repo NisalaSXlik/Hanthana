@@ -1579,19 +1579,7 @@
         postViewCommentToggle: !!postViewCommentToggle
     });
 
-    document.querySelectorAll('.group-post-clickable').forEach(postCard => {
-        postCard.addEventListener('click', function(e) {
-            if (e.target.closest('.action-buttons, .comment-section, .poll-option, button, a')) {
-                return;
-            }
-            const contentArea = e.target.closest('.post-body');
-            if (!contentArea || !postCard.contains(contentArea)) {
-                return;
-            }
-            const index = parseInt(this.dataset.postIndex, 10);
-            openPostModal(Number.isFinite(index) ? index : 0);
-        });
-    });
+    // Group post cards should not open the popup modal on click.
 
     function openPostModal(index) {
         currentPosts = window.GROUP_POSTS || [];

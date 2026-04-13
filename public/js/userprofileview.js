@@ -593,6 +593,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const postViewUpvoteBtn = document.getElementById('postViewUpvoteBtn');
     const postViewDownvoteBtn = document.getElementById('postViewDownvoteBtn');
     const postViewCommentToggle = document.getElementById('postViewCommentToggle');
+    const postViewSaveBtn = document.getElementById('postViewSaveBtn');
     const postViewUpvoteCount = document.getElementById('postViewUpvoteCount');
     const postViewDownvoteCount = document.getElementById('postViewDownvoteCount');
     const postViewCommentCount = document.getElementById('postViewCommentCount');
@@ -1282,6 +1283,23 @@ document.addEventListener('DOMContentLoaded', () => {
         if (postViewCommentCount) postViewCommentCount.textContent = post.comment_count ?? '0';
         if (postViewCommentBadge) postViewCommentBadge.textContent = post.comment_count ?? '0';
 
+        const postId = Number(post.post_id || post.postId || 0);
+        const isBookmarked = Number(post.is_bookmarked ?? post.isBookmarked ?? 0) === 1 || post.isBookmarked === true;
+        if (postViewSaveBtn) {
+            postViewSaveBtn.dataset.postId = postId ? String(postId) : '';
+            postViewSaveBtn.classList.toggle('bookmarked', isBookmarked);
+            postViewSaveBtn.setAttribute('aria-pressed', isBookmarked ? 'true' : 'false');
+            const bookmarkIcon = postViewSaveBtn.querySelector('i');
+            if (bookmarkIcon) {
+                bookmarkIcon.classList.remove('uil', 'uil-bookmark', 'uis', 'uis-bookmark', 'bookmarked');
+                if (isBookmarked) {
+                    bookmarkIcon.classList.add('uis', 'uis-bookmark', 'bookmarked');
+                } else {
+                    bookmarkIcon.classList.add('uil', 'uil-bookmark');
+                }
+            }
+        }
+
         // Highlight previous vote
         updateModalVoteState(post.user_vote ? post.user_vote : null, 'init');
 
@@ -1290,6 +1308,76 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Load modal comments for this post
         loadModalComments(post.post_id || post.postId);
+    }
+
+    function setModalSaveVisualState(isBookmarked) {
+        if (!postViewSaveBtn) return;
+        postViewSaveBtn.classList.toggle('bookmarked', !!isBookmarked);
+        postViewSaveBtn.setAttribute('aria-pressed', isBookmarked ? 'true' : 'false');
+        const bookmarkIcon = postViewSaveBtn.querySelector('i');
+        if (bookmarkIcon) {
+            bookmarkIcon.classList.remove('uil', 'uil-bookmark', 'uis', 'uis-bookmark', 'bookmarked');
+            if (isBookmarked) {
+                bookmarkIcon.classList.add('uis', 'uis-bookmark', 'bookmarked');
+            } else {
+                bookmarkIcon.classList.add('uil', 'uil-bookmark');
+            }
+        }
+    }
+
+    async function handleModalSaveToggle(event) {
+        if (event) {
+            event.preventDefault();
+            event.stopPropagation();
+        }
+        if (!postViewSaveBtn) return;
+        if (postViewSaveBtn.dataset.busy === '1') return;
+
+        const postId = Number(postViewSaveBtn.dataset.postId || postViewModal?.dataset.postId || 0);
+        if (!postId) {
+            window.showToast?.('Invalid post', 'error');
+            return;
+        }
+
+        const currentlyBookmarked = postViewSaveBtn.classList.contains('bookmarked');
+        const nextState = !currentlyBookmarked;
+        setModalSaveVisualState(nextState);
+        postViewSaveBtn.dataset.busy = '1';
+
+        try {
+            const formData = new FormData();
+            formData.append('post_id', String(postId));
+            formData.append('action', currentlyBookmarked ? 'remove' : 'add');
+
+            const response = await fetch(BASE_PATH + 'index.php?controller=Posts&action=bookmark', {
+                method: 'POST',
+                body: formData,
+            });
+
+            const data = await response.json();
+            if (!data.success) {
+                setModalSaveVisualState(currentlyBookmarked);
+                window.showToast?.(data.message || 'Unable to update bookmark', 'error');
+                return;
+            }
+
+            const bookmarked = !!data.bookmarked;
+            setModalSaveVisualState(bookmarked);
+            if (typeof window.__hanthanaSetBookmarkState === 'function') {
+                window.__hanthanaSetBookmarkState(postId, bookmarked);
+            }
+            if (currentPosts[currentPostIndex]) {
+                currentPosts[currentPostIndex].is_bookmarked = bookmarked ? 1 : 0;
+                currentPosts[currentPostIndex].isBookmarked = bookmarked;
+            }
+            window.showToast?.(data.message || (bookmarked ? 'Post saved' : 'Bookmark removed'), 'success');
+        } catch (error) {
+            console.error('Modal bookmark request failed:', error);
+            setModalSaveVisualState(currentlyBookmarked);
+            window.showToast?.('Unable to update bookmark', 'error');
+        } finally {
+            postViewSaveBtn.dataset.busy = '0';
+        }
     }
 
     function updateModalVoteState(voteType, action = '') {
@@ -1775,6 +1863,10 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!postViewCommentsPanel) return;
             postViewCommentsPanel.classList.toggle('active');
         });
+    }
+
+    if (postViewSaveBtn) {
+        postViewSaveBtn.addEventListener('click', handleModalSaveToggle);
     }
 
     if (postViewMenuTrigger && postViewMenuDropdown) {
