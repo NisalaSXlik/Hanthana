@@ -663,6 +663,19 @@ foreach ($streamPosts as $post) {
 <?php include __DIR__ . '/templates/chat-clean.php'; ?>
 <?php include __DIR__ . '/templates/report-modal.php'; ?>
 
+<div class="calendar-popup" id="calendarPopup">
+    <div class="calendar-popup-header">
+        <h4>Events</h4>
+        <span id="popup-date">--</span>
+    </div>
+    <div class="calendar-popup-body" id="calendarEvents">
+        <div class="no-events">
+            <i class="uil uil-calendar-slash"></i>
+            <p>No events scheduled</p>
+        </div>
+    </div>
+</div>
+
 <script> const BASE_PATH = '<?php echo BASE_PATH; ?>'; </script>
 <script src="./js/calender.js?v=20250209_syntax"></script>
 <script src="./js/friends.js"></script>

@@ -441,7 +441,7 @@ body.page-discover .right > .suggested-section .creator-list::-webkit-scrollbar-
         }
 
         .follow-btn {
-            background: black;
+            background: #0754e6;
             color: white;
             border: none;
             padding: 7px 14px;
@@ -468,8 +468,17 @@ body.page-discover .right > .suggested-section .creator-list::-webkit-scrollbar-
         }
 
         .follow-btn:hover {
-            background: #333;
+            background: #0543bb;
             transform: translateY(-1px);
+        }
+
+        .follow-btn.followed,
+        .follow-btn:disabled {
+            background: #0754e6;
+            color: #fff;
+            opacity: 0.9;
+            cursor: default;
+            transform: none;
         }
 
         .follow-btn:active {

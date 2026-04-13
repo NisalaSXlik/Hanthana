@@ -844,6 +844,7 @@ CREATE TABLE Reports (
     FOREIGN KEY (reviewed_by) REFERENCES Users(user_id) ON DELETE SET NULL
 );
 
+/*
 INSERT INTO `Users` (`user_id`, `first_name`, `last_name`, `email`, `phone_number`, `password_hash`, `username`, `bio`, `profile_picture`, `cover_photo`, `created_at`, `updated_at`, `university`, `last_login`, `friends_count`, `is_active`, `date_of_birth`, `location`, `role`, `banned_until`, `ban_reason`, `ban_notes`, `banned_by`) VALUES
 
 (1, 'Dummy', 'Admin', 'admin@hanthana.com', '0000000000', '$2y$10$Ys6K.2VyuP482eNAUDBHK.zGRJb18Cz5dlCOGUfNnPEHakO6Qlrvy', 'admin', NULL, 'public/images/profile-1.jpg', 'public/images/story-1.jpg', '2026-01-22 20:15:29', '2026-01-22 20:16:50', NULL, '2026-01-22 20:15:54', 0, 1, NULL, NULL, 'admin', NULL, NULL, NULL, NULL),
@@ -1105,3 +1106,5 @@ INSERT INTO `Reports` (`report_id`, `reporter_id`, `target_type`, `target_id`, `
 (10, 12, 'bin_media', 78, 4, 8, 'inappropriate', 'Bin media upload appears to be unauthorized lecture content.', 'pending', '2026-02-07 13:25:00', NULL, NULL),
 (11, 13, 'message', 9001, 3, 14, 'harassment', 'Text message in group chat contains a personal attack.', 'pending', '2026-02-07 13:45:00', NULL, NULL),
 (12, 14, 'channel', 7001, 1, 10, 'spam', 'Channel is being used for repeated spam posts and links.', 'reviewed', '2026-02-07 14:00:00', 1, '2026-02-07 14:15:00');
+
+*/
