@@ -108,7 +108,7 @@ $incomingFriendRequests = $friendModel->getIncomingRequests($currentUserId);
             </div>
 
             <div class="right">
-                <div class="suggested-section">
+                <div class="suggested-section discover-sidebar-section">
                     <div class="section-header">
                         <h4>Popular Groups</h4>
                     </div>
@@ -142,7 +142,7 @@ $incomingFriendRequests = $friendModel->getIncomingRequests($currentUserId);
                     </div>
                 </div>
 
-                <div class="suggested-section" style="margin-top: 1rem;">
+                <div class="suggested-section discover-sidebar-section">
                     <div class="section-header">
                         <h4>Recently Joined</h4>
                     </div>

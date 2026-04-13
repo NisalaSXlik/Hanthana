@@ -941,6 +941,10 @@
 }
 
 /* Most Going list uses existing right-sidebar card styles from general.css */
+.right .friend-requests .heading {
+    margin-bottom: 0.55rem;
+}
+
 .trending-events-list {
     display: flex;
     flex-direction: column;
