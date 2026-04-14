@@ -652,6 +652,59 @@ main .container.questions-layout .left {
     color: var(--color-primary);
 }
 
+.inline-answers-panel .inline-answer-editor {
+    margin-top: 0.55rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.inline-answers-panel .inline-answer-editor-input {
+    width: 100%;
+    min-height: 84px;
+    padding: 0.6rem 0.75rem;
+    border: 1px solid var(--gray-300);
+    border-radius: 8px;
+    background: #fff;
+    color: var(--color-dark);
+    font: inherit;
+    line-height: 1.45;
+    resize: vertical;
+}
+
+.inline-answers-panel .inline-answer-editor-input:focus {
+    outline: none;
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 3px rgba(7, 92, 230, 0.12);
+}
+
+.inline-answers-panel .inline-answer-editor-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.5rem;
+}
+
+.inline-answers-panel .inline-answer-editor-actions .comment-action {
+    border: 1px solid var(--gray-300);
+    background: #fff;
+    color: var(--color-dark);
+    border-radius: 8px;
+    padding: 0.35rem 0.75rem;
+    font-size: 0.82rem;
+    cursor: pointer;
+}
+
+.inline-answers-panel .inline-answer-editor-actions .save-answer-edit-btn {
+    background: var(--color-primary);
+    border-color: var(--color-primary);
+    color: #fff;
+}
+
+.inline-answers-panel .inline-answer-editor-actions .comment-action:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
 /* Inline answers now use direct comment-style actions only */
 
 .question-title {

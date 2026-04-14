@@ -119,6 +119,105 @@ document.addEventListener('DOMContentLoaded', () => {
         return response.json();
     };
 
+    const openInlineAnswerEditor = (answerEl) => {
+        if (!answerEl) return;
+
+        const answerId = answerEl.dataset.answerId;
+        const textEl = answerEl.querySelector('.comment-text');
+        if (!answerId || !textEl) return;
+
+        const existingEditor = answerEl.querySelector('.inline-answer-editor');
+        if (existingEditor) {
+            const existingInput = existingEditor.querySelector('.inline-answer-editor-input');
+            existingInput?.focus();
+            return;
+        }
+
+        const original = (textEl.textContent || '').trim();
+        const editor = document.createElement('div');
+        editor.className = 'inline-answer-editor';
+        editor.innerHTML = `
+            <textarea class="inline-answer-editor-input" rows="3"></textarea>
+            <div class="inline-answer-editor-actions">
+                <button type="button" class="comment-action save-answer-edit-btn">Save</button>
+                <button type="button" class="comment-action cancel-answer-edit-btn">Cancel</button>
+            </div>
+        `;
+
+        const input = editor.querySelector('.inline-answer-editor-input');
+        const saveBtn = editor.querySelector('.save-answer-edit-btn');
+        const cancelBtn = editor.querySelector('.cancel-answer-edit-btn');
+        if (!input || !saveBtn || !cancelBtn) {
+            return;
+        }
+
+        input.value = original;
+
+        const closeEditor = () => {
+            editor.remove();
+            textEl.style.display = '';
+        };
+
+        const saveEdit = async () => {
+            const next = input.value.trim();
+            if (!next) {
+                alert('Answer cannot be empty');
+                return;
+            }
+
+            saveBtn.disabled = true;
+            cancelBtn.disabled = true;
+
+            const formData = new FormData();
+            formData.append('sub_action', 'editAnswer');
+            formData.append('answer_id', answerId);
+            formData.append('content', next);
+
+            try {
+                const response = await fetch(ANSWERS_BASE_PATH + 'index.php?controller=Popular&action=handleAjax', {
+                    method: 'POST',
+                    body: formData
+                });
+                const result = await response.json();
+
+                if (!result.success) {
+                    alert(result.message || 'Failed to update answer');
+                    return;
+                }
+
+                textEl.innerHTML = escapeHtml(next).replace(/\n/g, '<br>');
+                closeEditor();
+            } catch (error) {
+                console.error('Edit answer failed:', error);
+                alert('Failed to update answer');
+            } finally {
+                saveBtn.disabled = false;
+                cancelBtn.disabled = false;
+            }
+        };
+
+        cancelBtn.addEventListener('click', closeEditor);
+        saveBtn.addEventListener('click', saveEdit);
+
+        input.addEventListener('keydown', (event) => {
+            if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') {
+                event.preventDefault();
+                saveEdit();
+                return;
+            }
+
+            if (event.key === 'Escape') {
+                event.preventDefault();
+                closeEditor();
+            }
+        });
+
+        textEl.style.display = 'none';
+        textEl.insertAdjacentElement('afterend', editor);
+        input.focus();
+        input.setSelectionRange(input.value.length, input.value.length);
+    };
+
     const openAnswers = () => {
         answersPanel.classList.remove('collapsed');
         answersPanel.classList.add('active');
@@ -199,26 +298,7 @@ document.addEventListener('DOMContentLoaded', () => {
             event.preventDefault();
             const answerId = editBtn.dataset.answerId;
             const answerEl = document.querySelector(`.comment[data-answer-id="${answerId}"]`);
-            const textEl = answerEl?.querySelector('.comment-text');
-            const current = (textEl?.textContent || '').trim();
-            const next = window.prompt('Edit answer:', current);
-            if (next === null) return;
-
-            const formData = new FormData();
-            formData.append('sub_action', 'editAnswer');
-            formData.append('answer_id', answerId);
-            formData.append('content', next.trim());
-
-            const response = await fetch(ANSWERS_BASE_PATH + 'index.php?controller=Popular&action=handleAjax', {
-                method: 'POST',
-                body: formData
-            });
-            const result = await response.json();
-            if (result.success && textEl) {
-                textEl.innerHTML = escapeHtml(next.trim()).replace(/\n/g, '<br>');
-            } else {
-                alert(result.message || 'Failed to update answer');
-            }
+            openInlineAnswerEditor(answerEl);
             return;
         }
 

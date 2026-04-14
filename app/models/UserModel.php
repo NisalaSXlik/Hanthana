@@ -106,7 +106,7 @@ class UserModel
         $params = [];
         
         foreach ($allowedFields as $field) {
-            if (isset($data[$field])) {
+            if (array_key_exists($field, $data)) {
                 $updates[] = "$field = ?";
                 $params[] = $data[$field];
             }
