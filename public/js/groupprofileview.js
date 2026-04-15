@@ -560,6 +560,26 @@
         });
     });
 
+    // ===== EVENT DESCRIPTION TOGGLE =====
+    const eventDescriptionToggles = document.querySelectorAll('.event-description-toggle');
+    eventDescriptionToggles.forEach((toggleBtn) => {
+        toggleBtn.addEventListener('click', (event) => {
+            event.preventDefault();
+            event.stopPropagation();
+
+            const targetId = toggleBtn.getAttribute('data-target');
+            const desc = document.getElementById(targetId);
+            if (!desc) {
+                return;
+            }
+
+            const isCollapsed = desc.classList.contains('is-collapsed');
+            desc.classList.toggle('is-collapsed', !isCollapsed);
+            toggleBtn.textContent = isCollapsed ? 'See less' : 'See more';
+            toggleBtn.setAttribute('aria-expanded', isCollapsed ? 'true' : 'false');
+        });
+    });
+
     // ===== EVENT INTEREST BUTTONS =====
     const interestButtons = document.querySelectorAll('.event-interest-btn');
     interestButtons.forEach((button) => {

@@ -10,8 +10,8 @@ document.addEventListener('DOMContentLoaded', function() {
     const askQuestionForm = document.getElementById('askQuestionForm');
     const answerForm = document.getElementById('answerForm');
     const searchInput = document.getElementById('searchInput');
-    const templateChips = document.querySelectorAll('.template-chip');
-    const titleInput = document.getElementById('questionTitleInput');
+    const templateChips = askQuestionForm ? askQuestionForm.querySelectorAll('.template-chip') : [];
+    const titleInput = askQuestionForm ? askQuestionForm.querySelector('#questionTitleInput') : null;
     const templatedTextareas = askQuestionForm ? askQuestionForm.querySelectorAll('textarea[data-maxlength]') : [];
     const templateFields = askQuestionForm ? {
         problem: askQuestionForm.querySelector('[name="problem_statement"]'),
@@ -61,7 +61,7 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     if (templateChips.length) {
-        applyTemplateChip(document.querySelector('.template-chip.active') || templateChips[0], true);
+        applyTemplateChip(askQuestionForm.querySelector('.template-chip.active') || templateChips[0], true);
     }
 
     titleInput?.addEventListener('input', () => {

@@ -58,10 +58,10 @@ if (!isset($posts)) {
 							// Profile picture is already resolved by PostModel
 							$avatarUrl = MediaHelper::resolveMediaPath($post['profile_picture'], 'uploads/user_dp/default.png');
 							$fullName = trim(($post['first_name'] ?? '') . ' ' . ($post['last_name'] ?? ''));
-							$displayName = $fullName !== '' ? $fullName : ($post['username'] ?? '');
+							$displayName = $post['username'] ?? '';
 
 							if ($displayName === '' || $displayName === null) {
-								$displayName = 'Unknown';
+								$displayName = $fullName !== '' ? $fullName : 'Unknown';
 							}
 
 							$isOwner = isset($_SESSION['user_id']) && (int)$_SESSION['user_id'] === (int)($post['author_id'] ?? $post['user_id'] ?? 0);
@@ -318,14 +318,8 @@ if (!isset($posts)) {
 
 									<?php if (!empty($post['image_url'])): ?>
 										<?php $postImage = MediaHelper::resolveMediaPath($post['image_url'], ''); ?>
-										<div class="photo post-image <?php echo (($post['media_type'] ?? 'image') === 'video') ? 'post-media-video' : ''; ?>">
-											<?php if (($post['media_type'] ?? 'image') === 'video'): ?>
-												<video controls preload="metadata" playsinline>
-													<source src="<?php echo htmlspecialchars($postImage); ?>" type="video/mp4">
-												</video>
-											<?php else: ?>
-												<img src="<?php echo htmlspecialchars($postImage); ?>" alt="Post image" onerror="this.style.display='none'; console.log('Failed to load image: <?php echo htmlspecialchars($post['image_url']); ?>');">
-											<?php endif; ?>
+										<div class="photo post-image">
+											<img src="<?php echo htmlspecialchars($postImage); ?>" alt="Post image" onerror="this.style.display='none'; console.log('Failed to load image: <?php echo htmlspecialchars($post['image_url']); ?>');">
 										</div>
 									<?php endif; ?>
 								<?php endif; ?>
