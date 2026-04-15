@@ -3251,6 +3251,16 @@
             box-shadow: 0 20px 48px rgba(11, 20, 26, 0.26);
         }
 
+        .chat-clean-template .chat-container.maximized {
+            width: 100vw;
+            height: 100vh;
+            bottom: 0;
+            right: 0;
+            left: 0;
+            top: 0;
+            border-radius: 0;
+        }
+
         .chat-clean-template .chat-header,
         .chat-clean-template .conversation-header,
         .chat-clean-template .conversation-header-max,
