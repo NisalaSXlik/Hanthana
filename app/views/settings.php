@@ -17,6 +17,25 @@ require_once __DIR__ . '/../models/UserModel.php';
 $userModel = new UserModel();
 $currentUser = $userModel->findById($currentUserId);
 
+$availableUniversities = [
+    'University of Colombo',
+    'University of Peradeniya',
+    'University of Moratuwa',
+    'University of Sri Jayewardenepura',
+    'University of Kelaniya',
+    'University of Ruhuna',
+    'University of Jaffna',
+    'Uva Wellassa University',
+    'Rajarata University of Sri Lanka',
+    'Sabaragamuwa University of Sri Lanka',
+    'South Eastern University of Sri Lanka',
+    'Eastern University Sri Lanka',
+    'Wayamba University of Sri Lanka',
+    'University of Vavuniya'
+];
+
+$selectedUniversity = trim((string)($currentUser['university'] ?? ''));
+
 $friendRequests = $friendRequests ?? [];
 
 // Get friend requests for sidebar
@@ -77,7 +96,10 @@ try {
                                 <p>Update your personal and profile information.</p>
                             </div>
 
-                            <form id="profileForm" class="settings-form hf-form">
+                                <form id="profileForm" class="settings-form hf-form"
+                                    data-current-username="<?php echo htmlspecialchars($currentUser['username'] ?? '', ENT_QUOTES); ?>"
+                                    data-current-email="<?php echo htmlspecialchars($currentUser['email'] ?? '', ENT_QUOTES); ?>"
+                                    data-current-phone="<?php echo htmlspecialchars($currentUser['phone_number'] ?? '', ENT_QUOTES); ?>">
                                 <div class="form-row">
                                     <div class="form-group">
                                         <label for="firstName">First Name</label>
@@ -92,6 +114,7 @@ try {
                                 <div class="form-group">
                                     <label for="username">Username</label>
                                     <input type="text" id="username" name="username" value="<?php echo htmlspecialchars($currentUser['username'] ?? ''); ?>" required>
+                                    <span id="username-status" class="hf-field-status" aria-live="polite"></span>
                                 </div>
 
                                 <div class="form-group">
@@ -99,11 +122,13 @@ try {
                                     <input type="email" id="email" name="email" value="<?php echo htmlspecialchars($currentUser['email'] ?? ''); ?>" required
                                            pattern="^[^@\s]+@[a-zA-Z0-9-]+(\.[a-zA-Z0-9-]+)*\.ac\.lk$"
                                            title="Use university email ending with .ac.lk (e.g., 2023cs140@stu.ucsc.cmb.ac.lk)">
+                                    <span id="email-status" class="hf-field-status" aria-live="polite"></span>
                                 </div>
 
                                 <div class="form-group">
                                     <label for="phone">Phone Number</label>
                                     <input type="tel" id="phone" name="phone_number" value="<?php echo htmlspecialchars($currentUser['phone_number'] ?? ''); ?>">
+                                    <span id="phone-status" class="hf-field-status" aria-live="polite"></span>
                                 </div>
 
                                 <div class="form-group">
@@ -114,7 +139,19 @@ try {
                                 <div class="form-row">
                                     <div class="form-group">
                                         <label for="university">University</label>
-                                        <input type="text" id="university" name="university" value="<?php echo htmlspecialchars($currentUser['university'] ?? ''); ?>">
+                                        <select id="university" name="university">
+                                            <option value="">Select University</option>
+                                            <?php if ($selectedUniversity !== '' && !in_array($selectedUniversity, $availableUniversities, true)): ?>
+                                                <option value="<?php echo htmlspecialchars($selectedUniversity); ?>" selected>
+                                                    <?php echo htmlspecialchars($selectedUniversity); ?> (Current)
+                                                </option>
+                                            <?php endif; ?>
+                                            <?php foreach ($availableUniversities as $universityOption): ?>
+                                                <option value="<?php echo htmlspecialchars($universityOption); ?>" <?php echo $selectedUniversity === $universityOption ? 'selected' : ''; ?>>
+                                                    <?php echo htmlspecialchars($universityOption); ?>
+                                                </option>
+                                            <?php endforeach; ?>
+                                        </select>
                                     </div>
                                     <div class="form-group">
                                         <label for="location">Location</label>

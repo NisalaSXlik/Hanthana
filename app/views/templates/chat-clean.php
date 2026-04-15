@@ -89,6 +89,10 @@ $avatarPath = $currentUser['profile_picture'] ?? 'uploads/user_dp/default.png';
                 </div>
                 </form>
                 <div class="chat-search-results" id="chat-search-results" aria-live="polite"></div>
+                <div class="chat-filter-tabs" role="tablist" aria-label="Conversation filter">
+                    <button type="button" class="chat-filter-btn active" data-chat-filter="all">All</button>
+                    <button type="button" class="chat-filter-btn" data-chat-filter="unread">Unread</button>
+                </div>
             </div>
 
             <div class="users-list" id="chat-user-list">
@@ -135,6 +139,7 @@ $avatarPath = $currentUser['profile_picture'] ?? 'uploads/user_dp/default.png';
             </div>
 
             <form class="input-section hf-form hf-inline" onsubmit="return false;">
+                <div class="chat-reply-preview" id="chatReplyPreview" hidden></div>
                 <div class="input-wrapper">
                     <button class="attach-btn" id="attachFileButton" type="button" aria-label="Attach file">
                         <i class="uil uil-paperclip"></i>
@@ -303,6 +308,10 @@ $avatarPath = $currentUser['profile_picture'] ?? 'uploads/user_dp/default.png';
                                 <input type="text" placeholder="Search conversations..." id="chatSearchInputMax">
                             </div>
                             </form>
+                            <div class="chat-filter-tabs chat-filter-tabs-max" role="tablist" aria-label="Conversation filter">
+                                <button type="button" class="chat-filter-btn active" data-chat-filter="all">All</button>
+                                <button type="button" class="chat-filter-btn" data-chat-filter="unread">Unread</button>
+                            </div>
                         </div>
                     </div>
                     <div class="users-list-maximized" id="chat-user-list-max">
@@ -347,6 +356,7 @@ $avatarPath = $currentUser['profile_picture'] ?? 'uploads/user_dp/default.png';
                         </div>
                     </div>
                     <form class="message-input-area-max hf-form hf-inline" onsubmit="return false;">
+                        <div class="chat-reply-preview" id="chatReplyPreviewMax" hidden></div>
                         <div class="input-wrapper">
                             <textarea class="message-input" id="maximized-message-input" placeholder="Type a message..." rows="1"></textarea>
                             <div class="input-actions">
@@ -382,6 +392,22 @@ $avatarPath = $currentUser['profile_picture'] ?? 'uploads/user_dp/default.png';
             <button type="button" class="btn btn-danger" id="chatConfirmDeleteBtn">Delete</button>
         </div>
     </div>
+</div>
+
+<div id="chatMessageContextMenu" class="chat-message-context-menu" hidden>
+    <button type="button" class="message-action-item" id="chatMessageActionReply">
+        <i class="uil uil-corner-up-left"></i>
+        <span>Reply</span>
+    </button>
+    <button type="button" class="message-action-item danger" id="chatMessageActionDelete">
+        <i class="uil uil-trash-alt"></i>
+        <span>Delete</span>
+    </button>
+    <button type="button" class="message-action-item" id="chatMessageActionReport"
+            data-report-type="message" data-target-id="" data-target-label="this message">
+        <i class="uil uil-info-circle"></i>
+        <span>Report</span>
+    </button>
 </div>
 
 <?php if (!defined('CHAT_SCRIPT_REGISTERED')): ?>
