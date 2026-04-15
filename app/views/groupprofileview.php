@@ -911,8 +911,8 @@ if ($resolvedGroupId > 0) {
                     </div>
                     <div class="form-group">
                         <label for="groupProblemStatement">What problem are you facing? <span class="required">*</span></label>
-                        <textarea id="groupProblemStatement" name="problem_statement" maxlength="400" rows="4" placeholder="Describe the exact issue, error messages, or blockers."></textarea>
-                        <div class="char-count" data-for="problem_statement">0 / 400</div>
+                        <textarea id="groupProblemStatement" name="problem_statement" maxlength="1000" rows="4" placeholder="Describe the exact issue, error messages, or blockers."></textarea>
+                        <div class="char-count" data-for="problem_statement">0 / 1000</div>
                     </div>
                     <div class="form-group">
                         <label for="groupQuestionTopics">Topics (comma separated)</label>

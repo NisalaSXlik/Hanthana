@@ -326,7 +326,7 @@ foreach ($streamPosts as $post) {
                                                 </h2>
 
                                                 <?php if ($questionExcerpt !== ''): ?>
-                                                    <p class="question-excerpt"><?php echo htmlspecialchars(mb_strimwidth($questionExcerpt, 0, 220, '...')); ?></p>
+                                                    <p class="question-excerpt"><?php echo nl2br(htmlspecialchars($questionExcerpt)); ?></p>
                                                 <?php endif; ?>
 
                                                 <div class="question-card-footer">

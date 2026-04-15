@@ -1179,7 +1179,7 @@
             if (questionTemplateChips[0]) questionTemplateChips[0].classList.add('active');
 
             const problemCount = createGroupPostForm.querySelector('.char-count[data-for="problem_statement"]');
-            if (problemCount) problemCount.textContent = '0 / 400';
+            if (problemCount) problemCount.textContent = '0 / 1000';
 
             syncConditionalFieldValidation('');
         }
@@ -1354,7 +1354,7 @@
 
     if (groupProblemStatement) {
         groupProblemStatement.addEventListener('input', function() {
-            const max = Number(this.getAttribute('maxlength')) || 400;
+            const max = Number(this.getAttribute('maxlength')) || 1000;
             const target = createGroupPostForm ? createGroupPostForm.querySelector('.char-count[data-for="problem_statement"]') : null;
             if (target) target.textContent = `${this.value.length} / ${max}`;
         });

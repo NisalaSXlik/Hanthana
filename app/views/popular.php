@@ -168,21 +168,7 @@ function timeAgo($timestamp) {
                                         </h2>
 
                                         <?php if (!empty($q['content'])): ?>
-                                            <p class="question-excerpt">
-                                                <?php
-                                                $content = $q['content'];
-                                                if (preg_match('/Problem:\s*(.*?)\s*(?:Context:|Attempts:|Expected Outcome:|$)/is', $content, $matches)) {
-                                                    $displayContent = trim($matches[1]);
-                                                    if (strlen($content) > strlen($displayContent) + 20) {
-                                                        $displayContent .= '...';
-                                                    }
-                                                    echo htmlspecialchars($displayContent);
-                                                } else {
-                                                    echo htmlspecialchars(mb_substr($content, 0, 200));
-                                                    echo mb_strlen($content) > 200 ? '...' : '';
-                                                }
-                                                ?>
-                                            </p>
+                                            <p class="question-excerpt"><?php echo nl2br(htmlspecialchars((string)$q['content'])); ?></p>
                                         <?php endif; ?>
 
                                         <?php if (!empty($q['attachment_path'])): ?>
