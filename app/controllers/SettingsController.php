@@ -9,6 +9,25 @@ class SettingsController {
     private function isValidUniversityEmail(string $email): bool {
         return (bool) preg_match('/^[^@\s]+@[a-z0-9-]+(?:\.[a-z0-9-]+)*\.ac\.lk$/i', $email);
     }
+
+    private function getAllowedUniversities(): array {
+        return [
+            'University of Colombo',
+            'University of Peradeniya',
+            'University of Moratuwa',
+            'University of Sri Jayewardenepura',
+            'University of Kelaniya',
+            'University of Ruhuna',
+            'University of Jaffna',
+            'Uva Wellassa University',
+            'Rajarata University of Sri Lanka',
+            'Sabaragamuwa University of Sri Lanka',
+            'South Eastern University of Sri Lanka',
+            'Eastern University Sri Lanka',
+            'Wayamba University of Sri Lanka',
+            'University of Vavuniya'
+        ];
+    }
     
     public function __construct() {
         $this->userModel = new UserModel();
@@ -59,22 +78,33 @@ class SettingsController {
         if (session_status() === PHP_SESSION_NONE) {
             session_start();
         }
+
+        header('Content-Type: application/json; charset=utf-8');
         
         if (!isset($_SESSION['user_id'])) {
             echo json_encode(['success' => false, 'message' => 'Not authenticated']);
             exit();
         }
         
-        $userId = $_SESSION['user_id'];
+        $userId = (int)$_SESSION['user_id'];
         $data = $_POST;
+
+        $firstName = trim((string)($data['first_name'] ?? ''));
+        $lastName = trim((string)($data['last_name'] ?? ''));
+        $username = trim((string)($data['username'] ?? ''));
+        $email = trim((string)($data['email'] ?? ''));
+        $phoneNumber = trim((string)($data['phone_number'] ?? ''));
+        $bio = trim((string)($data['bio'] ?? ''));
+        $university = trim((string)($data['university'] ?? ''));
+        $location = trim((string)($data['location'] ?? ''));
+        $dateOfBirthRaw = trim((string)($data['date_of_birth'] ?? ''));
         
         // Validate required fields
-        if (empty($data['first_name']) || empty($data['last_name']) || empty($data['email'])) {
+        if ($firstName === '' || $lastName === '' || $email === '') {
             echo json_encode(['success' => false, 'message' => 'First name, last name, and email are required']);
             exit();
         }
 
-        $email = trim((string)$data['email']);
         if (!filter_var($email, FILTER_VALIDATE_EMAIL) || !$this->isValidUniversityEmail($email)) {
             echo json_encode([
                 'success' => false,
@@ -82,37 +112,80 @@ class SettingsController {
             ]);
             exit();
         }
+
+        if ($username === '') {
+            echo json_encode(['success' => false, 'message' => 'Username is required']);
+            exit();
+        }
+
+        if (!preg_match('/^[a-zA-Z0-9_]+$/', $username)) {
+            echo json_encode(['success' => false, 'message' => 'Username can only contain letters, numbers, and underscores']);
+            exit();
+        }
         
         // Check if email is already taken by another user
-        $existingUser = $this->userModel->findByEmail($email);
-        if ($existingUser && $existingUser['user_id'] != $userId) {
+        if ($this->userModel->emailExists($email, $userId)) {
             echo json_encode(['success' => false, 'message' => 'Email is already taken']);
             exit();
         }
         
         // Check if username is already taken by another user
-        if (!empty($data['username'])) {
-            $existingUser = $this->userModel->findByUsername($data['username']);
-            if ($existingUser && $existingUser['user_id'] != $userId) {
-                echo json_encode(['success' => false, 'message' => 'Username is already taken']);
+        if ($this->userModel->usernameExists($username, $userId)) {
+            echo json_encode(['success' => false, 'message' => 'Username is already taken']);
+            exit();
+        }
+
+        if ($phoneNumber !== '') {
+            if (!preg_match('/^[0-9]{10}$/', $phoneNumber)) {
+                echo json_encode(['success' => false, 'message' => 'Phone number must be 10 digits']);
                 exit();
             }
+
+            if ($this->userModel->phoneExists($phoneNumber, $userId)) {
+                echo json_encode(['success' => false, 'message' => 'Phone number is already taken']);
+                exit();
+            }
+        }
+
+        if ($university !== '' && !in_array($university, $this->getAllowedUniversities(), true)) {
+            echo json_encode(['success' => false, 'message' => 'Please select a valid university']);
+            exit();
+        }
+
+        $dateOfBirth = null;
+        if ($dateOfBirthRaw !== '') {
+            $dateOfBirthParsed = DateTime::createFromFormat('Y-m-d', $dateOfBirthRaw);
+            $dateErrors = DateTime::getLastErrors();
+            $hasDateErrors = is_array($dateErrors)
+                && (($dateErrors['warning_count'] ?? 0) > 0 || ($dateErrors['error_count'] ?? 0) > 0);
+
+            if (!$dateOfBirthParsed || $hasDateErrors || $dateOfBirthParsed->format('Y-m-d') !== $dateOfBirthRaw) {
+                echo json_encode(['success' => false, 'message' => 'Please provide a valid date of birth']);
+                exit();
+            }
+
+            $dateOfBirth = $dateOfBirthRaw;
         }
         
         try {
             $result = $this->userModel->updateUser($userId, [
-                'first_name' => $data['first_name'],
-                'last_name' => $data['last_name'],
-                'username' => $data['username'],
+                'first_name' => $firstName,
+                'last_name' => $lastName,
+                'username' => $username,
                 'email' => $email,
-                'phone_number' => $data['phone_number'] ?? null,
-                'bio' => $data['bio'] ?? null,
-                'university' => $data['university'] ?? null,
-                'location' => $data['location'] ?? null,
-                'date_of_birth' => $data['date_of_birth'] ?? null
+                'phone_number' => $phoneNumber !== '' ? $phoneNumber : null,
+                'bio' => $bio !== '' ? $bio : null,
+                'university' => $university !== '' ? $university : null,
+                'location' => $location !== '' ? $location : null,
+                'date_of_birth' => $dateOfBirth
             ]);
             
             if ($result) {
+                $_SESSION['first_name'] = $firstName;
+                $_SESSION['last_name'] = $lastName;
+                $_SESSION['username'] = $username;
+                $_SESSION['email'] = $email;
+                $_SESSION['phone_number'] = $phoneNumber !== '' ? $phoneNumber : null;
                 echo json_encode(['success' => true, 'message' => 'Profile updated successfully']);
             } else {
                 echo json_encode(['success' => false, 'message' => 'Failed to update profile']);

@@ -143,6 +143,23 @@ main .container {
     font-size: 0.8rem;
 }
 
+.settings-form .hf-field-status {
+    display: block;
+    min-height: 1rem;
+    margin-top: 0.3rem;
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: var(--color-gray);
+}
+
+.settings-form .hf-field-status.is-success {
+    color: #16a34a;
+}
+
+.settings-form .hf-field-status.is-error {
+    color: var(--color-danger);
+}
+
 .password-input-wrap {
     position: relative;
 }

@@ -15,10 +15,274 @@ function bindProfileForm() {
         return;
     }
 
+    const availabilityValidator = createProfileAvailabilityValidator(profileForm);
+
     profileForm.addEventListener('submit', async (event) => {
         event.preventDefault();
+
+        if (!profileForm.checkValidity()) {
+            profileForm.reportValidity();
+            return;
+        }
+
+        const isValid = await availabilityValidator.validateBeforeSubmit();
+        if (!isValid) {
+            return;
+        }
+
         await submitForm(profileForm, 'updateProfile');
     });
+}
+
+function createProfileAvailabilityValidator(profileForm) {
+    const usernameInput = document.getElementById('username');
+    const emailInput = document.getElementById('email');
+    const phoneInput = document.getElementById('phone');
+
+    const statusElements = {
+        username: document.getElementById('username-status'),
+        email: document.getElementById('email-status'),
+        phone: document.getElementById('phone-status')
+    };
+
+    const inputs = {
+        username: usernameInput,
+        email: emailInput,
+        phone: phoneInput
+    };
+
+    const currentValues = {
+        username: normalizeValue(profileForm.dataset.currentUsername || ''),
+        email: normalizeValue(profileForm.dataset.currentEmail || ''),
+        phone: normalizeValue(profileForm.dataset.currentPhone || '')
+    };
+
+    const availabilityState = {
+        username: { value: currentValues.username, available: currentValues.username !== '', pending: false },
+        email: { value: currentValues.email, available: currentValues.email !== '', pending: false },
+        phone: { value: currentValues.phone, available: true, pending: false }
+    };
+
+    const timers = {
+        username: null,
+        email: null,
+        phone: null
+    };
+
+    function normalizeValue(value) {
+        return String(value || '').trim();
+    }
+
+    function isUnchanged(field, value) {
+        return normalizeValue(value) === currentValues[field];
+    }
+
+    function setStatus(field, message, isError, icon) {
+        const target = statusElements[field];
+        if (!target) {
+            return;
+        }
+
+        target.textContent = message ? `${icon || ''} ${message}`.trim() : '';
+        target.classList.toggle('is-error', Boolean(message) && Boolean(isError));
+        target.classList.toggle('is-success', Boolean(message) && !Boolean(isError));
+    }
+
+    function setFieldValidity(field, message) {
+        const input = inputs[field];
+        if (!input) {
+            return;
+        }
+
+        input.setCustomValidity(message || '');
+        input.classList.toggle('error', Boolean(message));
+    }
+
+    function updateState(field, value, available, pending) {
+        availabilityState[field] = {
+            value,
+            available,
+            pending
+        };
+    }
+
+    async function checkAvailability(field, rawValue, options = {}) {
+        const input = inputs[field];
+        if (!input) {
+            return true;
+        }
+
+        const skipUnchanged = Boolean(options.skipUnchanged);
+        const trimmedValue = normalizeValue(rawValue);
+        const optionalField = field === 'phone';
+
+        if (trimmedValue === '') {
+            setStatus(field, '', false);
+            setFieldValidity(field, '');
+            updateState(field, '', optionalField, false);
+            return optionalField;
+        }
+
+        if (skipUnchanged && isUnchanged(field, trimmedValue)) {
+            setStatus(field, `${field.charAt(0).toUpperCase() + field.slice(1)} unchanged.`, false, '✓');
+            setFieldValidity(field, '');
+            updateState(field, trimmedValue, true, false);
+            return true;
+        }
+
+        if (field === 'username' && !/^[a-zA-Z0-9_]+$/.test(trimmedValue)) {
+            const message = 'Username can only contain letters, numbers, and underscores.';
+            setStatus(field, message, true, '!');
+            setFieldValidity(field, message);
+            updateState(field, trimmedValue, false, false);
+            return false;
+        }
+
+        if (field === 'email' && !isValidUniversityEmail(trimmedValue)) {
+            const message = 'Use university email ending with .ac.lk';
+            setStatus(field, message, true, '!');
+            setFieldValidity(field, message);
+            updateState(field, trimmedValue, false, false);
+            return false;
+        }
+
+        if (field === 'phone' && !isValidPhone(trimmedValue)) {
+            const message = 'Phone number must be exactly 10 digits.';
+            setStatus(field, message, true, '!');
+            setFieldValidity(field, message);
+            updateState(field, trimmedValue, false, false);
+            return false;
+        }
+
+        if (availabilityState[field].value === trimmedValue && !availabilityState[field].pending) {
+            return availabilityState[field].available;
+        }
+
+        updateState(field, trimmedValue, false, true);
+        setStatus(field, 'Checking availability...', false);
+        setFieldValidity(field, '');
+
+        try {
+            const url = `${BASE_PATH}index.php?controller=Auth&action=checkAvailability&exclude_current=1&field=${encodeURIComponent(field)}&value=${encodeURIComponent(trimmedValue)}`;
+            const response = await fetch(url);
+            const data = await response.json();
+            const latestValue = normalizeValue(input.value);
+
+            if (latestValue !== trimmedValue) {
+                return availabilityState[field].available;
+            }
+
+            const isAvailable = Boolean(data.available);
+            updateState(field, trimmedValue, isAvailable, false);
+
+            if (isAvailable) {
+                setStatus(field, data.message || `${field} is available.`, false, '✓');
+                setFieldValidity(field, '');
+                return true;
+            }
+
+            const errorMessage = data.message || `${field} is not available.`;
+            setStatus(field, errorMessage, true, '!');
+            setFieldValidity(field, errorMessage);
+            return false;
+        } catch (error) {
+            console.error(`Availability check failed for ${field}:`, error);
+            const message = 'Unable to verify availability right now.';
+            setStatus(field, message, true, '!');
+            setFieldValidity(field, message);
+            updateState(field, trimmedValue, false, false);
+            return false;
+        }
+    }
+
+    function scheduleCheck(field, value) {
+        if (timers[field]) {
+            clearTimeout(timers[field]);
+        }
+
+        timers[field] = setTimeout(() => {
+            checkAvailability(field, value, { skipUnchanged: true });
+        }, 350);
+    }
+
+    if (usernameInput) {
+        usernameInput.addEventListener('input', function onUsernameInput() {
+            const value = normalizeValue(this.value);
+            setFieldValidity('username', '');
+
+            if (!value) {
+                setStatus('username', '', false);
+                updateState('username', '', false, false);
+                return;
+            }
+
+            scheduleCheck('username', value);
+        });
+
+        usernameInput.addEventListener('blur', function onUsernameBlur() {
+            checkAvailability('username', this.value, { skipUnchanged: true });
+        });
+    }
+
+    if (emailInput) {
+        emailInput.addEventListener('input', function onEmailInput() {
+            const value = normalizeValue(this.value);
+            setFieldValidity('email', '');
+
+            if (!value) {
+                setStatus('email', '', false);
+                updateState('email', '', false, false);
+                return;
+            }
+
+            scheduleCheck('email', value);
+        });
+
+        emailInput.addEventListener('blur', function onEmailBlur() {
+            checkAvailability('email', this.value, { skipUnchanged: true });
+        });
+    }
+
+    if (phoneInput) {
+        phoneInput.addEventListener('input', function onPhoneInput() {
+            const value = normalizeValue(this.value);
+            setFieldValidity('phone', '');
+
+            if (!value) {
+                setStatus('phone', '', false);
+                updateState('phone', '', true, false);
+                return;
+            }
+
+            scheduleCheck('phone', value);
+        });
+
+        phoneInput.addEventListener('blur', function onPhoneBlur() {
+            checkAvailability('phone', this.value, { skipUnchanged: true });
+        });
+    }
+
+    return {
+        validateBeforeSubmit: async function validateBeforeSubmit() {
+            const username = normalizeValue(usernameInput ? usernameInput.value : '');
+            const email = normalizeValue(emailInput ? emailInput.value : '');
+            const phone = normalizeValue(phoneInput ? phoneInput.value : '');
+
+            const usernameReady = await checkAvailability('username', username, { skipUnchanged: true });
+            const emailReady = await checkAvailability('email', email, { skipUnchanged: true });
+            const phoneReady = await checkAvailability('phone', phone, { skipUnchanged: true });
+
+            if (!usernameReady && usernameInput) {
+                usernameInput.reportValidity();
+            } else if (!emailReady && emailInput) {
+                emailInput.reportValidity();
+            } else if (!phoneReady && phoneInput) {
+                phoneInput.reportValidity();
+            }
+
+            return usernameReady && emailReady && phoneReady;
+        }
+    };
 }
 
 function bindPasswordForm() {
@@ -322,29 +586,19 @@ function updatePasswordStrengthIndicator(strength) {
 }
 
 function initializeFormValidation() {
-    const emailInput = document.getElementById('email');
-    if (emailInput) {
-        emailInput.addEventListener('input', function validateEmailInput() {
-            const email = this.value.trim();
-            if (email && !isValidUniversityEmail(email)) {
-                showFieldError(this, 'Use university email ending with .ac.lk');
-                this.setCustomValidity('Use university email ending with .ac.lk');
-            } else {
-                clearFieldError(this);
-                this.setCustomValidity('');
-            }
+    const universitySelect = document.getElementById('university');
+    if (universitySelect) {
+        universitySelect.addEventListener('change', function onUniversityChange() {
+            this.setCustomValidity('');
+            clearFieldError(this);
         });
     }
 
-    const phoneInput = document.getElementById('phone');
-    if (phoneInput) {
-        phoneInput.addEventListener('blur', function validatePhoneInput() {
-            const phone = this.value.trim();
-            if (phone && !isValidPhone(phone)) {
-                showFieldError(this, 'Please enter a valid phone number');
-            } else {
-                clearFieldError(this);
-            }
+    const dateInput = document.getElementById('dateOfBirth');
+    if (dateInput) {
+        dateInput.addEventListener('input', function onDateInput() {
+            this.setCustomValidity('');
+            clearFieldError(this);
         });
     }
 }
@@ -355,8 +609,8 @@ function isValidUniversityEmail(email) {
 }
 
 function isValidPhone(phone) {
-    const sanitized = phone.replace(/[\s\-()]/g, '');
-    return /^\+?[1-9]\d{6,15}$/.test(sanitized);
+    const sanitized = String(phone || '').replace(/\D/g, '');
+    return /^\d{10}$/.test(sanitized);
 }
 
 function showFieldError(field, message) {
