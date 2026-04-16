@@ -269,6 +269,7 @@ function timeAgo($timestamp) {
     </main>
     
     <?php include __DIR__ . '/templates/question-ask-modal.php'; ?>
+    <?php include __DIR__ . '/templates/question-edit-modal.php'; ?>
     <?php include __DIR__ . '/templates/report-modal.php'; ?>
 
     <div class="calendar-popup" id="calendarPopup">
