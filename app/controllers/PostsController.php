@@ -167,7 +167,8 @@ class PostsController {
             'image_path' => $dbPath,
             'image_name' => $imageName,
             'image_size' => $imageSize,
-            'media_type' => $mediaType
+            'media_type' => $mediaType,
+            'metadata' => !empty($tagArray) ? ['tags' => array_values($tagArray)] : null,
         ];
 
         // Create post

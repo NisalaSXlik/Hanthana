@@ -6,6 +6,7 @@ class PostModel {
     private $db;
     private $hasGroupPostColumns = false;
     private $hasEventTimeColumn = false;
+    private $hasPostMetadataColumn = false;
     private $hasPostBookmarkTable = false;
     private $hasPollVoteTable = false;
     private $hasPostMediaFileTypeColumn = false;
@@ -14,6 +15,7 @@ class PostModel {
         $this->db = new Database();
         $this->hasGroupPostColumns = $this->columnExists('Post', 'group_post_type');
         $this->hasEventTimeColumn = $this->columnExists('Post', 'event_time');
+        $this->hasPostMetadataColumn = $this->columnExists('Post', 'metadata');
         $this->hasPostBookmarkTable = $this->tableExists('PostBookmark');
         $this->hasPollVoteTable = $this->tableExists('GroupPostPollVote');
         $this->hasPostMediaFileTypeColumn = $this->columnExists('PostMedia', 'file_type');
@@ -514,6 +516,22 @@ class PostModel {
                 $fields[] = 'event_time';
                 $placeholders[] = '?';
                 $params[] = $data['event_time'] ?? null;
+            }
+
+            if ($this->hasPostMetadataColumn) {
+                $metadata = $data['metadata'] ?? null;
+                $encodedMetadata = null;
+                if (is_array($metadata)) {
+                    $encodedMetadata = json_encode($metadata);
+                } elseif (is_string($metadata) && trim($metadata) !== '') {
+                    $encodedMetadata = $metadata;
+                }
+
+                if ($encodedMetadata !== null && $encodedMetadata !== false && $encodedMetadata !== '') {
+                    $fields[] = 'metadata';
+                    $placeholders[] = '?';
+                    $params[] = $encodedMetadata;
+                }
             }
 
             $sql = "INSERT INTO Post (" . implode(', ', $fields) . ") VALUES (" . implode(', ', $placeholders) . ")";

@@ -59,6 +59,55 @@ class SearchController
         return mb_strimwidth($clean, 0, $max, '...');
     }
 
+    private function buildSearchTokens(string $query): array
+    {
+        $normalized = preg_replace('/\s+/u', ' ', trim($query));
+        if ($normalized === null || $normalized === '') {
+            return [];
+        }
+
+        $tokens = [];
+        foreach (explode(' ', $normalized) as $part) {
+            $part = trim($part);
+            if ($part === '') {
+                continue;
+            }
+
+            $lower = mb_strtolower($part);
+            $tokens[$lower] = true;
+
+            if (mb_substr($lower, 0, 1) === '#') {
+                $withoutHash = ltrim($lower, '#');
+                if ($withoutHash !== '') {
+                    $tokens[$withoutHash] = true;
+                }
+            } else {
+                $tokens['#' . $lower] = true;
+            }
+        }
+
+        return array_keys($tokens);
+    }
+
+    private function haystackContainsAnyToken(string $haystack, array $tokens): bool
+    {
+        if ($haystack === '') {
+            return false;
+        }
+
+        if (empty($tokens)) {
+            return true;
+        }
+
+        foreach ($tokens as $token) {
+            if ($token !== '' && mb_stripos($haystack, $token) !== false) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     private function getMutualFriendCount(int $viewerId, int $targetUserId): int
     {
         if ($viewerId <= 0 || $targetUserId <= 0 || $viewerId === $targetUserId) {
@@ -125,6 +174,7 @@ class SearchController
     private function searchPosts(string $query, int $viewerId, int $limit = 8): array
     {
         $posts = $this->postModel->getFeedPosts($viewerId, false);
+        $queryTokens = $this->buildSearchTokens($query);
         $results = [];
         $postIds = [];
         foreach ($posts as $row) {
@@ -140,10 +190,6 @@ class SearchController
                 continue;
             }
 
-            if (!$this->isPublicPostVisible($post)) {
-                continue;
-            }
-
             $authorName = trim(($post['first_name'] ?? '') . ' ' . ($post['last_name'] ?? ''));
             if ($authorName === '') {
                 $authorName = (string)($post['username'] ?? 'Unknown');
@@ -154,15 +200,25 @@ class SearchController
             $isGroupPost = !empty($post['group_id']);
             $fileNames = trim((string)($fileNameMap[$postId] ?? ''));
 
+            $metadataRaw = $post['metadata'] ?? null;
+            if (is_array($metadataRaw)) {
+                $metadataText = json_encode($metadataRaw) ?: '';
+            } else {
+                $metadataText = (string)$metadataRaw;
+            }
+
             $haystack = mb_strtolower(implode(' ', [
                 (string)($post['content'] ?? ''),
+                (string)($post['event_title'] ?? ''),
+                (string)($post['event_location'] ?? ''),
                 (string)($post['username'] ?? ''),
                 $authorName,
                 (string)($post['group_name'] ?? ''),
                 $fileNames,
+                $metadataText,
             ]));
 
-            if (mb_stripos($haystack, mb_strtolower($query)) === false) {
+            if (!$this->haystackContainsAnyToken($haystack, $queryTokens)) {
                 continue;
             }
 
@@ -218,6 +274,7 @@ class SearchController
     private function searchStreamPosts(string $query, int $viewerId, int $limit = 100): array
     {
         $posts = $this->postModel->getFeedPosts($viewerId, false);
+        $queryTokens = $this->buildSearchTokens($query);
         $results = [];
         $postIds = [];
 
@@ -228,15 +285,10 @@ class SearchController
             }
         }
 
-        $fileNameMap = $this->getPostFileNamesMap($postIds);
-        $queryLower = mb_strtolower($query);
+    $fileNameMap = $this->getPostFileNamesMap($postIds);
 
         foreach ($posts as $post) {
             if (!empty($post['is_deleted'])) {
-                continue;
-            }
-
-            if (!$this->isPublicPostVisible($post)) {
                 continue;
             }
 
@@ -246,12 +298,6 @@ class SearchController
             $category = $this->classifyStreamPost($post);
             $fileNames = trim((string)($fileNameMap[$postId] ?? ''));
 
-            if ($category === 'resources') {
-                $groupId = (int)($post['group_id'] ?? 0);
-                if ($groupId <= 0 || !$this->isPublicGroup($groupId)) {
-                    continue;
-                }
-            }
 
             $authorName = trim((string)($post['first_name'] ?? '') . ' ' . (string)($post['last_name'] ?? ''));
             if ($authorName === '') {
@@ -276,7 +322,7 @@ class SearchController
                 $metadataText,
             ]));
 
-            if (mb_stripos($haystack, $queryLower) === false) {
+            if (!$this->haystackContainsAnyToken($haystack, $queryTokens)) {
                 continue;
             }
 
@@ -444,10 +490,6 @@ class SearchController
                 : strtolower((string)($post['post_type'] ?? 'text'));
 
             if ($type !== 'event') {
-                continue;
-            }
-
-            if (!$this->isPublicPostVisible($post)) {
                 continue;
             }
 

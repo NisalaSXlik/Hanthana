@@ -698,8 +698,8 @@ class AuthController {
         
         // Password validation
         if (!empty($data['password'])) {
-            if (strlen($data['password']) < 6) {
-                $errors[] = "Password must be at least 6 characters.";
+            if (strlen($data['password']) < 8) {
+                $errors[] = "Password must be at least 8 characters.";
             }
             
             // Check if passwords match

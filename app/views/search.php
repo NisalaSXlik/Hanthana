@@ -592,7 +592,6 @@ foreach ($streamPosts as $post) {
                                         <div>
                                             <h5><?php echo htmlspecialchars($person['name']); ?></h5>
                                             <p>@<?php echo htmlspecialchars($person['username']); ?></p>
-                                            <small><?php echo (int)$person['mutual_friends']; ?> mutual</small>
                                         </div>
                                     </a>
                                     <?php if (($person['friend_state'] ?? 'none') === 'self'): ?>
@@ -602,7 +601,11 @@ foreach ($streamPosts as $post) {
                                             class="btn add-friend-btn"
                                             data-user-id="<?php echo (int)$person['user_id']; ?>"
                                             data-state="<?php echo htmlspecialchars((string)($person['friend_state'] ?? 'none')); ?>"
+                                            data-label-none="Add"
+                                            data-label-pending-outgoing="Sent"
+                                            data-label-incoming-pending="Pending"
                                             data-label-friends="Friends"
+                                            data-label-blocked="N/A"
                                             type="button"
                                         >
                                             <i class="uil uil-user-plus"></i>
