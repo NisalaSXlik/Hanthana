@@ -255,7 +255,7 @@ function timeAgo($timestamp) {
                     <h3>Categories</h3>
                     <div class="filter-options">
                         <?php foreach ($categories as $cat): ?>
-                            <a href="?controller=QnA&action=index&category=<?php echo urlencode($cat); ?>" 
+                            <a href="?controller=QnA&action=index&category=<?php echo urlencode($cat); ?>&sort=<?php echo urlencode($_GET['sort'] ?? 'recent'); ?><?php echo (isset($_GET['mine']) && $_GET['mine'] === '1') ? '&mine=1' : ''; ?><?php echo !empty($_GET['search']) ? '&search=' . urlencode($_GET['search']) : ''; ?>" 
                                class="filter-option <?php echo ($_GET['category'] ?? '') === $cat ? 'active' : ''; ?>">
                                 <?php echo htmlspecialchars($cat); ?>
                             </a>

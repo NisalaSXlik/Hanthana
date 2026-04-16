@@ -134,7 +134,10 @@ document.addEventListener('DOMContentLoaded', function() {
             const result = await response.json();
 
             if (result.success) {
-                window.location.href = QUESTIONS_BASE_PATH + 'index.php?controller=QnA&action=view&id=' + result.question_id;
+                const indexUrl = new URL(QUESTIONS_BASE_PATH + 'index.php?controller=QnA&action=index', window.location.origin);
+                indexUrl.searchParams.set('sort', 'recent');
+                indexUrl.searchParams.set('focus_question', String(result.question_id));
+                window.location.href = indexUrl.toString();
             } else {
                 alert(result.message || 'Failed to post question');
             }
