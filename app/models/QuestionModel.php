@@ -59,10 +59,24 @@ class QuestionModel {
             $personalSql .= " AND q.user_id = ?";
             $personalParams[] = (int)$userId;
         }
-        
-        $personalSql .= " GROUP BY q.question_id";
 
         $sortBy = $filters['sort'] ?? 'recent';
+        $recentFriendsOnly = ($sortBy === 'recent' && empty($filters['mine']));
+        if ($recentFriendsOnly) {
+            $personalSql .= " AND (
+                q.user_id = ?
+                OR q.user_id IN (
+                    SELECT friend_id FROM Friends WHERE user_id = ? AND status = 'accepted'
+                    UNION
+                    SELECT user_id FROM Friends WHERE friend_id = ? AND status = 'accepted'
+                )
+            )";
+            $personalParams[] = (int)$userId;
+            $personalParams[] = (int)$userId;
+            $personalParams[] = (int)$userId;
+        }
+        
+        $personalSql .= " GROUP BY q.question_id";
         $includeGroupQuestions = !(!empty($filters['mine']) || $sortBy === 'my_questions');
         $groupRows = $includeGroupQuestions ? $this->getGroupQuestionsFeed($userId, $filters) : [];
         $questions = $this->runQuestionsQuery($personalSql, $personalParams);

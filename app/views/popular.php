@@ -131,32 +131,30 @@ function timeAgo($timestamp) {
                                                 <span><i class="uil uil-eye"></i> <?php echo (int)$q['views']; ?> views</span>
 
                                                 <div class="question-menu-wrap">
-                                                    <?php if (!$isGroupQuestion): ?>
-                                                        <button type="button" class="question-menu-trigger" aria-label="Question menu">
-                                                            <i class="uil uil-ellipsis-h"></i>
-                                                        </button>
+                                                    <button type="button" class="question-menu-trigger" aria-label="Question menu">
+                                                        <i class="uil uil-ellipsis-h"></i>
+                                                    </button>
 
-                                                        <div class="question-menu">
-                                                            <?php if ($isOwner): ?>
-                                                                <button type="button" class="question-menu-item edit-question" data-question-id="<?php echo (int)$q['question_id']; ?>">
-                                                                    <i class="uil uil-edit"></i> Edit
-                                                                </button>
-                                                                <button type="button" class="question-menu-item delete-question" data-question-id="<?php echo (int)$q['question_id']; ?>">
-                                                                    <i class="uil uil-trash-alt"></i> Delete
-                                                                </button>
-                                                            <?php endif; ?>
+                                                    <div class="question-menu">
+                                                        <?php if ($isOwner): ?>
+                                                            <button type="button" class="question-menu-item edit-question" data-question-id="<?php echo (int)$q['question_id']; ?>">
+                                                                <i class="uil uil-edit"></i> Edit
+                                                            </button>
+                                                            <button type="button" class="question-menu-item delete-question" data-question-id="<?php echo (int)$q['question_id']; ?>">
+                                                                <i class="uil uil-trash-alt"></i> Delete
+                                                            </button>
+                                                        <?php endif; ?>
 
-                                                            <?php if (!$isOwner): ?>
-                                                                <button type="button"
-                                                                        class="question-menu-item report-trigger"
-                                                                        data-report-type="question"
-                                                                        data-target-id="<?php echo (int)$q['question_id']; ?>"
-                                                                        data-target-label="<?php echo htmlspecialchars($q['title'], ENT_QUOTES); ?>">
-                                                                    <i class="uil uil-exclamation-circle"></i> Report
-                                                                </button>
-                                                            <?php endif; ?>
-                                                        </div>
-                                                    <?php endif; ?>
+                                                        <?php if (!$isOwner): ?>
+                                                            <button type="button"
+                                                                    class="question-menu-item report-trigger"
+                                                                    data-report-type="question"
+                                                                    data-target-id="<?php echo (int)$q['question_id']; ?>"
+                                                                    data-target-label="<?php echo htmlspecialchars($q['title'], ENT_QUOTES); ?>">
+                                                                <i class="uil uil-exclamation-circle"></i> Report
+                                                            </button>
+                                                        <?php endif; ?>
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
