@@ -1093,10 +1093,12 @@
     // ===== CREATE POST MODAL FUNCTIONALITY =====
     const createPostModal = document.getElementById('createPostModal');
     const quickPostTrigger = document.getElementById('quickPostTrigger');
-    const photoQuickBtn = document.getElementById('photoQuickBtn');
+    const discussionQuickBtn = document.getElementById('discussionQuickBtn');
     const pollQuickBtn = document.getElementById('pollQuickBtn');
     const questionQuickBtn = document.getElementById('questionQuickBtn');
     const resourceQuickBtn = document.getElementById('resourceQuickBtn');
+    const eventQuickBtn = document.getElementById('eventQuickBtn');
+    const alertQuickBtn = document.getElementById('alertQuickBtn');
     const openCreatePostBtn = document.getElementById('openCreatePostBtn');
     const closeCreatePostModal = document.getElementById('closeCreatePostModal');
     const cancelCreatePostBtn = document.getElementById('cancelCreatePostBtn');
@@ -1277,15 +1279,9 @@
         openCreatePostBtn.addEventListener('click', () => openCreatePostModal('discussion'));
     }
 
-    if (photoQuickBtn) {
-        photoQuickBtn.addEventListener('click', () => {
+    if (discussionQuickBtn) {
+        discussionQuickBtn.addEventListener('click', () => {
             openCreatePostModal('discussion');
-        });
-    }
-
-    if (pollQuickBtn) {
-        pollQuickBtn.addEventListener('click', () => {
-            openCreatePostModal('poll');
         });
     }
 
@@ -1298,6 +1294,24 @@
     if (resourceQuickBtn) {
         resourceQuickBtn.addEventListener('click', () => {
             openCreatePostModal('resource');
+        });
+    }
+
+    if (pollQuickBtn) {
+        pollQuickBtn.addEventListener('click', () => {
+            openCreatePostModal('poll');
+        });
+    }
+
+    if (eventQuickBtn) {
+        eventQuickBtn.addEventListener('click', () => {
+            openCreatePostModal('event');
+        });
+    }
+
+    if (alertQuickBtn) {
+        alertQuickBtn.addEventListener('click', () => {
+            openCreatePostModal('alert');
         });
     }
 

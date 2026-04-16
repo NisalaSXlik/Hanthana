@@ -13,9 +13,23 @@ document.addEventListener('DOMContentLoaded', function () {
     const kickConfirmMemberName = document.getElementById('kickConfirmMemberName');
     const cancelKickBtn = document.getElementById('cancelKickBtn');
     const confirmKickBtn = document.getElementById('confirmKickBtn');
+    const roleVoteModal = document.getElementById('roleVoteModal');
+    const roleVoteForm = document.getElementById('roleVoteForm');
+    const closeRoleVoteModal = document.getElementById('closeRoleVoteModal');
+    const cancelRoleVoteBtn = document.getElementById('cancelRoleVoteBtn');
+    const submitRoleVoteBtn = document.getElementById('submitRoleVoteBtn');
     const groupId = parseInt(shell.getAttribute('data-group-id') || '0', 10);
     const isAdmin = shell.getAttribute('data-is-admin') === '1';
     let pendingKick = null;
+    let pendingRoleVote = null;
+
+    function notify(message, type = 'info') {
+        if (typeof window.showToast === 'function') {
+            window.showToast(message, type);
+            return;
+        }
+        window.alert(message);
+    }
 
     function closeAllMenus() {
         shell.querySelectorAll('.member-menu.open').forEach((menu) => {
@@ -44,6 +58,40 @@ document.addEventListener('DOMContentLoaded', function () {
         if (kickConfirmModal) {
             kickConfirmModal.classList.remove('active');
             kickConfirmModal.setAttribute('aria-hidden', 'true');
+        }
+    }
+
+    function openRoleVote(payload) {
+        if (!roleVoteModal || !roleVoteForm) {
+            return;
+        }
+
+        pendingRoleVote = payload;
+        roleVoteForm.reset();
+
+        const title = document.getElementById('roleVoteTitle');
+        const targetInput = document.getElementById('roleVoteTargetUserId');
+        const nameInput = document.getElementById('roleVoteMemberName');
+        const fromRoleInput = document.getElementById('roleVoteFromRole');
+        const toRoleInput = document.getElementById('roleVoteToRole');
+
+        if (title) {
+            title.textContent = payload.action === 'demote' ? 'Start Demotion Vote' : 'Start Promotion Vote';
+        }
+        if (targetInput) targetInput.value = String(payload.userId || '');
+        if (nameInput) nameInput.value = payload.memberName || '';
+        if (fromRoleInput) fromRoleInput.value = payload.fromRole || 'member';
+        if (toRoleInput) toRoleInput.value = payload.toRole || 'member';
+
+        roleVoteModal.classList.add('active');
+        roleVoteModal.setAttribute('aria-hidden', 'false');
+    }
+
+    function closeRoleVote() {
+        pendingRoleVote = null;
+        if (roleVoteModal) {
+            roleVoteModal.classList.remove('active');
+            roleVoteModal.setAttribute('aria-hidden', 'true');
         }
     }
 
@@ -159,14 +207,78 @@ document.addEventListener('DOMContentLoaded', function () {
                 }
                 applyFilters();
                 closeKickConfirmModal();
+                notify('Member removed successfully.', 'success');
             } catch (error) {
-                window.alert(error.message || 'Failed to remove member');
+                notify(error.message || 'Failed to remove member', 'error');
             } finally {
                 confirmKickBtn.disabled = false;
                 confirmKickBtn.textContent = originalText;
             }
         });
     }
+
+    closeRoleVoteModal?.addEventListener('click', closeRoleVote);
+    cancelRoleVoteBtn?.addEventListener('click', closeRoleVote);
+
+    roleVoteModal?.addEventListener('click', function (event) {
+        if (event.target === roleVoteModal) {
+            closeRoleVote();
+        }
+    });
+
+    roleVoteForm?.addEventListener('submit', async function (event) {
+        event.preventDefault();
+
+        if (!pendingRoleVote || !isAdmin || !groupId) {
+            return;
+        }
+
+        const reason = (document.getElementById('roleVoteReason')?.value || '').trim();
+        if (!reason) {
+            notify('Reason is required to start a role vote.', 'error');
+            return;
+        }
+
+        const originalText = submitRoleVoteBtn ? submitRoleVoteBtn.textContent : '';
+        if (submitRoleVoteBtn) {
+            submitRoleVoteBtn.disabled = true;
+            submitRoleVoteBtn.textContent = 'Starting...';
+        }
+
+        try {
+            const response = await fetch('./index.php?controller=Group&action=handleAjax', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded'
+                },
+                body: new URLSearchParams({
+                    sub_action: 'start_governance_vote',
+                    group_id: String(groupId),
+                    vote_type: 'member_role_change',
+                    target_type: 'user',
+                    target_id: String(pendingRoleVote.userId),
+                    from_role: String(pendingRoleVote.fromRole || 'member'),
+                    to_role: String(pendingRoleVote.toRole || 'member'),
+                    reason
+                }).toString()
+            });
+
+            const result = await response.json().catch(() => ({}));
+            if (!response.ok || !result.success) {
+                throw new Error(result.message || 'Failed to start role vote');
+            }
+
+            closeRoleVote();
+            notify('Role change vote started. Check Governance for approvals.', 'success');
+        } catch (error) {
+            notify(error.message || 'Failed to start role vote', 'error');
+        } finally {
+            if (submitRoleVoteBtn) {
+                submitRoleVoteBtn.disabled = false;
+                submitRoleVoteBtn.textContent = originalText || 'Start Vote';
+            }
+        }
+    });
 
     function closeMenusOnViewportChange() {
         closeAllMenus();
@@ -215,6 +327,36 @@ document.addEventListener('DOMContentLoaded', function () {
     document.addEventListener('click', async function (event) {
         const kickBtn = event.target.closest('[data-member-action="kick"]');
         if (!kickBtn) {
+            const roleBtn = event.target.closest('[data-member-action="promote"], [data-member-action="demote"]');
+            if (!roleBtn) {
+                return;
+            }
+
+            event.preventDefault();
+            event.stopPropagation();
+
+            if (!isAdmin || !groupId) {
+                return;
+            }
+
+            const targetUserId = parseInt(roleBtn.getAttribute('data-user-id') || '0', 10);
+            const targetUserName = roleBtn.getAttribute('data-user-name') || 'this member';
+            const fromRole = roleBtn.getAttribute('data-current-role') || 'member';
+            const requestedRole = roleBtn.getAttribute('data-requested-role') || 'member';
+            const action = roleBtn.getAttribute('data-member-action') || 'promote';
+
+            if (!targetUserId) {
+                return;
+            }
+
+            closeAllMenus();
+            openRoleVote({
+                userId: targetUserId,
+                memberName: targetUserName,
+                fromRole,
+                toRole: requestedRole,
+                action
+            });
             return;
         }
 
@@ -251,6 +393,7 @@ document.addEventListener('DOMContentLoaded', function () {
     window.addEventListener('keydown', function (event) {
         if (event.key === 'Escape') {
             closeKickConfirmModal();
+            closeRoleVote();
         }
     });
 

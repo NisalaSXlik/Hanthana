@@ -176,13 +176,9 @@ if ($resolvedGroupId > 0) {
                                 <input type="text" placeholder="Share something with the group..." readonly id="quickPostTrigger" style="cursor: pointer;">
                             </div>
                             <div class="post-options">
-                                <button class="option" id="photoQuickBtn">
-                                    <i class="uil uil-image"></i>
-                                    <span>Post</span>
-                                </button>
-                                <button class="option" id="pollQuickBtn">
-                                    <i class="uil uil-chart-pie"></i>
-                                    <span>Poll</span>
+                                <button class="option" id="discussionQuickBtn">
+                                    <i class="uil uil-comment-alt-notes"></i>
+                                    <span>Discussion</span>
                                 </button>
                                 <button class="option" id="questionQuickBtn">
                                     <i class="uil uil-question-circle"></i>
@@ -191,6 +187,18 @@ if ($resolvedGroupId > 0) {
                                 <button class="option" id="resourceQuickBtn">
                                     <i class="uil uil-book-alt"></i>
                                     <span>Resource</span>
+                                </button>
+                                <button class="option" id="pollQuickBtn">
+                                    <i class="uil uil-chart-pie"></i>
+                                    <span>Poll</span>
+                                </button>
+                                <button class="option" id="eventQuickBtn">
+                                    <i class="uil uil-calendar-alt"></i>
+                                    <span>Event</span>
+                                </button>
+                                <button class="option" id="alertQuickBtn">
+                                    <i class="uil uil-bell"></i>
+                                    <span>Alert</span>
                                 </button>
                             </div>
                         </div>
@@ -641,11 +649,6 @@ if ($resolvedGroupId > 0) {
                                         <span>Focus</span>
                                         <strong><?php echo htmlspecialchars($group['focus'] ?? 'General'); ?></strong>
                                     </li>
-                                    <li>
-                                        <i class="uil uil-tag"></i>
-                                        <span>Group Tag</span>
-                                        <strong><?php echo htmlspecialchars($group['tag'] ?? 'N/A'); ?></strong>
-                                    </li>
                                 </ul>
                             </div>
 
@@ -659,6 +662,24 @@ if ($resolvedGroupId > 0) {
                                 </ul>
                             </div>
                             <?php endif; ?>
+                        </div>
+                    </div>
+                </div>
+                <?php endif; ?>
+
+                <?php if (!$isJoined && !$isPublicGroup): ?>
+               <div class="group-content">
+                    <div class="tab-content active">
+                        <div class="events-empty">
+                            <!-- Lock + group SVG -->
+                            <svg width="64" height="64" viewBox="0 0 24 24" fill="none">
+                                <path d="M16 10V8a4 4 0 10-8 0v2" stroke="currentColor" stroke-width="1.5"/>
+                                <rect x="5" y="10" width="14" height="10" rx="2" stroke="currentColor" stroke-width="1.5"/>
+                                <circle cx="12" cy="15" r="1.5" fill="currentColor"/>
+                            </svg>
+
+                            <p>Access restricted</p>
+                            <small>Join this group to view its content</small>
                         </div>
                     </div>
                 </div>
