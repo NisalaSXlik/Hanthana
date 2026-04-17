@@ -139,7 +139,7 @@ $groupDp = MediaHelper::resolveMediaPath((string)($group['display_picture'] ?? '
                         </div>
                         <div class="settings-form">
                             <div class="settings-inline-info settings-inline-danger">Deletion vote only. Group is removed only after governance approval.</div>
-                            <button type="button" class="btn-danger" id="openDeleteVoteModalBtn">Start Delete Vote</button>
+                            <button type="button" class="btn-danger" id="openDeleteVoteModalBtn">Delete Group</button>
                         </div>
                     </section>
                 </div>
@@ -202,7 +202,7 @@ $groupDp = MediaHelper::resolveMediaPath((string)($group['display_picture'] ?? '
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" id="cancelDeleteVoteBtn">Cancel</button>
-                    <button type="submit" class="btn btn-danger" id="submitDeleteVoteBtn">Start Delete Vote</button>
+                    <button type="submit" class="btn btn-danger" id="submitDeleteVoteBtn">Start Vote</button>
                 </div>
             </form>
         </div>

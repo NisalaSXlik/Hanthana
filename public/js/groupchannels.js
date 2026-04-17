@@ -8,14 +8,32 @@ import { api } from './utils/api.js';
 
     const groupId = Number(pageShell.dataset.groupId || window.CHANNEL_GROUP_ID || window.CURRENT_GROUP_ID || 0);
     const groupName = pageShell.dataset.groupName || 'this group';
+    const isAdmin = String(pageShell.dataset.isAdmin || '0') === '1';
     const channelsContainer = document.getElementById('channelsContainer');
     const searchInput = document.getElementById('channelSearchInput');
     const filterButtons = document.querySelectorAll('.channel-filter');
     const modal = document.getElementById('createChannelModal');
+    const editModal = document.getElementById('editChannelModal');
+    const deleteModal = document.getElementById('deleteChannelConfirmModal');
     const openCreateBtn = document.getElementById('openCreateChannelBtn');
     const closeCreateBtn = document.getElementById('closeChannelModalBtn');
     const cancelCreateBtn = document.getElementById('cancelChannelBtn');
     const form = document.getElementById('createChannelForm');
+    const editForm = document.getElementById('editChannelForm');
+    const editChannelIdInput = document.getElementById('editChannelId');
+    const editNameInput = document.getElementById('editChannelName');
+    const editDescriptionInput = document.getElementById('editChannelDescription');
+    const editDpInput = document.getElementById('editChannelDpInput');
+    const editDpPreviewWrap = document.getElementById('editChannelDpPreviewWrap');
+    const editDpPreviewImg = document.getElementById('editChannelDpPreviewImg');
+    const editDpName = document.getElementById('editChannelDpName');
+    const editTitle = document.getElementById('editChannelTitle');
+    const closeEditBtn = document.getElementById('closeEditChannelModalBtn');
+    const cancelEditBtn = document.getElementById('cancelEditChannelBtn');
+    const deleteTitle = document.getElementById('deleteChannelTitle');
+    const deleteText = document.getElementById('deleteChannelText');
+    const cancelDeleteBtn = document.getElementById('cancelDeleteChannelBtn');
+    const confirmDeleteBtn = document.getElementById('confirmDeleteChannelBtn');
     const dpInput = document.getElementById('channelDpInput');
     const dpPreviewWrap = document.getElementById('channelDpPreviewWrap');
     const dpPreviewImg = document.getElementById('channelDpPreviewImg');
@@ -24,6 +42,8 @@ import { api } from './utils/api.js';
     let channels = [];
     let activeFilter = 'all';
     let searchValue = '';
+    let editingChannel = null;
+    let deletingChannel = null;
 
     function toast(message, type = 'success') {
         if (typeof window.showToast === 'function') {
@@ -86,6 +106,69 @@ import { api } from './utils/api.js';
         document.body.style.overflow = 'hidden';
     }
 
+    function openEditModal(channel) {
+        if (!editModal || !editForm || !channel) {
+            return;
+        }
+
+        editingChannel = channel;
+        if (editChannelIdInput) editChannelIdInput.value = String(channel.id || '');
+        if (editNameInput) editNameInput.value = channel.name || '';
+        if (editDescriptionInput) editDescriptionInput.value = channel.description || '';
+
+        if (editDpPreviewWrap && editDpPreviewImg && editDpName) {
+            editDpPreviewImg.src = getDisplayImage(channel.display_picture, channel.name);
+            editDpName.textContent = channel.name || 'Preview';
+            editDpPreviewWrap.style.display = 'flex';
+        }
+
+        editModal.classList.add('active');
+        editModal.setAttribute('aria-hidden', 'false');
+        document.body.style.overflow = 'hidden';
+    }
+
+    function closeEditModal() {
+        if (!editModal || !editForm) {
+            return;
+        }
+
+        editModal.classList.remove('active');
+        editModal.setAttribute('aria-hidden', 'true');
+        document.body.style.overflow = '';
+        editForm.reset();
+        editingChannel = null;
+
+        if (editDpPreviewWrap && editDpPreviewImg && editDpName) {
+            editDpPreviewWrap.style.display = 'none';
+            editDpPreviewImg.src = '';
+            editDpName.textContent = 'Preview';
+        }
+    }
+
+    function openDeleteModal(channel) {
+        if (!deleteModal || !channel) {
+            return;
+        }
+
+        deletingChannel = channel;
+        if (deleteTitle) deleteTitle.textContent = `Delete ${channel.name || 'channel'}?`;
+        if (deleteText) deleteText.textContent = `This will permanently remove ${channel.name || 'this channel'} and its chat history.`;
+        deleteModal.classList.add('active');
+        deleteModal.setAttribute('aria-hidden', 'false');
+        document.body.style.overflow = 'hidden';
+    }
+
+    function closeDeleteModal() {
+        if (!deleteModal) {
+            return;
+        }
+
+        deleteModal.classList.remove('active');
+        deleteModal.setAttribute('aria-hidden', 'true');
+        document.body.style.overflow = '';
+        deletingChannel = null;
+    }
+
     function closeModal() {
         if (!modal || !form) {
             return;
@@ -117,6 +200,7 @@ import { api } from './utils/api.js';
                 member_count: Number(channel.member_count || 0),
                 joined: Boolean(channel.joined),
                 is_main: isMain,
+                can_manage: isAdmin,
             };
         });
     }
@@ -181,6 +265,7 @@ import { api } from './utils/api.js';
             const joined = Boolean(channel.joined);
             const actionLabel = joined ? 'Open Chat' : 'Join';
             const actionClass = joined ? 'btn btn-primary channel-chat-btn' : 'btn btn-secondary channel-join-btn';
+            const showManageMenu = isAdmin;
 
             return `
                 <article class="channel-card" data-channel-id="${channel.id}">
@@ -192,16 +277,36 @@ import { api } from './utils/api.js';
                                 <p>${channel.member_count} member${channel.member_count === 1 ? '' : 's'}</p>
                             </div>
                         </div>
+                        ${showManageMenu ? `
+                        <div class="channel-menu">
+                            <button type="button" class="channel-menu-trigger" aria-label="Channel actions" data-channel-menu-trigger>
+                                <i class="uil uil-ellipsis-v"></i>
+                            </button>
+                            <div class="channel-menu-dropdown">
+                                <button type="button" class="channel-menu-item" data-channel-action="edit" data-channel-id="${channel.id}">
+                                    <i class="uil uil-edit-alt"></i>
+                                    <span>Edit</span>
+                                </button>
+                                <button type="button" class="channel-menu-item danger" data-channel-action="delete" data-channel-id="${channel.id}">
+                                    <i class="uil uil-trash-alt"></i>
+                                    <span>Delete</span>
+                                </button>
+                                <button type="button" class="channel-menu-item" data-report-type="channel" data-target-id="${channel.id}" data-target-label="channel ${escapeHtml(channel.name)}">
+                                    <i class="uil uil-exclamation-circle"></i>
+                                    <span>Report</span>
+                                </button>
+                            </div>
+                        </div>` : ''}
                     </div>
                     <p class="channel-description">${escapeHtml(channel.description)}</p>
                     <div class="channel-actions">
                         <button class="${actionClass}" type="button" data-channel-id="${channel.id}">${actionLabel}</button>
-                        <button class="btn btn-secondary channel-report-btn" type="button"
+                        ${showManageMenu ? '' : `<button class="btn btn-secondary channel-report-btn" type="button"
                             data-report-type="channel"
                             data-target-id="${channel.id}"
                             data-target-label="channel ${escapeHtml(channel.name)}">
                             Report
-                        </button>
+                        </button>`}
                     </div>
                 </article>`;
         }).join('');
@@ -221,10 +326,42 @@ import { api } from './utils/api.js';
 
     closeCreateBtn?.addEventListener('click', closeModal);
     cancelCreateBtn?.addEventListener('click', closeModal);
+    closeEditBtn?.addEventListener('click', closeEditModal);
+    cancelEditBtn?.addEventListener('click', closeEditModal);
+    cancelDeleteBtn?.addEventListener('click', closeDeleteModal);
+    confirmDeleteBtn?.addEventListener('click', async () => {
+        if (!deletingChannel) {
+            return;
+        }
+
+        try {
+            await api('ChannelPage', 'deleteChannel', {
+                channel_id: deletingChannel.id,
+                group_id: groupId,
+            });
+            toast(`Deleted ${deletingChannel.name}.`, 'success');
+            closeDeleteModal();
+            await loadChannels();
+        } catch (error) {
+            toast(error.message || 'Failed to delete channel.', 'error');
+        }
+    });
 
     modal?.addEventListener('click', (event) => {
         if (event.target === modal) {
             closeModal();
+        }
+    });
+
+    editModal?.addEventListener('click', (event) => {
+        if (event.target === editModal) {
+            closeEditModal();
+        }
+    });
+
+    deleteModal?.addEventListener('click', (event) => {
+        if (event.target === deleteModal) {
+            closeDeleteModal();
         }
     });
 
@@ -242,6 +379,24 @@ import { api } from './utils/api.js';
             dpPreviewImg.src = readerEvent.target.result;
             dpName.textContent = file.name;
             dpPreviewWrap.style.display = 'flex';
+        };
+        reader.readAsDataURL(file);
+    });
+
+    editDpInput?.addEventListener('change', (event) => {
+        const file = event.target.files && event.target.files[0];
+        if (!file || !editDpPreviewWrap || !editDpPreviewImg || !editDpName) {
+            if (editDpPreviewWrap) {
+                editDpPreviewWrap.style.display = 'none';
+            }
+            return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = (readerEvent) => {
+            editDpPreviewImg.src = readerEvent.target.result;
+            editDpName.textContent = file.name;
+            editDpPreviewWrap.style.display = 'flex';
         };
         reader.readAsDataURL(file);
     });
@@ -302,7 +457,78 @@ import { api } from './utils/api.js';
         }
     });
 
+    editForm?.addEventListener('submit', async (event) => {
+        event.preventDefault();
+
+        if (!editingChannel) {
+            toast('Missing channel data.', 'error');
+            return;
+        }
+
+        const name = editNameInput ? editNameInput.value.trim() : '';
+        const description = editDescriptionInput ? editDescriptionInput.value.trim() : '';
+        const file = editDpInput && editDpInput.files ? editDpInput.files[0] : null;
+
+        if (!name) {
+            toast('Channel name is required.', 'error');
+            return;
+        }
+
+        const payload = new FormData();
+        payload.append('channel_id', String(editingChannel.id));
+        payload.append('group_id', String(groupId));
+        payload.append('name', name);
+        payload.append('description', description);
+        if (file) {
+            payload.append('display_picture', file);
+        }
+
+        try {
+            await api('ChannelPage', 'editChannel', payload);
+            toast(`Updated ${name}.`, 'success');
+            closeEditModal();
+            await loadChannels();
+        } catch (error) {
+            toast(error.message || 'Failed to update channel.', 'error');
+        }
+    });
+
     channelsContainer?.addEventListener('click', async (event) => {
+        const actionBtn = event.target.closest('[data-channel-action]');
+        if (actionBtn) {
+            const channel = getChannel(actionBtn.dataset.channelId);
+            if (!channel) {
+                return;
+            }
+
+            const action = actionBtn.dataset.channelAction;
+            if (action === 'edit') {
+                openEditModal(channel);
+                return;
+            }
+
+            if (action === 'delete') {
+                openDeleteModal(channel);
+                return;
+            }
+        }
+
+        const menuTrigger = event.target.closest('[data-channel-menu-trigger]');
+        if (menuTrigger) {
+            event.stopPropagation();
+            const menu = menuTrigger.closest('.channel-menu');
+            if (menu) {
+                menu.classList.toggle('is-open');
+            }
+            return;
+        }
+
+        document.querySelectorAll('.channel-menu.is-open').forEach((menu) => {
+            if (!menu.contains(event.target)) {
+                menu.classList.remove('is-open');
+            }
+        });
+
         const joinBtn = event.target.closest('.channel-join-btn');
         if (joinBtn) {
             const channel = getChannel(joinBtn.dataset.channelId);
@@ -332,6 +558,12 @@ import { api } from './utils/api.js';
             }
 
             await openChannelChat(channel);
+            return;
+        }
+
+        const reportBtn = event.target.closest('[data-report-type="channel"]');
+        if (reportBtn) {
+            return;
         }
     });
 

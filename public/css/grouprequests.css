@@ -124,12 +124,6 @@
     gap: 0.55rem;
 }
 
-.manage-subdivider {
-    height: 1px;
-    margin: 1rem 0;
-    background: var(--color-light);
-}
-
 .manage-empty-inline {
     color: var(--color-gray);
     font-size: 0.92rem;

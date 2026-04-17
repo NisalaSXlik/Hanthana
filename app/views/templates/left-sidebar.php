@@ -320,8 +320,20 @@ $baseGroupUrl = rtrim(BASE_PATH, '/');
 
             <div class="form-group">
                 <label for="groupTag">Group Tag <span class="required">*</span></label>
-                <input type="text" id="groupTag" name="tag" maxlength="50" placeholder="@unique-tag">
-                <small>Must be unique (e.g., @colombo-foodies)</small>
+                <input type="text" id="groupTag" name="tag" maxlength="50" placeholder="@unique-tag" required>
+                <small>Must be unique</small>
+            </div>
+
+            <div class="form-group">
+                <label for="groupFocus">Focus/Category <span class="required">*</span></label>
+                <select id="groupFocus" name="focus" required>
+                    <option value="Academic">Academic</option>
+                    <option value="Society">Society</option>
+                    <option value="Entertainment">Entertainment</option>
+                    <option value="Technology">Technology</option>
+                    <option value="Sports">Sports</option>
+                    <option value="Other">Other</option>
+                </select>
             </div>
 
             <div class="form-group">
@@ -329,10 +341,7 @@ $baseGroupUrl = rtrim(BASE_PATH, '/');
                 <textarea id="groupDescription" name="description" rows="3" placeholder="Describe what your group is about..."></textarea>
             </div>
 
-            <div class="form-group">
-                <label for="groupFocus">Focus/Category</label>
-                <input type="text" id="groupFocus" name="focus" maxlength="100" placeholder="e.g., Photography, Food, Travel">
-            </div>
+            
 
             <div class="form-group">
                 <label for="groupPrivacy">Privacy <span class="required">*</span></label>

@@ -153,6 +153,104 @@ class ChannelPageController extends BaseController
             'data' => ['channel' => $created],
         ]);
     }
+    
+    public function editChannel()
+    {
+        $payload = $this->requestData();
+        $userId = (int) $_SESSION['user_id'];
+        $channelId = isset($payload['channel_id']) ? (int) $payload['channel_id'] : 0;
+        $name = trim((string) ($payload['name'] ?? ''));
+        $description = trim((string) ($payload['description'] ?? ''));
+
+        if ($channelId <= 0) {
+            return $this->response(['status' => 'error', 'errors' => ['Valid channel ID is required.']], 400);
+        }
+
+        $channel = $this->channelModel->getChannelById($channelId);
+        if (!$channel) {
+            return $this->response(['status' => 'error', 'errors' => ['Channel not found.']], 404);
+        }
+
+        $groupId = (int) ($channel['group_id'] ?? 0);
+        $group = $this->groupModel->getById($groupId);
+        $isAdmin = $this->groupModel->isGroupAdmin($groupId, $userId)
+            || (int)($group['created_by'] ?? 0) === $userId;
+
+        if (!$isAdmin) {
+            return $this->response(['status' => 'error', 'errors' => ['Only group admins can edit channels.']], 403);
+        }
+
+        if ($name === '') {
+            return $this->response(['status' => 'error', 'errors' => ['Channel name is required.']], 400);
+        }
+
+        if (strcasecmp($name, 'Main') === 0 && strtolower(trim((string)($channel['name'] ?? ''))) !== 'main') {
+            return $this->response(['status' => 'error', 'errors' => ['Main channel is reserved and created automatically.']], 400);
+        }
+
+        if ($this->channelModel->isChannelNameTaken($groupId, $name) && strcasecmp((string)($channel['name'] ?? ''), $name) !== 0) {
+            return $this->response(['status' => 'error', 'errors' => ['A channel with this name already exists.']], 400);
+        }
+
+        $displayPicture = $this->handleDisplayPictureUpload();
+        if (isset($displayPicture['errors'])) {
+            return $this->response(['status' => 'error', 'errors' => $displayPicture['errors']], 400);
+        }
+
+        $updated = $this->channelModel->updateChannel($channelId, [
+            'name' => $name,
+            'description' => $description,
+            'display_picture' => $displayPicture['path'] ?? ($channel['display_picture'] ?? 'uploads/channel_dp/default.png'),
+        ]);
+
+        if (!$updated) {
+            return $this->response(['status' => 'error', 'errors' => ['Failed to update channel.']], 500);
+        }
+
+        return $this->response([
+            'status' => 'success',
+            'message' => 'Channel updated successfully.',
+            'data' => ['channel' => $updated],
+        ]);
+    }
+
+    public function deleteChannel()
+    {
+        $payload = $this->requestData();
+        $userId = (int) $_SESSION['user_id'];
+        $channelId = isset($payload['channel_id']) ? (int) $payload['channel_id'] : 0;
+
+        if ($channelId <= 0) {
+            return $this->response(['status' => 'error', 'errors' => ['Valid channel ID is required.']], 400);
+        }
+
+        $channel = $this->channelModel->getChannelById($channelId);
+        if (!$channel) {
+            return $this->response(['status' => 'error', 'errors' => ['Channel not found.']], 404);
+        }
+
+        $groupId = (int) ($channel['group_id'] ?? 0);
+        $group = $this->groupModel->getById($groupId);
+        $isAdmin = $this->groupModel->isGroupAdmin($groupId, $userId)
+            || (int)($group['created_by'] ?? 0) === $userId;
+
+        if (!$isAdmin) {
+            return $this->response(['status' => 'error', 'errors' => ['Only group admins can delete channels.']], 403);
+        }
+
+        if (strcasecmp((string)($channel['name'] ?? ''), 'Main') === 0) {
+            return $this->response(['status' => 'error', 'errors' => ['Main channel cannot be deleted.']], 400);
+        }
+
+        if (!$this->channelModel->deleteChannel($channelId)) {
+            return $this->response(['status' => 'error', 'errors' => ['Failed to delete channel.']], 500);
+        }
+
+        return $this->response([
+            'status' => 'success',
+            'message' => 'Channel deleted successfully.',
+        ]);
+    }
 
     public function joinChannel()
     {

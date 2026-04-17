@@ -61,7 +61,7 @@ $currentUser = $userModel->findById($_SESSION['user_id']);
                     $channelGroupName = isset($group['name']) ? $group['name'] : 'this group';
                 ?>
 
-                <div class="channel-page-shell" data-group-id="<?php echo (int)$channelGroupId; ?>" data-group-name="<?php echo htmlspecialchars($channelGroupName, ENT_QUOTES, 'UTF-8'); ?>">
+                <div class="channel-page-shell" data-group-id="<?php echo (int)$channelGroupId; ?>" data-group-name="<?php echo htmlspecialchars($channelGroupName, ENT_QUOTES, 'UTF-8'); ?>" data-is-admin="<?php echo !empty($isAdmin) ? '1' : '0'; ?>">
                     <div class="channel-header">
                         <div class="channel-header-top">
                             <div class="channel-title-block">
@@ -142,6 +142,65 @@ $currentUser = $userModel->findById($_SESSION['user_id']);
                                     <button type="submit" class="btn btn-primary">Create Channel</button>
                                 </div>
                             </form>
+                        </div>
+                    </div>
+
+                    <div id="editChannelModal" class="channel-modal-overlay" aria-hidden="true">
+                        <div class="channel-modal-content" role="dialog" aria-modal="true" aria-labelledby="editChannelTitle">
+                            <div class="channel-modal-header">
+                                <h3 id="editChannelTitle"><i class="uil uil-edit-alt"></i> Edit Channel</h3>
+                                <button class="modal-close" id="closeEditChannelModalBtn" type="button" aria-label="Close">
+                                    <i class="uil uil-times"></i>
+                                </button>
+                            </div>
+
+                            <form id="editChannelForm" class="channel-modal-body">
+                                <input type="hidden" name="channel_id" id="editChannelId">
+                                <p class="channel-modal-note">Update the channel name, description, or display picture.</p>
+
+                                <div class="channel-form-grid">
+                                    <div class="form-group">
+                                        <label for="editChannelName">Channel Name</label>
+                                        <input type="text" id="editChannelName" name="name" maxlength="100" required>
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label for="editChannelDescription">Description</label>
+                                        <textarea id="editChannelDescription" name="description" rows="4" placeholder="A short description of what this chat is for"></textarea>
+                                    </div>
+
+                                    <div class="form-group channel-upload">
+                                        <label>Display Picture</label>
+                                        <label for="editChannelDpInput" class="channel-upload-label">
+                                            <i class="uil uil-image"></i> Choose Image
+                                        </label>
+                                        <input type="file" id="editChannelDpInput" name="display_picture" accept="image/*" style="display:none;">
+                                        <div class="channel-preview" id="editChannelDpPreviewWrap">
+                                            <img id="editChannelDpPreviewImg" alt="Channel preview">
+                                            <div>
+                                                <strong id="editChannelDpName">Preview</strong>
+                                                <div style="color: var(--color-gray); font-size: 0.85rem;">Visible in the channel list</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="channel-modal-footer">
+                                    <button type="button" class="btn btn-secondary" id="cancelEditChannelBtn">Cancel</button>
+                                    <button type="submit" class="btn btn-primary">Save Changes</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+
+                    <div id="deleteChannelConfirmModal" class="channel-confirm-overlay" aria-hidden="true">
+                        <div class="channel-confirm-content" role="dialog" aria-modal="true" aria-labelledby="deleteChannelTitle">
+                            <h3 id="deleteChannelTitle">Delete channel?</h3>
+                            <p id="deleteChannelText">This will permanently remove the channel and its chat history.</p>
+                            <div class="channel-confirm-actions">
+                                <button type="button" class="btn btn-secondary" id="cancelDeleteChannelBtn">Cancel</button>
+                                <button type="button" class="btn btn-danger" id="confirmDeleteChannelBtn">Delete</button>
+                            </div>
                         </div>
                     </div>
 

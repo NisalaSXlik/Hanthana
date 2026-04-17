@@ -252,6 +252,75 @@ class ChannelModel {
         }
     }
 
+    public function updateChannel(int $channelId, array $payload): ?array
+    {
+        $channel = $this->getChannelById($channelId);
+        if (!$channel) {
+            return null;
+        }
+
+        $name = trim((string) ($payload['name'] ?? ''));
+        $description = trim((string) ($payload['description'] ?? ''));
+        $displayPicture = trim((string) ($payload['display_picture'] ?? ''));
+
+        if ($name === '') {
+            return null;
+        }
+
+        $fields = ['name' => $name, 'description' => $description !== '' ? $description : null];
+        if ($displayPicture !== '') {
+            $fields['display_picture'] = $displayPicture;
+        }
+
+        $setParts = [];
+        $params = [];
+        foreach ($fields as $column => $value) {
+            $setParts[] = $column . ' = ?';
+            $params[] = $value;
+        }
+        $params[] = $channelId;
+
+        $stmt = $this->db->prepare(
+            'UPDATE Channel SET ' . implode(', ', $setParts) . ' WHERE channel_id = ?'
+        );
+
+        if (!$stmt->execute($params)) {
+            return null;
+        }
+
+        return $this->getChannelById($channelId);
+    }
+
+    public function deleteChannel(int $channelId): bool
+    {
+        $channel = $this->getChannelById($channelId);
+        if (!$channel) {
+            return false;
+        }
+
+        $conversationId = (int) ($channel['conversation_id'] ?? 0);
+
+        $this->db->beginTransaction();
+        try {
+            if ($conversationId > 0) {
+                $conversationStmt = $this->db->prepare('DELETE FROM Conversations WHERE conversation_id = ?');
+                $conversationStmt->execute([$conversationId]);
+            }
+
+            $channelStmt = $this->db->prepare('DELETE FROM Channel WHERE channel_id = ?');
+            $channelStmt->execute([$channelId]);
+
+            $this->db->commit();
+            return true;
+        } catch (Throwable $e) {
+            if ($this->db->inTransaction()) {
+                $this->db->rollBack();
+            }
+            error_log('deleteChannel failed: ' . $e->getMessage());
+            return false;
+        }
+    }
+
     public function joinChannel(int $channelId, int $userId): bool
     {
         $channel = $this->getChannelById($channelId);

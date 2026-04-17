@@ -88,8 +88,6 @@ $channelRequests = $channelRequests ?? [];
                         <?php else: ?>
                             <div class="manage-empty-inline">No pending join requests right now.</div>
                         <?php endif; ?>
-
-                        <div class="manage-subdivider"></div>
                     </section>
 
                     <section class="manage-card tab-content" id="post-requests-content">

@@ -86,10 +86,17 @@
 }
 
 #openPrivacyVoteModalBtn {
-    min-height: calc(1.5em + 1.4rem + 3px);
     padding: 0.7rem 0.9rem;
-    line-height: 1.5;
     border-radius: 0.5rem;
+    font-size: 0.9rem;
+    width: 160px;
+}
+
+#openDeleteVoteModalBtn {
+    padding: 0.7rem 0.9rem;
+    border-radius: 0.5rem;
+    font-size: 0.9rem;
+    min-width: 160px;
 }
 
 .gs-section {

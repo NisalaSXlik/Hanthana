@@ -122,6 +122,7 @@
     align-items: center;
     gap: 0.85rem;
     justify-content: space-between;
+    position: relative;
 }
 
 .channel-card-main {
@@ -186,6 +187,118 @@
 
 .channel-actions .channel-report-btn {
     min-width: 6.5rem;
+}
+
+.channel-menu {
+    position: relative;
+    margin-left: auto;
+}
+
+.channel-menu-trigger {
+    width: 2.5rem;
+    height: 2.5rem;
+    border: 1px solid var(--gray-200, #e5e7eb);
+    background: #fff;
+    color: var(--color-gray);
+    border-radius: 999px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.channel-menu-trigger:hover {
+    color: var(--color-primary);
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.12);
+}
+
+.channel-menu-dropdown {
+    position: absolute;
+    top: calc(100% + 0.5rem);
+    right: 0;
+    min-width: 12rem;
+    background: #fff;
+    border: 1px solid var(--gray-200, #e5e7eb);
+    border-radius: 14px;
+    box-shadow: 0 18px 35px rgba(15, 23, 42, 0.16);
+    padding: 0.45rem;
+    display: none;
+    z-index: 10;
+}
+
+.channel-menu.is-open .channel-menu-dropdown {
+    display: block;
+}
+
+.channel-menu-item {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    border: 0;
+    background: transparent;
+    color: var(--color-dark);
+    padding: 0.75rem 0.8rem;
+    border-radius: 10px;
+    font: inherit;
+    cursor: pointer;
+    text-align: left;
+}
+
+.channel-menu-item:hover {
+    background: rgba(14, 165, 233, 0.08);
+    color: var(--color-primary);
+}
+
+.channel-menu-item.danger {
+    color: #dc2626;
+}
+
+.channel-menu-item.danger:hover {
+    background: rgba(220, 38, 38, 0.08);
+    color: #b91c1c;
+}
+
+.channel-confirm-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.7);
+    z-index: 10001;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+}
+
+.channel-confirm-overlay.active {
+    display: flex;
+}
+
+.channel-confirm-content {
+    width: min(100%, 420px);
+    background: #fff;
+    border-radius: 20px;
+    padding: 1.4rem;
+    box-shadow: 0 30px 60px rgba(15, 23, 42, 0.28);
+}
+
+.channel-confirm-content h3 {
+    margin: 0 0 0.6rem;
+    color: var(--color-dark);
+}
+
+.channel-confirm-content p {
+    margin: 0 0 1rem;
+    color: var(--color-gray);
+    line-height: 1.5;
+}
+
+.channel-confirm-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.75rem;
 }
 
 .channel-empty {
@@ -349,6 +462,24 @@
     }
 
     .channel-actions .btn {
+        width: 100%;
+    }
+
+    .channel-menu {
+        width: 100%;
+    }
+
+    .channel-menu-dropdown {
+        right: auto;
+        left: 0;
+        width: 100%;
+    }
+
+    .channel-confirm-actions {
+        flex-direction: column;
+    }
+
+    .channel-confirm-actions .btn {
         width: 100%;
     }
 }

@@ -54,6 +54,29 @@
             $otherMembers[] = $member;
         }
     }
+
+    usort($adminMembers, function (array $left, array $right) use ($currentUserId): int {
+        $leftIsCurrent = (int)($left['user_id'] ?? 0) === (int)$currentUserId;
+        $rightIsCurrent = (int)($right['user_id'] ?? 0) === (int)$currentUserId;
+
+        if ($leftIsCurrent === $rightIsCurrent) {
+            return 0;
+        }
+
+        return $leftIsCurrent ? -1 : 1;
+    });
+
+    usort($otherMembers, function (array $left, array $right) use ($currentUserId): int {
+        $leftIsCurrent = (int)($left['user_id'] ?? 0) === (int)$currentUserId;
+        $rightIsCurrent = (int)($right['user_id'] ?? 0) === (int)$currentUserId;
+
+        if ($leftIsCurrent === $rightIsCurrent) {
+            return 0;
+        }
+
+        return $leftIsCurrent ? -1 : 1;
+    });
+
     $orderedMembers = array_merge($adminMembers, $otherMembers);
 ?>
 <!DOCTYPE html>

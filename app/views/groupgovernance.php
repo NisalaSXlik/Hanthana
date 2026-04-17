@@ -183,7 +183,7 @@ $voteEventsJson = json_encode($voteEvents, JSON_HEX_TAG | JSON_HEX_APOS | JSON_H
 
                                         <?php if ($typeKey === 'role' && $targetUserId > 0): ?>
                                             <div class="governance-user-stack governance-user-stack--fixed governance-user-stack--target governance-user-row">
-                                                <span class="governance-inline-label governance-inline-label--inline">Target by:</span>
+                                                <span class="governance-inline-label governance-inline-label--inline">Target User:</span>
                                                 <a class="governance-user-chip" href="<?php echo htmlspecialchars($targetProfileHref); ?>" title="View target profile">
                                                     <img src="<?php echo htmlspecialchars($targetAvatar); ?>" alt="<?php echo htmlspecialchars($targetDisplayName); ?>">
                                                     <span class="governance-user-chip-text">@<?php echo htmlspecialchars($targetTag); ?></span>
