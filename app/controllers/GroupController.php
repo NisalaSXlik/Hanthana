@@ -800,6 +800,8 @@ class GroupController {
                     if ($content === '') {
                         $content = trim((string)($_POST['event_title'] ?? ''));
                     }
+                } elseif ($postType === 'poll') {
+                    $content = trim((string)($_POST['poll_question'] ?? ''));
                 }
             }
             
