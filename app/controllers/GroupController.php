@@ -5,15 +5,20 @@ require_once __DIR__ . '/../models/GroupModel.php';
 require_once __DIR__ . '/../models/UserModel.php';
 require_once __DIR__ . '/../models/GroupPostModel.php';
 require_once __DIR__ . '/../models/CalendarReminderModel.php';
+require_once __DIR__ . '/../models/ReportModel.php';
+require_once __DIR__ . '/../models/BinModel.php';
 require_once __DIR__ . '/../models/post_types/PostTypeFactory.php';
+require_once __DIR__ . '/../models/post_types/PollPostModel.php';
 
 class GroupController {
     private $groupModel;
     private $calendarModel;
+    private $reportModel;
 
     public function __construct() {
         $this->groupModel = new GroupModel();
         $this->calendarModel = new CalendarReminderModel();
+        $this->reportModel = new ReportModel();
     }
 
     public function index() {
@@ -38,12 +43,12 @@ class GroupController {
 
         // Persist active group context for cross-page navigation (e.g. File Bank).
         $_SESSION['current_group_id'] = (int)$group['group_id'];
-
-        $isCreator = (int)$group['created_by'] === $userId;
+        
         $isAdmin = $this->groupModel->isGroupAdmin($groupId, $userId);
         $joinedGroups = $this->groupModel->getGroupsJoinedBy($userId);
         $membershipState = $this->groupModel->getUserMembershipState($groupId, $userId);
-        $isJoined = ($membershipState === 'active' || $isCreator);
+        $isJoined = ($membershipState === 'active');
+        $isPublicGroup = $group && strtolower(trim((string)($group['privacy_status'] ?? 'public'))) === 'public';
 
         $groupPostModel = new GroupPostModel();
         $groupPosts = $groupPostModel->getGroupPosts($groupId, $userId);
@@ -114,7 +119,7 @@ class GroupController {
         // Load group members for the members tab
         $groupMembers = $this->groupModel->getMembers($groupId);
 
-        $hasPendingRequest = (!$isCreator && !$isJoined && $membershipState === 'pending');
+        $hasPendingRequest = (!$isJoined && $membershipState === 'pending');
 
         // If admin, load pending join requests to surface in view
         $pendingRequests = [];
@@ -137,6 +142,14 @@ class GroupController {
      */
     public function view() {
         $this->index();
+    }
+
+    /**
+     * Backwards-compatible alias for old discover route.
+     */
+    public function discover() {
+        header('Location: ' . BASE_PATH . 'index.php?controller=Discover&action=index');
+        exit();
     }
 
     /**
@@ -170,7 +183,59 @@ class GroupController {
         }
 
         $pendingRequests = $this->groupModel->getPendingRequests($groupId);
+        $postRequests = $this->groupModel->getPendingPostCreationRequests($groupId);
+        $binRequests = $this->groupModel->getPendingBinCreationRequests($groupId);
+        $channelRequests = $this->groupModel->getPendingChannelCreationRequests($groupId);
+        $membershipState = $this->groupModel->getUserMembershipState($groupId, $userId);
+        $isJoined = ($membershipState === 'active');
+
         require __DIR__ . '/../views/grouprequests.php';
+    }
+
+    /**
+     * Governance page for group-level actions and votes.
+     */
+    public function governance() {
+        if (!isset($_SESSION['user_id'])) {
+            header('Location: ' . BASE_PATH . 'index.php?controller=Landing&action=index');
+            exit();
+        }
+
+        $groupId = isset($_GET['group_id']) ? (int)$_GET['group_id'] : 0;
+        if (!$groupId) {
+            header('Location: ' . BASE_PATH . 'index.php?controller=Feed&action=index');
+            exit();
+        }
+
+        $userId = (int)$_SESSION['user_id'];
+        $group = $this->groupModel->getById($groupId);
+        if (!$group) {
+            header('Location: ' . BASE_PATH . 'index.php?controller=Feed&action=index&error=group_not_found');
+            exit();
+        }
+
+        $_SESSION['current_group_id'] = (int)$group['group_id'];
+
+        $isAdmin = $this->groupModel->isGroupAdmin($groupId, $userId);
+        if (!$isAdmin) {
+            header('Location: ' . BASE_PATH . 'index.php?controller=Group&action=index&group_id=' . $groupId);
+            exit();
+        }
+
+        $pendingRequests = [];
+        $roleChangeRequests = $this->groupModel->getRoleChangeRequests($groupId, $userId);
+        $deleteApprovalStatus = $this->groupModel->getDeleteApprovalStatus($groupId, $userId);
+        $voteEvents = $this->groupModel->getGovernanceVoteEvents($groupId, $userId);
+        $membershipState = $this->groupModel->getUserMembershipState($groupId, $userId);
+        $isJoined = ($membershipState === 'active');
+
+        $votingRequests = [];
+        $deleteRequests = [];
+        $memberPromotions = [];
+        $memberDemotions = [];
+        $visibilityChanges = [];
+
+        require __DIR__ . '/../views/groupgovernance.php';
     }
 
     /**
@@ -200,12 +265,12 @@ class GroupController {
         }
 
         $membershipState = $this->groupModel->getUserMembershipState($groupId, $userId);
-        $isCreator = (int)($group['created_by'] ?? 0) === $userId;
-        $isGroupAdmin = $this->groupModel->isGroupAdmin($groupId, $userId);
-        $isAdmin = $isCreator || $isGroupAdmin;
-        $isJoined = ($membershipState === 'active' || $isCreator);
+        $isAdmin = $this->groupModel->isGroupAdmin($groupId, $userId);
+        $groupPrivacy = strtolower(trim((string)($group['privacy_status'] ?? 'public')));
+        $isJoined = ($membershipState === 'active');
+        $canViewGroupPages = $groupPrivacy === 'public' || $isJoined || $isAdmin;
 
-        if (!$isJoined) {
+        if (!$canViewGroupPages) {
             header('Location: ' . BASE_PATH . 'index.php?controller=Group&action=index&group_id=' . $groupId);
             exit();
         }
@@ -242,6 +307,8 @@ class GroupController {
                 case 'kick_member': $this->kickMember($input); break;
                 case 'approve_request': $this->approveRequest(); break;
                 case 'reject_request': $this->rejectRequest(); break;
+                case 'approve_other_request': $this->approveOtherRequest(); break;
+                case 'reject_other_request': $this->rejectOtherRequest(); break;
                 case 'delete_notification': $this->deleteNotificationAjax(); break;
                 case 'clear_notifications': $this->clearNotificationsAjax(); break;
                 case 'fetch_pending_requests': $this->fetchPendingRequestsAjax(); break;
@@ -254,6 +321,9 @@ class GroupController {
                 case 'propose_role_change': $this->proposeRoleChange(); break;
                 case 'vote_role_change': $this->voteRoleChange(); break;
                 case 'approve_delete_group': $this->approveDeleteGroup(); break;
+                case 'start_governance_vote': $this->startGovernanceVote(); break;
+                case 'cast_governance_vote': $this->castGovernanceVote(); break;
+                case 'list_governance_votes': $this->listGovernanceVotes(); break;
                 default: echo json_encode(['success' => false, 'message' => 'Invalid action']);
         }
         exit;
@@ -277,7 +347,7 @@ class GroupController {
                 return;
             }
 
-            $fields = ['name', 'tag', 'description', 'focus', 'privacy_status', 'rules'];
+            $fields = ['name', 'tag', 'description', 'focus', 'rules'];
             $updateData = [];
             foreach ($fields as $field) {
                 if (isset($_POST[$field]) && $_POST[$field] !== '') {
@@ -512,7 +582,7 @@ class GroupController {
             $admins = $this->groupModel->getGroupAdmins($groupId);
             $userModel = new UserModel();
             // UserModel exposes findById
-            $requester = method_exists($userModel, 'findById') ? $userModel->findById($userId) : (method_exists($userModel, 'getById') ? $userModel->getById($userId) : null);
+            $requester = method_exists($userModel, 'findById') ? $userModel->findById($userId) : null;
             $requesterName = $requester ? ($requester['first_name'] . ' ' . $requester['last_name']) : 'User';
             $groupName = $group['name'] ?? 'Group';
 
@@ -651,10 +721,9 @@ class GroupController {
                 echo json_encode(['success' => false, 'message' => 'Group not found']);
                 return;
             }
-
-            $isCreator = (int)($group['created_by'] ?? 0) === $adminId;
+            
             $isAdmin = $this->groupModel->isGroupAdmin($groupId, $adminId);
-            if (!$isCreator && !$isAdmin) {
+            if (!$isAdmin) {
                 echo json_encode(['success' => false, 'message' => 'Unauthorized']);
                 return;
             }
@@ -670,7 +739,7 @@ class GroupController {
                 return;
             }
 
-            if (($membership['role'] ?? '') === 'admin' && !$isCreator) {
+            if (($membership['role'] ?? '') === 'admin') {
                 echo json_encode(['success' => false, 'message' => 'Only the group creator can remove an admin']);
                 return;
             }
@@ -734,6 +803,253 @@ class GroupController {
         }
     }
 
+    private function approveOtherRequest() {
+        header('Content-Type: application/json');
+        if (!isset($_SESSION['user_id'])) { echo json_encode(['success'=>false,'message'=>'Not authenticated']); return; }
+
+        $adminId = (int)$_SESSION['user_id'];
+        $groupId = isset($_POST['group_id']) ? (int)$_POST['group_id'] : 0;
+        $requestId = isset($_POST['request_id']) ? (int)$_POST['request_id'] : 0;
+        $requestKind = isset($_POST['request_kind']) ? strtolower(trim((string)$_POST['request_kind'])) : 'other';
+
+        if (!$groupId || !$requestId) {
+            echo json_encode(['success' => false, 'message' => 'Missing params']);
+            return;
+        }
+
+        if (!$this->groupModel->isGroupAdmin($groupId, $adminId)) {
+            echo json_encode(['success' => false, 'message' => 'Unauthorized']);
+            return;
+        }
+
+        if (in_array($requestKind, ['post', 'post_poll'], true)) {
+            $request = $this->groupModel->getPendingPostRequestById($groupId, $requestId, $requestKind);
+            if (!$request) {
+                echo json_encode(['success' => false, 'message' => 'Request not found']);
+                return;
+            }
+
+            $payload = is_array($request['_payload'] ?? null) ? $request['_payload'] : [];
+            $postType = (string)($payload['post_type'] ?? (($request['_request_table'] ?? '') === 'GroupPostPollRequests' ? 'poll' : 'discussion'));
+            $postTypeModel = PostTypeFactory::make($postType);
+
+            $postId = $postTypeModel->create((int)$request['requester_id'], $groupId, [
+                'content' => (string)($payload['content'] ?? ''),
+                'image_path' => $payload['image_path'] ?? null,
+                'file_path' => $payload['file_path'] ?? null,
+                'request' => is_array($payload['request'] ?? null) ? $payload['request'] : []
+            ]);
+
+            if (!$postId) {
+                echo json_encode(['success' => false, 'message' => 'Failed to create post from request']);
+                return;
+            }
+
+            $updated = $this->groupModel->markRequestStatus((string)$request['_request_table'], $requestId, $adminId, 'approved');
+            if (!$updated) {
+                echo json_encode(['success' => false, 'message' => 'Post created but failed to finalize request status']);
+                return;
+            }
+
+            echo json_encode(['success' => true, 'message' => 'Request approved']);
+            return;
+        }
+
+        if (in_array($requestKind, ['bin', 'bin_media'], true)) {
+            $request = $this->groupModel->getPendingBinRequestById($groupId, $requestId, $requestKind);
+            if (!$request) {
+                echo json_encode(['success' => false, 'message' => 'Request not found']);
+                return;
+            }
+
+            $payload = is_array($request['_payload'] ?? null) ? $request['_payload'] : [];
+            $binModel = new BinModel();
+            $created = null;
+
+            if (($request['_request_table'] ?? '') === 'GroupBinRequests') {
+                $name = trim((string)($payload['name'] ?? ''));
+                if ($name === '') {
+                    echo json_encode(['success' => false, 'message' => 'Missing bin name in request payload']);
+                    return;
+                }
+
+                $created = $binModel->createBin([
+                    'group_id' => $groupId,
+                    'name' => $name
+                ], (int)$request['requester_id']);
+            } else {
+                $required = ['bin_id', 'group_id', 'file_name', 'file_path', 'file_size', 'media_file_type', 'bin_file_type'];
+                foreach ($required as $key) {
+                    if (!array_key_exists($key, $payload)) {
+                        echo json_encode(['success' => false, 'message' => 'Incomplete file request payload']);
+                        return;
+                    }
+                }
+
+                $created = $binModel->addMedia([
+                    'group_id' => $groupId,
+                    'bin_id' => (int)($request['bin_id'] ?? $payload['bin_id']),
+                    'file_name' => (string)$payload['file_name'],
+                    'file_path' => (string)$payload['file_path'],
+                    'file_size' => (int)$payload['file_size'],
+                    'media_file_type' => (string)$payload['media_file_type'],
+                    'bin_file_type' => (string)$payload['bin_file_type']
+                ], (int)$request['requester_id']);
+            }
+
+            if (!$created) {
+                echo json_encode(['success' => false, 'message' => 'Failed to create item from request']);
+                return;
+            }
+
+            $updated = $this->groupModel->markRequestStatus((string)$request['_request_table'], $requestId, $adminId, 'approved');
+            if (!$updated) {
+                echo json_encode(['success' => false, 'message' => 'Item created but failed to finalize request status']);
+                return;
+            }
+
+            echo json_encode(['success' => true, 'message' => 'Request approved']);
+            return;
+        }
+
+        if ($requestKind === 'channel') {
+            $request = $this->groupModel->getPendingChannelRequestById($groupId, $requestId);
+            if (!$request) {
+                echo json_encode(['success' => false, 'message' => 'Request not found']);
+                return;
+            }
+
+            $payload = is_array($request['_payload'] ?? null) ? $request['_payload'] : [];
+            $name = trim((string)($payload['name'] ?? ''));
+            $description = trim((string)($payload['description'] ?? ''));
+            $displayPicture = trim((string)($payload['display_picture'] ?? ''));
+            if ($name === '') {
+                echo json_encode(['success' => false, 'message' => 'Invalid channel request payload']);
+                return;
+            }
+
+            $channelModel = new ChannelModel();
+            $created = $channelModel->createChannel([
+                'group_id' => $groupId,
+                'name' => $name,
+                'description' => $description,
+                'display_picture' => $displayPicture !== '' ? $displayPicture : 'uploads/channel_dp/default.png',
+            ], (int)$request['requester_id']);
+
+            if (!$created) {
+                echo json_encode(['success' => false, 'message' => 'Failed to create channel from request']);
+                return;
+            }
+
+            $updated = $this->groupModel->markRequestStatus((string)$request['_request_table'], $requestId, $adminId, 'approved');
+            if (!$updated) {
+                echo json_encode(['success' => false, 'message' => 'Channel created but failed to finalize request status']);
+                return;
+            }
+
+            echo json_encode(['success' => true, 'message' => 'Request approved']);
+            return;
+        }
+
+        $report = $this->reportModel->getReportById($requestId);
+        if (!$report) {
+            echo json_encode(['success' => false, 'message' => 'Request not found']);
+            return;
+        }
+
+        $reportGroupId = (int)($report['group_id'] ?? 0);
+        $isGroupTarget = strtolower((string)($report['target_type'] ?? '')) === 'group' && (int)($report['target_id'] ?? 0) === $groupId;
+        if ($reportGroupId !== $groupId && !$isGroupTarget) {
+            echo json_encode(['success' => false, 'message' => 'Request not in this group']);
+            return;
+        }
+
+        $ok = $this->reportModel->resolveReport($requestId, $adminId);
+        if ($ok) {
+            echo json_encode(['success' => true, 'message' => 'Request approved']);
+            return;
+        }
+
+        echo json_encode(['success' => false, 'message' => 'Failed to approve request']);
+    }
+
+    private function rejectOtherRequest() {
+        header('Content-Type: application/json');
+        if (!isset($_SESSION['user_id'])) { echo json_encode(['success'=>false,'message'=>'Not authenticated']); return; }
+
+        $adminId = (int)$_SESSION['user_id'];
+        $groupId = isset($_POST['group_id']) ? (int)$_POST['group_id'] : 0;
+        $requestId = isset($_POST['request_id']) ? (int)$_POST['request_id'] : 0;
+        $requestKind = isset($_POST['request_kind']) ? strtolower(trim((string)$_POST['request_kind'])) : 'other';
+
+        if (!$groupId || !$requestId) {
+            echo json_encode(['success' => false, 'message' => 'Missing params']);
+            return;
+        }
+
+        if (!$this->groupModel->isGroupAdmin($groupId, $adminId)) {
+            echo json_encode(['success' => false, 'message' => 'Unauthorized']);
+            return;
+        }
+
+        if (in_array($requestKind, ['post', 'post_poll'], true)) {
+            $request = $this->groupModel->getPendingPostRequestById($groupId, $requestId, $requestKind);
+            if (!$request) {
+                echo json_encode(['success' => false, 'message' => 'Request not found']);
+                return;
+            }
+
+            $updated = $this->groupModel->markRequestStatus((string)$request['_request_table'], $requestId, $adminId, 'rejected');
+            echo json_encode(['success' => (bool)$updated, 'message' => $updated ? 'Request rejected' : 'Failed to reject request']);
+            return;
+        }
+
+        if (in_array($requestKind, ['bin', 'bin_media'], true)) {
+            $request = $this->groupModel->getPendingBinRequestById($groupId, $requestId, $requestKind);
+            if (!$request) {
+                echo json_encode(['success' => false, 'message' => 'Request not found']);
+                return;
+            }
+
+            $updated = $this->groupModel->markRequestStatus((string)$request['_request_table'], $requestId, $adminId, 'rejected');
+            echo json_encode(['success' => (bool)$updated, 'message' => $updated ? 'Request rejected' : 'Failed to reject request']);
+            return;
+        }
+
+        if ($requestKind === 'channel') {
+            $request = $this->groupModel->getPendingChannelRequestById($groupId, $requestId);
+            if (!$request) {
+                echo json_encode(['success' => false, 'message' => 'Request not found']);
+                return;
+            }
+
+            $updated = $this->groupModel->markRequestStatus((string)$request['_request_table'], $requestId, $adminId, 'rejected');
+            echo json_encode(['success' => (bool)$updated, 'message' => $updated ? 'Request rejected' : 'Failed to reject request']);
+            return;
+        }
+
+        $report = $this->reportModel->getReportById($requestId);
+        if (!$report) {
+            echo json_encode(['success' => false, 'message' => 'Request not found']);
+            return;
+        }
+
+        $reportGroupId = (int)($report['group_id'] ?? 0);
+        $isGroupTarget = strtolower((string)($report['target_type'] ?? '')) === 'group' && (int)($report['target_id'] ?? 0) === $groupId;
+        if ($reportGroupId !== $groupId && !$isGroupTarget) {
+            echo json_encode(['success' => false, 'message' => 'Request not in this group']);
+            return;
+        }
+
+        $ok = $this->reportModel->markReviewed($requestId, $adminId);
+        if ($ok) {
+            echo json_encode(['success' => true, 'message' => 'Request rejected']);
+            return;
+        }
+
+        echo json_encode(['success' => false, 'message' => 'Failed to reject request']);
+    }
+
     private function markNotificationRead() {
         header('Content-Type: application/json');
         if (!isset($_SESSION['user_id'])) { echo json_encode(['success'=>false,'message'=>'Not authenticated']); return; }
@@ -795,13 +1111,13 @@ class GroupController {
             if ($content === '') {
                 if ($postType === 'question') {
                     $content = trim((string)($_POST['problem_statement'] ?? ''));
+                } elseif ($postType === 'poll') {
+                    $content = trim((string)($_POST['poll_question'] ?? ''));
                 } elseif ($postType === 'event') {
                     $content = trim((string)($_POST['event_description'] ?? ''));
                     if ($content === '') {
                         $content = trim((string)($_POST['event_title'] ?? ''));
                     }
-                } elseif ($postType === 'poll') {
-                    $content = trim((string)($_POST['poll_question'] ?? ''));
                 }
             }
             
@@ -818,9 +1134,9 @@ class GroupController {
 
             // Check if user is a member of the group (creator is always allowed)
             $membershipState = $this->groupModel->getUserMembershipState($groupId, $userId);
-            $isCreator = (int)($group['created_by'] ?? 0) === $userId;
+            $isAdmin = $this->groupModel->isGroupAdmin($groupId, $userId);
             
-            if ($membershipState !== 'active' && !$isCreator) {
+            if ($membershipState !== 'active') {
                 echo json_encode(['success' => false, 'message' => 'You must be a member to post']);
                 return;
             }
@@ -855,6 +1171,31 @@ class GroupController {
             }
         }
         
+        $groupPrivacy = strtolower(trim((string)($group['privacy_status'] ?? 'public')));
+        $isRestrictedGroup = in_array($groupPrivacy, ['private', 'secret'], true);
+        $requiresApproval = $isRestrictedGroup && !$isAdmin;
+        if ($requiresApproval) {
+            $queued = $this->groupModel->queuePostCreationRequest($groupId, $userId, $postType, [
+                'post_type' => $postType,
+                'content' => $content,
+                'image_path' => $imagePath,
+                'file_path' => $filePath,
+                'request' => $_POST
+            ]);
+
+            if ($queued) {
+                echo json_encode([
+                    'success' => true,
+                    'queued' => true,
+                    'message' => 'Post request submitted for approval'
+                ]);
+                return;
+            }
+
+            echo json_encode(['success' => false, 'message' => 'Failed to submit post request']);
+            return;
+        }
+
         $postTypeModel = PostTypeFactory::make($postType);
         $postId = $postTypeModel->create($userId, $groupId, [
             'content' => $content,
@@ -941,7 +1282,7 @@ class GroupController {
                 return;
             }
 
-            $pollModel = PostTypeFactory::make('poll');
+            $pollModel = new PollPostModel();
             $counts = $pollModel->recordVote($postId, $userId, $optionIndex, count($options));
             
             error_log('votePollOption: Vote counts after recording: ' . json_encode($counts));
@@ -1066,6 +1407,116 @@ class GroupController {
 
         $result = $this->groupModel->approveGroupDeletion($groupId, $adminId);
         echo json_encode($result);
+    }
+
+    private function startGovernanceVote() {
+        $creatorId = (int)($_SESSION['user_id'] ?? 0);
+        $groupId = isset($_POST['group_id']) ? (int)$_POST['group_id'] : 0;
+        $voteType = isset($_POST['vote_type']) ? (string)$_POST['vote_type'] : '';
+        $reason = isset($_POST['reason']) ? (string)$_POST['reason'] : '';
+        $targetType = isset($_POST['target_type']) ? (string)$_POST['target_type'] : 'group';
+        $targetId = isset($_POST['target_id']) ? (int)$_POST['target_id'] : $groupId;
+        $fromRole = isset($_POST['from_role']) ? trim((string)$_POST['from_role']) : '';
+        $toRole = isset($_POST['to_role']) ? trim((string)$_POST['to_role']) : '';
+        $fromVisibility = isset($_POST['from_visibility']) ? trim((string)$_POST['from_visibility']) : '';
+        $toVisibility = isset($_POST['to_visibility']) ? trim((string)$_POST['to_visibility']) : '';
+
+        if ($groupId <= 0 || $voteType === '' || trim($reason) === '') {
+            echo json_encode(['success' => false, 'message' => 'Group, vote type, and reason are required.']);
+            return;
+        }
+
+        $voteTypeNormalized = strtolower(trim($voteType));
+        if (in_array($voteTypeNormalized, ['member_role_change', 'role'], true)) {
+            $targetType = 'user';
+        } else {
+            $targetType = 'group';
+            $targetId = $groupId;
+        }
+
+        if (in_array($voteTypeNormalized, ['group_visibility_change', 'visibility'], true)) {
+            $group = $this->groupModel->getById($groupId);
+            if (!$group) {
+                echo json_encode(['success' => false, 'message' => 'Group not found.']);
+                return;
+            }
+
+            $fromVisibility = strtolower($fromVisibility !== '' ? $fromVisibility : (string)($group['privacy_status'] ?? 'public'));
+            $toVisibility = strtolower($toVisibility);
+
+            if (!in_array($toVisibility, ['public', 'private', 'secret'], true)) {
+                echo json_encode(['success' => false, 'message' => 'A valid target visibility is required.']);
+                return;
+            }
+
+            if ($fromVisibility === $toVisibility) {
+                echo json_encode(['success' => false, 'message' => 'Selected visibility is already active.']);
+                return;
+            }
+        }
+
+        if (in_array($voteTypeNormalized, ['group_deletion', 'delete'], true)) {
+            $confirmText = strtolower(trim((string)($_POST['confirm_text'] ?? '')));
+            if ($confirmText !== 'delete') {
+                echo json_encode(['success' => false, 'message' => 'Type DELETE to confirm deletion proposal.']);
+                return;
+            }
+        }
+
+        $meta = [];
+        if ($fromRole !== '' || $toRole !== '') {
+            $meta['from_role'] = $fromRole;
+            $meta['to_role'] = $toRole;
+        }
+
+        if ($fromVisibility !== '' || $toVisibility !== '') {
+            $meta['from_visibility'] = $fromVisibility;
+            $meta['to_visibility'] = $toVisibility;
+        }
+
+        $result = $this->groupModel->createGovernanceVoteEvent($groupId, $targetType, $targetId, $voteType, $reason, $creatorId, $meta);
+        if (!empty($result['success'])) {
+            $result['events'] = $this->groupModel->getGovernanceVoteEvents($groupId, $creatorId);
+        }
+        echo json_encode($result);
+    }
+
+    private function castGovernanceVote() {
+        $voterId = (int)($_SESSION['user_id'] ?? 0);
+        $groupId = isset($_POST['group_id']) ? (int)$_POST['group_id'] : 0;
+        $eventId = isset($_POST['event_id']) ? (int)$_POST['event_id'] : 0;
+        $voteChoice = isset($_POST['vote_choice']) ? (string)$_POST['vote_choice'] : '';
+
+        if ($groupId <= 0 || $eventId <= 0 || $voteChoice === '') {
+            echo json_encode(['success' => false, 'message' => 'Missing required vote parameters.']);
+            return;
+        }
+
+        $result = $this->groupModel->castGovernanceVote($groupId, $eventId, $voterId, $voteChoice);
+        if (!empty($result['success'])) {
+            $result['events'] = $this->groupModel->getGovernanceVoteEvents($groupId, $voterId);
+            $result['group_id'] = $groupId;
+        }
+        echo json_encode($result);
+    }
+
+    private function listGovernanceVotes() {
+        $viewerId = (int)($_SESSION['user_id'] ?? 0);
+        $groupId = isset($_POST['group_id']) ? (int)$_POST['group_id'] : (isset($_GET['group_id']) ? (int)$_GET['group_id'] : 0);
+        if ($groupId <= 0) {
+            echo json_encode(['success' => false, 'message' => 'Group ID required']);
+            return;
+        }
+
+        if (!$this->groupModel->isGroupAdmin($groupId, $viewerId)) {
+            echo json_encode(['success' => false, 'message' => 'Unauthorized']);
+            return;
+        }
+
+        echo json_encode([
+            'success' => true,
+            'events' => $this->groupModel->getGovernanceVoteEvents($groupId, $viewerId)
+        ]);
     }
 
 }
