@@ -51,6 +51,13 @@ class ChatController {
         $payloadSource = $this->isJsonRequest() ? $this->getJsonBody() : $_POST;
         $conversationId = isset($payloadSource['conversation_id']) ? (int)$payloadSource['conversation_id'] : null;
         $content = isset($payloadSource['content']) ? trim((string)$payloadSource['content']) : '';
+        $repliedToMessageId = isset($payloadSource['replied_to_message_id'])
+            ? (int)$payloadSource['replied_to_message_id']
+            : null;
+
+        if ($repliedToMessageId !== null && $repliedToMessageId <= 0) {
+            $repliedToMessageId = null;
+        }
 
         if (!$conversationId) {
             $this->errorResponse('conversation_id is required', 422);
@@ -87,7 +94,8 @@ class ChatController {
                 $userId,
                 $content,
                 $messageType,
-                $fileMeta
+                $fileMeta,
+                $repliedToMessageId
             );
         } catch (InvalidArgumentException $e) {
             $this->errorResponse($e->getMessage(), 400);

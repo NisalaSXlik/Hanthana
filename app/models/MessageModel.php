@@ -340,9 +340,38 @@ class MessageModel {
         $sql = "
             SELECT m.message_id, m.conversation_id, m.sender_id, m.message_type, m.content,
                    m.file_url, m.file_name, m.file_size, m.created_at,
-                   u.first_name, u.last_name, u.username, u.profile_picture
+                   m.replied_to_message_id,
+                   rm.content AS replied_content,
+                   rm.message_type AS replied_message_type,
+                   rm.file_name AS replied_file_name,
+                   rm.sender_id AS replied_sender_id,
+                   ru.first_name AS replied_first_name,
+                   ru.last_name AS replied_last_name,
+                   ru.username AS replied_username,
+                   (
+                       SELECT COUNT(*)
+                       FROM ConversationParticipants cp
+                       WHERE cp.conversation_id = m.conversation_id
+                         AND cp.is_active = TRUE
+                         AND cp.user_id <> m.sender_id
+                   ) AS recipient_count,
+                   (
+                       SELECT COUNT(*)
+                       FROM MessageReadStatus mrs
+                       WHERE mrs.message_id = m.message_id
+                         AND mrs.user_id <> m.sender_id
+                   ) AS read_count,
+                   (
+                       SELECT MAX(mrs.read_at)
+                       FROM MessageReadStatus mrs
+                       WHERE mrs.message_id = m.message_id
+                         AND mrs.user_id <> m.sender_id
+                     ) AS seen_at,
+                     u.first_name, u.last_name, u.username, u.profile_picture
             FROM Messages m
             INNER JOIN Users u ON u.user_id = m.sender_id
+                 LEFT JOIN Messages rm ON rm.message_id = m.replied_to_message_id
+                 LEFT JOIN Users ru ON ru.user_id = rm.sender_id
             WHERE m.conversation_id = :conversationId AND m.is_deleted = FALSE";
 
         if ($afterId !== null) {
@@ -365,7 +394,7 @@ class MessageModel {
         }, $messages);
     }
 
-    public function createMessage(int $conversationId, int $senderId, string $content, string $messageType = 'text', array $fileMeta = []): array {
+    public function createMessage(int $conversationId, int $senderId, string $content, string $messageType = 'text', array $fileMeta = [], ?int $repliedToMessageId = null): array {
         if (!$this->userCanAccessConversation($conversationId, $senderId)) {
             throw new InvalidArgumentException('You are not part of this conversation.');
         }
@@ -375,8 +404,12 @@ class MessageModel {
             throw new InvalidArgumentException('Message cannot be empty.');
         }
 
-        $sql = "INSERT INTO Messages (conversation_id, sender_id, message_type, content, file_url, file_name, file_size)
-                VALUES (:conversationId, :senderId, :type, :content, :fileUrl, :fileName, :fileSize)";
+        if ($repliedToMessageId !== null) {
+            $repliedToMessageId = $this->validateReplyTarget($conversationId, $repliedToMessageId);
+        }
+
+        $sql = "INSERT INTO Messages (conversation_id, sender_id, message_type, content, file_url, file_name, file_size, replied_to_message_id)
+                VALUES (:conversationId, :senderId, :type, :content, :fileUrl, :fileName, :fileSize, :replyToMessageId)";
 
         $stmt = $this->conn()->prepare($sql);
         $stmt->execute([
@@ -387,6 +420,7 @@ class MessageModel {
             ':fileUrl' => $fileMeta['file_url'] ?? null,
             ':fileName' => $fileMeta['file_name'] ?? null,
             ':fileSize' => $fileMeta['file_size'] ?? null,
+            ':replyToMessageId' => $repliedToMessageId,
         ]);
 
         $messageId = (int)$this->conn()->lastInsertId();
@@ -403,6 +437,33 @@ class MessageModel {
         $this->markMessageAsRead($messageId, $senderId);
 
         return $this->getMessageById($messageId, $senderId);
+    }
+
+    private function validateReplyTarget(int $conversationId, int $repliedToMessageId): int {
+        if ($repliedToMessageId <= 0) {
+            throw new InvalidArgumentException('Invalid reply target.');
+        }
+
+        $sql = "
+            SELECT m.message_id
+            FROM Messages m
+            WHERE m.message_id = :messageId
+              AND m.conversation_id = :conversationId
+              AND m.is_deleted = FALSE
+            LIMIT 1";
+
+        $stmt = $this->conn()->prepare($sql);
+        $stmt->execute([
+            ':messageId' => $repliedToMessageId,
+            ':conversationId' => $conversationId,
+        ]);
+
+        $messageId = $stmt->fetchColumn();
+        if (!$messageId) {
+            throw new InvalidArgumentException('Reply target is unavailable.');
+        }
+
+        return (int)$messageId;
     }
 
     private function buildMessagePreview(string $content, string $messageType, array $fileMeta): string {
@@ -453,13 +514,15 @@ class MessageModel {
         $displayName = null;
         $displayPicture = null;
         $isOnline = false;
+        $lastSeenAt = null;
 
         if ($row['conversation_type'] === 'direct') {
             $peer = $this->getDirectPeer($row['conversation_id'], $userId);
             if ($peer) {
                 $displayName = trim(($peer['first_name'] ?? '') . ' ' . ($peer['last_name'] ?? '')) ?: $peer['username'];
                 $displayPicture = $peer['profile_picture'];
-                $isOnline = $peer['is_online'] ?? false;
+                $isOnline = (bool)($peer['is_online'] ?? false);
+                $lastSeenAt = $peer['last_seen_at'] ?? null;
             }
         } elseif ($row['conversation_type'] === 'group') {
             $displayName = trim($row['conversation_name']);
@@ -500,6 +563,7 @@ class MessageModel {
             'display_picture' => $displayPicture,
             'avatar' => $displayPicture, // Add alias for compatibility
             'is_online' => $isOnline,
+            'last_seen_at' => $lastSeenAt,
             'last_message_at' => $row['last_message_at'],
             'last_message' => $lastMessage,
             'last_message_preview' => $previewText,
@@ -510,7 +574,14 @@ class MessageModel {
 
     private function getDirectPeer(int $conversationId, int $userId): ?array {
         $sql = "
-            SELECT u.user_id, u.username, u.first_name, u.last_name, u.profile_picture
+            SELECT
+                u.user_id,
+                u.username,
+                u.first_name,
+                u.last_name,
+                u.profile_picture,
+                u.last_login AS last_seen_at,
+                (u.last_login IS NOT NULL AND u.last_login >= DATE_SUB(NOW(), INTERVAL 5 MINUTE)) AS is_online
             FROM ConversationParticipants cp
             INNER JOIN Users u ON u.user_id = cp.user_id
             WHERE cp.conversation_id = :conversationId AND cp.user_id != :userId
@@ -564,6 +635,37 @@ class MessageModel {
 
     private function hydrateMessage(array $message, int $userId): array {
         $fullName = trim(($message['first_name'] ?? '') . ' ' . ($message['last_name'] ?? ''));
+        $isOwn = (int)$message['sender_id'] === $userId;
+        $recipientCount = isset($message['recipient_count']) ? (int)$message['recipient_count'] : 0;
+        $readCount = isset($message['read_count']) ? (int)$message['read_count'] : 0;
+        $replyMessageId = isset($message['replied_to_message_id']) ? (int)$message['replied_to_message_id'] : 0;
+        $replySenderId = isset($message['replied_sender_id']) ? (int)$message['replied_sender_id'] : 0;
+        $replySenderFullName = trim(($message['replied_first_name'] ?? '') . ' ' . ($message['replied_last_name'] ?? ''));
+        $replySenderName = $replySenderFullName ?: ($message['replied_username'] ?? null);
+        $replyData = null;
+
+        if ($replyMessageId > 0) {
+            $replyData = [
+                'message_id' => $replyMessageId,
+                'sender_id' => $replySenderId,
+                'sender_name' => $replySenderName,
+                'is_sender_current_user' => $replySenderId === $userId,
+                'content' => $message['replied_content'] ?? '',
+                'message_type' => $message['replied_message_type'] ?? 'text',
+                'file_name' => $message['replied_file_name'] ?? null,
+            ];
+        }
+
+        $messageStatus = null;
+        if ($isOwn) {
+            if ($readCount > 0) {
+                $messageStatus = 'seen';
+            } elseif ($recipientCount > 0) {
+                $messageStatus = 'delivered';
+            } else {
+                $messageStatus = 'sent';
+            }
+        }
 
         return [
             'message_id' => (int)$message['message_id'],
@@ -577,7 +679,12 @@ class MessageModel {
             'file_name' => $message['file_name'],
             'file_size' => $message['file_size'],
             'created_at' => $message['created_at'],
-            'is_own' => (int)$message['sender_id'] === $userId,
+            'is_own' => $isOwn,
+            'recipient_count' => $recipientCount,
+            'read_count' => $readCount,
+            'seen_at' => $message['seen_at'] ?? null,
+            'message_status' => $messageStatus,
+            'reply_to' => $replyData,
         ];
     }
 
@@ -585,9 +692,38 @@ class MessageModel {
         $sql = "
             SELECT m.message_id, m.conversation_id, m.sender_id, m.message_type, m.content,
                    m.file_url, m.file_name, m.file_size, m.created_at,
-                   u.first_name, u.last_name, u.username, u.profile_picture
+                   m.replied_to_message_id,
+                   rm.content AS replied_content,
+                   rm.message_type AS replied_message_type,
+                   rm.file_name AS replied_file_name,
+                   rm.sender_id AS replied_sender_id,
+                   ru.first_name AS replied_first_name,
+                   ru.last_name AS replied_last_name,
+                   ru.username AS replied_username,
+                   (
+                       SELECT COUNT(*)
+                       FROM ConversationParticipants cp
+                       WHERE cp.conversation_id = m.conversation_id
+                         AND cp.is_active = TRUE
+                         AND cp.user_id <> m.sender_id
+                   ) AS recipient_count,
+                   (
+                       SELECT COUNT(*)
+                       FROM MessageReadStatus mrs
+                       WHERE mrs.message_id = m.message_id
+                         AND mrs.user_id <> m.sender_id
+                   ) AS read_count,
+                   (
+                       SELECT MAX(mrs.read_at)
+                       FROM MessageReadStatus mrs
+                       WHERE mrs.message_id = m.message_id
+                         AND mrs.user_id <> m.sender_id
+                     ) AS seen_at,
+                     u.first_name, u.last_name, u.username, u.profile_picture
             FROM Messages m
             INNER JOIN Users u ON u.user_id = m.sender_id
+                 LEFT JOIN Messages rm ON rm.message_id = m.replied_to_message_id
+                 LEFT JOIN Users ru ON ru.user_id = rm.sender_id
             WHERE m.message_id = :messageId";
 
         $stmt = $this->conn()->prepare($sql);
