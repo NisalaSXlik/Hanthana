@@ -128,9 +128,72 @@ class ChannelModel {
         $participantStmt->execute([$conversationId, $groupId]);
     }
 
+    private function getActiveGroupAdmins(int $groupId): array
+    {
+        $stmt = $this->db->prepare(
+            "SELECT user_id
+             FROM GroupMember
+             WHERE group_id = ? AND status = 'active' AND role = 'admin'"
+        );
+        $stmt->execute([$groupId]);
+
+        return array_map('intval', $stmt->fetchAll(PDO::FETCH_COLUMN) ?: []);
+    }
+
+    private function syncChannelParticipantsWithAdmins(int $conversationId, int $groupId, ?int $creatorUserId = null): void
+    {
+        if ($conversationId <= 0 || $groupId <= 0) {
+            return;
+        }
+
+        $adminIds = $this->getActiveGroupAdmins($groupId);
+        if (empty($adminIds) && ($creatorUserId === null || $creatorUserId <= 0)) {
+            return;
+        }
+
+        $participantStmt = $this->db->prepare(
+            "INSERT INTO ConversationParticipants (conversation_id, user_id, role, is_active, joined_at, left_at)
+             VALUES (?, ?, ?, 1, NOW(), NULL)
+             ON DUPLICATE KEY UPDATE
+                role = VALUES(role),
+                is_active = 1,
+                left_at = NULL"
+        );
+
+        foreach ($adminIds as $adminId) {
+            $participantStmt->execute([$conversationId, $adminId, 'admin']);
+        }
+
+        if ($creatorUserId !== null && $creatorUserId > 0 && !in_array($creatorUserId, $adminIds, true)) {
+            $participantStmt->execute([$conversationId, $creatorUserId, 'member']);
+        }
+    }
+
+    private function syncAllChannelAdminsForGroup(int $groupId): void
+    {
+        if ($groupId <= 0) {
+            return;
+        }
+
+        $stmt = $this->db->prepare(
+            "SELECT channel_id, conversation_id, created_by
+             FROM Channel
+             WHERE group_id = ?"
+        );
+        $stmt->execute([$groupId]);
+        $channels = $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
+
+        foreach ($channels as $channel) {
+            $conversationId = (int)($channel['conversation_id'] ?? 0);
+            $creatorUserId = isset($channel['created_by']) ? (int)$channel['created_by'] : null;
+            $this->syncChannelParticipantsWithAdmins($conversationId, $groupId, $creatorUserId);
+        }
+    }
+
     public function listChannelsForUser(int $groupId, int $userId): array
     {
         $this->ensureMainChannelSetup($groupId);
+        $this->syncAllChannelAdminsForGroup($groupId);
 
         $stmt = $this->db->prepare(
             "SELECT
@@ -228,11 +291,7 @@ class ChannelModel {
             ]);
             $channelId = (int) $this->db->lastInsertId();
 
-            $participantStmt = $this->db->prepare(
-                "INSERT INTO ConversationParticipants (conversation_id, user_id, role, is_active)
-                 VALUES (?, ?, 'admin', 1)"
-            );
-            $participantStmt->execute([$conversationId, $userId]);
+            $this->syncChannelParticipantsWithAdmins($conversationId, $groupId, $userId);
 
             $messageStmt = $this->db->prepare(
                 "INSERT INTO Messages (conversation_id, sender_id, message_type, content)
