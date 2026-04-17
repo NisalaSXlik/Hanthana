@@ -171,6 +171,11 @@ class EventsController {
                 $groupId = (int)($event['group_id'] ?? 0);
                 $authorId = (int)($event['author_id'] ?? $event['user_id'] ?? 0);
 
+                if ($authorId === $userId) {
+                    $filteredEvents[] = $event;
+                    continue;
+                }
+
                 if ($groupId > 0) {
                     if (!empty($activeGroupIds[$groupId])) {
                         $filteredEvents[] = $event;

@@ -122,6 +122,9 @@ class QuestionModel {
     }
 
     private function getGroupQuestionsFeed($userId, $filters = []): array {
+        $sortBy = $filters['sort'] ?? 'recent';
+        $recentIncludeOwn = ($sortBy === 'recent' && empty($filters['mine']));
+
         $sql = "SELECT 
                     p.post_id AS question_id,
                     JSON_UNQUOTE(JSON_EXTRACT(p.metadata, '$.title')) AS title,
@@ -149,12 +152,19 @@ class QuestionModel {
                 FROM Post p
                 INNER JOIN Users u ON p.author_id = u.user_id
                 INNER JOIN GroupsTable g ON g.group_id = p.group_id
-                INNER JOIN GroupMember gm ON gm.group_id = p.group_id AND gm.user_id = ? AND gm.status = 'active'
+                LEFT JOIN GroupMember gm ON gm.group_id = p.group_id AND gm.user_id = ? AND gm.status = 'active'
                 WHERE p.is_group_post = 1
                     AND COALESCE(g.is_active, 1) = 1
                     AND p.group_post_type = 'question'";
 
         $params = [$userId, $userId];
+
+        if ($recentIncludeOwn) {
+            $sql .= " AND (gm.group_id IS NOT NULL OR p.author_id = ?)";
+            $params[] = (int)$userId;
+        } else {
+            $sql .= " AND gm.group_id IS NOT NULL";
+        }
 
         if (!empty($filters['category'])) {
             $sql .= " AND JSON_UNQUOTE(JSON_EXTRACT(p.metadata, '$.category')) = ?";
