@@ -522,8 +522,8 @@ body.page-discover .right > .suggested-section .creator-list::-webkit-scrollbar-
 }
 
 /* Modal Overlay - Centered with Scale Animation */
-.modal {
-    display: none; /* This is crucial */
+/*.modal {
+    display: none;
     position: fixed;
     top: 0;
     left: 0;
@@ -543,7 +543,7 @@ body.page-discover .right > .suggested-section .creator-list::-webkit-scrollbar-
     bottom: 0;
     background: rgba(0, 0, 0, 0.85);
     backdrop-filter: blur(6px);
-    display: none; /* Changed from none to flex */
+    display: none;
     justify-content: center;
     align-items: center;
     z-index: 10000;
@@ -567,7 +567,6 @@ body.page-discover .right > .suggested-section .creator-list::-webkit-scrollbar-
     text-align: center;
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
     border: 1px solid var(--color-light);
-    /* Centering animation */
     transform: translateY(20px);
     opacity: 1;
     transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
@@ -578,7 +577,6 @@ body.page-discover .right > .suggested-section .creator-list::-webkit-scrollbar-
     opacity: 1;
 }
 
-/* Rest of your modal styles remain the same */
 .modal-close {
     position: absolute;
     top: 20px;
@@ -657,7 +655,7 @@ body.page-discover .right > .suggested-section .creator-list::-webkit-scrollbar-
 .modal-actions .btn-primary,
 .modal-actions .btn-secondary {
     text-decoration: none;
-}
+}*/
 
 /* Text-only Discover tiles */
 .discover-item.discover-item-text {

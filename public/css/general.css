@@ -331,7 +331,7 @@ main .container {
     height: 100%;
     display: grid;
     grid-template-columns: 22% 54% 22%;
-    gap: 0.75rem;
+    gap: 1rem;
     overflow: hidden; /* prevents bleed */
 }
 
