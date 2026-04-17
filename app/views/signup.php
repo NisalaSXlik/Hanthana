@@ -9,7 +9,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $result = $authController->register($_POST);
     
     if ($result['success']) {
-        header('Location: ' . BASE_PATH .'index.php?controller=Login&action=index');
+        header('Location: ' . BASE_PATH .'index.php?controller=Discover&action=index');
         exit;
     } else {
         $errors = $result['errors'];
@@ -105,7 +105,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 
                 <div class="form-group-l signup-form-group hf-icon-field">
                     <i class="uil uil-lock"></i>
-                    <input type="password" name="password" placeholder="Password" required>
+                    <input type="password" name="password" placeholder="Password" minlength="8" required>
                     <span id="password-status" class="hf-field-status" aria-live="polite"></span>
                 </div>
                 

@@ -187,8 +187,8 @@ if (isset($_SESSION['user_id'])) {
 
                                 <div class="form-group">
                                     <label>What problem are you facing? <span class="required">*</span></label>
-                                    <textarea name="problem_statement" id="problemStatement" maxlength="400" placeholder="Describe the exact issue, error messages, or blockers."></textarea>
-                                    <div class="char-count" data-for="problem_statement">0 / 400</div>
+                                    <textarea name="problem_statement" id="problemStatement" maxlength="1000" placeholder="Describe the exact issue, error messages, or blockers."></textarea>
+                                    <div class="char-count" data-for="problem_statement">0 / 1000</div>
                                 </div>
 
                                 <div class="form-group">

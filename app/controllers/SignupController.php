@@ -12,7 +12,7 @@ class SignupController {
             $authController = new AuthController();
             $result = $authController->register($_POST);
             if ($result['success']) {
-                header("Location: " . BASE_PATH . "index.php?controller=Home&action=index");
+                header("Location: " . BASE_PATH . "index.php?controller=Discover&action=index");
                 exit;
             } else {
                 $_SESSION['signup_errors'] = $result['errors'];

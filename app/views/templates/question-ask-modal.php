@@ -41,8 +41,8 @@ $questionCategories = isset($categories) && is_array($categories) ? $categories 
 
             <div class="template-field">
                 <label>What problem are you facing? *</label>
-                <textarea name="problem_statement" data-maxlength="400" maxlength="400" required placeholder="Describe the exact issue, error messages, or blockers."></textarea>
-                <div class="char-count" data-for="problem_statement">0 / 400</div>
+                <textarea name="problem_statement" data-maxlength="1000" maxlength="1000" required placeholder="Describe the exact issue, error messages, or blockers."></textarea>
+                <div class="char-count" data-for="problem_statement">0 / 1000</div>
             </div>
 
             <div class="template-columns">

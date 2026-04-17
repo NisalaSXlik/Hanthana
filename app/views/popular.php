@@ -131,32 +131,30 @@ function timeAgo($timestamp) {
                                                 <span><i class="uil uil-eye"></i> <?php echo (int)$q['views']; ?> views</span>
 
                                                 <div class="question-menu-wrap">
-                                                    <?php if (!$isGroupQuestion): ?>
-                                                        <button type="button" class="question-menu-trigger" aria-label="Question menu">
-                                                            <i class="uil uil-ellipsis-h"></i>
-                                                        </button>
+                                                    <button type="button" class="question-menu-trigger" aria-label="Question menu">
+                                                        <i class="uil uil-ellipsis-h"></i>
+                                                    </button>
 
-                                                        <div class="question-menu">
-                                                            <?php if ($isOwner): ?>
-                                                                <button type="button" class="question-menu-item edit-question" data-question-id="<?php echo (int)$q['question_id']; ?>">
-                                                                    <i class="uil uil-edit"></i> Edit
-                                                                </button>
-                                                                <button type="button" class="question-menu-item delete-question" data-question-id="<?php echo (int)$q['question_id']; ?>">
-                                                                    <i class="uil uil-trash-alt"></i> Delete
-                                                                </button>
-                                                            <?php endif; ?>
+                                                    <div class="question-menu">
+                                                        <?php if ($isOwner): ?>
+                                                            <button type="button" class="question-menu-item edit-question" data-question-id="<?php echo (int)$q['question_id']; ?>">
+                                                                <i class="uil uil-edit"></i> Edit
+                                                            </button>
+                                                            <button type="button" class="question-menu-item delete-question" data-question-id="<?php echo (int)$q['question_id']; ?>">
+                                                                <i class="uil uil-trash-alt"></i> Delete
+                                                            </button>
+                                                        <?php endif; ?>
 
-                                                            <?php if (!$isOwner): ?>
-                                                                <button type="button"
-                                                                        class="question-menu-item report-trigger"
-                                                                        data-report-type="question"
-                                                                        data-target-id="<?php echo (int)$q['question_id']; ?>"
-                                                                        data-target-label="<?php echo htmlspecialchars($q['title'], ENT_QUOTES); ?>">
-                                                                    <i class="uil uil-exclamation-circle"></i> Report
-                                                                </button>
-                                                            <?php endif; ?>
-                                                        </div>
-                                                    <?php endif; ?>
+                                                        <?php if (!$isOwner): ?>
+                                                            <button type="button"
+                                                                    class="question-menu-item report-trigger"
+                                                                    data-report-type="question"
+                                                                    data-target-id="<?php echo (int)$q['question_id']; ?>"
+                                                                    data-target-label="<?php echo htmlspecialchars($q['title'], ENT_QUOTES); ?>">
+                                                                <i class="uil uil-exclamation-circle"></i> Report
+                                                            </button>
+                                                        <?php endif; ?>
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
@@ -168,21 +166,7 @@ function timeAgo($timestamp) {
                                         </h2>
 
                                         <?php if (!empty($q['content'])): ?>
-                                            <p class="question-excerpt">
-                                                <?php
-                                                $content = $q['content'];
-                                                if (preg_match('/Problem:\s*(.*?)\s*(?:Context:|Attempts:|Expected Outcome:|$)/is', $content, $matches)) {
-                                                    $displayContent = trim($matches[1]);
-                                                    if (strlen($content) > strlen($displayContent) + 20) {
-                                                        $displayContent .= '...';
-                                                    }
-                                                    echo htmlspecialchars($displayContent);
-                                                } else {
-                                                    echo htmlspecialchars(mb_substr($content, 0, 200));
-                                                    echo mb_strlen($content) > 200 ? '...' : '';
-                                                }
-                                                ?>
-                                            </p>
+                                            <p class="question-excerpt"><?php echo nl2br(htmlspecialchars((string)$q['content'])); ?></p>
                                         <?php endif; ?>
 
                                         <?php if (!empty($q['attachment_path'])): ?>
@@ -271,7 +255,7 @@ function timeAgo($timestamp) {
                     <h3>Categories</h3>
                     <div class="filter-options">
                         <?php foreach ($categories as $cat): ?>
-                            <a href="?controller=QnA&action=index&category=<?php echo urlencode($cat); ?>" 
+                            <a href="?controller=QnA&action=index&category=<?php echo urlencode($cat); ?>&sort=<?php echo urlencode($_GET['sort'] ?? 'recent'); ?><?php echo (isset($_GET['mine']) && $_GET['mine'] === '1') ? '&mine=1' : ''; ?><?php echo !empty($_GET['search']) ? '&search=' . urlencode($_GET['search']) : ''; ?>" 
                                class="filter-option <?php echo ($_GET['category'] ?? '') === $cat ? 'active' : ''; ?>">
                                 <?php echo htmlspecialchars($cat); ?>
                             </a>
@@ -285,6 +269,7 @@ function timeAgo($timestamp) {
     </main>
     
     <?php include __DIR__ . '/templates/question-ask-modal.php'; ?>
+    <?php include __DIR__ . '/templates/question-edit-modal.php'; ?>
     <?php include __DIR__ . '/templates/report-modal.php'; ?>
 
     <div class="calendar-popup" id="calendarPopup">

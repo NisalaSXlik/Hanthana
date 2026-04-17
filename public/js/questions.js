@@ -10,8 +10,8 @@ document.addEventListener('DOMContentLoaded', function() {
     const askQuestionForm = document.getElementById('askQuestionForm');
     const answerForm = document.getElementById('answerForm');
     const searchInput = document.getElementById('searchInput');
-    const templateChips = document.querySelectorAll('.template-chip');
-    const titleInput = document.getElementById('questionTitleInput');
+    const templateChips = askQuestionForm ? askQuestionForm.querySelectorAll('.template-chip') : [];
+    const titleInput = askQuestionForm ? askQuestionForm.querySelector('#questionTitleInput') : null;
     const templatedTextareas = askQuestionForm ? askQuestionForm.querySelectorAll('textarea[data-maxlength]') : [];
     const templateFields = askQuestionForm ? {
         problem: askQuestionForm.querySelector('[name="problem_statement"]'),
@@ -61,7 +61,7 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     if (templateChips.length) {
-        applyTemplateChip(document.querySelector('.template-chip.active') || templateChips[0], true);
+        applyTemplateChip(askQuestionForm.querySelector('.template-chip.active') || templateChips[0], true);
     }
 
     titleInput?.addEventListener('input', () => {
@@ -134,7 +134,10 @@ document.addEventListener('DOMContentLoaded', function() {
             const result = await response.json();
 
             if (result.success) {
-                window.location.href = QUESTIONS_BASE_PATH + 'index.php?controller=QnA&action=view&id=' + result.question_id;
+                const indexUrl = new URL(QUESTIONS_BASE_PATH + 'index.php?controller=QnA&action=index', window.location.origin);
+                indexUrl.searchParams.set('sort', 'recent');
+                indexUrl.searchParams.set('focus_question', String(result.question_id));
+                window.location.href = indexUrl.toString();
             } else {
                 alert(result.message || 'Failed to post question');
             }
@@ -305,50 +308,93 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    // Edit question from card menu
+    const editQuestionModal = document.getElementById('editQuestionModal');
+    const editQuestionTitleInput = document.getElementById('editQuestionTitleInput');
+    const editQuestionContentInput = document.getElementById('editQuestionContentInput');
+    const editQuestionClose = document.querySelector('.edit-question-close');
+    const cancelQuestionEdit = document.querySelector('.cancel-question-edit');
+    const saveQuestionEdit = document.querySelector('.save-question-edit');
+    let editingQuestionId = null;
+
+    const updateQuestionEditSaveState = () => {
+        if (!saveQuestionEdit || !editQuestionTitleInput || !editQuestionContentInput) return;
+        const hasTitle = editQuestionTitleInput.value.trim().length > 0;
+        const hasContent = editQuestionContentInput.value.trim().length > 0;
+        saveQuestionEdit.disabled = !(hasTitle && hasContent);
+    };
+
+    const closeQuestionEditModal = () => {
+        if (!editQuestionModal) return;
+        editQuestionModal.classList.remove('active');
+        document.body.style.overflow = 'auto';
+        editingQuestionId = null;
+    };
+
+    editQuestionTitleInput?.addEventListener('input', updateQuestionEditSaveState);
+    editQuestionContentInput?.addEventListener('input', updateQuestionEditSaveState);
+    editQuestionClose?.addEventListener('click', closeQuestionEditModal);
+    cancelQuestionEdit?.addEventListener('click', closeQuestionEditModal);
+
+    editQuestionModal?.addEventListener('click', (event) => {
+        if (event.target === editQuestionModal) {
+            closeQuestionEditModal();
+        }
+    });
+
+    // Edit question from card menu (modal form)
     document.querySelectorAll('.edit-question').forEach((btn) => {
-        btn.addEventListener('click', async (event) => {
+        btn.addEventListener('click', (event) => {
             event.preventDefault();
             event.stopPropagation();
 
             const questionId = btn.dataset.questionId;
             const card = btn.closest('.question-card');
-            if (!questionId || !card) return;
+            if (!questionId || !card || !editQuestionModal || !editQuestionTitleInput || !editQuestionContentInput) return;
 
             const currentTitle = (card.querySelector('.question-title a, .question-title')?.textContent || '').trim();
             const currentContent = (card.querySelector('.question-excerpt, .question-body')?.textContent || '').trim();
 
-            const newTitle = window.prompt('Edit question title:', currentTitle);
-            if (newTitle === null) return;
+            editingQuestionId = questionId;
+            editQuestionTitleInput.value = currentTitle;
+            editQuestionContentInput.value = currentContent;
+            updateQuestionEditSaveState();
 
-            const newContent = window.prompt('Edit question content:', currentContent);
-            if (newContent === null) return;
-
-            const formData = new FormData();
-            formData.append('sub_action', 'editQuestion');
-            formData.append('question_id', questionId);
-            formData.append('title', newTitle.trim());
-            formData.append('content', newContent.trim());
-            formData.append('category', 'General');
-            formData.append('topics', '');
-
-            try {
-                const response = await fetch(QUESTIONS_BASE_PATH + 'index.php?controller=Popular&action=handleAjax', {
-                    method: 'POST',
-                    body: formData
-                });
-
-                const result = await response.json();
-                if (result.success) {
-                    location.reload();
-                } else {
-                    alert(result.message || 'Failed to update question');
-                }
-            } catch (error) {
-                console.error('Edit question failed:', error);
-                alert('Failed to update question');
-            }
+            editQuestionModal.classList.add('active');
+            document.body.style.overflow = 'hidden';
+            editQuestionTitleInput.focus();
         });
+    });
+
+    saveQuestionEdit?.addEventListener('click', async () => {
+        const newTitle = (editQuestionTitleInput?.value || '').trim();
+        const newContent = (editQuestionContentInput?.value || '').trim();
+        if (!editingQuestionId || !newTitle || !newContent) return;
+
+        const formData = new FormData();
+        formData.append('sub_action', 'editQuestion');
+        formData.append('question_id', editingQuestionId);
+        formData.append('title', newTitle);
+        formData.append('content', newContent);
+        formData.append('category', 'General');
+        formData.append('topics', '');
+
+        try {
+            const response = await fetch(QUESTIONS_BASE_PATH + 'index.php?controller=Popular&action=handleAjax', {
+                method: 'POST',
+                body: formData
+            });
+
+            const result = await response.json();
+            if (result.success) {
+                closeQuestionEditModal();
+                location.reload();
+            } else {
+                alert(result.message || 'Failed to update question');
+            }
+        } catch (error) {
+            console.error('Edit question failed:', error);
+            alert('Failed to update question');
+        }
     });
 
     // Delete question from card menu

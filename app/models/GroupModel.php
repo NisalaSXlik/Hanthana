@@ -815,6 +815,42 @@ class GroupModel {
     }
 
     private function finalizeGovernanceVoteEvent(int $groupId, int $eventId, bool $expired = false): void {
+        if ($expired) {
+            // Preserve non-voters as explicit NULL vote records for past-event history.
+            try {
+                $adminStmt = $this->db->prepare(
+                    "SELECT user_id
+                     FROM GroupMember
+                     WHERE group_id = ? AND status = 'active' AND role = 'admin'"
+                );
+                $adminStmt->execute([$groupId]);
+                $adminIds = array_map('intval', $adminStmt->fetchAll(PDO::FETCH_COLUMN) ?: []);
+
+                if (!empty($adminIds)) {
+                    $votedStmt = $this->db->prepare(
+                        "SELECT voter_user_id
+                         FROM GroupGovernanceVote
+                         WHERE vote_event_id = ?"
+                    );
+                    $votedStmt->execute([$eventId]);
+                    $votedSet = array_flip(array_map('intval', $votedStmt->fetchAll(PDO::FETCH_COLUMN) ?: []));
+
+                    $insertNullStmt = $this->db->prepare(
+                        "INSERT IGNORE INTO GroupGovernanceVote (vote_event_id, voter_user_id, vote_choice, voted_at)
+                         VALUES (?, ?, NULL, NULL)"
+                    );
+
+                    foreach ($adminIds as $adminId) {
+                        if (!isset($votedSet[$adminId])) {
+                            $insertNullStmt->execute([$eventId, $adminId]);
+                        }
+                    }
+                }
+            } catch (Exception $e) {
+                // Keep close flow stable for legacy schemas that don't yet allow nullable vote columns.
+            }
+        }
+
         $countStmt = $this->db->prepare(
             "SELECT
                 SUM(CASE WHEN vote_choice = 'in_favor' THEN 1 ELSE 0 END) AS in_favor_count,
@@ -826,7 +862,7 @@ class GroupModel {
         $counts = $countStmt->fetch(PDO::FETCH_ASSOC) ?: [];
         $inFavor = (int)($counts['in_favor_count'] ?? 0);
         $notInFavor = (int)($counts['not_in_favor_count'] ?? 0);
-        $result = ($inFavor > $notInFavor) ? 'accepted' : (($inFavor === $notInFavor && $expired) ? 'expired' : 'rejected');
+        $result = ($inFavor > $notInFavor) ? 'accepted' : 'rejected';
 
         $metaStmt = $this->db->prepare(
             "SELECT vote_type, target_id, target_type, meta_json
@@ -840,14 +876,35 @@ class GroupModel {
             return;
         }
 
-        if ($result === 'accepted' && ($event['vote_type'] ?? '') === 'member_role_change' && ($event['target_type'] ?? '') === 'user') {
+        if ($result === 'accepted') {
+            $voteType = (string)($event['vote_type'] ?? '');
             $meta = json_decode((string)($event['meta_json'] ?? '{}'), true) ?: [];
-            $requestedRole = strtolower((string)($meta['to_role'] ?? $meta['requested_role'] ?? 'member'));
-            if (in_array($requestedRole, ['admin', 'member'], true)) {
-                $roleStmt = $this->db->prepare(
-                    "UPDATE GroupMember SET role = ? WHERE group_id = ? AND user_id = ? AND status = 'active'"
+
+            if ($voteType === 'member_role_change' && ($event['target_type'] ?? '') === 'user') {
+                $requestedRole = strtolower((string)($meta['to_role'] ?? $meta['requested_role'] ?? 'member'));
+                if (in_array($requestedRole, ['admin', 'member'], true)) {
+                    $roleStmt = $this->db->prepare(
+                        "UPDATE GroupMember SET role = ? WHERE group_id = ? AND user_id = ? AND status = 'active'"
+                    );
+                    $roleStmt->execute([$requestedRole, $groupId, (int)($event['target_id'] ?? 0)]);
+                }
+            }
+
+            if ($voteType === 'group_visibility_change') {
+                $toVisibility = strtolower(trim((string)($meta['to_visibility'] ?? '')));
+                if (in_array($toVisibility, ['public', 'private', 'secret'], true)) {
+                    $visibilityStmt = $this->db->prepare(
+                        "UPDATE GroupsTable SET privacy_status = ?, updated_at = NOW() WHERE group_id = ?"
+                    );
+                    $visibilityStmt->execute([$toVisibility, $groupId]);
+                }
+            }
+
+            if ($voteType === 'group_deletion') {
+                $deleteStmt = $this->db->prepare(
+                    "UPDATE GroupsTable SET is_active = 0, updated_at = NOW() WHERE group_id = ?"
                 );
-                $roleStmt->execute([$requestedRole, $groupId, (int)($event['target_id'] ?? 0)]);
+                $deleteStmt->execute([$groupId]);
             }
         }
 
@@ -882,16 +939,66 @@ class GroupModel {
             return ['success' => false, 'message' => 'Invalid vote type.'];
         }
 
+        if (in_array($voteType, ['group_deletion', 'group_visibility_change'], true)) {
+            $existingStmt = $this->db->prepare(
+                "SELECT vote_event_id
+                 FROM GroupGovernanceVoteEvent
+                 WHERE group_id = ? AND vote_type = ? AND result = 'in_process'
+                 ORDER BY created_at DESC
+                 LIMIT 1"
+            );
+            $existingStmt->execute([$groupId, $voteType]);
+            $existingId = (int)$existingStmt->fetchColumn();
+            if ($existingId > 0) {
+                return [
+                    'success' => false,
+                    'message' => 'An active vote already exists for this request type.'
+                ];
+            }
+        }
+
+        if ($voteType === 'member_role_change') {
+            $existingRoleStmt = $this->db->prepare(
+                "SELECT vote_event_id
+                 FROM GroupGovernanceVoteEvent
+                 WHERE group_id = ?
+                   AND vote_type = 'member_role_change'
+                   AND target_type = 'user'
+                   AND target_id = ?
+                   AND result = 'in_process'
+                 ORDER BY created_at DESC
+                 LIMIT 1"
+            );
+            $existingRoleStmt->execute([$groupId, $targetId]);
+            $existingRoleId = (int)$existingRoleStmt->fetchColumn();
+            if ($existingRoleId > 0) {
+                return [
+                    'success' => false,
+                    'message' => 'An active role vote already exists for this member.'
+                ];
+            }
+        }
+
         if ($targetType === 'group' || $targetId <= 0) {
             $targetId = $groupId;
         }
 
         $meta = is_array($meta) ? $meta : [];
 
+        // Vote expiry windows by vote type (days)
+        $expiryDays = 3;
+        if ($voteType === 'group_deletion') {
+            $expiryDays = 7;
+        } elseif ($voteType === 'group_visibility_change') {
+            $expiryDays = 3;
+        } elseif ($voteType === 'member_role_change') {
+            $expiryDays = 1;
+        }
+
         $insert = $this->db->prepare(
             "INSERT INTO GroupGovernanceVoteEvent
                 (group_id, target_type, target_id, vote_type, reason, meta_json, created_by, created_at, expires_at, result)
-             VALUES (?, ?, ?, ?, ?, ?, ?, NOW(), DATE_ADD(NOW(), INTERVAL 3 DAY), 'in_process')"
+             VALUES (?, ?, ?, ?, ?, ?, ?, NOW(), DATE_ADD(NOW(), INTERVAL ? DAY), 'in_process')"
         );
         $insert->execute([
             $groupId,
@@ -900,13 +1007,24 @@ class GroupModel {
             $voteType,
             trim($reason),
             !empty($meta) ? json_encode($meta) : null,
-            $creatorId
+            $creatorId,
+            $expiryDays
         ]);
+
+        $eventId = (int)$this->db->lastInsertId();
+
+        // Starter's vote is automatically recorded as in favor.
+        $starterVoteStmt = $this->db->prepare(
+            "INSERT INTO GroupGovernanceVote (vote_event_id, voter_user_id, vote_choice, voted_at)
+             VALUES (?, ?, 'in_favor', NOW())
+             ON DUPLICATE KEY UPDATE vote_choice = 'in_favor', voted_at = NOW()"
+        );
+        $starterVoteStmt->execute([$eventId, $creatorId]);
 
         return [
             'success' => true,
             'message' => 'Governance vote created.',
-            'vote_event_id' => (int)$this->db->lastInsertId()
+            'vote_event_id' => $eventId
         ];
     }
 
@@ -915,15 +1033,10 @@ class GroupModel {
             return ['success' => false, 'message' => 'Only group admins can vote on governance events.'];
         }
 
-        $voteChoice = ($voteChoice === 'in_favor') ? 'in_favor' : (($voteChoice === 'not_in_favor') ? 'not_in_favor' : '');
-        if ($voteChoice === '') {
-            return ['success' => false, 'message' => 'Invalid vote choice.'];
-        }
-
         $this->closeExpiredGovernanceVotes($groupId);
 
         $eventStmt = $this->db->prepare(
-            "SELECT vote_event_id, expires_at, result
+            "SELECT vote_event_id, expires_at, result, meta_json
              FROM GroupGovernanceVoteEvent
              WHERE vote_event_id = ? AND group_id = ?
              LIMIT 1"
@@ -937,21 +1050,35 @@ class GroupModel {
             return ['success' => false, 'message' => 'Voting is closed for this event.'];
         }
 
+        // Check if voter already voted
+        $checkStmt = $this->db->prepare(
+            "SELECT vote_choice FROM GroupGovernanceVote WHERE vote_event_id = ? AND voter_user_id = ? LIMIT 1"
+        );
+        $checkStmt->execute([$eventId, $voterId]);
+        $existingVote = $checkStmt->fetch(PDO::FETCH_ASSOC);
+        $existingChoice = $existingVote ? (string)($existingVote['vote_choice'] ?? '') : '';
+
+        // If they're clicking the same choice, toggle it off (withdraw vote)
+        if ($existingChoice === $voteChoice) {
+            $deleteStmt = $this->db->prepare(
+                "DELETE FROM GroupGovernanceVote WHERE vote_event_id = ? AND voter_user_id = ?"
+            );
+            $deleteStmt->execute([$eventId, $voterId]);
+            return ['success' => true, 'message' => 'Vote withdrawn.', 'vote_withdrawn' => true];
+        }
+
+        // Otherwise, validate and record the new vote
+        $voteChoice = ($voteChoice === 'in_favor') ? 'in_favor' : (($voteChoice === 'not_in_favor') ? 'not_in_favor' : '');
+        if ($voteChoice === '') {
+            return ['success' => false, 'message' => 'Invalid vote choice.'];
+        }
+
         $voteStmt = $this->db->prepare(
             "INSERT INTO GroupGovernanceVote (vote_event_id, voter_user_id, vote_choice, voted_at)
              VALUES (?, ?, ?, NOW())
              ON DUPLICATE KEY UPDATE vote_choice = VALUES(vote_choice), voted_at = NOW()"
         );
         $voteStmt->execute([$eventId, $voterId, $voteChoice]);
-
-        $adminCount = $this->getActiveAdminCount($groupId);
-        $countStmt = $this->db->prepare("SELECT COUNT(*) AS c FROM GroupGovernanceVote WHERE vote_event_id = ?");
-        $countStmt->execute([$eventId]);
-        $voteCount = (int)($countStmt->fetch(PDO::FETCH_ASSOC)['c'] ?? 0);
-
-        if ($voteCount >= $adminCount && $adminCount > 0) {
-            $this->finalizeGovernanceVoteEvent($groupId, $eventId, false);
-        }
 
         return ['success' => true, 'message' => 'Vote recorded.'];
     }
@@ -974,9 +1101,11 @@ class GroupModel {
                     tu.username AS target_username,
                     tu.first_name AS target_first_name,
                     tu.last_name AS target_last_name,
+                    tu.profile_picture AS target_profile_picture,
                     su.username AS starter_username,
                     su.first_name AS starter_first_name,
                     su.last_name AS starter_last_name,
+                    su.profile_picture AS starter_profile_picture,
                     SUM(CASE WHEN v.vote_choice = 'in_favor' THEN 1 ELSE 0 END) AS in_favor_count,
                     SUM(CASE WHEN v.vote_choice = 'not_in_favor' THEN 1 ELSE 0 END) AS not_in_favor_count,
                     MAX(CASE WHEN v.voter_user_id = ? THEN v.vote_choice ELSE NULL END) AS viewer_vote
@@ -1000,6 +1129,33 @@ class GroupModel {
              ORDER BY v.voted_at ASC"
         );
 
+        $allAdmins = [];
+
+        $votedAdminStmt = $this->db->prepare(
+            "SELECT voter_user_id
+             FROM GroupGovernanceVote
+               WHERE vote_event_id = ? AND vote_choice IS NOT NULL"
+        );
+
+           $closedNullVoterStmt = $this->db->prepare(
+              "SELECT u.first_name, u.last_name, u.username, u.profile_picture
+               FROM GroupGovernanceVote v
+               INNER JOIN Users u ON u.user_id = v.voter_user_id
+               WHERE v.vote_event_id = ? AND v.vote_choice IS NULL
+               ORDER BY u.first_name ASC, u.username ASC"
+           );
+
+        // Get current admins for in_process votes
+        $currentAdminStmt = $this->db->prepare(
+            "SELECT u.user_id, u.first_name, u.last_name, u.username, u.profile_picture
+             FROM GroupMember gm
+             INNER JOIN Users u ON u.user_id = gm.user_id
+             WHERE gm.group_id = ? AND gm.status = 'active' AND gm.role = 'admin'
+             ORDER BY u.first_name ASC, u.username ASC"
+        );
+        $currentAdminStmt->execute([$groupId]);
+        $currentAdmins = $currentAdminStmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
+
         $events = [];
         foreach ($rows as $row) {
             $meta = json_decode((string)($row['meta_json'] ?? '{}'), true) ?: [];
@@ -1011,6 +1167,8 @@ class GroupModel {
             if ($startedByName === '') {
                 $startedByName = (string)($row['starter_username'] ?? 'Admin');
             }
+
+            $allAdmins = $currentAdmins;
 
             $typeKey = 'role';
             $typeLabel = 'Member Role Change';
@@ -1050,6 +1208,57 @@ class GroupModel {
                 }
             }
 
+            $votedAdminStmt->execute([$eventId]);
+            $votedAdminIds = array_map('intval', $votedAdminStmt->fetchAll(PDO::FETCH_COLUMN) ?: []);
+            $votedAdminSet = array_flip($votedAdminIds);
+
+            $pendingVoters = [];
+            if ($result === 'in_process') {
+                foreach ($allAdmins as $admin) {
+                    $adminUserId = (int)($admin['user_id'] ?? 0);
+                    if ($adminUserId <= 0 || isset($votedAdminSet[$adminUserId])) {
+                        continue;
+                    }
+
+                    $fullName = trim((string)($admin['first_name'] ?? '') . ' ' . (string)($admin['last_name'] ?? ''));
+                    if ($fullName === '') {
+                        $fullName = (string)($admin['username'] ?? 'Admin');
+                    }
+
+                    $pendingVoters[] = [
+                        'name' => $fullName,
+                        'username' => (string)($admin['username'] ?? 'admin'),
+                        'avatar' => $this->resolveUserProfilePicture((string)($admin['profile_picture'] ?? '')),
+                    ];
+                }
+            } else {
+                $closedNullVoterStmt->execute([$eventId]);
+                foreach ($closedNullVoterStmt->fetchAll(PDO::FETCH_ASSOC) ?: [] as $admin) {
+                    $fullName = trim((string)($admin['first_name'] ?? '') . ' ' . (string)($admin['last_name'] ?? ''));
+                    if ($fullName === '') {
+                        $fullName = (string)($admin['username'] ?? 'Admin');
+                    }
+                    $pendingVoters[] = [
+                        'name' => $fullName,
+                        'username' => (string)($admin['username'] ?? 'admin'),
+                        'avatar' => $this->resolveUserProfilePicture((string)($admin['profile_picture'] ?? '')),
+                    ];
+                }
+            }
+
+            $adminCount = max(1, (int)count($allAdmins));
+            if ($result !== 'in_process') {
+                $recordCountStmt = $this->db->prepare("SELECT COUNT(*) AS c FROM GroupGovernanceVote WHERE vote_event_id = ?");
+                $recordCountStmt->execute([$eventId]);
+                $recordedCount = (int)($recordCountStmt->fetch(PDO::FETCH_ASSOC)['c'] ?? 0);
+                if ($recordedCount > 0) {
+                    $adminCount = $recordedCount;
+                }
+            }
+            $votesNeeded = max(1, (int)floor($adminCount / 2) + 1);
+            $inFavorPercent = (int)round(($inFavor / $adminCount) * 100);
+            $againstPercent = (int)round(($notInFavor / $adminCount) * 100);
+
             $events[] = [
                 'event_id' => $eventId,
                 'type' => $typeLabel,
@@ -1062,10 +1271,12 @@ class GroupModel {
                 'tone' => $tone,
                 'supporters' => $supporters,
                 'opponents' => $opponents,
+                'pending_voters' => $pendingVoters,
                 'target_user_id' => (int)($row['target_id'] ?? 0),
                 'target_username' => (string)($row['target_username'] ?? ''),
                 'target_first_name' => (string)($row['target_first_name'] ?? ''),
                 'target_last_name' => (string)($row['target_last_name'] ?? ''),
+                'target_avatar' => $this->resolveUserProfilePicture((string)($row['target_profile_picture'] ?? '')),
                 'requested_role' => (string)($meta['to_role'] ?? $meta['requested_role'] ?? 'member'),
                 'from_role' => (string)($meta['from_role'] ?? ''),
                 'to_role' => (string)($meta['to_role'] ?? $meta['requested_role'] ?? ''),
@@ -1074,10 +1285,18 @@ class GroupModel {
                 'started_by_user_id' => (int)($row['created_by'] ?? 0),
                 'started_by_username' => (string)($row['starter_username'] ?? ''),
                 'started_by_name' => $startedByName,
+                'started_by_avatar' => $this->resolveUserProfilePicture((string)($row['starter_profile_picture'] ?? '')),
                 'target_type' => (string)($row['target_type'] ?? 'group'),
                 'target_id' => (int)($row['target_id'] ?? 0),
+                'viewer_vote' => (string)($row['viewer_vote'] ?? ''),
                 'viewer_voted' => !empty($row['viewer_vote']),
-                'votes_needed' => max(1, (int)floor($this->getActiveAdminCount($groupId) / 2) + 1),
+                'admin_count' => $adminCount,
+                'votes_needed' => $votesNeeded,
+                'in_favor_percent' => max(0, min(100, $inFavorPercent)),
+                'against_percent' => max(0, min(100, $againstPercent)),
+                'created_at' => (string)($row['created_at'] ?? ''),
+                'expires_at' => (string)($row['expires_at'] ?? ''),
+                'closed_at' => (string)($row['closed_at'] ?? ''),
             ];
         }
 

@@ -1,6 +1,7 @@
 <?php
 require_once __DIR__ . '/../models/PostModel.php';
 require_once __DIR__ . '/../models/CalendarReminderModel.php';
+require_once __DIR__ . '/../core/Database.php';
 
 class EventsController {
     private $postModel;
@@ -126,8 +127,66 @@ class EventsController {
                 return (int)($b['reminder_added_at_ts'] ?? 0) <=> (int)($a['reminder_added_at_ts'] ?? 0); // most recently added first
             });
 
-        } else { // default: recent (also supports legacy upcoming filter)
-            $filteredEvents = $events;
+        } else { // default: recent (friends personal events + joined-group events)
+            $db = new Database();
+            $pdo = $db->getConnection();
+
+            // Accepted friend ids for current user
+            $friendIds = [];
+            $friendStmt = $pdo->prepare("SELECT friend_id FROM Friends WHERE user_id = ? AND status = 'accepted'");
+            $friendStmt->execute([$userId]);
+            foreach ($friendStmt->fetchAll(PDO::FETCH_COLUMN) as $id) {
+                $friendIds[(int)$id] = true;
+            }
+
+            $friendStmt = $pdo->prepare("SELECT user_id FROM Friends WHERE friend_id = ? AND status = 'accepted'");
+            $friendStmt->execute([$userId]);
+            foreach ($friendStmt->fetchAll(PDO::FETCH_COLUMN) as $id) {
+                $friendIds[(int)$id] = true;
+            }
+
+            // Active membership map for groups appearing in event feed
+            $groupIds = [];
+            foreach ($events as $event) {
+                $gid = (int)($event['group_id'] ?? 0);
+                if ($gid > 0) {
+                    $groupIds[$gid] = true;
+                }
+            }
+
+            $activeGroupIds = [];
+            if (!empty($groupIds)) {
+                $groupIdList = array_keys($groupIds);
+                $placeholders = implode(',', array_fill(0, count($groupIdList), '?'));
+                $membershipSql = "SELECT group_id FROM GroupMember WHERE user_id = ? AND status = 'active' AND group_id IN ($placeholders)";
+                $membershipParams = array_merge([$userId], $groupIdList);
+                $membershipStmt = $pdo->prepare($membershipSql);
+                $membershipStmt->execute($membershipParams);
+                foreach ($membershipStmt->fetchAll(PDO::FETCH_COLUMN) as $gid) {
+                    $activeGroupIds[(int)$gid] = true;
+                }
+            }
+
+            foreach ($events as $event) {
+                $groupId = (int)($event['group_id'] ?? 0);
+                $authorId = (int)($event['author_id'] ?? $event['user_id'] ?? 0);
+
+                if ($authorId === $userId) {
+                    $filteredEvents[] = $event;
+                    continue;
+                }
+
+                if ($groupId > 0) {
+                    if (!empty($activeGroupIds[$groupId])) {
+                        $filteredEvents[] = $event;
+                    }
+                    continue;
+                }
+
+                if (!empty($friendIds[$authorId])) {
+                    $filteredEvents[] = $event;
+                }
+            }
 
             // Keep recent by post creation time (newest first)
             usort($filteredEvents, function($a, $b) use ($toCreatedTimestamp) {
@@ -252,10 +311,58 @@ class EventsController {
             return $type === 'event';
         });
 
+        $db = new Database();
+        $pdo = $db->getConnection();
+
+        $friendIds = [];
+        $friendStmt = $pdo->prepare("SELECT friend_id FROM Friends WHERE user_id = ? AND status = 'accepted'");
+        $friendStmt->execute([$userId]);
+        foreach ($friendStmt->fetchAll(PDO::FETCH_COLUMN) as $id) {
+            $friendIds[(int)$id] = true;
+        }
+
+        $friendStmt = $pdo->prepare("SELECT user_id FROM Friends WHERE friend_id = ? AND status = 'accepted'");
+        $friendStmt->execute([$userId]);
+        foreach ($friendStmt->fetchAll(PDO::FETCH_COLUMN) as $id) {
+            $friendIds[(int)$id] = true;
+        }
+
+        $groupIds = [];
+        foreach ($events as $event) {
+            $gid = (int)($event['group_id'] ?? 0);
+            if ($gid > 0) {
+                $groupIds[$gid] = true;
+            }
+        }
+
+        $activeGroupIds = [];
+        if (!empty($groupIds)) {
+            $groupIdList = array_keys($groupIds);
+            $placeholders = implode(',', array_fill(0, count($groupIdList), '?'));
+            $membershipSql = "SELECT group_id FROM GroupMember WHERE user_id = ? AND status = 'active' AND group_id IN ($placeholders)";
+            $membershipParams = array_merge([$userId], $groupIdList);
+            $membershipStmt = $pdo->prepare($membershipSql);
+            $membershipStmt->execute($membershipParams);
+            foreach ($membershipStmt->fetchAll(PDO::FETCH_COLUMN) as $gid) {
+                $activeGroupIds[(int)$gid] = true;
+            }
+        }
+
         $filteredEvents = [];
         $now = date('Y-m-d H:i:s');
 
         foreach ($events as $event) {
+            $groupId = (int)($event['group_id'] ?? 0);
+            $authorId = (int)($event['author_id'] ?? $event['user_id'] ?? 0);
+
+            if ($groupId > 0) {
+                if (empty($activeGroupIds[$groupId])) {
+                    continue;
+                }
+            } elseif (empty($friendIds[$authorId])) {
+                continue;
+            }
+
             $eventDateTime = trim(($event['event_date'] ?? '') . ' ' . ($event['event_time'] ?? '00:00:00'));
             if ($eventDateTime >= $now) {
                 $postId = (int)($event['post_id'] ?? $event['id'] ?? 0);

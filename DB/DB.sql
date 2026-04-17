@@ -239,7 +239,7 @@ CREATE TABLE GroupGovernanceVoteEvent (
 CREATE TABLE GroupGovernanceVote (
     vote_event_id INT NOT NULL,
     voter_user_id INT NOT NULL,
-    vote_choice ENUM('in_favor', 'not_in_favor') NOT NULL,
+    vote_choice ENUM('in_favor', 'not_in_favor') NULL,
     voted_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (vote_event_id, voter_user_id),
     INDEX idx_ggv_voter (voter_user_id),

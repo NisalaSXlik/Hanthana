@@ -556,14 +556,33 @@
     color: var(--color-dark);
     margin: 0;
     line-height: 1.6;
+    font-size: 0.95rem;
+    flex: 1;
+    opacity: 0.9;
+}
+
+.event-description.is-collapsed {
     display: -webkit-box;
     line-clamp: 3;
     -webkit-line-clamp: 3;
     -webkit-box-orient: vertical;
     overflow: hidden;
-    font-size: 0.95rem;
-    flex: 1;
-    opacity: 0.9;
+}
+
+.event-description-toggle {
+    margin-top: 0.25rem;
+    align-self: flex-start;
+    border: none;
+    background: none;
+    color: var(--color-primary);
+    font-weight: 600;
+    font-size: 0.86rem;
+    cursor: pointer;
+    padding: 0;
+}
+
+.event-description-toggle:hover {
+    text-decoration: underline;
 }
 
 @media (max-width: 640px) {

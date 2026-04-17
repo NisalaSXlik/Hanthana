@@ -269,7 +269,9 @@ function createEventCard(event) {
         extractTimeFromDate(event.event_date);
     const time = formatTime(eventTimeRaw);
     const location = (event.event_location || event.location || 'TBA').trim();
-    const description = event.content || event.description || 'No description available';
+    const description = String(event.content || event.description || 'No description available').trim();
+    const descriptionHtml = escapeHtml(description).replace(/\n/g, '<br>');
+    const isLongDescription = description.length > 220;
     
     const hasGroupContext = !!(event.group_name && event.group_id);
     
@@ -337,9 +339,12 @@ function createEventCard(event) {
                     <div class="event-card-main">
                         <h3 class="event-card-title">${escapeHtml(title)}</h3>
 
-                        <div class="event-description">
-                            ${escapeHtml(description)}
+                        <div class="event-description ${isLongDescription ? 'is-collapsed' : ''}" id="event-desc-${eventId}">
+                            ${descriptionHtml}
                         </div>
+                        ${isLongDescription ? `
+                            <button type="button" class="event-description-toggle" data-target="event-desc-${eventId}" aria-expanded="false">See more</button>
+                        ` : ''}
 
                         <div class="event-meta-compact">
                             <div class="event-detail">
@@ -432,6 +437,27 @@ function initializeEventCardActions() {
             if (!confirmed) return;
 
             await deleteEventPost(eventId);
+        });
+    });
+
+    document.querySelectorAll('.event-description-toggle').forEach(toggleBtn => {
+        if (toggleBtn.dataset.bound === '1') return;
+        toggleBtn.dataset.bound = '1';
+
+        toggleBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+
+            const targetId = toggleBtn.getAttribute('data-target');
+            if (!targetId) return;
+
+            const descriptionEl = document.getElementById(targetId);
+            if (!descriptionEl) return;
+
+            const isCollapsed = descriptionEl.classList.contains('is-collapsed');
+            descriptionEl.classList.toggle('is-collapsed', !isCollapsed);
+            toggleBtn.textContent = isCollapsed ? 'See less' : 'See more';
+            toggleBtn.setAttribute('aria-expanded', isCollapsed ? 'true' : 'false');
         });
     });
 

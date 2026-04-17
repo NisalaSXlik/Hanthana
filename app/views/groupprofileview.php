@@ -176,13 +176,9 @@ if ($resolvedGroupId > 0) {
                                 <input type="text" placeholder="Share something with the group..." readonly id="quickPostTrigger" style="cursor: pointer;">
                             </div>
                             <div class="post-options">
-                                <button class="option" id="photoQuickBtn">
-                                    <i class="uil uil-image"></i>
-                                    <span>Post</span>
-                                </button>
-                                <button class="option" id="pollQuickBtn">
-                                    <i class="uil uil-chart-pie"></i>
-                                    <span>Poll</span>
+                                <button class="option" id="discussionQuickBtn">
+                                    <i class="uil uil-comment-alt-notes"></i>
+                                    <span>Discussion</span>
                                 </button>
                                 <button class="option" id="questionQuickBtn">
                                     <i class="uil uil-question-circle"></i>
@@ -191,6 +187,18 @@ if ($resolvedGroupId > 0) {
                                 <button class="option" id="resourceQuickBtn">
                                     <i class="uil uil-book-alt"></i>
                                     <span>Resource</span>
+                                </button>
+                                <button class="option" id="pollQuickBtn">
+                                    <i class="uil uil-chart-pie"></i>
+                                    <span>Poll</span>
+                                </button>
+                                <button class="option" id="eventQuickBtn">
+                                    <i class="uil uil-calendar-alt"></i>
+                                    <span>Event</span>
+                                </button>
+                                <button class="option" id="alertQuickBtn">
+                                    <i class="uil uil-bell"></i>
+                                    <span>Alert</span>
                                 </button>
                             </div>
                         </div>
@@ -562,41 +570,91 @@ if ($resolvedGroupId > 0) {
                                         $evDate = !empty($event['date']) ? strtotime($event['date']) : null;
                                         $evMonth = $evDate ? strtoupper(date('M', $evDate)) : 'TBD';
                                         $evDay = $evDate ? date('j', $evDate) : '--';
-                                        $evDateLabel = $evDate ? date('M j, Y', $evDate) : 'Date TBA';
                                         $evTime = !empty($event['time']) ? $event['time'] : '';
                                         $evLocation = !empty($event['location']) ? $event['location'] : '';
                                         $description = !empty($event['description']) ? $event['description'] : 'More details coming soon.';
+                                        $eventImage = !empty($event['image_url']) ? MediaHelper::resolveMediaPath($event['image_url'], '') : '';
+                                        $descriptionId = 'group-event-desc-' . (int)$event['post_id'];
+                                        $isLongDescription = mb_strlen(trim((string)$description)) > 220;
+                                        $authorName = trim(($event['first_name'] ?? '') . ' ' . ($event['last_name'] ?? ''));
+                                        if ($authorName === '') {
+                                            $authorName = $event['username'] ?? 'Unknown';
+                                        }
+                                        $avatarUrl = MediaHelper::resolveMediaPath($event['profile_picture'] ?? '', 'uploads/user_dp/default.png');
+                                        $createdTime = !empty($event['created_at']) ? date('M j, Y', strtotime($event['created_at'])) : 'Recently';
                                     ?>
-                                    <div class="event-card">
-                                        <div class="event-date">
-                                            <div class="month"><?php echo htmlspecialchars($evMonth); ?></div>
-                                            <div class="date-number"><?php echo htmlspecialchars($evDay); ?></div>
+                                    <div class="event-card" id="event-card-<?php echo (int)$event['post_id']; ?>" data-event-id="<?php echo (int)$event['post_id']; ?>">
+                                        <div class="event-card-header">
+                                            <div class="event-header-content">
+                                                <div class="event-card-author">
+                                                    <img src="<?php echo htmlspecialchars($avatarUrl); ?>" alt="<?php echo htmlspecialchars($authorName); ?>" class="event-author-avatar" data-user-id="<?php echo (int)($event['user_id'] ?? 0); ?>">
+                                                    <div class="event-author-info">
+                                                        <h4 class="event-author-name" data-user-id="<?php echo (int)($event['user_id'] ?? 0); ?>"><?php echo htmlspecialchars($authorName); ?></h4>
+                                                        <p class="event-author-time"><?php echo htmlspecialchars($createdTime); ?></p>
+                                                    </div>
+                                                </div>
+                                                <div class="event-date-badge">
+                                                    <span class="day"><?php echo htmlspecialchars($evDay); ?></span>
+                                                    <span class="month"><?php echo htmlspecialchars($evMonth); ?></span>
+                                                </div>
+                                            </div>
                                         </div>
-                                        <div class="event-info">
-                                            <h4><?php echo htmlspecialchars($event['title'] ?? 'Untitled Event'); ?></h4>
-                                            <p class="meta"><?php echo htmlspecialchars($evDateLabel); ?><?php echo $evTime ? ' · ' . htmlspecialchars($evTime) : ''; ?><?php echo $evLocation ? ' · ' . htmlspecialchars($evLocation) : ''; ?></p>
-                                            <p><?php echo nl2br(htmlspecialchars($description)); ?></p>
-                                        </div>
-                                        <div class="event-actions">
-                                            <?php
-                                                $isInterested = !empty($event['interested']);
-                                                $buttonIcon = $isInterested ? 'uis-bookmark' : 'uil-star';
-                                                $buttonClass = 'btn btn-primary event-interest-btn' . ($isInterested ? ' interested' : '');
-                                            ?>
-                                            <button
-                                                class="<?php echo $buttonClass; ?>"
-                                                data-post-id="<?php echo (int)$event['post_id']; ?>"
-                                                data-group-id="<?php echo (int)$groupId; ?>"
-                                                data-event-title="<?php echo htmlspecialchars($event['title'] ?? 'Untitled Event'); ?>"
-                                                data-event-date="<?php echo htmlspecialchars($event['date'] ?? ''); ?>"
-                                                data-event-time="<?php echo htmlspecialchars($event['time'] ?? ''); ?>"
-                                                data-event-location="<?php echo htmlspecialchars($evLocation ?: ''); ?>"
-                                                data-event-description="<?php echo htmlspecialchars($description); ?>"
-                                            >
-                                                <i class="uil <?php echo $buttonIcon; ?>"></i>
-                                                Interested
-                                            </button>
-                                            <small><?php echo htmlspecialchars($evLocation ?: 'Location TBA'); ?></small>
+
+                                        <div class="event-card-body">
+                                            <div class="event-card-content">
+                                                <div class="event-card-main">
+                                                    <h3 class="event-card-title"><?php echo htmlspecialchars($event['title'] ?? 'Untitled Event'); ?></h3>
+
+                                                    <div class="event-description <?php echo $isLongDescription ? 'is-collapsed' : ''; ?>" id="<?php echo $descriptionId; ?>">
+                                                        <?php echo nl2br(htmlspecialchars($description)); ?>
+                                                    </div>
+                                                    <?php if ($isLongDescription): ?>
+                                                        <button type="button" class="event-description-toggle" data-target="<?php echo $descriptionId; ?>" aria-expanded="false">See more</button>
+                                                    <?php endif; ?>
+
+                                                    <div class="event-meta-compact">
+                                                        <?php if (!empty($evTime)): ?>
+                                                            <div class="event-detail">
+                                                                <i class="uil uil-clock"></i>
+                                                                <span><strong>Time:</strong><span class="event-detail-value"><?php echo htmlspecialchars($evTime); ?></span></span>
+                                                            </div>
+                                                        <?php endif; ?>
+                                                        <?php if (!empty($evLocation)): ?>
+                                                            <div class="event-detail">
+                                                                <i class="uil uil-location-point"></i>
+                                                                <span><strong>Location:</strong><span class="event-detail-value"><?php echo htmlspecialchars($evLocation); ?></span></span>
+                                                            </div>
+                                                        <?php endif; ?>
+                                                    </div>
+                                                </div>
+
+                                                <?php if (!empty($eventImage)): ?>
+                                                    <div class="event-card-image">
+                                                        <img src="<?php echo htmlspecialchars($eventImage); ?>" alt="Event image" onerror="this.closest('.event-card-image').style.display='none';">
+                                                    </div>
+                                                <?php endif; ?>
+                                            </div>
+
+                                            <div class="event-card-footer">
+                                                <div class="event-stats">
+                                                    <span><i class="uil uil-users-alt"></i> <?php echo (int)($event['going_count'] ?? 0); ?> going</span>
+                                                </div>
+                                                <?php
+                                                    $isInterested = !empty($event['interested']);
+                                                    $buttonIcon = $isInterested ? 'uis uis-bookmark' : 'uil uil-calendar-alt';
+                                                    $buttonClass = 'btn-add-calendar event-interest-btn' . ($isInterested ? ' added' : '');
+                                                    $buttonText = $isInterested ? 'Added' : 'Add Calendar';
+                                                ?>
+                                                <button
+                                                    class="<?php echo $buttonClass; ?>"
+                                                    data-post-id="<?php echo (int)$event['post_id']; ?>"
+                                                    data-group-id="<?php echo (int)$groupId; ?>"
+                                                    aria-label="<?php echo $isInterested ? 'Remove from calendar' : 'Add to calendar'; ?>"
+                                                >
+                                                    <i class="<?php echo $buttonIcon; ?>"></i>
+                                                    <span><?php echo $buttonText; ?></span>
+                                                </button>
+                                            </div>
                                         </div>
                                     </div>
                                 <?php endforeach; ?>
@@ -641,11 +699,6 @@ if ($resolvedGroupId > 0) {
                                         <span>Focus</span>
                                         <strong><?php echo htmlspecialchars($group['focus'] ?? 'General'); ?></strong>
                                     </li>
-                                    <li>
-                                        <i class="uil uil-tag"></i>
-                                        <span>Group Tag</span>
-                                        <strong><?php echo htmlspecialchars($group['tag'] ?? 'N/A'); ?></strong>
-                                    </li>
                                 </ul>
                             </div>
 
@@ -659,6 +712,24 @@ if ($resolvedGroupId > 0) {
                                 </ul>
                             </div>
                             <?php endif; ?>
+                        </div>
+                    </div>
+                </div>
+                <?php endif; ?>
+
+                <?php if (!$isJoined && !$isPublicGroup): ?>
+               <div class="group-content">
+                    <div class="tab-content active">
+                        <div class="events-empty">
+                            <!-- Lock + group SVG -->
+                            <svg width="64" height="64" viewBox="0 0 24 24" fill="none">
+                                <path d="M16 10V8a4 4 0 10-8 0v2" stroke="currentColor" stroke-width="1.5"/>
+                                <rect x="5" y="10" width="14" height="10" rx="2" stroke="currentColor" stroke-width="1.5"/>
+                                <circle cx="12" cy="15" r="1.5" fill="currentColor"/>
+                            </svg>
+
+                            <p>Access restricted</p>
+                            <small>Join this group to view its content</small>
                         </div>
                     </div>
                 </div>
@@ -911,8 +982,8 @@ if ($resolvedGroupId > 0) {
                     </div>
                     <div class="form-group">
                         <label for="groupProblemStatement">What problem are you facing? <span class="required">*</span></label>
-                        <textarea id="groupProblemStatement" name="problem_statement" maxlength="400" rows="4" placeholder="Describe the exact issue, error messages, or blockers."></textarea>
-                        <div class="char-count" data-for="problem_statement">0 / 400</div>
+                        <textarea id="groupProblemStatement" name="problem_statement" maxlength="1000" rows="4" placeholder="Describe the exact issue, error messages, or blockers."></textarea>
+                        <div class="char-count" data-for="problem_statement">0 / 1000</div>
                     </div>
                     <div class="form-group">
                         <label for="groupQuestionTopics">Topics (comma separated)</label>

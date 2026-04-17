@@ -409,6 +409,27 @@
     padding: 0.26rem 0.55rem;
 }
 
+.search-side-item .add-friend-btn {
+    min-width: 4.8rem;
+    height: 1.75rem;
+    padding: 0.2rem 0.45rem;
+    border-radius: 999px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.25rem;
+    white-space: nowrap;
+    line-height: 1;
+}
+
+.search-side-item .add-friend-btn i {
+    font-size: 0.78rem;
+}
+
+.search-side-item .add-friend-btn span {
+    font-size: 0.68rem;
+}
+
 .search-side-empty {
     color: var(--color-gray);
     font-size: 0.82rem;

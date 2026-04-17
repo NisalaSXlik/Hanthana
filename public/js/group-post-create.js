@@ -3,10 +3,12 @@ document.addEventListener('DOMContentLoaded', function() {
     // ===== CREATE POST MODAL =====
     const createPostModal = document.getElementById('createPostModal');
     const quickPostTrigger = document.getElementById('quickPostTrigger');
-    const photoQuickBtn = document.getElementById('photoQuickBtn');
+    const discussionQuickBtn = document.getElementById('discussionQuickBtn');
     const pollQuickBtn = document.getElementById('pollQuickBtn');
     const questionQuickBtn = document.getElementById('questionQuickBtn');
     const resourceQuickBtn = document.getElementById('resourceQuickBtn');
+    const eventQuickBtn = document.getElementById('eventQuickBtn');
+    const alertQuickBtn = document.getElementById('alertQuickBtn');
     const closeCreatePostModal = document.getElementById('closeCreatePostModal');
     const cancelCreatePostBtn = document.getElementById('cancelCreatePostBtn');
     const createGroupPostForm = document.getElementById('createGroupPostForm');
@@ -106,8 +108,8 @@ document.addEventListener('DOMContentLoaded', function() {
         quickPostTrigger.addEventListener('click', () => openCreatePostModal('discussion'));
     }
 
-    if (photoQuickBtn) {
-        photoQuickBtn.addEventListener('click', () => {
+    if (discussionQuickBtn) {
+        discussionQuickBtn.addEventListener('click', () => {
             openCreatePostModal('discussion');
             setTimeout(() => {
                 if (uploadImageBtn) uploadImageBtn.click();
@@ -125,6 +127,14 @@ document.addEventListener('DOMContentLoaded', function() {
 
     if (resourceQuickBtn) {
         resourceQuickBtn.addEventListener('click', () => openCreatePostModal('resource'));
+    }
+
+    if (eventQuickBtn) {
+        eventQuickBtn.addEventListener('click', () => openCreatePostModal('event'));
+    }
+
+    if (alertQuickBtn) {
+        alertQuickBtn.addEventListener('click', () => openCreatePostModal('alert'));
     }
 
     if (closeCreatePostModal) {

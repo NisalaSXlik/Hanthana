@@ -59,10 +59,24 @@ class QuestionModel {
             $personalSql .= " AND q.user_id = ?";
             $personalParams[] = (int)$userId;
         }
-        
-        $personalSql .= " GROUP BY q.question_id";
 
         $sortBy = $filters['sort'] ?? 'recent';
+        $recentFriendsOnly = ($sortBy === 'recent' && empty($filters['mine']));
+        if ($recentFriendsOnly) {
+            $personalSql .= " AND (
+                q.user_id = ?
+                OR q.user_id IN (
+                    SELECT friend_id FROM Friends WHERE user_id = ? AND status = 'accepted'
+                    UNION
+                    SELECT user_id FROM Friends WHERE friend_id = ? AND status = 'accepted'
+                )
+            )";
+            $personalParams[] = (int)$userId;
+            $personalParams[] = (int)$userId;
+            $personalParams[] = (int)$userId;
+        }
+        
+        $personalSql .= " GROUP BY q.question_id";
         $includeGroupQuestions = !(!empty($filters['mine']) || $sortBy === 'my_questions');
         $groupRows = $includeGroupQuestions ? $this->getGroupQuestionsFeed($userId, $filters) : [];
         $questions = $this->runQuestionsQuery($personalSql, $personalParams);
@@ -108,6 +122,9 @@ class QuestionModel {
     }
 
     private function getGroupQuestionsFeed($userId, $filters = []): array {
+        $sortBy = $filters['sort'] ?? 'recent';
+        $recentIncludeOwn = ($sortBy === 'recent' && empty($filters['mine']));
+
         $sql = "SELECT 
                     p.post_id AS question_id,
                     JSON_UNQUOTE(JSON_EXTRACT(p.metadata, '$.title')) AS title,
@@ -135,12 +152,19 @@ class QuestionModel {
                 FROM Post p
                 INNER JOIN Users u ON p.author_id = u.user_id
                 INNER JOIN GroupsTable g ON g.group_id = p.group_id
-                INNER JOIN GroupMember gm ON gm.group_id = p.group_id AND gm.user_id = ? AND gm.status = 'active'
+                LEFT JOIN GroupMember gm ON gm.group_id = p.group_id AND gm.user_id = ? AND gm.status = 'active'
                 WHERE p.is_group_post = 1
                     AND COALESCE(g.is_active, 1) = 1
                     AND p.group_post_type = 'question'";
 
         $params = [$userId, $userId];
+
+        if ($recentIncludeOwn) {
+            $sql .= " AND (gm.group_id IS NOT NULL OR p.author_id = ?)";
+            $params[] = (int)$userId;
+        } else {
+            $sql .= " AND gm.group_id IS NOT NULL";
+        }
 
         if (!empty($filters['category'])) {
             $sql .= " AND JSON_UNQUOTE(JSON_EXTRACT(p.metadata, '$.category')) = ?";

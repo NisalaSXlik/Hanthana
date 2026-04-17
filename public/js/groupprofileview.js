@@ -560,6 +560,26 @@
         });
     });
 
+    // ===== EVENT DESCRIPTION TOGGLE =====
+    const eventDescriptionToggles = document.querySelectorAll('.event-description-toggle');
+    eventDescriptionToggles.forEach((toggleBtn) => {
+        toggleBtn.addEventListener('click', (event) => {
+            event.preventDefault();
+            event.stopPropagation();
+
+            const targetId = toggleBtn.getAttribute('data-target');
+            const desc = document.getElementById(targetId);
+            if (!desc) {
+                return;
+            }
+
+            const isCollapsed = desc.classList.contains('is-collapsed');
+            desc.classList.toggle('is-collapsed', !isCollapsed);
+            toggleBtn.textContent = isCollapsed ? 'See less' : 'See more';
+            toggleBtn.setAttribute('aria-expanded', isCollapsed ? 'true' : 'false');
+        });
+    });
+
     // ===== EVENT INTEREST BUTTONS =====
     const interestButtons = document.querySelectorAll('.event-interest-btn');
     interestButtons.forEach((button) => {
@@ -1093,10 +1113,12 @@
     // ===== CREATE POST MODAL FUNCTIONALITY =====
     const createPostModal = document.getElementById('createPostModal');
     const quickPostTrigger = document.getElementById('quickPostTrigger');
-    const photoQuickBtn = document.getElementById('photoQuickBtn');
+    const discussionQuickBtn = document.getElementById('discussionQuickBtn');
     const pollQuickBtn = document.getElementById('pollQuickBtn');
     const questionQuickBtn = document.getElementById('questionQuickBtn');
     const resourceQuickBtn = document.getElementById('resourceQuickBtn');
+    const eventQuickBtn = document.getElementById('eventQuickBtn');
+    const alertQuickBtn = document.getElementById('alertQuickBtn');
     const openCreatePostBtn = document.getElementById('openCreatePostBtn');
     const closeCreatePostModal = document.getElementById('closeCreatePostModal');
     const cancelCreatePostBtn = document.getElementById('cancelCreatePostBtn');
@@ -1179,7 +1201,7 @@
             if (questionTemplateChips[0]) questionTemplateChips[0].classList.add('active');
 
             const problemCount = createGroupPostForm.querySelector('.char-count[data-for="problem_statement"]');
-            if (problemCount) problemCount.textContent = '0 / 400';
+            if (problemCount) problemCount.textContent = '0 / 1000';
 
             syncConditionalFieldValidation('');
         }
@@ -1277,15 +1299,9 @@
         openCreatePostBtn.addEventListener('click', () => openCreatePostModal('discussion'));
     }
 
-    if (photoQuickBtn) {
-        photoQuickBtn.addEventListener('click', () => {
+    if (discussionQuickBtn) {
+        discussionQuickBtn.addEventListener('click', () => {
             openCreatePostModal('discussion');
-        });
-    }
-
-    if (pollQuickBtn) {
-        pollQuickBtn.addEventListener('click', () => {
-            openCreatePostModal('poll');
         });
     }
 
@@ -1298,6 +1314,24 @@
     if (resourceQuickBtn) {
         resourceQuickBtn.addEventListener('click', () => {
             openCreatePostModal('resource');
+        });
+    }
+
+    if (pollQuickBtn) {
+        pollQuickBtn.addEventListener('click', () => {
+            openCreatePostModal('poll');
+        });
+    }
+
+    if (eventQuickBtn) {
+        eventQuickBtn.addEventListener('click', () => {
+            openCreatePostModal('event');
+        });
+    }
+
+    if (alertQuickBtn) {
+        alertQuickBtn.addEventListener('click', () => {
+            openCreatePostModal('alert');
         });
     }
 
@@ -1354,7 +1388,7 @@
 
     if (groupProblemStatement) {
         groupProblemStatement.addEventListener('input', function() {
-            const max = Number(this.getAttribute('maxlength')) || 400;
+            const max = Number(this.getAttribute('maxlength')) || 1000;
             const target = createGroupPostForm ? createGroupPostForm.querySelector('.char-count[data-for="problem_statement"]') : null;
             if (target) target.textContent = `${this.value.length} / ${max}`;
         });
