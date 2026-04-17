@@ -310,29 +310,58 @@ a {
 }
 
 /* Main Content */
+/* LOCK PAGE SCROLL */
+html,
+body {
+    height: 100%;
+    overflow: hidden;
+}
+
+/* NAV OFFSET WRAPPER */
 main {
     position: relative;
     top: 5rem;
+    height: calc(100vh - 71.18px);
     padding: 1rem 0;
+    overflow: hidden; /* critical: kill main scroll */
 }
 
+/* GRID CONTAINER FILLS MAIN */
 main .container {
+    height: 100%;
     display: grid;
     grid-template-columns: 22% 54% 22%;
     gap: 0.75rem;
+    overflow: hidden; /* prevents bleed */
 }
 
-/* Add breathing room inside center column across pages */
-main .container > .middle {
-    min-width: 0;
-    padding-inline: 0.55rem;
+/* ALL COLUMNS ARE SCROLL CONTAINERS */
+.left,
+.middle,
+.right {
+    min-height: 0;      /* required for grid scroll */
+    height: 100%;
+    overflow-y: auto;
+    overflow-x: hidden;
+
+    scrollbar-width: none;
+    scrollbar-gutter: stable;
 }
 
-/* Left Sidebar */
-.left {
-    position: sticky;
-    top: 6rem;
-    height: fit-content;
+/* HIDE SCROLLBARS (Chrome/WebKit) */
+.left::-webkit-scrollbar,
+.middle::-webkit-scrollbar,
+.right::-webkit-scrollbar {
+    display: none;
+}
+
+/* REMOVE STICKY + FIT CONTENT ENTIRELY */
+.left,
+.right {
+    display: flex;
+    flex-direction: column;
+    position: static;
+    gap: 1rem;
 }
 
 .left .profile {
@@ -342,7 +371,6 @@ main .container > .middle {
     background: var(--color-white);
     padding: var(--card-padding);
     border-radius: var(--card-border-radius);
-    margin-bottom: 1rem;
 }
 
 .left .profile .handle h4 {
@@ -358,7 +386,6 @@ main .container > .middle {
     background: var(--color-white);
     border-radius: var(--card-border-radius);
     padding: 0.5rem;
-    margin-bottom: 1rem;
 }
 
 .menu-item {
@@ -634,7 +661,6 @@ button.menu-item h3 {
     background: var(--color-white);
     border-radius: var(--card-border-radius);
     padding: var(--card-padding);
-    margin: 1rem 0;
 }
 
 .joined-groups-header {
@@ -1327,7 +1353,6 @@ button.menu-item h3 {
     background: var(--color-white);
     border-radius: var(--card-border-radius);
     padding: var(--card-padding);
-    margin-bottom: 1rem;
 }
 
 .right .heading {

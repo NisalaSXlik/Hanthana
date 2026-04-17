@@ -2,7 +2,7 @@
 
 /*-------------discover page--------------*/
 
-body.page-discover {
+/*body.page-discover {
     background-color: var(--color-light);
 }
 
@@ -27,7 +27,7 @@ body.page-discover .right {
 
 body.page-discover .friend-requests .request .info {
     align-items: center;
-}
+}*/
 
 .discover-group-link {
     color: inherit;
@@ -240,7 +240,6 @@ body.page-discover .friend-requests .request .info {
     background: #fff;
     border-radius: 12px;
     padding: 1.25rem;
-    margin-bottom: 1rem;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
@@ -379,7 +378,7 @@ body.page-discover .right > .suggested-section .creator-list::-webkit-scrollbar-
         .suggested-section {
             background: white;
             border-radius: 16px;
-            padding: 20px;
+            padding: var(--card-padding) 0 var(--card-padding) var(--card-padding);
             box-shadow: 0 4px 12px rgba(0,0,0,0.05);
         }
 
@@ -388,6 +387,16 @@ body.page-discover .right > .suggested-section .creator-list::-webkit-scrollbar-
             flex-direction: column;
             gap: 6px;
         }
+
+        /*.creator-list {
+            overflow: auto;
+            scrollbar-width: none;
+            scrollbar-gutter: stable;
+        }
+
+        .creator-list::-webkit-scrollbar {
+            display: none;
+        }*/
 
         .creator-card {
             display: flex;
