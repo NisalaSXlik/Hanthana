@@ -108,10 +108,7 @@
             <div class="about-card about-overview">
                 <h3>About This Group</h3>
                 <p><?php echo htmlspecialchars($group['description'] ?? 'This group does not have a description yet.'); ?></p>
-            </div>
-
-            <div class="about-card about-details">
-                <h4>Key Details</h4>
+            
                 <ul class="about-detail-list">
                     <li>
                         <i class="uil uil-shield-check"></i>
@@ -133,24 +130,8 @@
                         <span>Focus</span>
                         <strong><?php echo htmlspecialchars($group['focus'] ?? 'General'); ?></strong>
                     </li>
-                    <li>
-                        <i class="uil uil-tag"></i>
-                        <span>Group Tag</span>
-                        <strong><?php echo htmlspecialchars($group['tag'] ?? 'N/A'); ?></strong>
-                    </li>
                 </ul>
             </div>
-
-            <?php if (!empty($groupRulesList)): ?>
-            <div class="about-card about-rules">
-                <h4>Group Rules</h4>
-                <ul class="rules-list">
-                    <?php foreach ($groupRulesList as $rule): ?>
-                        <li><i class="uil uil-check-circle"></i><?php echo htmlspecialchars($rule); ?></li>
-                    <?php endforeach; ?>
-                </ul>
-            </div>
-            <?php endif; ?>
         <?php endif; ?>
     </div>
 </div>

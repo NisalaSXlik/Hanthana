@@ -92,15 +92,6 @@ $groupDp = MediaHelper::resolveMediaPath((string)($group['display_picture'] ?? '
                                     <input type="text" id="groupFocus" name="focus" maxlength="100" value="<?php echo htmlspecialchars($group['focus'] ?? ''); ?>">
                                 </div>
 
-                                <div class="form-group">
-                                    <label for="groupPrivacy">Privacy</label>
-                                    <select id="groupPrivacy" name="privacy_status">
-                                        <option value="public" <?php echo (($group['privacy_status'] ?? 'public') === 'public') ? 'selected' : ''; ?>>Public</option>
-                                        <option value="private" <?php echo (($group['privacy_status'] ?? 'public') === 'private') ? 'selected' : ''; ?>>Private</option>
-                                        <option value="secret" <?php echo (($group['privacy_status'] ?? 'public') === 'secret') ? 'selected' : ''; ?>>Secret</option>
-                                    </select>
-                                </div>
-
                                 <div class="form-group gs-full">
                                     <label for="groupRules">Group Rules</label>
                                     <textarea id="groupRules" name="rules" rows="3"><?php echo htmlspecialchars($group['rules'] ?? ''); ?></textarea>
@@ -125,6 +116,33 @@ $groupDp = MediaHelper::resolveMediaPath((string)($group['display_picture'] ?? '
                         </div>
                     </form>
                 </div>
+
+                <div class="gs-card">
+                    <h3>Advanced Settings</h3>
+                    <p>These changes require admin approval through governance votes.</p>
+
+                    <section class="settings-card" id="privacySection">
+                        <div class="card-heading">
+                            <h4>Change Group Privacy</h4>
+                            <p>Modify who can see and join this group. This starts a governance vote.</p>
+                        </div>
+                        <div class="settings-form">
+                            <div class="settings-inline-info">Current visibility: <strong><?php echo ucfirst((string)($group['privacy_status'] ?? 'public')); ?></strong></div>
+                            <button type="button" class="btn-primary" id="openPrivacyVoteModalBtn">Change Visibility</button>
+                        </div>
+                    </section>
+
+                    <section class="settings-card settings-card-danger" id="deleteGroupSection">
+                        <div class="card-heading">
+                            <h4>Delete Group</h4>
+                            <p>This action requires approval from all group admins through a governance vote.</p>
+                        </div>
+                        <div class="settings-form">
+                            <div class="settings-inline-info settings-inline-danger">Deletion vote only. Group is removed only after governance approval.</div>
+                            <button type="button" class="btn-danger" id="openDeleteVoteModalBtn">Start Delete Vote</button>
+                        </div>
+                    </section>
+                </div>
             </div>
 
             <?php include __DIR__ . '/templates/group-right.php'; ?>
@@ -133,10 +151,72 @@ $groupDp = MediaHelper::resolveMediaPath((string)($group['display_picture'] ?? '
 
     <div class="toast-container" id="toastContainer"></div>
 
+    <div id="privacyVoteModal" class="modal-overlay" aria-hidden="true">
+        <div class="modal-content gs-vote-modal" role="dialog" aria-modal="true" aria-labelledby="privacyVoteTitle">
+            <div class="modal-header">
+                <h3 id="privacyVoteTitle">Change Visibility</h3>
+                <button class="modal-close" id="closePrivacyVoteModalBtn" type="button" aria-label="Close">
+                    <i class="uil uil-times"></i>
+                </button>
+            </div>
+            <form id="privacyVoteForm" class="modal-body hf-form">
+                <input type="hidden" name="group_id" value="<?php echo (int)$groupId; ?>">
+                <div class="form-group">
+                    <label for="groupPrivacy">New Visibility</label>
+                    <select id="groupPrivacy" name="to_visibility" required>
+                        <option value="public" <?php echo (($group['privacy_status'] ?? 'public') === 'public') ? 'selected' : ''; ?>>Public</option>
+                        <option value="private" <?php echo (($group['privacy_status'] ?? 'public') === 'private') ? 'selected' : ''; ?>>Private</option>
+                        <option value="secret" <?php echo (($group['privacy_status'] ?? 'public') === 'secret') ? 'selected' : ''; ?>>Secret</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="privacyReason">Reason for Change</label>
+                    <textarea id="privacyReason" name="reason" rows="3" placeholder="Explain why this visibility change is needed..." required></textarea>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" id="cancelPrivacyVoteBtn">Cancel</button>
+                    <button type="submit" class="btn btn-primary" id="submitPrivacyVoteBtn">Start Vote</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="deleteVoteModal" class="modal-overlay" aria-hidden="true">
+        <div class="modal-content gs-vote-modal gs-vote-modal-danger" role="dialog" aria-modal="true" aria-labelledby="deleteVoteTitle">
+            <div class="modal-header">
+                <h3 id="deleteVoteTitle">Start Group Deletion Vote</h3>
+                <button class="modal-close" id="closeDeleteVoteModalBtn" type="button" aria-label="Close">
+                    <i class="uil uil-times"></i>
+                </button>
+            </div>
+            <form id="deleteVoteForm" class="modal-body hf-form">
+                <input type="hidden" name="group_id" value="<?php echo (int)$groupId; ?>">
+                <div class="form-group">
+                    <label for="deleteReason">Reason for Deletion</label>
+                    <textarea id="deleteReason" name="reason" rows="3" placeholder="Explain why this group should be deleted..." required></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="deleteConfirmText">Confirm keyword</label>
+                    <input type="text" id="deleteConfirmText" name="confirm_text" placeholder="Type DELETE" required>
+                    <small>Type DELETE to confirm starting this vote.</small>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" id="cancelDeleteVoteBtn">Cancel</button>
+                    <button type="submit" class="btn btn-danger" id="submitDeleteVoteBtn">Start Delete Vote</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <?php include __DIR__ . '/templates/chat-clean.php'; ?>
     <?php include __DIR__ . '/templates/report-modal.php'; ?>
 
-    <script>const BASE_PATH = '<?php echo BASE_PATH; ?>';</script>
+    <script>
+        const BASE_PATH = '<?php echo BASE_PATH; ?>';
+        const GROUP_ID = <?php echo (int)$groupId; ?>;
+        window.GROUP_ID = GROUP_ID;
+        window.GROUP_PRIVACY_STATUS = '<?php echo addslashes(strtolower((string)($group['privacy_status'] ?? 'public'))); ?>';
+    </script>
     <script src="./js/calender.js?v=20250209_syntax"></script>
     <script src="./js/feed.js"></script>
     <script src="./js/friends.js"></script>

@@ -141,6 +141,12 @@
                                                     <i class="uil uil-ellipsis-v"></i>
                                                 </button>
                                                 <div class="member-menu-dropdown" role="menu">
+                                                    <?php if (!empty($isAdmin) && $memberUserId !== $currentUserId): ?>
+                                                        <button type="button" class="member-menu-item" data-member-action="demote" data-user-id="<?php echo $memberUserId; ?>" data-user-name="<?php echo htmlspecialchars($fullName, ENT_QUOTES, 'UTF-8'); ?>" data-current-role="admin" data-requested-role="member">
+                                                            <svg class="member-menu-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"></path><path d="M8 15l4 4 4-4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+                                                            Demote to member
+                                                        </button>
+                                                    <?php endif; ?>
                                                     <button type="button" class="member-menu-item danger" data-report-type="user" data-target-id="<?php echo $memberUserId; ?>" data-target-label="<?php echo htmlspecialchars('user ' . $fullName, ENT_QUOTES, 'UTF-8'); ?>">
                                                         <svg class="member-menu-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.8"></circle><circle cx="12" cy="9" r="1.4" fill="currentColor"></circle><path d="M12 12.4v4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"></path></svg>
                                                         Report user
@@ -185,6 +191,12 @@
                                                     <i class="uil uil-ellipsis-v"></i>
                                                 </button>
                                                 <div class="member-menu-dropdown" role="menu">
+                                                    <?php if (!empty($isAdmin) && $memberUserId !== $currentUserId): ?>
+                                                        <button type="button" class="member-menu-item" data-member-action="promote" data-user-id="<?php echo $memberUserId; ?>" data-user-name="<?php echo htmlspecialchars($fullName, ENT_QUOTES, 'UTF-8'); ?>" data-current-role="member" data-requested-role="admin">
+                                                            <svg class="member-menu-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 19V5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"></path><path d="M8 9l4-4 4 4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+                                                            Promote to admin
+                                                        </button>
+                                                    <?php endif; ?>
                                                     <?php if (!empty($isAdmin) && $memberUserId !== $currentUserId): ?>
                                                         <button type="button" class="member-menu-item danger" data-member-action="kick" data-user-id="<?php echo $memberUserId; ?>" data-user-name="<?php echo htmlspecialchars($fullName, ENT_QUOTES, 'UTF-8'); ?>">
                                                             <svg class="member-menu-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5h6a2 2 0 0 1 2 2v1H7V7a2 2 0 0 1 2-2z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"></path><path d="M6 8h12l-1 10a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2L6 8z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"></path><path d="M10 12v4M14 12v4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"></path></svg>
@@ -241,6 +253,35 @@
                 <button type="button" class="btn btn-secondary" id="cancelKickBtn">Cancel</button>
                 <button type="button" class="btn btn-danger" id="confirmKickBtn">Kick member</button>
             </div>
+        </div>
+    </div>
+
+    <div id="roleVoteModal" class="modal-overlay" aria-hidden="true">
+        <div class="modal-content" role="dialog" aria-modal="true" aria-labelledby="roleVoteTitle" style="max-width: 34rem;">
+            <div class="modal-header">
+                <h3 id="roleVoteTitle">Start Role Change Vote</h3>
+                <button class="modal-close" id="closeRoleVoteModal" type="button" aria-label="Close">
+                    <i class="uil uil-times"></i>
+                </button>
+            </div>
+            <form id="roleVoteForm" class="modal-body hf-form">
+                <input type="hidden" name="group_id" value="<?php echo (int)$groupId; ?>">
+                <input type="hidden" id="roleVoteTargetUserId" name="target_user_id" value="">
+                <input type="hidden" id="roleVoteFromRole" name="from_role" value="">
+                <input type="hidden" id="roleVoteToRole" name="to_role" value="">
+                <div class="form-group">
+                    <label for="roleVoteMemberName">Member</label>
+                    <input type="text" id="roleVoteMemberName" value="" readonly>
+                </div>
+                <div class="form-group">
+                    <label for="roleVoteReason">Reason for Role Change</label>
+                    <textarea id="roleVoteReason" name="reason" rows="3" placeholder="Explain why this role change is needed..." required></textarea>
+                </div>
+                <div class="modal-footer" style="display:flex;justify-content:flex-end;gap:0.6rem;">
+                    <button type="button" class="btn btn-secondary" id="cancelRoleVoteBtn">Cancel</button>
+                    <button type="submit" class="btn btn-primary" id="submitRoleVoteBtn">Start Vote</button>
+                </div>
+            </form>
         </div>
     </div>
 
