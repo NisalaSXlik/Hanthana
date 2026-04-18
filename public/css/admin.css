@@ -2248,3 +2248,27 @@ table tbody tr:hover {
         align-self: flex-start;
     }
 }
+
+/* Admin dashboard scroll fix: override shared locked-layout styles from general.css */
+html:has(body.admin-page) {
+    height: auto;
+    overflow-y: auto;
+}
+
+body.admin-page {
+    min-height: 100vh;
+    overflow-y: auto !important;
+    overflow-x: hidden;
+}
+
+body.admin-page.modal-open:not(:has(.admin-overlay.open, .quick-modal.open)) {
+    overflow-y: auto !important;
+}
+
+body.admin-page main.admin-container {
+    position: relative;
+    top: 2rem;
+    height: auto;
+    min-height: calc(100vh - 5rem);
+    overflow: visible;
+}
