@@ -466,6 +466,25 @@ $currentUser = $userModel->findById($_SESSION['user_id']);
     <?php endif; ?>
 
     <?php if ($isOwner): ?>
+<?php
+$availableUniversities = [
+    'University of Colombo',
+    'University of Peradeniya',
+    'University of Moratuwa',
+    'University of Sri Jayewardenepura',
+    'University of Kelaniya',
+    'University of Ruhuna',
+    'University of Jaffna',
+    'Uva Wellassa University',
+    'Rajarata University of Sri Lanka',
+    'Sabaragamuwa University of Sri Lanka',
+    'South Eastern University of Sri Lanka',
+    'Eastern University Sri Lanka',
+    'Wayamba University of Sri Lanka',
+    'University of Vavuniya'
+];
+$selectedUniversity = trim((string)($profileUser['university'] ?? ''));
+?>
     <div id="editProfileModal" class="profile-edit-modal" aria-hidden="true">
         <div class="modal-content" role="dialog" aria-modal="true">
             <div class="modal-header">
@@ -474,7 +493,10 @@ $currentUser = $userModel->findById($_SESSION['user_id']);
                     <i class="uil uil-times"></i>
                 </button>
             </div>
-            <form id="editProfileForm" class="modal-body hf-form" enctype="multipart/form-data">
+            <form id="editProfileForm" class="modal-body hf-form" enctype="multipart/form-data"
+                  data-current-username="<?php echo htmlspecialchars($profileUser['username'] ?? '', ENT_QUOTES); ?>"
+                  data-current-email="<?php echo htmlspecialchars($email ?? '', ENT_QUOTES); ?>"
+                  data-current-phone="<?php echo htmlspecialchars($phone ?? '', ENT_QUOTES); ?>">
                 <div id="profileFormMessage" class="form-message" style="display:none;"></div>
                 <div class="form-grid">
                     <div class="form-group">
@@ -488,16 +510,19 @@ $currentUser = $userModel->findById($_SESSION['user_id']);
                     <div class="form-group">
                         <label for="usernameInput">Username</label>
                         <input type="text" id="usernameInput" name="username" maxlength="100" value="<?php echo htmlspecialchars($profileUser['username'] ?? ''); ?>" required>
+                        <span id="username-status-profile" class="hf-field-status" aria-live="polite"></span>
                     </div>
                     <div class="form-group">
                         <label for="emailInput">Email</label>
                         <input type="email" id="emailInput" name="email" value="<?php echo htmlspecialchars($email ?? ''); ?>" required
                                pattern="^[^@\s]+@[a-zA-Z0-9-]+(\.[a-zA-Z0-9-]+)*\.ac\.lk$"
                                title="Use university email ending with .ac.lk (e.g., 2023cs140@stu.ucsc.cmb.ac.lk)">
+                        <span id="email-status-profile" class="hf-field-status" aria-live="polite"></span>
                     </div>
                     <div class="form-group">
                         <label for="phoneInput">Phone Number</label>
                         <input type="text" id="phoneInput" name="phone_number" maxlength="15" value="<?php echo htmlspecialchars($phone ?? ''); ?>">
+                        <span id="phone-status-profile" class="hf-field-status" aria-live="polite"></span>
                     </div>
                     <div class="form-group">
                         <label for="dobInput">Date of Birth</label>
@@ -509,7 +534,19 @@ $currentUser = $userModel->findById($_SESSION['user_id']);
                     </div>
                     <div class="form-group">
                         <label for="universityInput">University</label>
-                        <input type="text" id="universityInput" name="university" maxlength="150" value="<?php echo htmlspecialchars($profileUser['university'] ?? ''); ?>">
+                        <select id="universityInput" name="university">
+                            <option value="">Select University</option>
+                            <?php if ($selectedUniversity !== '' && !in_array($selectedUniversity, $availableUniversities, true)): ?>
+                                <option value="<?php echo htmlspecialchars($selectedUniversity); ?>" selected>
+                                    <?php echo htmlspecialchars($selectedUniversity); ?> (Current)
+                                </option>
+                            <?php endif; ?>
+                            <?php foreach ($availableUniversities as $universityOption): ?>
+                                <option value="<?php echo htmlspecialchars($universityOption); ?>" <?php echo $selectedUniversity === $universityOption ? 'selected' : ''; ?>>
+                                    <?php echo htmlspecialchars($universityOption); ?>
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
                     </div>
                 </div>
                 <div class="form-group full-width">

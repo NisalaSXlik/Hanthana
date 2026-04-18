@@ -124,27 +124,143 @@ document.addEventListener('DOMContentLoaded', () => {
         return /^[^@\s]+@[a-z0-9-]+(?:\.[a-z0-9-]+)*\.ac\.lk$/i.test(String(email || '').trim());
     };
 
+    const isValidPhone = (phone) => {
+        const trimmedPhone = String(phone || '').trim();
+        return trimmedPhone === '' || /^\d{10}$/.test(trimmedPhone.replace(/\D/g, ''));
+    };
+
+    const usernameInput = document.getElementById('usernameInput');
+    const phoneInput = document.getElementById('phoneInput');
+    const usernameStatus = document.getElementById('username-status-profile');
+    const emailStatus = document.getElementById('email-status-profile');
+    const phoneStatus = document.getElementById('phone-status-profile');
+
+    function setStatus(field, message, isError, icon) {
+        const statusEl = field === 'username' ? usernameStatus : field === 'email' ? emailStatus : phoneStatus;
+        if (!statusEl) return;
+        statusEl.textContent = message ? `${icon || ''} ${message}`.trim() : '';
+        statusEl.classList.toggle('is-error', Boolean(message) && Boolean(isError));
+        statusEl.classList.toggle('is-success', Boolean(message) && !Boolean(isError));
+    }
+
+    function setFieldValidity(field, message) {
+        const input = field === 'username' ? usernameInput : field === 'email' ? emailInput : phoneInput;
+        if (!input) return;
+        input.setCustomValidity(message || '');
+        input.classList.toggle('error', Boolean(message));
+    }
+
     const validateProfileEmailInput = () => {
         if (!emailInput) return true;
 
         const email = emailInput.value.trim();
         if (!email) {
             emailInput.setCustomValidity('Email is required.');
+            setStatus('email', 'Email is required.', true, '!');
             return false;
         }
 
         if (!isValidUniversityEmail(email)) {
             emailInput.setCustomValidity('Use university email ending with .ac.lk');
+            setStatus('email', 'Use university email ending with .ac.lk', true, '!');
             return false;
         }
 
         emailInput.setCustomValidity('');
+        setStatus('email', 'Email is valid.', false, '✓');
+        return true;
+    };
+
+    const validateProfileUsernameInput = async () => {
+        if (!usernameInput) return true;
+
+        const username = usernameInput.value.trim();
+        if (!username) {
+            setStatus('username', '', false);
+            setFieldValidity('username', '');
+            return true;
+        }
+
+        if (!/^[a-zA-Z0-9_]+$/.test(username)) {
+            const message = 'Username can only contain letters, numbers, and underscores.';
+            setStatus('username', message, true, '!');
+            setFieldValidity('username', message);
+            return false;
+        }
+
+        const currentUsername = form?.dataset?.currentUsername || '';
+        if (username === currentUsername) {
+            setStatus('username', 'Username unchanged.', false, '✓');
+            setFieldValidity('username', '');
+            return true;
+        }
+
+        // Check availability
+        setStatus('username', 'Checking availability...', false);
+        setFieldValidity('username', '');
+
+        try {
+            const url = `${BASE_PATH}index.php?controller=Auth&action=checkAvailability&exclude_current=1&field=username&value=${encodeURIComponent(username)}`;
+            const response = await fetch(url);
+            const data = await response.json();
+            
+            if (data.available) {
+                setStatus('username', 'Username is available.', false, '✓');
+                setFieldValidity('username', '');
+                return true;
+            } else {
+                const message = data.message || 'Username is not available.';
+                setStatus('username', message, true, '!');
+                setFieldValidity('username', message);
+                return false;
+            }
+        } catch (error) {
+            console.error('Availability check failed:', error);
+            const message = 'Unable to verify availability right now.';
+            setStatus('username', message, true, '!');
+            setFieldValidity('username', message);
+            return false;
+        }
+    };
+
+    const validateProfilePhoneInput = () => {
+        if (!phoneInput) return true;
+
+        const phone = phoneInput.value.trim();
+        if (!phone) {
+            setStatus('phone', '', false);
+            setFieldValidity('phone', '');
+            return true;
+        }
+
+        if (!isValidPhone(phone)) {
+            const message = 'Phone number must be exactly 10 digits.';
+            setStatus('phone', message, true, '!');
+            setFieldValidity('phone', message);
+            return false;
+        }
+
+        setStatus('phone', 'Phone number is valid.', false, '✓');
+        setFieldValidity('phone', '');
         return true;
     };
 
     if (emailInput) {
         emailInput.addEventListener('input', validateProfileEmailInput);
         emailInput.addEventListener('blur', validateProfileEmailInput);
+    }
+
+    if (usernameInput) {
+        let usernameTimeout;
+        usernameInput.addEventListener('input', () => {
+            clearTimeout(usernameTimeout);
+            usernameTimeout = setTimeout(() => validateProfileUsernameInput(), 500);
+        });
+    }
+
+    if (phoneInput) {
+        phoneInput.addEventListener('blur', validateProfilePhoneInput);
+        phoneInput.addEventListener('input', validateProfilePhoneInput);
     }
 
     function showToast(message, type = 'success') {
@@ -335,8 +451,24 @@ document.addEventListener('DOMContentLoaded', () => {
             event.preventDefault();
             console.log('=== FORM SUBMIT STARTED ===');
 
+            // Validate all fields before submitting
+            if (!form.checkValidity()) {
+                form.reportValidity();
+                return;
+            }
+
             if (!validateProfileEmailInput()) {
                 emailInput?.reportValidity();
+                return;
+            }
+
+            if (!await validateProfileUsernameInput()) {
+                usernameInput?.reportValidity();
+                return;
+            }
+
+            if (!validateProfilePhoneInput()) {
+                phoneInput?.reportValidity();
                 return;
             }
             
