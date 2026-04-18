@@ -355,6 +355,22 @@ class EventsController {
             $groupId = (int)($event['group_id'] ?? 0);
             $authorId = (int)($event['author_id'] ?? $event['user_id'] ?? 0);
 
+            if ($authorId === $userId) {
+                $eventDateTime = trim(($event['event_date'] ?? '') . ' ' . ($event['event_time'] ?? '00:00:00'));
+                if ($eventDateTime >= $now) {
+                    $postId = (int)($event['post_id'] ?? $event['id'] ?? 0);
+                    if ($postId <= 0) {
+                        continue;
+                    }
+
+                    $event['post_id'] = $postId;
+                    $event['going_count'] = $this->calendarModel->getGoingCount($postId);
+                    $event['is_going'] = $this->calendarModel->getReminderForPost($userId, $postId) ? 1 : 0;
+                    $filteredEvents[] = $event;
+                }
+                continue;
+            }
+
             if ($groupId > 0) {
                 if (empty($activeGroupIds[$groupId])) {
                     continue;
