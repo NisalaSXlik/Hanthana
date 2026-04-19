@@ -5,6 +5,7 @@ class GroupReportsController extends BaseController
     private GroupModel $groupModel;
     private UserModel $userModel;
     private ReportModel $reportModel;
+    private MessageModel $messageModel;
 
     public function __construct()
     {
@@ -13,6 +14,7 @@ class GroupReportsController extends BaseController
         $this->groupModel = new GroupModel();
         $this->userModel = new UserModel();
         $this->reportModel = new ReportModel();
+        $this->messageModel = new MessageModel();
     }
 
     public function index()
@@ -50,7 +52,19 @@ class GroupReportsController extends BaseController
 
         $reportRows = $this->reportModel->getGroupModerationReports($groupId, 250);
         foreach ($reportRows as $row) {
+            $normalizedTargetType = strtolower((string)($row['target_type'] ?? ''));
+            if (in_array($normalizedTargetType, ['media', 'binmedia', 'bin-media'], true)) {
+                $row['target_type'] = 'bin_media';
+            }
+
             $bucket = $this->resolveBucket((string)($row['target_type'] ?? ''));
+            if ($bucket === 'messages') {
+                $messageContext = $this->messageModel->getMessageForReport((int)($row['target_id'] ?? 0));
+                if (!empty($messageContext)) {
+                    $row['conversation_id'] = (int)($messageContext['conversation_id'] ?? 0);
+                    $row['channel_id'] = (int)($messageContext['channel_id'] ?? 0);
+                }
+            }
             $row['target_url'] = $this->buildTargetUrl($row, $groupId);
             $row['context_label'] = !empty($row['group_id']) ? ('Group #' . (int)$row['group_id']) : 'System';
             $row['target_label'] = ucfirst(str_replace('_', ' ', (string)($row['target_type'] ?? 'target')));
@@ -163,7 +177,6 @@ class GroupReportsController extends BaseController
         $updated = $this->reportModel->updateModerationReport($reportId, $userId, [
             'status' => $_POST['status'] ?? null,
             'action_taken' => $_POST['action_taken'] ?? null,
-            'description' => $_POST['description'] ?? null,
             'reviewer_note' => $_POST['reviewer_note'] ?? null,
         ]);
 
@@ -203,7 +216,7 @@ class GroupReportsController extends BaseController
     private function resolveBucket(string $targetType): string
     {
         $targetType = strtolower($targetType);
-        if (in_array($targetType, ['bin', 'bin_media'], true)) {
+        if (in_array($targetType, ['bin', 'bin_media', 'media', 'binmedia', 'bin-media'], true)) {
             return 'filebank';
         }
         if ($targetType === 'message') {
@@ -226,6 +239,9 @@ class GroupReportsController extends BaseController
             'channel' => 'Restricted',
             'bin' => 'Removed',
             'bin_media' => 'Removed',
+            'media' => 'Removed',
+            'binmedia' => 'Removed',
+            'bin-media' => 'Removed',
             'group' => 'Restricted',
             'user' => 'warned',
         ];
@@ -282,6 +298,13 @@ class GroupReportsController extends BaseController
                     return $base . 'controller=FileBank&action=index&group_id=' . $effectiveGroupId . '#media-' . $targetId;
                 }
                 return $base . 'controller=Feed&action=index';
+            case 'media':
+            case 'binmedia':
+            case 'bin-media':
+                if ($effectiveGroupId > 0) {
+                    return $base . 'controller=FileBank&action=index&group_id=' . $effectiveGroupId . '#media-' . $targetId;
+                }
+                return $base . 'controller=Feed&action=index';
             case 'channel':
                 if ($effectiveGroupId > 0) {
                     return $base . 'controller=ChannelPage&action=index&group_id=' . $effectiveGroupId . '#channel-' . $targetId;
@@ -289,7 +312,12 @@ class GroupReportsController extends BaseController
                 return $base . 'controller=Feed&action=index';
             case 'message':
                 if ($effectiveGroupId > 0) {
-                    return $base . 'controller=ChannelPage&action=index&group_id=' . $effectiveGroupId . '#message-' . $targetId;
+                    $conversationId = (int)($report['conversation_id'] ?? 0);
+                    $url = $base . 'controller=ChannelPage&action=index&group_id=' . $effectiveGroupId;
+                    if ($conversationId > 0) {
+                        $url .= '&conversation_id=' . $conversationId;
+                    }
+                    return $url . '#message-' . $targetId;
                 }
                 return $base . 'controller=Feed&action=index';
             default:

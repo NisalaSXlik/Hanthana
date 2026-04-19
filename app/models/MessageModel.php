@@ -753,7 +753,7 @@ class MessageModel {
 
     public function getMessageForReport(int $messageId): ?array {
         $sql = "
-            SELECT m.message_id, m.sender_id, ch.group_id
+                        SELECT m.message_id, m.conversation_id, m.sender_id, ch.channel_id, ch.group_id
             FROM Messages m
             INNER JOIN Conversations c ON c.conversation_id = m.conversation_id
             LEFT JOIN Channel ch ON ch.conversation_id = c.conversation_id

@@ -48,6 +48,81 @@
         'messages' => [],
         'channels' => [],
     ];
+
+    $renderModerationQueue = function (array $rows, string $emptyMessage) {
+        if (empty($rows)) {
+            echo '<p class="muted empty-state">' . htmlspecialchars($emptyMessage) . '</p>';
+            return;
+        }
+
+        echo '<ul class="complaint-board-list moderation-queue-list">';
+
+        foreach ($rows as $row) {
+            $status = strtolower((string)($row['status'] ?? 'pending'));
+            $statusClass = $status === 'resolved' ? 'status-resolved' : ($status === 'reviewed' ? 'status-reviewed' : 'status-pending');
+            $detailPayload = htmlspecialchars(json_encode([
+                'report_id' => (int)($row['report_id'] ?? 0),
+                'target_type' => (string)($row['target_type'] ?? ''),
+                'target_label' => (string)($row['target_label'] ?? ''),
+                'target_url' => (string)($row['target_url'] ?? '#'),
+                'owner_label' => (string)($row['owner_label'] ?? 'N/A'),
+                'context_label' => (string)($row['context_label'] ?? 'System'),
+                'reason' => (string)($row['report_type'] ?? 'other'),
+                'status' => $status,
+                'target_id' => (int)($row['target_id'] ?? 0),
+                'group_id' => (int)($row['group_id'] ?? 0),
+                'reported_user_id' => (int)($row['reported_user_id'] ?? 0),
+                'report_type' => (string)($row['report_type'] ?? 'other'),
+                'action_taken' => (string)($row['action_taken'] ?? 'none'),
+                'reviewer_note' => (string)($row['reviewer_note'] ?? ''),
+                'description' => (string)($row['description'] ?? ''),
+                'reporter' => (string)($row['reporter_username'] ?? 'Unknown'),
+                'reporter_id' => (int)($row['reporter_id'] ?? 0),
+                'created_at' => (string)($row['created_at'] ?? ''),
+                'reviewed_by' => (string)($row['reviewed_by_username'] ?? ''),
+                'reviewed_at' => (string)($row['reviewed_at'] ?? '')
+            ], JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP), ENT_QUOTES, 'UTF-8');
+
+            $targetType = htmlspecialchars(ucfirst(str_replace('_', ' ', (string)($row['target_type'] ?? 'unknown'))));
+            $targetUrl = htmlspecialchars((string)($row['target_url'] ?? '#'));
+            $ownerLabel = htmlspecialchars((string)($row['owner_label'] ?? 'N/A'));
+            $reportType = htmlspecialchars(ucfirst((string)($row['report_type'] ?? 'other')));
+            $targetLabel = trim((string)($row['target_label'] ?? ''));
+            if ($targetLabel === '') {
+                $targetLabel = trim((string)($row['context_label'] ?? 'System'));
+            }
+            $targetLabel = htmlspecialchars($targetLabel !== '' ? $targetLabel : 'Target');
+            $conversationId = (int)($row['conversation_id'] ?? 0);
+            $channelId = (int)($row['channel_id'] ?? 0);
+            $messageId = (int)($row['target_id'] ?? 0);
+
+            echo '<li class="complaint-board-item moderation-queue-item" data-report-id="' . (int)($row['report_id'] ?? 0) . '">';
+            echo '<div class="complaint-summary moderation-queue-summary">';
+            echo '<div class="moderation-queue-grid">';
+            echo '<div class="moderation-queue-field"><span>Type</span><strong>' . $targetType . '</strong></div>';
+            if (strtolower((string)($row['target_type'] ?? '')) === 'message' && $conversationId > 0 && $messageId > 0) {
+                echo '<div class="moderation-queue-field"><span>Target</span><button type="button" class="btn btn-sm btn-view-outline js-open-message-chat" '
+                    . 'data-conversation-id="' . $conversationId . '" '
+                    . 'data-message-id="' . $messageId . '" '
+                    . 'data-target-url="' . $targetUrl . '">View</button></div>';
+            } else {
+                echo '<div class="moderation-queue-field"><span>Target</span><a class="btn btn-sm btn-view-outline" href="' . $targetUrl . '">View</a></div>';
+            }
+            echo '<div class="moderation-queue-field"><span>Owner</span><strong>' . $ownerLabel . '</strong></div>';
+            echo '<div class="moderation-queue-field"><span>Reason</span><strong>' . $reportType . '</strong></div>';
+            echo '<div class="moderation-queue-field"><span>Status</span><span class="status-pill ' . htmlspecialchars($statusClass) . '">' . htmlspecialchars(ucfirst($status)) . '</span></div>';
+            echo '</div>';
+            echo '</div>';
+            echo '<div class="complaint-actions moderation-queue-actions">';
+            echo '<button class="btn btn-sm btn-edit-outline js-open-report-edit" data-report="' . $detailPayload . '" type="button">'
+                . '<svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true" focusable="false"><path fill="currentColor" d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zm17.71-10.04a1.003 1.003 0 0 0 0-1.42l-2.5-2.5a1.003 1.003 0 0 0-1.42 0l-1.83 1.83 3.75 3.75 2-1.66z"/></svg>'
+                . '<span>Edit</span></button>';
+            echo '</div>';
+            echo '</li>';
+        }
+
+        echo '</ul>';
+    };
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -100,233 +175,25 @@
                     <div class="group-content moderation-content">
                         <div class="tab-content active" id="content-content">
                             <div class="mod-section-card">
-                                <table class="mod-table moderation-queue-table">
-                                    <thead>
-                                        <tr>
-                                            <th>Type</th>
-                                            <th>Target</th>
-                                            <th>Owner</th>
-                                            <th>Reason</th>
-                                            <th>Status</th>
-                                            <th>Action</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <?php if (!empty($reportsByTab['content'])): ?>
-                                            <?php foreach ($reportsByTab['content'] as $row): ?>
-                                                <?php
-                                                    $status = strtolower((string)($row['status'] ?? 'pending'));
-                                                    $statusClass = $status === 'resolved' ? 'status-resolved' : ($status === 'reviewed' ? 'status-reviewed' : 'status-pending');
-                                                    $detailPayload = htmlspecialchars(json_encode([
-                                                        'report_id' => (int)($row['report_id'] ?? 0),
-                                                        'target_type' => (string)($row['target_type'] ?? ''),
-                                                        'target_label' => (string)($row['target_label'] ?? ''),
-                                                        'target_url' => (string)($row['target_url'] ?? '#'),
-                                                        'owner_label' => (string)($row['owner_label'] ?? 'N/A'),
-                                                        'context_label' => (string)($row['context_label'] ?? 'System'),
-                                                        'reason' => (string)($row['report_type'] ?? 'other'),
-                                                        'status' => $status,
-                                                        'target_id' => (int)($row['target_id'] ?? 0),
-                                                        'group_id' => (int)($row['group_id'] ?? 0),
-                                                        'reported_user_id' => (int)($row['reported_user_id'] ?? 0),
-                                                        'report_type' => (string)($row['report_type'] ?? 'other'),
-                                                        'action_taken' => (string)($row['action_taken'] ?? 'none'),
-                                                        'reviewer_note' => (string)($row['reviewer_note'] ?? ''),
-                                                        'description' => (string)($row['description'] ?? ''),
-                                                        'reporter' => (string)($row['reporter_username'] ?? 'Unknown'),
-                                                        'created_at' => (string)($row['created_at'] ?? ''),
-                                                        'reviewed_by' => (string)($row['reviewed_by_username'] ?? ''),
-                                                        'reviewed_at' => (string)($row['reviewed_at'] ?? '')
-                                                    ], JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP), ENT_QUOTES, 'UTF-8');
-                                                ?>
-                                                <tr>
-                                                    <td><?php echo htmlspecialchars(ucfirst(str_replace('_', ' ', (string)$row['target_type']))); ?></td>
-                                                    <td><a class="btn btn-secondary btn-sm" href="<?php echo htmlspecialchars((string)$row['target_url']); ?>">View</a></td>
-                                                    <td><?php echo htmlspecialchars((string)$row['owner_label']); ?></td>
-                                                    <td><?php echo htmlspecialchars(ucfirst((string)$row['report_type'])); ?></td>
-                                                    <td><span class="status-pill <?php echo $statusClass; ?>"><?php echo htmlspecialchars(ucfirst($status)); ?></span></td>
-                                                    <td><button class="btn btn-secondary btn-sm js-open-report-edit" data-report="<?php echo $detailPayload; ?>" type="button">Edit</button></td>
-                                                </tr>
-                                            <?php endforeach; ?>
-                                        <?php else: ?>
-                                            <tr><td colspan="6" class="muted">No content reports for this group yet.</td></tr>
-                                        <?php endif; ?>
-                                    </tbody>
-                                </table>
+                                <?php $renderModerationQueue($reportsByTab['content'] ?? [], 'No content reports for this group yet.'); ?>
                             </div>
                         </div>
 
                         <div class="tab-content" id="filebank-content">
                             <div class="mod-section-card">
-                                <table class="mod-table moderation-queue-table">
-                                    <thead>
-                                        <tr>
-                                            <th>Type</th>
-                                            <th>Target</th>
-                                            <th>Owner</th>
-                                            <th>Reason</th>
-                                            <th>Status</th>
-                                            <th>Action</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <?php if (!empty($reportsByTab['filebank'])): ?>
-                                            <?php foreach ($reportsByTab['filebank'] as $row): ?>
-                                                <?php
-                                                    $status = strtolower((string)($row['status'] ?? 'pending'));
-                                                    $statusClass = $status === 'resolved' ? 'status-resolved' : ($status === 'reviewed' ? 'status-reviewed' : 'status-pending');
-                                                    $detailPayload = htmlspecialchars(json_encode([
-                                                        'report_id' => (int)($row['report_id'] ?? 0),
-                                                        'target_type' => (string)($row['target_type'] ?? ''),
-                                                        'target_label' => (string)($row['target_label'] ?? ''),
-                                                        'target_url' => (string)($row['target_url'] ?? '#'),
-                                                        'owner_label' => (string)($row['owner_label'] ?? 'N/A'),
-                                                        'context_label' => (string)($row['context_label'] ?? 'System'),
-                                                        'reason' => (string)($row['report_type'] ?? 'other'),
-                                                        'status' => $status,
-                                                        'target_id' => (int)($row['target_id'] ?? 0),
-                                                        'group_id' => (int)($row['group_id'] ?? 0),
-                                                        'reported_user_id' => (int)($row['reported_user_id'] ?? 0),
-                                                        'report_type' => (string)($row['report_type'] ?? 'other'),
-                                                        'action_taken' => (string)($row['action_taken'] ?? 'none'),
-                                                        'reviewer_note' => (string)($row['reviewer_note'] ?? ''),
-                                                        'description' => (string)($row['description'] ?? ''),
-                                                        'reporter' => (string)($row['reporter_username'] ?? 'Unknown'),
-                                                        'created_at' => (string)($row['created_at'] ?? ''),
-                                                        'reviewed_by' => (string)($row['reviewed_by_username'] ?? ''),
-                                                        'reviewed_at' => (string)($row['reviewed_at'] ?? '')
-                                                    ], JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP), ENT_QUOTES, 'UTF-8');
-                                                ?>
-                                                <tr>
-                                                    <td><?php echo htmlspecialchars(ucfirst(str_replace('_', ' ', (string)$row['target_type']))); ?></td>
-                                                    <td><a class="btn btn-secondary btn-sm" href="<?php echo htmlspecialchars((string)$row['target_url']); ?>">View</a></td>
-                                                    <td><?php echo htmlspecialchars((string)$row['owner_label']); ?></td>
-                                                    <td><?php echo htmlspecialchars(ucfirst((string)$row['report_type'])); ?></td>
-                                                    <td><span class="status-pill <?php echo $statusClass; ?>"><?php echo htmlspecialchars(ucfirst($status)); ?></span></td>
-                                                    <td><button class="btn btn-secondary btn-sm js-open-report-edit" data-report="<?php echo $detailPayload; ?>" type="button">Edit</button></td>
-                                                </tr>
-                                            <?php endforeach; ?>
-                                        <?php else: ?>
-                                            <tr><td colspan="6" class="muted">No file bank reports for this group yet.</td></tr>
-                                        <?php endif; ?>
-                                    </tbody>
-                                </table>
+                                <?php $renderModerationQueue($reportsByTab['filebank'] ?? [], 'No bin or bin media reports for this group yet.'); ?>
                             </div>
                         </div>
 
                         <div class="tab-content" id="messages-content">
                             <div class="mod-section-card">
-                                <table class="mod-table moderation-queue-table" style="margin-top: 1rem;">
-                                    <thead>
-                                        <tr>
-                                            <th>Type</th>
-                                            <th>Target</th>
-                                            <th>Owner</th>
-                                            <th>Reason</th>
-                                            <th>Status</th>
-                                            <th>Action</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <?php if (!empty($reportsByTab['messages'])): ?>
-                                            <?php foreach ($reportsByTab['messages'] as $row): ?>
-                                                <?php
-                                                    $status = strtolower((string)($row['status'] ?? 'pending'));
-                                                    $statusClass = $status === 'resolved' ? 'status-resolved' : ($status === 'reviewed' ? 'status-reviewed' : 'status-pending');
-                                                    $detailPayload = htmlspecialchars(json_encode([
-                                                        'report_id' => (int)($row['report_id'] ?? 0),
-                                                        'target_type' => (string)($row['target_type'] ?? ''),
-                                                        'target_label' => (string)($row['target_label'] ?? ''),
-                                                        'target_url' => (string)($row['target_url'] ?? '#'),
-                                                        'owner_label' => (string)($row['owner_label'] ?? 'N/A'),
-                                                        'context_label' => (string)($row['context_label'] ?? 'System'),
-                                                        'reason' => (string)($row['report_type'] ?? 'other'),
-                                                        'status' => $status,
-                                                        'target_id' => (int)($row['target_id'] ?? 0),
-                                                        'group_id' => (int)($row['group_id'] ?? 0),
-                                                        'reported_user_id' => (int)($row['reported_user_id'] ?? 0),
-                                                        'report_type' => (string)($row['report_type'] ?? 'other'),
-                                                        'action_taken' => (string)($row['action_taken'] ?? 'none'),
-                                                        'reviewer_note' => (string)($row['reviewer_note'] ?? ''),
-                                                        'description' => (string)($row['description'] ?? ''),
-                                                        'reporter' => (string)($row['reporter_username'] ?? 'Unknown'),
-                                                        'created_at' => (string)($row['created_at'] ?? ''),
-                                                        'reviewed_by' => (string)($row['reviewed_by_username'] ?? ''),
-                                                        'reviewed_at' => (string)($row['reviewed_at'] ?? '')
-                                                    ], JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP), ENT_QUOTES, 'UTF-8');
-                                                ?>
-                                                <tr>
-                                                    <td><?php echo htmlspecialchars(ucfirst(str_replace('_', ' ', (string)$row['target_type']))); ?></td>
-                                                    <td><a class="btn btn-secondary btn-sm" href="<?php echo htmlspecialchars((string)$row['target_url']); ?>">View</a></td>
-                                                    <td><?php echo htmlspecialchars((string)$row['owner_label']); ?></td>
-                                                    <td><?php echo htmlspecialchars(ucfirst((string)$row['report_type'])); ?></td>
-                                                    <td><span class="status-pill <?php echo $statusClass; ?>"><?php echo htmlspecialchars(ucfirst($status)); ?></span></td>
-                                                    <td><button class="btn btn-secondary btn-sm js-open-report-edit" data-report="<?php echo $detailPayload; ?>" type="button">Edit</button></td>
-                                                </tr>
-                                            <?php endforeach; ?>
-                                        <?php else: ?>
-                                            <tr><td colspan="6" class="muted">No message reports for this group yet.</td></tr>
-                                        <?php endif; ?>
-                                    </tbody>
-                                </table>
+                                <?php $renderModerationQueue($reportsByTab['messages'] ?? [], 'No message reports for this group yet.'); ?>
                             </div>
                         </div>
 
                         <div class="tab-content" id="channels-content">
                             <div class="mod-section-card">
-                                <table class="mod-table moderation-queue-table">
-                                    <thead>
-                                        <tr>
-                                            <th>Type</th>
-                                            <th>Target</th>
-                                            <th>Owner</th>
-                                            <th>Reason</th>
-                                            <th>Status</th>
-                                            <th>Action</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <?php if (!empty($reportsByTab['channels'])): ?>
-                                            <?php foreach ($reportsByTab['channels'] as $row): ?>
-                                                <?php
-                                                    $status = strtolower((string)($row['status'] ?? 'pending'));
-                                                    $statusClass = $status === 'resolved' ? 'status-resolved' : ($status === 'reviewed' ? 'status-reviewed' : 'status-pending');
-                                                    $detailPayload = htmlspecialchars(json_encode([
-                                                        'report_id' => (int)($row['report_id'] ?? 0),
-                                                        'target_type' => (string)($row['target_type'] ?? ''),
-                                                        'target_label' => (string)($row['target_label'] ?? ''),
-                                                        'target_url' => (string)($row['target_url'] ?? '#'),
-                                                        'owner_label' => (string)($row['owner_label'] ?? 'N/A'),
-                                                        'context_label' => (string)($row['context_label'] ?? 'System'),
-                                                        'reason' => (string)($row['report_type'] ?? 'other'),
-                                                        'status' => $status,
-                                                        'target_id' => (int)($row['target_id'] ?? 0),
-                                                        'group_id' => (int)($row['group_id'] ?? 0),
-                                                        'reported_user_id' => (int)($row['reported_user_id'] ?? 0),
-                                                        'report_type' => (string)($row['report_type'] ?? 'other'),
-                                                        'action_taken' => (string)($row['action_taken'] ?? 'none'),
-                                                        'reviewer_note' => (string)($row['reviewer_note'] ?? ''),
-                                                        'description' => (string)($row['description'] ?? ''),
-                                                        'reporter' => (string)($row['reporter_username'] ?? 'Unknown'),
-                                                        'created_at' => (string)($row['created_at'] ?? ''),
-                                                        'reviewed_by' => (string)($row['reviewed_by_username'] ?? ''),
-                                                        'reviewed_at' => (string)($row['reviewed_at'] ?? '')
-                                                    ], JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP), ENT_QUOTES, 'UTF-8');
-                                                ?>
-                                                <tr>
-                                                    <td><?php echo htmlspecialchars(ucfirst(str_replace('_', ' ', (string)$row['target_type']))); ?></td>
-                                                    <td><a class="btn btn-secondary btn-sm" href="<?php echo htmlspecialchars((string)$row['target_url']); ?>">View</a></td>
-                                                    <td><?php echo htmlspecialchars((string)$row['owner_label']); ?></td>
-                                                    <td><?php echo htmlspecialchars(ucfirst((string)$row['report_type'])); ?></td>
-                                                    <td><span class="status-pill <?php echo $statusClass; ?>"><?php echo htmlspecialchars(ucfirst($status)); ?></span></td>
-                                                    <td><button class="btn btn-secondary btn-sm js-open-report-edit" data-report="<?php echo $detailPayload; ?>" type="button">Edit</button></td>
-                                                </tr>
-                                            <?php endforeach; ?>
-                                        <?php else: ?>
-                                            <tr><td colspan="6" class="muted">No channel reports for this group yet.</td></tr>
-                                        <?php endif; ?>
-                                    </tbody>
-                                </table>
+                                <?php $renderModerationQueue($reportsByTab['channels'] ?? [], 'No channel reports for this group yet.'); ?>
                             </div>
                         </div>
                     </div>
@@ -350,56 +217,86 @@
                     <p class="muted" id="reportEditTargetLabel">Target</p>
                 </div>
             </header>
-            <div class="complaint-tabpanel active" style="display:block;">
-                <form id="groupReportEditForm" class="hf-form">
-                    <input type="hidden" id="reportEditReportId" name="report_id" value="0">
-                    <div class="report-detail-grid">
-                        <div>
+            <form id="groupReportEditForm" class="hf-form report-edit-standard">
+                <input type="hidden" id="reportEditReportId" name="report_id" value="0">
+                <div class="complaint-tabpanel active" style="display:block;">
+                    <div class="report-edit-row report-edit-grid-3">
+                        <div class="report-details">
                             <strong>Target Type</strong>
                             <p class="muted" id="reportEditTargetType">-</p>
                         </div>
-                        <div>
+                        <div class="report-details">
                             <strong>Report Type</strong>
                             <p class="muted" id="reportEditReportType">-</p>
                         </div>
-                        <div>
-                            <strong>Status</strong>
-                            <select id="reportEditStatus" name="status">
-                                <option value="pending">Pending</option>
-                                <option value="reviewed">Reviewed</option>
-                                <option value="resolved">Resolved</option>
-                            </select>
-                        </div>
-                        <div>
-                            <strong>Action Taken</strong>
-                            <select id="reportEditActionTaken" name="action_taken">
-                                <option value="none">None</option>
-                                <option value="delete_content">Delete content</option>
-                                <option value="warn_user">Warn user</option>
-                                <option value="kick_user">Kick user</option>
-                                <option value="remove_file">Remove file</option>
-                                <option value="remove_folder">Remove folder</option>
-                                <option value="delete_channel">Delete channel</option>
-                                <option value="clear_channel">Clear channel</option>
-                                <option value="false_positive">False positive</option>
-                                <option value="other">Other</option>
-                            </select>
+                        <div class="report-details">
+                            <strong>Target</strong>
+                            <div class="report-edit-target-stack">
+                                <a class="link-btn" id="reportEditViewTarget" href="#" target="_blank" rel="noopener noreferrer">View target</a>
+                            </div>
                         </div>
                     </div>
-                    <div style="margin-top:1rem;">
+
+                    <div class="report-edit-row report-edit-grid-3">
+                        <div class="report-details">
+                            <strong>Reported User</strong>
+                            <a class="report-edit-user-link" id="reportEditReportedUser" href="#" target="_blank" rel="noopener noreferrer">-</a>
+                        </div>
+                        <div class="report-details">
+                            <strong>Reported By</strong>
+                            <a class="report-edit-user-link" id="reportEditReportedBy" href="#" target="_blank" rel="noopener noreferrer">-</a>
+                        </div>
+                        <div class="report-details">
+                            <strong>Reported Date</strong>
+                            <p class="muted" id="reportEditReportedDate">-</p>
+                        </div>
+                    </div>
+
+                    <div class="report-details">
                         <strong>Description</strong>
-                        <textarea id="reportEditDescription" name="description" rows="3" placeholder="Moderation description"></textarea>
+                        <p class="report-edit-description" id="reportEditDescription">-</p>
                     </div>
-                    <div style="margin-top:1rem;">
-                        <strong>Reviewer Note</strong>
-                        <textarea id="reportEditReviewerNote" name="reviewer_note" rows="3" placeholder="Add moderation notes"></textarea>
-                    </div>
-                    <div class="complaint-actions" style="margin-top:1rem; display:flex; gap:0.5rem; flex-wrap:wrap;">
-                        <a class="link-btn" id="reportEditViewTarget" href="#" target="_blank" rel="noopener noreferrer">View target</a>
-                        <button type="submit" class="link-btn">Save changes</button>
-                    </div>
-                </form>
                 </div>
+                
+                <div class="complaint-tabpanel active" style="display:block;">
+                    <div class="report-edit-changeables">
+                        <div class="report-edit-row report-detail-grid">
+                            <div>
+                                <strong>Status</strong>
+                                <select id="reportEditStatus" name="status">
+                                    <option value="pending">Pending</option>
+                                    <option value="reviewed">Reviewed</option>
+                                    <option value="resolved">Resolved</option>
+                                </select>
+                            </div>
+                            <div>
+                                <strong>Action Taken</strong>
+                                <select id="reportEditActionTaken" name="action_taken">
+                                    <option value="none">None</option>
+                                    <option value="delete_content">Delete content</option>
+                                    <option value="warn_user">Warn user</option>
+                                    <option value="kick_user">Kick user</option>
+                                    <option value="remove_file">Remove file</option>
+                                    <option value="remove_folder">Remove folder</option>
+                                    <option value="delete_channel">Delete channel</option>
+                                    <option value="clear_channel">Clear channel</option>
+                                    <option value="false_positive">False positive</option>
+                                    <option value="other">Other</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div>
+                            <strong>Reviewer Note</strong>
+                            <textarea id="reportEditReviewerNote" name="reviewer_note" rows="2" placeholder="Add moderation notes"></textarea>
+                        </div>
+
+                        <div class="complaint-actions report-edit-actions">
+                            <button type="submit" class="btn btn-primary">Submit</button>
+                        </div>
+                    </div>
+                </div>
+            </form>
         </div>
     </div>
 
@@ -566,6 +463,41 @@
     <script src="./js/group-post-interactions.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
+            const requestedTab = (new URLSearchParams(window.location.search).get('tab') || '').toLowerCase();
+            if (requestedTab) {
+                const requestedTabLink = document.querySelector('.profile-tabs a[data-tab="' + requestedTab.replace(/"/g, '') + '"]');
+                if (requestedTabLink) {
+                    requestedTabLink.click();
+                }
+            }
+
+            const openMessageChat = async (conversationId, messageId, fallbackUrl) => {
+                const numericConversationId = Number(conversationId || 0);
+                const numericMessageId = Number(messageId || 0);
+
+                if (numericConversationId > 0 && window.HanthanaChat && typeof window.HanthanaChat.openConversationAtMessage === 'function') {
+                    await window.HanthanaChat.openConversationAtMessage(numericConversationId, numericMessageId > 0 ? numericMessageId : null);
+                    return;
+                }
+
+                if (fallbackUrl) {
+                    window.location.href = fallbackUrl;
+                }
+            };
+
+            document.querySelectorAll('.js-open-message-chat').forEach(button => {
+                button.addEventListener('click', async () => {
+                    try {
+                        await openMessageChat(button.dataset.conversationId, button.dataset.messageId, button.dataset.targetUrl || '');
+                    } catch (error) {
+                        console.error('Unable to open message chat', error);
+                        if (button.dataset.targetUrl) {
+                            window.location.href = button.dataset.targetUrl;
+                        }
+                    }
+                });
+            });
+
             const editModal = document.getElementById('groupReportEditModal');
             const closeEditBtn = editModal?.querySelector('[data-overlay-close="group-report"]');
             const editForm = document.getElementById('groupReportEditForm');
@@ -574,6 +506,9 @@
             const editReportId = document.getElementById('reportEditReportId');
             const editTargetType = document.getElementById('reportEditTargetType');
             const editReportType = document.getElementById('reportEditReportType');
+            const editReportedUser = document.getElementById('reportEditReportedUser');
+            const editReportedBy = document.getElementById('reportEditReportedBy');
+            const editReportedDate = document.getElementById('reportEditReportedDate');
             const editStatus = document.getElementById('reportEditStatus');
             const editActionTaken = document.getElementById('reportEditActionTaken');
             const editDescription = document.getElementById('reportEditDescription');
@@ -597,7 +532,6 @@
                 formData.append('report_id', String(editReportId.value || '0'));
                 formData.append('status', String(editStatus.value || 'pending'));
                 formData.append('action_taken', String(editActionTaken.value || 'none'));
-                formData.append('description', String(editDescription.value || ''));
                 formData.append('reviewer_note', String(editReviewerNote.value || ''));
 
                 const response = await fetch(`${BASE_PATH}index.php?controller=GroupReports&action=updateReport&group_id=<?php echo (int)$groupId; ?>`, {
@@ -622,11 +556,32 @@
                         editReportId.value = String(payload.report_id || 0);
                         editTargetType.textContent = String(payload.target_type || '-');
                         editReportType.textContent = String(payload.report_type || payload.reason || 'other');
+                        editReportedUser.textContent = String(payload.owner_label || '-');
+                        editReportedBy.textContent = String(payload.reporter || '-');
+                        editReportedDate.textContent = String(payload.created_at || '-');
                         editStatus.value = String(payload.status || 'pending');
                         editActionTaken.value = String(payload.action_taken || 'none');
-                        editDescription.value = String(payload.description || '');
+                        editDescription.textContent = String(payload.description || '-');
                         editReviewerNote.value = String(payload.reviewer_note || '');
                         editViewTarget.href = payload.target_url || '#';
+
+                        const ownerUserId = Number(payload.reported_user_id || 0);
+                        if (ownerUserId > 0) {
+                            editReportedUser.href = `${BASE_PATH}index.php?controller=Profile&action=view&user_id=${ownerUserId}`;
+                            editReportedUser.classList.remove('is-disabled');
+                        } else {
+                            editReportedUser.href = '#';
+                            editReportedUser.classList.add('is-disabled');
+                        }
+
+                        const reporterUserId = Number(payload.reporter_id || 0);
+                        if (reporterUserId > 0) {
+                            editReportedBy.href = `${BASE_PATH}index.php?controller=Profile&action=view&user_id=${reporterUserId}`;
+                            editReportedBy.classList.remove('is-disabled');
+                        } else {
+                            editReportedBy.href = '#';
+                            editReportedBy.classList.add('is-disabled');
+                        }
 
                         openDetail();
                     } catch (err) {

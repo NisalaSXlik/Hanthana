@@ -190,9 +190,10 @@ class BinModel extends BaseModel
     public function getMediaById(int $mediaId): ?array
     {
         $stmt = $this->dbInstance->prepare(
-            "SELECT media_id, bin_id, file_name, file_type, file_url AS file_path, file_size, added_at, added_by
-             FROM BinMedia
-             WHERE media_id = ?
+            "SELECT bm.media_id, bm.bin_id, bm.file_name, bm.file_type, bm.file_url AS file_path, bm.file_size, bm.added_at, bm.added_by, b.group_id
+             FROM BinMedia bm
+             INNER JOIN Bin b ON b.bin_id = bm.bin_id
+             WHERE bm.media_id = ?
              LIMIT 1"
         );
         $stmt->execute([$mediaId]);

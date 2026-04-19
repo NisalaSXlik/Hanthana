@@ -424,21 +424,9 @@ class ReportModel {
             }
         }
 
-        $description = trim((string)($updates['description'] ?? ''));
-        if ($description !== '') {
-            $maxLength = 1000;
-            $length = function_exists('mb_strlen') ? mb_strlen($description) : strlen($description);
-            if ($length > $maxLength) {
-                $description = function_exists('mb_substr')
-                    ? mb_substr($description, 0, $maxLength)
-                    : substr($description, 0, $maxLength);
-            }
-        }
-
         $sql = "UPDATE {$this->table}
                 SET status = :status,
                     action_taken = :action_taken,
-                    description = :description,
                     reviewer_note = :reviewer_note,
                     reviewed_by = :admin_id,
                     reviewed_at = NOW()
@@ -449,7 +437,6 @@ class ReportModel {
             $stmt->execute([
                 ':status' => $status,
                 ':action_taken' => $actionTaken,
-                ':description' => $description !== '' ? $description : null,
                 ':reviewer_note' => $reviewerNote !== '' ? $reviewerNote : null,
                 ':admin_id' => $adminId,
                 ':report_id' => $reportId,

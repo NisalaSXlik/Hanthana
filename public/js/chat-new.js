@@ -22,6 +22,7 @@
         conversationMap: new Map(),
         messageLookup: new Map(),
         latestMessageIds: new Map(),
+        pendingMessageScroll: null,
         activeConversationMeta: {
             type: null,
         },
@@ -1396,6 +1397,19 @@
         await openConversationByTarget(channelId, 'group');
     }
 
+    async function openConversationAtMessage(conversationId, messageId) {
+        const normalizedConversationId = Number(conversationId || 0);
+        if (!normalizedConversationId) {
+            return;
+        }
+
+        state.pendingMessageScroll = Number(messageId || 0) > 0
+            ? { conversationId: normalizedConversationId, messageId: Number(messageId) }
+            : null;
+        openChat();
+        selectConversation(normalizedConversationId);
+    }
+
     function openConversationById(conversationId) {
         const normalizedId = Number(conversationId || 0);
         if (!normalizedId) {
@@ -1432,6 +1446,24 @@
         renderConversations();
         fetchMessages(conversationId, true);
         loadSharedMedia(conversationId);
+    }
+
+    function scrollMessageIntoView(messageId) {
+        const normalizedMessageId = Number(messageId || 0);
+        if (normalizedMessageId <= 0) {
+            return false;
+        }
+
+        const selector = `.message[data-message-id="${normalizedMessageId}"]`;
+        const target = refs.messagesArea?.querySelector(selector) || refs.messagesAreaMax?.querySelector(selector) || document.querySelector(selector);
+        if (!target) {
+            return false;
+        }
+
+        target.classList.add('message--highlighted');
+        target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        window.setTimeout(() => target.classList.remove('message--highlighted'), 2500);
+        return true;
     }
 
     function updateConversationHeader(conversation) {
@@ -1474,6 +1506,17 @@
         });
         scrollToBottom(refs.messagesArea);
         scrollToBottom(refs.messagesAreaMax);
+
+        const pendingFocus = state.pendingMessageScroll;
+        if (pendingFocus && Number(pendingFocus.conversationId || 0) === Number(conversationId)) {
+            state.pendingMessageScroll = null;
+            window.requestAnimationFrame(() => {
+                if (!scrollMessageIntoView(pendingFocus.messageId)) {
+                    scrollToBottom(refs.messagesArea);
+                    scrollToBottom(refs.messagesAreaMax);
+                }
+            });
+        }
     }
 
     function appendMessageBubble(container, message, lastRenderedDayKey) {
@@ -2459,21 +2502,30 @@
         selectConversation: openConversationById,
         openDirectConversation,
         openGroupConversation,
+        openConversationAtMessage,
     };
 
     window.addEventListener('hanthana:open-chat', async (event) => {
         const detail = event && event.detail ? event.detail : {};
         const conversationId = Number(detail.conversationId || 0);
         const targetId = Number(detail.targetId || 0);
+        const messageId = Number(detail.messageId || 0);
         const conversationType = String(detail.type || '').trim();
 
         try {
             if (conversationId > 0) {
-                openConversationById(conversationId);
+                if (messageId > 0) {
+                    await openConversationAtMessage(conversationId, messageId);
+                } else {
+                    openConversationById(conversationId);
+                }
                 return;
             }
 
             if (targetId > 0 && conversationType) {
+                if (messageId > 0) {
+                    state.pendingMessageScroll = { conversationId: targetId, messageId };
+                }
                 await openConversationByTarget(targetId, conversationType);
                 return;
             }
