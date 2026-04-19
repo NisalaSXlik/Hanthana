@@ -149,6 +149,9 @@ if (!isset($posts)) {
 										<?php if ($postType === 'discussion'): ?>
 											<?php if (!empty($post['content'])): ?>
 												<div class="caption" style="margin-bottom: 1rem;">
+													<p class="post-text"><?php echo nl2br(htmlspecialchars($post['title'])); ?></p>
+												</div>
+												<div class="caption" style="margin-bottom: 1rem;">
 													<p class="post-text"><?php echo nl2br(htmlspecialchars($post['content'])); ?></p>
 												</div>
 											<?php endif; ?>
@@ -311,9 +314,15 @@ if (!isset($posts)) {
 									</div>
 								<?php else: ?>
 									<?php if (!empty($post['content'])): ?>
+										
+										<div class="caption compact-caption">
+											<p class="post-text"><?php echo nl2br(htmlspecialchars($post['title'])); ?></p>
+										</div>
+
 										<div class="caption compact-caption">
 											<p class="post-text"><?php echo nl2br(htmlspecialchars($post['content'])); ?></p>
 										</div>
+
 									<?php endif; ?>
 
 									<?php if (!empty($post['image_url'])): ?>

@@ -76,6 +76,7 @@ class PostsController {
 
         // Get POST data
         $caption = trim($data['caption'] ?? '');
+        $title = trim($data['title'] ?? '');
         $tags = trim($data['tags'] ?? '');
         $postType = $data['postType'] ?? 'general';
         $eventTitle = trim($data['eventTitle'] ?? '');
@@ -155,6 +156,7 @@ class PostsController {
         // Prepare data with privacy settings
         $postData = [
             'content' => $caption,
+            'title' => $title,
             'post_type' => ($postType === 'event') ? 'event' : 'image',
             'visibility' => $postVisibility,
             'event_title' => $eventTitle ?: null,

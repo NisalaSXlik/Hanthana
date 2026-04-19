@@ -454,6 +454,7 @@ class PostModel {
             SELECT
                 p.post_id,
                 p.content,
+                p.title,
                 p.post_type,
                 p.visibility,
                 p.created_at,
@@ -498,10 +499,11 @@ class PostModel {
         try {
             $conn = $this->getConnection();
 
-            $fields = ['content', 'post_type', 'visibility', 'event_title', 'event_date', 'event_location', 'is_group_post', 'group_id', 'author_id'];
-            $placeholders = ['?', '?', '?', '?', '?', '?', '?', '?', '?'];
+            $fields = ['content', 'title', 'post_type', 'visibility', 'event_title', 'event_date', 'event_location', 'is_group_post', 'group_id', 'author_id'];
+            $placeholders = ['?', '?', '?', '?', '?', '?', '?', '?', '?', '?'];
             $params = [
                 $data['content'],
+                $data['title'],
                 $data['post_type'],
                 $data['visibility'],
                 $data['event_title'] ?? null,

@@ -215,6 +215,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Submit general post
     function submitGeneral() {
         const caption = document.getElementById('postCaption').value.trim();
+        const title = document.getElementById('postTitle').value.trim();
         const tagsInput = document.getElementById('postTags').value.trim();
         const tagArray = tagsInput.split(',').map(tag => tag.trim()).filter(tag => tag.length > 0);
 
@@ -229,6 +230,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const formData = new FormData();
         formData.append('caption', caption);
         formData.append('tags', tagsInput);
+        formData.append('title', title);
         formData.append('postType', 'general');
 
         if (selectedFile) {

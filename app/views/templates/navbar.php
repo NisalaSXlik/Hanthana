@@ -96,10 +96,15 @@ if (isset($_SESSION['user_id'])) {
                                 
                                 <div class="post-details">
                                     <div class="form-group">
+                                        <label for="postTitle">title</label>
+                                        <textarea id="postTitle" placeholder="Write a title..."></textarea>
+                                    </div>
+                                    
+                                    <div class="form-group">
                                         <label for="postCaption">Caption</label>
                                         <textarea id="postCaption" placeholder="Write a caption..."></textarea>
                                     </div>
-                                    
+
                                     <div class="form-group">
                                         <label for="postTags">Tags (minimum 5, separated by commas)</label>
                                         <input type="text" id="postTags" placeholder="e.g., travel, srilanka, beach, vacation, sunset">

@@ -73,7 +73,7 @@ class ChannelPageController extends BaseController
             ],
         ]);
     }
-
+// channel posts 
     public function createChannel()
     {
         $payload = $this->requestData();
@@ -135,7 +135,7 @@ class ChannelPageController extends BaseController
                 'message' => 'Channel request submitted for admin approval.',
             ]);
         }
-
+// channel form
         $created = $this->channelModel->createChannel([
             'group_id' => $groupId,
             'name' => $name,

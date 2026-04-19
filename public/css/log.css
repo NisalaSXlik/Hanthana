@@ -1,0 +1,269 @@
+/*
+
+## Standard Order For Any Form Field
+1. Add field in form UI.
+2. Read field value in frontend JS submit handler.
+3. Append field to request payload.
+4. Confirm endpoint route and action.
+5. Read payload in controller.
+6. Map field into model input array.
+7. Add field into model INSERT (columns and params).
+8. Ensure DB column exists.
+9. Fetch the field in SELECT used by that page.
+10. Render field in the page card/list/template.
+11. Smoke test create + refresh + display.
+
+---
+
+## Form 01: Create Post Form (My Feed Scope)
+
+### Flow Summary
+1. User types value in Description field.
+2. Browser JS reads the value and sends it in FormData.
+3. PostsController receives request and forwards value to PostModel.
+4. PostModel inserts value into Post table.
+5. FeedController loads feed again.
+6. PostModel fetch query includes Description.
+7. My Feed card template prints Description.
+
+### Exact File Order To Update
+1. Form field location
+- [app/views/templates/navbar.php](app/views/templates/navbar.php#L105)
+
+2. Frontend submit flow (read and send)
+- [public/js/post.js](public/js/post.js#L216)
+- [public/js/post.js](public/js/post.js#L218)
+- [public/js/post.js](public/js/post.js#L232)
+- [public/js/post.js](public/js/post.js#L245)
+
+
+4. Controller capture and mapping
+- [app/controllers/PostsController.php](app/controllers/PostsController.php#L79)
+- [app/controllers/PostsController.php](app/controllers/PostsController.php#L159)
+
+5. Model insert logic
+- [app/models/PostModel.php](app/models/PostModel.php#L506)
+
+
+6. DB schema check
+- [DB/DB.sql](DB/DB.sql#L266)
+- [DB/DB.sql](DB/DB.sql#L268)
+
+7. Feed retrieval (must include Description in SELECT)
+- [app/models/PostModel.php](app/models/PostModel.php#L457)
+
+8. Post card rendering (show field on UI)
+- [app/views/myFeed.php](app/views/myFeed.php#L155)
+
+
+
+
+---
+
+## Form 02: Group Channel Creation Form
+
+### Flow Summary
+1. User enters channel data in the Create Channel modal.
+2. Frontend JS reads values and sends FormData to createChannel action.
+3. ChannelPageController validates and maps request data.
+4. ChannelModel inserts the new channel row in DB.
+5. Frontend reloads channel list.
+6. listChannelsForUser fetches the saved values.
+7. renderChannels displays the values on the channel card.
+
+### Exact File Order To Update
+1. Form field location
+- [app/views/groupchannels.php](app/views/groupchannels.php#L109)
+
+2. Frontend submit flow (read and send)
+- [public/js/groupchannels.js](public/js/groupchannels.js#L417)
+- [public/js/groupchannels.js](public/js/groupchannels.js#L433)
+
+3. Controller capture and mapping
+- [app/controllers/ChannelPageController.php](app/controllers/ChannelPageController.php#L77)
+- [app/controllers/ChannelPageController.php](app/controllers/ChannelPageController.php#L139)
+
+4. Model insert logic
+- [app/models/ChannelModel.php](app/models/ChannelModel.php#L244)
+- [app/models/ChannelModel.php](app/models/ChannelModel.php#L281)
+
+
+5. DB schema check
+
+
+6. Retrieval and card rendering
+- [app/models/ChannelModel.php](app/models/ChannelModel.php#L193)
+- [public/js/groupchannels.js](public/js/groupchannels.js#L301)
+
+
+
+
+
+---
+
+## Form 03: Individual Chat Message Form
+
+### Flow Summary
+1. User types message content in the chat input (compact or maximized view).
+2. Frontend JS reads the value in handleSendMessage and builds FormData.
+3. JS sends payload to ChatController sendMessage action.
+4. ChatController validates payload and forwards values to MessageModel.
+5. MessageModel inserts message row into Messages table.
+6. MessageModel hydrates message payload for response.
+7. Frontend renderMessages appends the saved message bubble to chat UI.
+
+### Exact File Order To Update
+1. Form field location
+- [app/views/templates/chat-clean.php](app/views/templates/chat-clean.php#L147)
+- [app/views/templates/chat-clean.php](app/views/templates/chat-clean.php#L361)
+
+2. Frontend submit flow (read and send)
+- [public/js/chat-new.js](public/js/chat-new.js#L73)
+- [public/js/chat-new.js](public/js/chat-new.js#L166)
+- [public/js/chat-new.js](public/js/chat-new.js#L1786)
+- [public/js/chat-new.js](public/js/chat-new.js#L1799)
+- [public/js/chat-new.js](public/js/chat-new.js#L1800)
+- [public/js/chat-new.js](public/js/chat-new.js#L1801)
+- [public/js/chat-new.js](public/js/chat-new.js#L1804)
+- [public/js/chat-new.js](public/js/chat-new.js#L1813)
+- [public/js/chat-new.js](public/js/chat-new.js#L2004)
+- [public/js/chat-new.js](public/js/chat-new.js#L2005)
+
+3. Endpoint route and action
+- [public/js/chat-new.js](public/js/chat-new.js#L166)
+- [public/index.php](public/index.php#L20)
+- [public/index.php](public/index.php#L21)
+- [public/index.php](public/index.php#L31)
+
+4. Controller capture and mapping
+- [app/controllers/ChatController.php](app/controllers/ChatController.php#L47)
+- [app/controllers/ChatController.php](app/controllers/ChatController.php#L51)
+- [app/controllers/ChatController.php](app/controllers/ChatController.php#L52)
+- [app/controllers/ChatController.php](app/controllers/ChatController.php#L53)
+- [app/controllers/ChatController.php](app/controllers/ChatController.php#L54)
+- [app/controllers/ChatController.php](app/controllers/ChatController.php#L92)
+
+5. Model insert logic
+- [app/models/MessageModel.php](app/models/MessageModel.php#L397)
+- [app/models/MessageModel.php](app/models/MessageModel.php#L411)
+
+6. DB schema check
+- [DB/DB.sql](DB/DB.sql#L382)
+- [DB/DB.sql](DB/DB.sql#L386)
+- [DB/DB.sql](DB/DB.sql#L387)
+- [DB/DB.sql](DB/DB.sql#L391)
+
+7. Retrieval and message render
+- [app/models/MessageModel.php](app/models/MessageModel.php#L335)
+- [app/models/MessageModel.php](app/models/MessageModel.php#L341)
+- [app/models/MessageModel.php](app/models/MessageModel.php#L636)
+- [app/models/MessageModel.php](app/models/MessageModel.php#L691)
+- [public/js/chat-new.js](public/js/chat-new.js#L1449)
+- [public/js/chat-new.js](public/js/chat-new.js#L1526)
+- [public/js/chat-new.js](public/js/chat-new.js#L1551)
+- [public/js/chat-new.js](public/js/chat-new.js#L1820)
+
+### Quick Smoke Test
+1. Open a direct conversation with a friend.
+2. Enter a value in the message field and click send (or press Enter).
+3. Confirm the message appears immediately in the chat bubble list.
+4. Reload and re-open the same conversation.
+5. Confirm the message persists and renders correctly.
+
+
+
+---
+
+## Form 04: Group Poll Post Creation Form
+
+### Flow Summary
+1. User opens Create Post modal and selects Poll type in group page.
+2. User fills poll question, options, and duration.
+3. Frontend submit handler sends form data to Group handleAjax createPost action.
+4. GroupController validates group/payload and resolves poll content from poll_question.
+5. Controller routes to PollPostModel through PostTypeFactory.
+6. PollPostModel builds poll metadata (question/options/duration/votes).
+7. BaseGroupPostModel persists group_post_type = poll and metadata JSON into Post.
+8. Group post retrieval decodes poll metadata and view renders poll card/options.
+
+### Exact File Order To Update
+1. Form field location
+- [app/views/groupprofileview.php](app/views/groupprofileview.php#L926)
+- [app/views/groupprofileview.php](app/views/groupprofileview.php#L1018)
+
+2. Frontend submit flow (read and send)
+- [public/js/groupprofileview.js](public/js/groupprofileview.js#L1147)
+- [public/js/groupprofileview.js](public/js/groupprofileview.js#L1265)
+- [public/js/groupprofileview.js](public/js/groupprofileview.js#L1266)
+- [public/js/groupprofileview.js](public/js/groupprofileview.js#L1267)
+- [public/js/groupprofileview.js](public/js/groupprofileview.js#L1321)
+- [public/js/groupprofileview.js](public/js/groupprofileview.js#L1443)
+- [public/js/groupprofileview.js](public/js/groupprofileview.js#L1461)
+- [public/js/groupprofileview.js](public/js/groupprofileview.js#L1464)
+
+3. Endpoint route and action
+- [app/controllers/GroupController.php](app/controllers/GroupController.php#L317)
+- [app/controllers/GroupController.php](app/controllers/GroupController.php#L1098)
+
+4. Controller capture and mapping
+- [app/controllers/GroupController.php](app/controllers/GroupController.php#L1107)
+- [app/controllers/GroupController.php](app/controllers/GroupController.php#L1108)
+- [app/controllers/GroupController.php](app/controllers/GroupController.php#L1114)
+- [app/controllers/GroupController.php](app/controllers/GroupController.php#L1115)
+- [app/controllers/GroupController.php](app/controllers/GroupController.php#L1178)
+- [app/controllers/GroupController.php](app/controllers/GroupController.php#L1199)
+- [app/controllers/GroupController.php](app/controllers/GroupController.php#L1200)
+
+5. Model insert logic
+- [app/models/post_types/PollPostModel.php](app/models/post_types/PollPostModel.php#L12)
+- [app/models/post_types/PollPostModel.php](app/models/post_types/PollPostModel.php#L19)
+- [app/models/post_types/PollPostModel.php](app/models/post_types/PollPostModel.php#L29)
+- [app/models/post_types/PollPostModel.php](app/models/post_types/PollPostModel.php#L40)
+- [app/models/post_types/BaseGroupPostModel.php](app/models/post_types/BaseGroupPostModel.php#L43)
+- [app/models/post_types/BaseGroupPostModel.php](app/models/post_types/BaseGroupPostModel.php#L63)
+
+6. Approval queue path (restricted groups)
+- [app/controllers/GroupController.php](app/controllers/GroupController.php#L1178)
+- [app/models/GroupModel.php](app/models/GroupModel.php#L1753)
+- [app/models/GroupModel.php](app/models/GroupModel.php#L1760)
+- [app/models/GroupModel.php](app/models/GroupModel.php#L1761)
+
+7. DB schema check
+- [DB/DB.sql](DB/DB.sql#L154)
+- [DB/DB.sql](DB/DB.sql#L280)
+- [DB/DB.sql](DB/DB.sql#L281)
+- [DB/DB.sql](DB/DB.sql#L293)
+
+8. Retrieval and card rendering
+- [app/models/GroupPostModel.php](app/models/GroupPostModel.php#L423)
+- [app/models/GroupPostModel.php](app/models/GroupPostModel.php#L468)
+- [app/models/GroupPostModel.php](app/models/GroupPostModel.php#L74)
+- [app/models/GroupPostModel.php](app/models/GroupPostModel.php#L99)
+- [app/views/groupprofileview.php](app/views/groupprofileview.php#L361)
+- [app/views/groupprofileview.php](app/views/groupprofileview.php#L367)
+- [app/views/groupprofileview.php](app/views/groupprofileview.php#L390)
+
+### Quick Smoke Test
+1. Open a group and click Poll in Create Post modal.
+2. Enter poll question, at least two options, and duration.
+3. Submit and confirm success toast (or queued-for-approval message in restricted group).
+4. Reload group page.
+5. Confirm poll card appears with options and total votes section.
+
+
+
+## Next Forms (Fill Later)
+1. Individual Chat form field
+
+- Status: Added (send message flow)
+
+2. Discover filter/search form field
+- Status: Pending
+
+3. Group Poll create form field
+- Status: Added (creation flow)
+
+4. Group Channel form field
+- Status: Added (creation flow)
+
+*/

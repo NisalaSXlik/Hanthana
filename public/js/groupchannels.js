@@ -266,7 +266,7 @@ import { api } from './utils/api.js';
             const actionLabel = joined ? 'Open Chat' : 'Join';
             const actionClass = joined ? 'btn btn-primary channel-chat-btn' : 'btn btn-secondary channel-join-btn';
             const showManageMenu = isAdmin;
-
+// channel form
             return `
                 <article class="channel-card" data-channel-id="${channel.id}">
                     <div class="channel-card-head">
@@ -413,7 +413,7 @@ import { api } from './utils/api.js';
             renderChannels();
         });
     });
-
+// channel form 
     form?.addEventListener('submit', async (event) => {
         event.preventDefault();
 
@@ -427,7 +427,7 @@ import { api } from './utils/api.js';
             toast('Channel name is required.', 'error');
             return;
         }
-
+// channel form
         const payload = new FormData();
         payload.append('group_id', String(groupId));
         payload.append('name', name);
