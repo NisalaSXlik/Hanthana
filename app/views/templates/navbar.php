@@ -101,8 +101,8 @@ if (isset($_SESSION['user_id'])) {
                                     </div>
                                     
                                     <div class="form-group">
-                                        <label for="postTags">Tags (minimum 5, separated by commas)</label>
-                                        <input type="text" id="postTags" placeholder="e.g., travel, srilanka, beach, vacation, sunset">
+                                        <label for="postTags">Tags</label>
+                                        <input type="text" id="postTags" placeholder="e.g. coding , ai , machine_learning">
                                         <small class="tag-count">0/5 tags</small>
                                     </div>
                                 </div>

@@ -175,140 +175,87 @@ class GroupModel {
     /**
      * Create a new group
      */
-    /*public function createGroup($data) {
+    public function createGroup($data, $userId) {
+        $connection = $this->db;
+        $connection->beginTransaction();
         try {
-            // GroupsTable
-            $sql = "INSERT INTO GroupsTable (name, tag, description, focus, privacy_status, rules, created_by) 
-                    VALUES (?, ?, ?, ?, ?, ?, ?)";
-            $stmt = $this->db->prepare($sql);
-            $stmt->execute([
+            // 1. Create Group
+            $groupstmt = $connection->prepare(
+                "INSERT INTO GroupsTable (name, tag, description, focus, privacy_status, rules, created_by) 
+                VALUES (?, ?, ?, ?, ?, ?, ?)"
+            );
+            $groupstmt->execute([
                 $data['name'],
                 $data['tag'] ?? null,
                 $data['description'] ?? null,
                 $data['focus'] ?? null,
                 $data['privacy_status'] ?? 'public',
                 $data['rules'] ?? null,
-                $data['created_by']
+                $userId
             ]);
-            
-            $groupId = $this->db->lastInsertId();
+            $groupId = (int)$connection->lastInsertId();
 
-            // Conversations
-            $sql = "INSERT INTO Conversations (conversation_type, name, created_by)
-                    VALUES ('group', ?, ?)";
-            $stmt = $this->db->prepare($sql);
-            $stmt->execute([
+            // 2. Create Conversation
+            $converstaionstmt = $connection->prepare(
+                "INSERT INTO Conversations (conversation_type, name, created_by, last_message_at, last_message_text)
+                VALUES ('group', ?, ?, NOW(), ?)"
+            );
+            $welcomeText = 'Welcome to the group!';
+            $converstaionstmt->execute([
                 $data['name'] . " ⬥ Main",
-                $data['created_by']
+                $userId,
+                $welcomeText
             ]);
+            $convoId = (int)$connection->lastInsertId();
 
-            $convoId = $this->db->lastInsertId();
-
-            // Channel
-            $sql = "INSERT INTO Channel (group_id, name, created_by, conversation_id)
-                    VALUES (?, ?, ?, ?)";
-            $stmt = $this->db->prepare($sql);
-            $stmt->execute([
+            // 3. Create Channel
+            $channelstmt = $connection->prepare(
+                "INSERT INTO Channel (group_id, name, created_by, conversation_id, display_picture)
+                VALUES (?, ?, ?, ?, ?)"
+            );
+            $channelstmt->execute([
                 $groupId,
                 'Main',
-                $data['created_by'],
-                $convoId
+                $userId,
+                $convoId,
+                'uploads/channel_dp/default.png'
             ]);
 
-            // Membership
+            // 4. Add Creator as Admin Participant
+            $cpstmt = $connection->prepare(
+                "INSERT INTO ConversationParticipants (conversation_id, user_id, role, is_active)
+                VALUES (?, ?, 'admin', 1)"
+            );
+            $cpstmt->execute([$convoId, $userId]);
+
+            // 5. Insert Welcome Message
+            $messagestmt = $connection->prepare(
+                "INSERT INTO Messages (conversation_id, sender_id, message_type, content)
+                VALUES (?, ?, 'system', ?)"
+            );
+            $messagestmt->execute([
+                $convoId, 
+                $userId,
+                $welcomeText
+            ]);
+
+            $connection->commit();
+
+            // Add to members table
             if ($groupId) {
-                $this->addMember($groupId, $data['created_by'], 'admin');
+                $this->addMember($groupId, $userId, 'admin');
             }
 
             return $groupId;
 
-        } catch (Exception $e) {
-            error_log("Database Error: " . $e->getMessage());
-            throw $e;
+        } catch (\Throwable $e) {
+            if ($connection->inTransaction()) {
+                $connection->rollBack();
+            }
+            error_log("Group Creation Failed: " . $e->getMessage());
+            throw new RuntimeException('Unable to create group.');
         }
-    }*/
-
-    public function createGroup($data, $userId) {
-    $connection = $this->db;
-    $connection->beginTransaction();
-    try {
-        // 1. Create Group
-        $groupstmt = $connection->prepare(
-            "INSERT INTO GroupsTable (name, tag, description, focus, privacy_status, rules, created_by) 
-             VALUES (?, ?, ?, ?, ?, ?, ?)"
-        );
-        $groupstmt->execute([
-            $data['name'],
-            $data['tag'] ?? null,
-            $data['description'] ?? null,
-            $data['focus'] ?? null,
-            $data['privacy_status'] ?? 'public',
-            $data['rules'] ?? null,
-            $userId
-        ]);
-        $groupId = (int)$connection->lastInsertId();
-
-        // 2. Create Conversation
-        $converstaionstmt = $connection->prepare(
-            "INSERT INTO Conversations (conversation_type, name, created_by, last_message_at, last_message_text)
-             VALUES ('group', ?, ?, NOW(), ?)"
-        );
-        $welcomeText = 'Welcome to the group!';
-        $converstaionstmt->execute([
-            $data['name'] . " ⬥ Main",
-            $userId,
-            $welcomeText
-        ]);
-        $convoId = (int)$connection->lastInsertId();
-
-        // 3. Create Channel
-        $channelstmt = $connection->prepare(
-            "INSERT INTO Channel (group_id, name, created_by, conversation_id, display_picture)
-             VALUES (?, ?, ?, ?, ?)"
-        );
-        $channelstmt->execute([
-            $groupId,
-            'Main',
-            $userId,
-            $convoId,
-            'uploads/channel_dp/default.png'
-        ]);
-
-        // 4. Add Creator as Admin Participant
-        $cpstmt = $connection->prepare(
-            "INSERT INTO ConversationParticipants (conversation_id, user_id, role, is_active)
-             VALUES (?, ?, 'admin', 1)"
-        );
-        $cpstmt->execute([$convoId, $userId]);
-
-        // 5. Insert Welcome Message
-        $messagestmt = $connection->prepare(
-            "INSERT INTO Messages (conversation_id, sender_id, message_type, content)
-             VALUES (?, ?, 'system', ?)"
-        );
-        $messagestmt->execute([
-            $convoId, 
-            $userId,
-            $welcomeText
-        ]);
-
-        $connection->commit();
-
-        // Add to members table
-        if ($groupId) {
-            $this->addMember($groupId, $userId, 'admin');
-        }
-
-        return $groupId;
-
-    } catch (\Throwable $e) {
-        if ($connection->inTransaction()) {
-            $connection->rollBack();
-        }
-        error_log("Group Creation Failed: " . $e->getMessage());
-        throw new RuntimeException('Unable to create group.');
     }
-}
 
     /**
      * Update group details

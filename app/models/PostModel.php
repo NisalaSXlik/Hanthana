@@ -301,7 +301,7 @@ class PostModel {
         return $this->db->getConnection();
     }
     
-    // Get feed posts: friends + own posts + eligible group posts WITH PRIVACY FILTERING
+    // Get feed posts: friends + own posts + group posts from joined groups WITH PRIVACY FILTERING
     public function getFeedPosts($userId = null, $excludeEvents = false): array {
         if (!$userId) return [];
 
@@ -334,15 +334,12 @@ class PostModel {
             AND p.group_id IS NOT NULL
             {$groupEventFilter}
             AND COALESCE(g.is_active, 1) = 1
-            AND (
-                LOWER(TRIM(COALESCE(g.privacy_status, 'public'))) = 'public'
-                OR EXISTS (
-                    SELECT 1
-                    FROM GroupMember gm
-                    WHERE gm.group_id = p.group_id
-                      AND gm.user_id = ?
-                      AND gm.status = 'active'
-                )
+            AND EXISTS (
+                SELECT 1
+                FROM GroupMember gm
+                WHERE gm.group_id = p.group_id
+                  AND gm.user_id = ?
+                  AND gm.status = 'active'
             )
         )";
 

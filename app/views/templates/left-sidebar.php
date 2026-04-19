@@ -346,9 +346,8 @@ $baseGroupUrl = rtrim(BASE_PATH, '/');
             <div class="form-group">
                 <label for="groupPrivacy">Privacy <span class="required">*</span></label>
                 <select id="groupPrivacy" name="privacy_status" required>
-                    <option value="public">Public - Anyone can see and join</option>
-                    <option value="private">Private - Anyone can see, must request to join</option>
-                    <option value="secret">Secret - Only members can see</option>
+                    <option value="public">Public - Anyone can and join</option>
+                    <option value="private">Private - Must request to join</option>
                 </select>
             </div>
 
