@@ -28,6 +28,8 @@ if ($groupId > 0) {
 
 $groupCover = MediaHelper::resolveMediaPath((string)($group['cover_image'] ?? ''), 'uploads/group_cover/default.png');
 $groupDp = MediaHelper::resolveMediaPath((string)($group['display_picture'] ?? ''), 'uploads/group_dp/default.png');
+$currentPrivacyStatus = strtolower(trim((string)($group['privacy_status'] ?? '')));
+$isKnownPrivacy = in_array($currentPrivacyStatus, ['public', 'private', 'secret'], true);
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -127,7 +129,7 @@ $groupDp = MediaHelper::resolveMediaPath((string)($group['display_picture'] ?? '
                             <p>Modify who can see and join this group. This starts a governance vote.</p>
                         </div>
                         <div class="settings-form">
-                            <div class="settings-inline-info">Current visibility: <strong><?php echo ucfirst((string)($group['privacy_status'] ?? 'public')); ?></strong></div>
+                            <div class="settings-inline-info">Current visibility: <strong><?php echo htmlspecialchars($isKnownPrivacy ? ucfirst($currentPrivacyStatus) : 'Unknown'); ?></strong></div>
                             <button type="button" class="btn-primary" id="openPrivacyVoteModalBtn">Change Visibility</button>
                         </div>
                     </section>
@@ -163,10 +165,9 @@ $groupDp = MediaHelper::resolveMediaPath((string)($group['display_picture'] ?? '
                 <input type="hidden" name="group_id" value="<?php echo (int)$groupId; ?>">
                 <div class="form-group">
                     <label for="groupPrivacy">New Visibility</label>
-                    <select id="groupPrivacy" name="to_visibility" required>
-                        <option value="public" <?php echo (($group['privacy_status'] ?? 'public') === 'public') ? 'selected' : ''; ?>>Public</option>
-                        <option value="private" <?php echo (($group['privacy_status'] ?? 'public') === 'private') ? 'selected' : ''; ?>>Private</option>
-                        <option value="secret" <?php echo (($group['privacy_status'] ?? 'public') === 'secret') ? 'selected' : ''; ?>>Secret</option>
+                    <select id="groupPrivacy" name="to_visibility" data-current-visibility="<?php echo htmlspecialchars($currentPrivacyStatus); ?>" required>
+                        <option value="public" <?php echo $currentPrivacyStatus === 'public' ? 'selected' : ''; ?>>Public</option>
+                        <option value="private" <?php echo $currentPrivacyStatus === 'private' ? 'selected' : ''; ?>>Private</option>
                     </select>
                 </div>
                 <div class="form-group">
@@ -215,7 +216,7 @@ $groupDp = MediaHelper::resolveMediaPath((string)($group['display_picture'] ?? '
         const BASE_PATH = '<?php echo BASE_PATH; ?>';
         const GROUP_ID = <?php echo (int)$groupId; ?>;
         window.GROUP_ID = GROUP_ID;
-        window.GROUP_PRIVACY_STATUS = '<?php echo addslashes(strtolower((string)($group['privacy_status'] ?? 'public'))); ?>';
+        window.GROUP_PRIVACY_STATUS = '<?php echo addslashes($currentPrivacyStatus); ?>';
     </script>
     <script src="./js/calender.js?v=20250209_syntax"></script>
     <script src="./js/feed.js"></script>

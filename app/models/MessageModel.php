@@ -12,6 +12,24 @@ class MessageModel {
         return $this->db->getConnection();
     }
 
+    private function buildGroupConversationDisplayName(?string $groupTag, string $channelName, ?string $groupName = null): string {
+        $tag = trim((string)$groupTag);
+        if ($tag !== '') {
+            $tag = ltrim($tag, '@');
+        } else {
+            $fallback = preg_replace('/[^a-zA-Z0-9_]/', '', (string)$groupName);
+            $tag = $fallback !== '' ? $fallback : 'group';
+        }
+
+        $name = trim($channelName);
+        $name = ltrim($name, '#');
+        if ($name === '') {
+            $name = 'channel';
+        }
+
+        return '@' . $tag . ' #' . $name;
+    }
+
     public function getUserConversations(int $userId): array {
         $sql =
            "SELECT
@@ -246,13 +264,6 @@ class MessageModel {
                  VALUES ('group', :name, :creator, NOW(), NOW())"
             );
 
-            $groupTag = trim((string)($channelData['group_tag'] ?? ''));
-            if ($groupTag !== '') {
-                $groupTag = ltrim($groupTag, '@');
-            } else {
-                $fallbackTag = preg_replace('/[^a-zA-Z0-9_]/', '', (string)($channelData['group_name'] ?? ''));
-                $groupTag = $fallbackTag !== '' ? $fallbackTag : 'group';
-            }
             $channelName = trim((string)($channelData['name'] ?? 'channel'));
             $channelName = ltrim($channelName, '#');
             if ($channelName === '') {
@@ -260,7 +271,7 @@ class MessageModel {
             }
 
             $stmt->execute([
-                ':name' => '@' . $groupTag . ' #' . $channelName,
+                ':name' => $channelName,
                 ':creator' => $userId
             ]);
             $conversationId = (int)$connection->lastInsertId();
@@ -539,9 +550,13 @@ class MessageModel {
                 $lastSeenAt = $peer['last_seen_at'] ?? null;
             }
         } elseif ($row['conversation_type'] === 'group') {
-            $displayName = trim($row['conversation_name']);
             $channel = $this->getGroupChannel($row['conversation_id']);
             if ($channel) {
+                $displayName = $this->buildGroupConversationDisplayName(
+                    $channel['group_tag'] ?? '',
+                    $channel['channel_name'] ?? (string)($row['conversation_name'] ?? 'Channel'),
+                    $channel['group_name'] ?? ''
+                );
                 $displayPicture = $channel['display_picture'] ?? null;
                 // Groups don't have online status
             }
@@ -613,9 +628,10 @@ class MessageModel {
 
     private function getGroupChannel(int $conversationId): ?array {
         $sql = "
-            SELECT c.channel_id, c.name, c.display_picture
+            SELECT c.channel_id, c.name AS channel_name, c.display_picture, g.tag AS group_tag, g.name AS group_name
             FROM ConversationParticipants cp
             INNER JOIN Channel c ON c.conversation_id = cp.conversation_id
+            INNER JOIN GroupsTable g ON g.group_id = c.group_id
             WHERE cp.conversation_id = :conversationId
             LIMIT 1";
 
@@ -1007,16 +1023,18 @@ class MessageModel {
                 ':viewerUserId' => $viewerUserId,
             ]);
             $channel = $groupStmt->fetch(PDO::FETCH_ASSOC) ?: [];
+            $channelName = (string)($channel['channel_name'] ?? 'Channel');
+            $groupTag = (string)($channel['group_tag'] ?? '');
 
             return [
                 'type' => 'group',
-                'name' => (string)($channel['channel_name'] ?? 'Channel'),
+                'name' => $this->buildGroupConversationDisplayName($groupTag, $channelName, (string)($channel['group_name'] ?? '')),
                 'username' => '',
                 'avatar' => (string)($channel['display_picture'] ?? ''),
                 'cover_image' => (string)($channel['cover_image'] ?? ''),
                 'friend_count' => null,
                 'profile_user_id' => null,
-                'group_tag' => (string)($channel['tag'] ?? ''),
+                'group_tag' => $groupTag,
                 'member_count' => isset($channel['member_count']) ? (int)$channel['member_count'] : null,
                 'channel_id' => isset($channel['channel_id']) ? (int)$channel['channel_id'] : null,
                 'group_id' => isset($channel['group_id']) ? (int)$channel['group_id'] : null,

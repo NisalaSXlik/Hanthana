@@ -9,23 +9,15 @@ class ChannelModel {
         $this->db = $database->getConnection();
     }
 
-    private function buildGroupConversationName(?string $groupTag, string $channelName, ?string $groupName = null): string
+    private function buildConversationName(string $channelName): string
     {
-        $tag = trim((string)$groupTag);
-        if ($tag !== '') {
-            $tag = ltrim($tag, '@');
-        } else {
-            $fallback = preg_replace('/[^a-zA-Z0-9_]/', '', (string)$groupName);
-            $tag = $fallback !== '' ? $fallback : 'group';
-        }
-
         $name = trim($channelName);
         $name = ltrim($name, '#');
         if ($name === '') {
             $name = 'channel';
         }
 
-        return '@' . $tag . ' #' . $name;
+        return $name;
     }
 
     public function isActiveGroupMember(int $groupId, int $userId): bool
@@ -100,7 +92,7 @@ class ChannelModel {
                      VALUES ('group', ?, ?, NOW(), ?)"
                 );
                 $conversationStmt->execute([
-                    $this->buildGroupConversationName($group['tag'] ?? '', 'Main', $group['name'] ?? ''),
+                    $this->buildConversationName('Main'),
                     (int) $group['created_by'],
                     'Welcome to the group!'
                 ]);
@@ -290,7 +282,7 @@ class ChannelModel {
                  VALUES ('group', ?, ?, NOW(), ?)"
             );
             $conversationStmt->execute([
-                $this->buildGroupConversationName($group['tag'] ?? '', $name, $group['name'] ?? ''),
+                $this->buildConversationName($name),
                 $userId,
                 'Channel created'
             ]);
@@ -368,20 +360,7 @@ class ChannelModel {
 
         $conversationId = (int)($channel['conversation_id'] ?? 0);
         if ($conversationId > 0) {
-            $groupStmt = $this->db->prepare(
-                "SELECT name, tag
-                 FROM GroupsTable
-                 WHERE group_id = ?
-                 LIMIT 1"
-            );
-            $groupStmt->execute([(int)($channel['group_id'] ?? 0)]);
-            $group = $groupStmt->fetch(PDO::FETCH_ASSOC) ?: [];
-
-            $conversationName = $this->buildGroupConversationName(
-                $group['tag'] ?? '',
-                $name,
-                $group['name'] ?? ''
-            );
+            $conversationName = $this->buildConversationName($name);
 
             $conversationStmt = $this->db->prepare(
                 "UPDATE Conversations

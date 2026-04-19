@@ -809,16 +809,13 @@
             return;
         }
 
-        // Show only top 3 in compact view, all in maximized view
-        const compactList = filtered.slice(0, 3);
-        
         if (!filterTerm) {
-            compactList.forEach((conversation) => {
+            filtered.forEach((conversation) => {
                 const item = buildConversationItem(conversation, false);
                 listTarget.appendChild(item);
             });
         }
-        
+
         filtered.forEach((conversation) => {
             const itemMax = buildConversationItem(conversation, true);
             listTargetMax.appendChild(itemMax);
@@ -2248,12 +2245,7 @@
         }
 
         if (refs.aboutTag) {
-            if (about.type === 'group' && about.group_tag) {
-                refs.aboutTag.textContent = `#${about.group_tag}`;
-                refs.aboutTag.hidden = false;
-            } else {
-                refs.aboutTag.hidden = true;
-            }
+            refs.aboutTag.hidden = true;
         }
 
         if (refs.aboutCount) {

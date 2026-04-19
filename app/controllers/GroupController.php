@@ -1442,7 +1442,13 @@ class GroupController {
                 return;
             }
 
-            $fromVisibility = strtolower($fromVisibility !== '' ? $fromVisibility : (string)($group['privacy_status'] ?? 'public'));
+            $currentVisibility = strtolower(trim((string)($group['privacy_status'] ?? '')));
+            if (!in_array($currentVisibility, ['public', 'private', 'secret'], true)) {
+                echo json_encode(['success' => false, 'message' => 'Current visibility is unavailable.']);
+                return;
+            }
+
+            $fromVisibility = $currentVisibility;
             $toVisibility = strtolower($toVisibility);
 
             if (!in_array($toVisibility, ['public', 'private', 'secret'], true)) {

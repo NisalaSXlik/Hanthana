@@ -21,11 +21,13 @@ document.addEventListener('DOMContentLoaded', function () {
     const submitDeleteVoteBtn = document.getElementById('submitDeleteVoteBtn');
     const privacySelect = document.getElementById('groupPrivacy');
 
-    const initialVisibility = String(
-        window.GROUP_PRIVACY_STATUS
-        || privacySelect?.value
-        || 'public'
-    ).trim().toLowerCase();
+    const normalizeVisibility = (value) => String(value || '').trim().toLowerCase();
+    const initialVisibility = normalizeVisibility(
+        privacySelect?.dataset?.currentVisibility
+        || window.GROUP_PRIVACY_STATUS
+        || ''
+    );
+    let currentVisibility = initialVisibility;
 
     function resolveGroupId() {
         const fromWindow = Number(window.GROUP_ID || window.CURRENT_GROUP_ID || 0);
@@ -50,7 +52,7 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     function getCurrentVisibility() {
-        return String(window.GROUP_PRIVACY_STATUS || initialVisibility || 'public').trim().toLowerCase();
+        return normalizeVisibility(currentVisibility || initialVisibility);
     }
 
     function updateVisibilityVoteState() {
@@ -58,9 +60,9 @@ document.addEventListener('DOMContentLoaded', function () {
             return;
         }
 
-        const selected = String(privacySelect.value || '').trim().toLowerCase();
+        const selected = normalizeVisibility(privacySelect.value);
         const current = getCurrentVisibility();
-        const blocked = !selected || selected === current;
+        const blocked = !selected || (current !== '' && selected === current);
         submitPrivacyVoteBtn.setAttribute('aria-disabled', 'false');
         submitPrivacyVoteBtn.setAttribute('data-same-visibility', blocked ? 'true' : 'false');
     }
@@ -165,7 +167,8 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
     openPrivacyVoteModalBtn?.addEventListener('click', function () {
-        if (privacySelect) {
+        const current = getCurrentVisibility();
+        if (privacySelect && current) {
             privacySelect.value = getCurrentVisibility();
         }
         updateVisibilityVoteState();
@@ -206,7 +209,7 @@ document.addEventListener('DOMContentLoaded', function () {
         event.preventDefault();
 
         const groupId = resolveGroupId();
-        const toVisibility = (privacyForm.querySelector('[name="to_visibility"]')?.value || '').trim().toLowerCase();
+        const toVisibility = normalizeVisibility(privacyForm.querySelector('[name="to_visibility"]')?.value || '');
         const reason = (privacyForm.querySelector('[name="reason"]')?.value || '').trim();
         const fromVisibility = getCurrentVisibility();
 
@@ -238,11 +241,15 @@ document.addEventListener('DOMContentLoaded', function () {
                 target_type: 'group',
                 target_id: groupId,
                 reason,
-                from_visibility: fromVisibility,
                 to_visibility: toVisibility
             });
 
             notify('Visibility change vote started. Review it in Governance.', 'success');
+            currentVisibility = toVisibility;
+            window.GROUP_PRIVACY_STATUS = toVisibility;
+            if (privacySelect) {
+                privacySelect.dataset.currentVisibility = toVisibility;
+            }
             closeModal(privacyModal);
             privacyForm.reset();
             if (privacySelect) {
