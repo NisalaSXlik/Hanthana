@@ -188,6 +188,7 @@ class GroupController {
         $channelRequests = $this->groupModel->getPendingChannelCreationRequests($groupId);
         $membershipState = $this->groupModel->getUserMembershipState($groupId, $userId);
         $isJoined = ($membershipState === 'active');
+        $isPublicGroup = $group && strtolower(trim((string)($group['privacy_status'] ?? 'public'))) === 'public';
 
         require __DIR__ . '/../views/grouprequests.php';
     }

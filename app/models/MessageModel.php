@@ -220,7 +220,7 @@ class MessageModel {
         }
 
         // First, check if user is a member of the group
-        $checkSql = "SELECT g.group_id, c.name 
+        $checkSql = "SELECT g.group_id, g.name AS group_name, g.tag AS group_tag, c.name 
                  FROM Channel c
                  INNER JOIN GroupsTable g ON c.group_id = g.group_id
                  INNER JOIN GroupMember gm ON g.group_id = gm.group_id
@@ -245,8 +245,22 @@ class MessageModel {
                 "INSERT INTO Conversations (conversation_type, name, created_by, created_at, last_message_at)
                  VALUES ('group', :name, :creator, NOW(), NOW())"
             );
+
+            $groupTag = trim((string)($channelData['group_tag'] ?? ''));
+            if ($groupTag !== '') {
+                $groupTag = ltrim($groupTag, '@');
+            } else {
+                $fallbackTag = preg_replace('/[^a-zA-Z0-9_]/', '', (string)($channelData['group_name'] ?? ''));
+                $groupTag = $fallbackTag !== '' ? $fallbackTag : 'group';
+            }
+            $channelName = trim((string)($channelData['name'] ?? 'channel'));
+            $channelName = ltrim($channelName, '#');
+            if ($channelName === '') {
+                $channelName = 'channel';
+            }
+
             $stmt->execute([
-                ':name' => $channelData['name'],
+                ':name' => '@' . $groupTag . ' #' . $channelName,
                 ':creator' => $userId
             ]);
             $conversationId = (int)$connection->lastInsertId();

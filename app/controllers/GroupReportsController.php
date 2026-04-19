@@ -265,6 +265,11 @@ class GroupReportsController extends BaseController
                 return $base . 'controller=Profile&action=view&user_id=' . $targetId;
             case 'question':
                 return $base . 'controller=QnA&action=view&id=' . $targetId;
+            case 'group_question':
+                if ($effectiveGroupId > 0) {
+                    return $base . 'controller=Group&action=index&group_id=' . $effectiveGroupId . '#post-' . $targetId;
+                }
+                return $base . 'controller=QnA&action=view&id=' . $targetId;
             case 'answer':
                 return $base . 'controller=QnA&action=index';
             case 'bin':

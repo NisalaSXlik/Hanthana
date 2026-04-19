@@ -55,8 +55,10 @@ $channelRequests = $channelRequests ?? [];
                 <div class="requests-container">
                     <div class="profile-tabs manage-tabs">
                         <ul>
+                            <?php if (!$isPublicGroup): ?>
                             <li class="active"><a href="#" data-tab="join-requests">Join Requests</a></li>
                             <li><a href="#" data-tab="post-requests">Post Requests</a></li>
+                            <?php endif; ?>
                             <li><a href="#" data-tab="bin-requests">Bin Requests</a></li>
                             <li><a href="#" data-tab="channel-requests">Channel Requests</a></li>
                         </ul>

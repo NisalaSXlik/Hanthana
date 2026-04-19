@@ -148,7 +148,7 @@ function timeAgo($timestamp) {
                                                         <?php if (!$isOwner): ?>
                                                             <button type="button"
                                                                     class="question-menu-item report-trigger"
-                                                                    data-report-type="question"
+                                                                    data-report-type="<?php echo $isGroupQuestion ? 'post' : 'question'; ?>"
                                                                     data-target-id="<?php echo (int)$q['question_id']; ?>"
                                                                     data-target-label="<?php echo htmlspecialchars($q['title'], ENT_QUOTES); ?>">
                                                                 <i class="uil uil-exclamation-circle"></i> Report

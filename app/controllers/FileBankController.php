@@ -38,7 +38,7 @@ class FileBankController extends BaseController
         $isAdmin = $this->groupModel->isGroupAdmin($groupId, (int)$currentUserId);
         $canModerateFileBank = $isAdmin;
         $membershipState = $this->groupModel->getUserMembershipState($groupId, $currentUserId);
-        $isJoined = ($membershipState === 'active');
+        $isJoined = ($membershipState === 'active') || $isAdmin;
 
         require_once __DIR__ . '/../views/filebank.php';
     }

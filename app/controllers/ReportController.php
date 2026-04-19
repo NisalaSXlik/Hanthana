@@ -50,7 +50,7 @@ class ReportController {
         $reportType = strtolower(trim($input['report_type'] ?? 'other'));
         $description = trim($input['description'] ?? '');
 
-        $allowedTargets = ['post', 'user', 'group', 'question', 'media', 'message', 'channel'];
+        $allowedTargets = ['post', 'user', 'group', 'bin', 'question', 'group_question', 'media', 'message', 'channel'];
         if (!in_array($targetType, $allowedTargets, true) || $targetId <= 0) {
             http_response_code(400);
             echo json_encode(['success' => false, 'message' => 'Invalid report target']);
@@ -71,6 +71,16 @@ class ReportController {
             return;
         }
 
+        if ($targetType === 'question' && !empty($targetRecord['group_id']) && (($targetRecord['group_post_type'] ?? '') === 'question')) {
+            // Group questions are stored in Post table, so reports should be post reports.
+            $targetType = 'post';
+        }
+
+        // Backward compatibility: normalize legacy client value to post.
+        if ($targetType === 'group_question') {
+            $targetType = 'post';
+        }
+
         $payload = [
             'reporter_id' => $reporterId,
             'target_type' => $targetType === 'media' ? 'bin_media' : $targetType,
@@ -86,6 +96,10 @@ class ReportController {
                 break;
             case 'group':
                 $payload['group_id'] = $targetId;
+                $payload['reported_user_id'] = (int)($targetRecord['created_by'] ?? 0) ?: null;
+                break;
+            case 'bin':
+                $payload['group_id'] = (int)($targetRecord['group_id'] ?? 0) ?: null;
                 $payload['reported_user_id'] = (int)($targetRecord['created_by'] ?? 0) ?: null;
                 break;
             case 'user':
@@ -144,10 +158,21 @@ class ReportController {
                 return $this->postModel->getPostById($targetId);
             case 'group':
                 return $this->groupModel->getById($targetId);
+            case 'bin':
+                return $this->binModel->getBinById($targetId);
             case 'user':
                 return $this->userModel->findById($targetId);
             case 'question':
-                return $this->questionModel->getQuestion($targetId, (int)$_SESSION['user_id']);
+                $question = $this->questionModel->getQuestion($targetId, (int)$_SESSION['user_id']);
+                if ($question) {
+                    return $question;
+                }
+
+                $groupQuestion = $this->postModel->getPostById($targetId);
+                return ($groupQuestion && (($groupQuestion['group_post_type'] ?? '') === 'question')) ? $groupQuestion : null;
+            case 'group_question':
+                $groupQuestion = $this->postModel->getPostById($targetId);
+                return ($groupQuestion && (($groupQuestion['group_post_type'] ?? '') === 'question')) ? $groupQuestion : null;
             case 'media':
                 return $this->binModel->getMediaById($targetId);
             case 'message':

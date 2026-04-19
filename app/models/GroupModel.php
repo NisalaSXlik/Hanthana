@@ -201,8 +201,16 @@ class GroupModel {
                 VALUES ('group', ?, ?, NOW(), ?)"
             );
             $welcomeText = 'Welcome to the group!';
+            $groupTag = trim((string)($data['tag'] ?? ''));
+            if ($groupTag !== '') {
+                $groupTag = ltrim($groupTag, '@');
+            } else {
+                $fallbackTag = preg_replace('/[^a-zA-Z0-9_]/', '', (string)$data['name']);
+                $groupTag = $fallbackTag !== '' ? $fallbackTag : 'group';
+            }
+            $conversationName = '@' . $groupTag . ' #Main';
             $converstaionstmt->execute([
-                $data['name'] . " ⬥ Main",
+                $conversationName,
                 $userId,
                 $welcomeText
             ]);
@@ -387,16 +395,50 @@ class GroupModel {
      * Check if user is group admin
      */
     public function isGroupAdmin($groupId, $userId) {
+        $groupId = (int)$groupId;
+        $userId = (int)$userId;
+        if ($groupId <= 0 || $userId <= 0) {
+            return false;
+        }
+
+        // Treat group creator as admin even if GroupMember row is missing/inconsistent.
+        $group = $this->getById($groupId);
+        if ($group && (int)($group['created_by'] ?? 0) === $userId) {
+            return true;
+        }
+
         $membership = $this->getMembership($groupId, $userId);
-        return $membership && $membership['status'] === 'active' && $membership['role'] === 'admin';
+        if (!$membership) {
+            return false;
+        }
+
+        $status = strtolower(trim((string)($membership['status'] ?? '')));
+        $role = strtolower(trim((string)($membership['role'] ?? '')));
+        return $status === 'active' && $role === 'admin';
     }
 
     /**
      * Check if user is group member
      */
     public function isMember($groupId, $userId) {
+        $groupId = (int)$groupId;
+        $userId = (int)$userId;
+        if ($groupId <= 0 || $userId <= 0) {
+            return false;
+        }
+
+        $group = $this->getById($groupId);
+        if ($group && (int)($group['created_by'] ?? 0) === $userId) {
+            return true;
+        }
+
         $membership = $this->getMembership($groupId, $userId);
-        return $membership && $membership['status'] === 'active';
+        if (!$membership) {
+            return false;
+        }
+
+        $status = strtolower(trim((string)($membership['status'] ?? '')));
+        return $status === 'active';
     }
 
     /**

@@ -41,6 +41,10 @@ $fileBankGroupDp = MediaHelper::resolveMediaPath(
     (string)($group['display_picture'] ?? ''),
     'images/default_group.png'
 );
+
+$isAdmin = isset($isAdmin) ? (bool)$isAdmin : false;
+$isJoined = isset($isJoined) ? (bool)$isJoined : false;
+$isPublicGroup = strtolower(trim((string)($group['privacy_status'] ?? 'public'))) === 'public';
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -73,7 +77,10 @@ $fileBankGroupDp = MediaHelper::resolveMediaPath(
                  MIDDLE — FILE BANK
             ══════════════════════════════════════════════════════════ -->
             <div class="middle">
-                <div class="filebank-shell">
+                <div class="filebank-shell"
+                    data-is-admin="<?php echo $isAdmin ? '1' : '0'; ?>"
+                    data-is-joined="<?php echo $isJoined ? '1' : '0'; ?>"
+                    data-is-public-group="<?php echo $isPublicGroup ? '1' : '0'; ?>">
 
                     <!-- Title bar -->
                     <div class="fb-titlebar">
@@ -199,78 +206,17 @@ $fileBankGroupDp = MediaHelper::resolveMediaPath(
         </div>
     </div>
 
-    <!-- ════════════════════════════════════════════════════════════════
-         POST VIEW MODAL — file detail + comment thread
-    ════════════════════════════════════════════════════════════════════ -->
-    <div id="postViewModal" class="post-view-modal" aria-hidden="true">
-        <div class="post-view-overlay"></div>
-        <button class="post-view-close" aria-label="Close"><i class="uil uil-times"></i></button>
-        <div class="post-view-content">
-            <!-- Header: uploader info -->
-            <div class="post-view-header">
-                <div class="user">
-                    <div class="profile-picture">
-                        <img src="" alt="Profile" id="postViewAvatar">
-                    </div>
-                    <div class="info">
-                        <h3 id="postViewUsername">Username</h3>
-                        <small id="postViewDate"></small>
-                    </div>
-                </div>
-                <div class="post-menu" id="postViewFileMenuWrap">
-                    <button type="button" class="menu-trigger" id="postViewFileMenuTrigger" aria-label="File options">
-                        <i class="uil uil-ellipsis-h"></i>
-                    </button>
-                    <div class="menu" id="postViewFileMenu">
-                        <button type="button" class="menu-item" id="postViewRenameBtn">
-                            <i class="uil uil-pen"></i> Rename
-                        </button>
-                        <button type="button" class="menu-item" id="postViewDeleteBtn">
-                            <i class="uil uil-trash-alt"></i> Delete
-                        </button>
-                        <button type="button" class="menu-item" id="postViewReportBtn" data-report-type="group" data-target-id="0" data-target-label="file in file bank">
-                            <i class="uil uil-exclamation-triangle"></i> Report
-                        </button>
-                    </div>
-                </div>
-            </div>
-            <!-- File info row -->
-            <div class="post-view-file-info">
-                <i class="uil uil-file-blank fb-file-icon icon-pdf" id="postViewFileIcon"></i>
-                <div>
-                    <div class="file-detail-name" id="postViewFileName">File Name</div>
-                    <div class="file-detail-meta" id="postViewFileMeta"></div>
-                </div>
-                <button class="btn btn-primary" id="postViewDownloadBtn">
-                    <i class="uil uil-download-alt"></i> Download
-                </button>
-            </div>
-            <!-- Comments thread -->
-            <div class="post-view-comments">
-                <div class="comments-header">
-                    <h4>Questions &amp; Comments</h4>
-                    <span id="postViewCommentBadge">0</span>
-                </div>
-                <div class="comments-list" id="postViewCommentsList">
-                    <div class="comments-loading">Loading comments...</div>
-                </div>
-                <form id="postViewCommentForm" class="comment-form">
-                    <textarea id="postViewCommentInput" placeholder="Ask a question or leave a comment..." rows="2"></textarea>
-                    <button type="submit" class="btn btn-primary" id="postViewCommentSubmit">Post</button>
-                </form>
-            </div>
-        </div>
-    </div>
-
     <?php include __DIR__ . '/templates/chat-clean.php'; ?>
     <?php include __DIR__ . '/templates/report-modal.php'; ?>
 
     <script>
         const BASE_PATH = '<?php echo BASE_PATH; ?>';
+        window.IS_ADMIN = <?php echo json_encode($isAdmin); ?>;
+        window.IS_JOINED = <?php echo json_encode($isJoined); ?>;
+        window.IS_PUBLIC_GROUP = <?php echo json_encode($isPublicGroup); ?>;
         window.FILEBANK_GROUP_ID = <?php echo (int) $groupId; ?>;
         window.CURRENT_GROUP_ID = <?php echo (int) $groupId; ?>;
         window.FILEBANK_CURRENT_USER_ID = <?php echo (int) ($currentUserId ?? ($_SESSION['user_id'] ?? 0)); ?>;
-        window.FILEBANK_CAN_MODERATE = <?php echo !empty($canModerateFileBank) ? 'true' : 'false'; ?>;
     </script>
     <script src="./js/calender.js"></script>
     <script src="./js/feed.js"></script>
@@ -278,9 +224,7 @@ $fileBankGroupDp = MediaHelper::resolveMediaPath(
     <script src="./js/general.js"></script>
     <script src="./js/notificationpopup.js"></script>
     <script src="./js/navbar.js"></script>
-    <script src="./js/post.js"></script>
     <script src="./js/vote.js"></script>
-    <script src="./js/comment.js"></script>
     <script src="./js/report.js"></script>
     <script src="./js/groupprofileview.js"></script>
     <script src="./js/group-post-create.js"></script>

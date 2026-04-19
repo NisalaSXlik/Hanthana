@@ -8,17 +8,18 @@ import { api } from "./utils/api.js";
     const binNavRow = document.getElementById('fbBinNavRow');
     const backBtn = document.getElementById('fbBackBtn');
     const currentBinLabel = document.getElementById('fbCurrentBinLabel');
-    const body = document.getElementById('fileBankBody');
     const dataContainer = document.getElementById('fbDataContainer');
 
     const createBinForm = document.getElementById('createBinForm');
     const fileForm = document.getElementById('fileForm');
-    const postViewModal = document.getElementById('postViewModal');
-    const postViewMenuTrigger = document.getElementById('postViewFileMenuTrigger');
-    const postViewMenu = document.getElementById('postViewFileMenu');
-    const postViewRenameBtn = document.getElementById('postViewRenameBtn');
-    const postViewDeleteBtn = document.getElementById('postViewDeleteBtn');
-    const postViewReportBtn = document.getElementById('postViewReportBtn');
+
+    function parseBool(value) {
+        if (typeof value === 'boolean') {
+            return value;
+        }
+        const normalized = String(value || '').trim().toLowerCase();
+        return normalized === '1' || normalized === 'true' || normalized === 'yes' || normalized === 'on';
+    }
 
     const urlParams = new URLSearchParams(window.location.search);
     const groupId = Number(
@@ -30,12 +31,18 @@ import { api } from "./utils/api.js";
         || 0
     );
     const currentUserId = Number(window.FILEBANK_CURRENT_USER_ID || 0);
-    const canModerate = window.FILEBANK_CAN_MODERATE === true || window.FILEBANK_CAN_MODERATE === 'true';
+    const IS_ADMIN = parseBool(shell?.dataset?.isAdmin ?? window.IS_ADMIN);
+    const IS_JOINED = parseBool(shell?.dataset?.isJoined ?? window.IS_JOINED);
+    const IS_PUBLIC_GROUP = parseBool(shell?.dataset?.isPublicGroup ?? window.IS_PUBLIC_GROUP);
+    const CAN_REPORT = IS_ADMIN || IS_JOINED || IS_PUBLIC_GROUP;
+
+    function canManageOwnedContent(ownerUserId) {
+        return IS_ADMIN || (currentUserId > 0 && Number(ownerUserId || 0) === currentUserId);
+    }
 
     let bins = [];
     let activeBinId = null;
     let searchQuery = '';
-    let activeModalFile = null;
 
     function notify(msg, type = 'info') {
         const mappedType = type === 'danger' ? 'error' : type;
@@ -53,7 +60,49 @@ import { api } from "./utils/api.js";
     }
 
     function closeAllDropdowns() {
-        document.querySelectorAll('.fb-dropdown.show').forEach(dropdown => dropdown.classList.remove('show'));
+        document.querySelectorAll('.fb-dropdown.show').forEach(dropdown => {
+            dropdown.classList.remove('show');
+            dropdown.style.left = '';
+            dropdown.style.top = '';
+        });
+    }
+
+    function positionFloatingDropdown(dropdown, trigger) {
+        if (!dropdown || !trigger) {
+            return;
+        }
+
+        const triggerRect = trigger.getBoundingClientRect();
+        const viewportWidth = window.innerWidth || document.documentElement.clientWidth;
+        const viewportHeight = window.innerHeight || document.documentElement.clientHeight;
+        const gap = 8;
+
+        dropdown.style.left = '0px';
+        dropdown.style.top = '0px';
+        dropdown.classList.add('show');
+
+        const menuRect = dropdown.getBoundingClientRect();
+        const menuWidth = menuRect.width || 160;
+        const menuHeight = menuRect.height || 120;
+
+        let left = triggerRect.right - menuWidth;
+        if (left + menuWidth > viewportWidth - gap) {
+            left = viewportWidth - menuWidth - gap;
+        }
+        if (left < gap) {
+            left = gap;
+        }
+
+        let top = triggerRect.bottom + gap;
+        if (top + menuHeight > viewportHeight - gap) {
+            top = triggerRect.top - menuHeight - gap;
+        }
+        if (top < gap) {
+            top = gap;
+        }
+
+        dropdown.style.left = `${Math.round(left)}px`;
+        dropdown.style.top = `${Math.round(top)}px`;
     }
 
     function setRootBreadcrumb() {
@@ -129,12 +178,52 @@ import { api } from "./utils/api.js";
         return typed;
     }
 
-    function canManageBin(bin) {
-        return canModerate || Number(bin.created_by || 0) === currentUserId;
+    function getFileMenuHtml(fileName, mediaId, addedBy) {
+        if (canManageOwnedContent(addedBy)) {
+            return `<button type="button" class="fb-dropdown-item fb-edit-file-btn"><i class="uil uil-pen"></i> Edit</button>
+                    <button type="button" class="fb-dropdown-item danger fb-delete-file-btn"><i class="uil uil-trash-alt"></i> Delete</button>
+                    <button type="button" class="fb-dropdown-item fb-report-btn"
+                        data-report-type="media"
+                        data-target-id="${Number(mediaId || 0)}"
+                        data-target-label="file \"${escapeHtml(fileName || 'Unnamed file')}\" in file bank">
+                        <i class="uil uil-exclamation-triangle"></i> Report
+                    </button>`;
+        }
+
+        if (CAN_REPORT) {
+            return `<button type="button" class="fb-dropdown-item fb-report-btn"
+                        data-report-type="media"
+                        data-target-id="${Number(mediaId || 0)}"
+                        data-target-label="file \"${escapeHtml(fileName || 'Unnamed file')}\" in file bank">
+                        <i class="uil uil-exclamation-triangle"></i> Report
+                    </button>`;
+        }
+
+        return '<div class="fb-dropdown-item fb-dropdown-item-disabled">No actions</div>';
     }
 
-    function canManageFile(file) {
-        return canModerate || Number(file.added_by || 0) === currentUserId;
+    function getBinMenuHtml(binName, binId, createdBy) {
+        if (canManageOwnedContent(createdBy)) {
+            return `<button type="button" class="fb-dropdown-item fb-edit-bin-btn"><i class="uil uil-pen"></i> Edit</button>
+                    <button type="button" class="fb-dropdown-item danger fb-delete-bin-btn"><i class="uil uil-trash-alt"></i> Delete</button>
+                    <button type="button" class="fb-dropdown-item fb-report-btn"
+                        data-report-type="bin"
+                        data-target-id="${Number(binId || 0)}"
+                        data-target-label="bin \"${escapeHtml(binName)}\" in file bank">
+                        <i class="uil uil-exclamation-triangle"></i> Report
+                    </button>`;
+        }
+
+        if (CAN_REPORT) {
+            return `<button type="button" class="fb-dropdown-item fb-report-btn"
+                        data-report-type="bin"
+                        data-target-id="${Number(binId || 0)}"
+                        data-target-label="bin \"${escapeHtml(binName)}\" in file bank">
+                        <i class="uil uil-exclamation-triangle"></i> Report
+                    </button>`;
+        }
+
+        return '<div class="fb-dropdown-item fb-dropdown-item-disabled">No actions</div>';
     }
 
     function updateStatusText(visibleBins, visibleFiles) {
@@ -180,16 +269,7 @@ import { api } from "./utils/api.js";
 
             const filesHtml = filteredFiles.map((file) => {
                 const iconClass = getIconClassByFileName(file.file_name);
-                const canManageThisFile = canManageFile(file);
-                const fileMenuHtml = canManageThisFile
-                    ? `<div class="fb-dropdown-item fb-edit-file-btn"><i class="uil uil-pen"></i> Rename</div>
-                       <div class="fb-dropdown-item danger fb-delete-file-btn"><i class="uil uil-trash-alt"></i> Delete</div>`
-                    : `<button type="button" class="fb-dropdown-item fb-report-btn"
-                                     data-report-type="media"
-                                     data-target-id="${Number(file.media_id || 0)}"
-                            data-target-label="file \"${escapeHtml(file.file_name || 'Unnamed file')}\" in file bank">
-                            <i class="uil uil-exclamation-triangle"></i> Report
-                       </button>`;
+                const fileMenuHtml = getFileMenuHtml(file.file_name, file.media_id, file.added_by);
 
                 return `
                     <div class="fb-file-row"
@@ -200,44 +280,31 @@ import { api } from "./utils/api.js";
                          data-added-by="${Number(file.added_by || 0)}">
                         <i class="uil uil-file-blank fb-file-icon ${iconClass}"></i>
                         <span class="fb-file-name">${escapeHtml(file.file_name || 'Unnamed file')}</span>
-                        <div class="fb-file-actions" onclick="event.stopPropagation()">
+                        <div class="fb-file-actions">
                             <a class="fb-file-download-btn" href="${escapeHtml(getDownloadUrl(file.file_path))}" download title="Download">
                                 <i class="uil uil-download-alt"></i>
                             </a>
                             <div class="fb-dropdown-wrap" style="position:relative;">
-                                <button class="fb-dot-btn fb-file-dot" title="Options"><i class="uil uil-ellipsis-v"></i></button>
-                                <div class="fb-dropdown">
-                                    ${fileMenuHtml}
-                                </div>
+                                <button class="fb-dot-btn fb-file-dot" title="Options" type="button"><i class="uil uil-ellipsis-v"></i></button>
+                                <div class="fb-dropdown">${fileMenuHtml}</div>
                             </div>
                         </div>
                     </div>`;
             }).join('');
 
-            const canManageThisBin = canManageBin(bin);
-            const binMenuHtml = canManageThisBin
-                ? `<div class="fb-dropdown-item fb-edit-bin-btn"><i class="uil uil-pen"></i> Rename</div>
-                   <div class="fb-dropdown-item danger fb-delete-bin-btn"><i class="uil uil-trash-alt"></i> Delete</div>`
-                : `<button type="button" class="fb-dropdown-item fb-report-btn"
-                        data-report-type="group"
-                        data-target-id="${groupId}"
-                        data-target-label="bin \"${escapeHtml(binName)}\" in file bank">
-                        <i class="uil uil-exclamation-triangle"></i> Report
-                   </button>`;
+            const binMenuHtml = getBinMenuHtml(binName, bin.bin_id, bin.created_by);
 
             return `
-                <div class="fb-bin-item ${isActive ? 'active-bin' : ''}" data-bin-id="${bin.bin_id}">
+                <div class="fb-bin-item ${isActive ? 'active-bin' : ''}" data-bin-id="${bin.bin_id}" data-created-by="${Number(bin.created_by || 0)}">
                     <div class="fb-bin-header" data-bin="${bin.bin_id}" style="display:${isActive && inBinMode ? 'none' : 'flex'};">
                         <i class="uil uil-angle-right fb-bin-expander"></i>
                         <i class="uil uil-folder fb-bin-icon"></i>
                         <span class="fb-bin-name">${escapeHtml(binName)}</span>
                         <span class="fb-bin-meta">${files.length} ${files.length === 1 ? 'file' : 'files'}</span>
-                        <div class="fb-bin-actions" onclick="event.stopPropagation()">
+                        <div class="fb-bin-actions">
                             <div class="fb-dropdown-wrap" style="position:relative;">
-                                <button class="fb-dot-btn fb-bin-dot" title="Options"><i class="uil uil-ellipsis-v"></i></button>
-                                <div class="fb-dropdown">
-                                    ${binMenuHtml}
-                                </div>
+                                <button class="fb-dot-btn fb-bin-dot" title="Options" type="button"><i class="uil uil-ellipsis-v"></i></button>
+                                <div class="fb-dropdown">${binMenuHtml}</div>
                             </div>
                         </div>
                     </div>
@@ -321,35 +388,6 @@ import { api } from "./utils/api.js";
         document.getElementById('fileEditId').value = '';
         document.getElementById('existingFileInfo').style.display = 'none';
         fileForm.dataset.currentFileName = '';
-    }
-
-    function closePostViewModal() {
-        if (!postViewModal) {
-            return;
-        }
-        postViewModal.classList.remove('active');
-        postViewModal.setAttribute('aria-hidden', 'true');
-        if (postViewMenuTrigger) {
-            const wrap = postViewMenuTrigger.closest('.post-menu');
-            if (wrap) {
-                wrap.classList.remove('open');
-            }
-        }
-    }
-
-    function syncPostViewMenu() {
-        if (!activeModalFile || !postViewRenameBtn || !postViewDeleteBtn || !postViewReportBtn) {
-            return;
-        }
-
-        const canManage = !!activeModalFile.canManage;
-        postViewRenameBtn.style.display = canManage ? 'flex' : 'none';
-        postViewDeleteBtn.style.display = canManage ? 'flex' : 'none';
-        postViewReportBtn.style.display = canManage ? 'none' : 'flex';
-
-        postViewReportBtn.setAttribute('data-report-type', 'media');
-        postViewReportBtn.setAttribute('data-target-id', String(activeModalFile.fileId || 0));
-        postViewReportBtn.setAttribute('data-target-label', `file "${activeModalFile.fileName}" in file bank`);
     }
 
     backBtn.addEventListener('click', exitBinView);
@@ -482,22 +520,18 @@ import { api } from "./utils/api.js";
     document.addEventListener('click', function (e) {
         const dotBtn = e.target.closest('.fb-dot-btn');
         if (dotBtn) {
+            e.preventDefault();
             e.stopPropagation();
             closeAllDropdowns();
             const dropdown = dotBtn.closest('.fb-dropdown-wrap').querySelector('.fb-dropdown');
-            dropdown.classList.add('show');
-            return;
-        }
-        closeAllDropdowns();
-
-        const binHeader = e.target.closest('.fb-bin-header');
-        if (binHeader && !e.target.closest('.fb-bin-actions')) {
-            enterBin(Number(binHeader.dataset.bin));
+            positionFloatingDropdown(dropdown, dotBtn);
             return;
         }
 
         const editBinBtn = e.target.closest('.fb-edit-bin-btn');
         if (editBinBtn) {
+            e.preventDefault();
+            e.stopPropagation();
             const binItem = editBinBtn.closest('.fb-bin-item');
             const binName = binItem.querySelector('.fb-bin-name').textContent;
             const binId = Number(binItem.dataset.binId);
@@ -506,17 +540,21 @@ import { api } from "./utils/api.js";
             document.getElementById('submitBinBtn').textContent = 'Save Changes';
             document.getElementById('binName').value = binName;
             document.getElementById('binEditId').value = String(binId);
+            closeAllDropdowns();
             openModal('createBinModal');
             return;
         }
 
         const deleteBinBtn = e.target.closest('.fb-delete-bin-btn');
         if (deleteBinBtn) {
+            e.preventDefault();
+            e.stopPropagation();
             const binItem = deleteBinBtn.closest('.fb-bin-item');
             const name = binItem.querySelector('.fb-bin-name').textContent;
             document.getElementById('deleteConfirmText').textContent = `Delete bin "${name}" and all its files? This cannot be undone.`;
             document.getElementById('confirmDeleteBtn').dataset.target = 'bin';
             document.getElementById('confirmDeleteBtn').dataset.id = binItem.dataset.binId;
+            closeAllDropdowns();
             openModal('deleteConfirmModal');
             return;
         }
@@ -531,6 +569,8 @@ import { api } from "./utils/api.js";
 
         const editFileBtn = e.target.closest('.fb-edit-file-btn');
         if (editFileBtn) {
+            e.preventDefault();
+            e.stopPropagation();
             const row = editFileBtn.closest('.fb-file-row');
             const fileName = row.querySelector('.fb-file-name').textContent;
             const binItem = editFileBtn.closest('.fb-bin-item');
@@ -542,17 +582,21 @@ import { api } from "./utils/api.js";
             document.getElementById('fileBinId').value = binItem.dataset.binId;
             document.getElementById('existingFileInfo').style.display = 'block';
             fileForm.dataset.currentFileName = fileName;
+            closeAllDropdowns();
             openModal('fileModal');
             return;
         }
 
         const deleteFileBtn = e.target.closest('.fb-delete-file-btn');
         if (deleteFileBtn) {
+            e.preventDefault();
+            e.stopPropagation();
             const row = deleteFileBtn.closest('.fb-file-row');
             const fileName = row.querySelector('.fb-file-name').textContent;
             document.getElementById('deleteConfirmText').textContent = `Delete "${fileName}"? This cannot be undone.`;
             document.getElementById('confirmDeleteBtn').dataset.target = 'file';
             document.getElementById('confirmDeleteBtn').dataset.id = row.dataset.fileId;
+            closeAllDropdowns();
             openModal('deleteConfirmModal');
             return;
         }
@@ -563,115 +607,31 @@ import { api } from "./utils/api.js";
             return;
         }
 
-        const fileRow = e.target.closest('.fb-file-row');
-        if (fileRow && !e.target.closest('.fb-file-actions')) {
-            const fileName = fileRow.dataset.fileName || fileRow.querySelector('.fb-file-name').textContent;
-            const iconEl = fileRow.querySelector('.fb-file-icon');
-            const canManage = canModerate || Number(fileRow.dataset.addedBy || 0) === currentUserId;
-            const filePath = fileRow.dataset.filePath || '';
-            const fileId = Number(fileRow.dataset.fileId || 0);
-            const binId = Number(fileRow.dataset.binId || 0);
-
-            activeModalFile = {
-                fileId,
-                fileName,
-                filePath,
-                binId,
-                canManage
-            };
-
-            document.getElementById('postViewFileName').textContent = fileName;
-            document.getElementById('postViewFileMeta').textContent = 'Uploaded in this bin';
-            document.getElementById('postViewDate').textContent = 'Recently';
-            document.getElementById('postViewUsername').textContent = 'Group Member';
-            document.getElementById('postViewFileIcon').className = iconEl.className;
-            document.getElementById('postViewCommentsList').innerHTML = '<div class="comments-loading">Comments API not wired yet.</div>';
-            document.getElementById('postViewCommentBadge').textContent = '0';
-            document.getElementById('postViewModal').classList.add('active');
-            document.getElementById('postViewModal').setAttribute('aria-hidden', 'false');
-            syncPostViewMenu();
-        }
-    });
-
-    document.querySelector('.post-view-close').addEventListener('click', closePostViewModal);
-
-    document.querySelector('.post-view-overlay').addEventListener('click', closePostViewModal);
-
-    if (postViewMenuTrigger && postViewMenu) {
-        postViewMenuTrigger.addEventListener('click', function (e) {
-            e.preventDefault();
-            e.stopPropagation();
-            const wrap = postViewMenuTrigger.closest('.post-menu');
-            if (wrap) {
-                wrap.classList.toggle('open');
-            }
-        });
-
-        document.addEventListener('click', function () {
-            const wrap = postViewMenuTrigger.closest('.post-menu');
-            if (wrap) {
-                wrap.classList.remove('open');
-            }
-        });
-
-        postViewMenu.addEventListener('click', function (e) {
-            e.stopPropagation();
-        });
-    }
-
-    if (postViewRenameBtn) {
-        postViewRenameBtn.addEventListener('click', function () {
-            if (!activeModalFile || !activeModalFile.canManage) {
-                return;
-            }
-
-            document.getElementById('fileModalTitle').textContent = 'Rename File';
-            document.getElementById('submitFileBtn').textContent = 'Save Changes';
-            document.getElementById('fileName').value = activeModalFile.fileName;
-            document.getElementById('fileEditId').value = String(activeModalFile.fileId);
-            document.getElementById('fileBinId').value = String(activeModalFile.binId);
-            document.getElementById('existingFileInfo').style.display = 'block';
-            fileForm.dataset.currentFileName = activeModalFile.fileName;
-            closePostViewModal();
-            openModal('fileModal');
-        });
-    }
-
-    if (postViewDeleteBtn) {
-        postViewDeleteBtn.addEventListener('click', function () {
-            if (!activeModalFile || !activeModalFile.canManage) {
-                return;
-            }
-
-            document.getElementById('deleteConfirmText').textContent = `Delete "${activeModalFile.fileName}"? This cannot be undone.`;
-            document.getElementById('confirmDeleteBtn').dataset.target = 'file';
-            document.getElementById('confirmDeleteBtn').dataset.id = String(activeModalFile.fileId);
-            closePostViewModal();
-            openModal('deleteConfirmModal');
-        });
-    }
-
-    if (postViewReportBtn) {
-        postViewReportBtn.addEventListener('click', function () {
-            closePostViewModal();
-        });
-    }
-
-    document.getElementById('postViewCommentForm').addEventListener('submit', function (e) {
-        e.preventDefault();
-        notify('Comment API is not wired yet.', 'info');
-    });
-
-    document.getElementById('postViewDownloadBtn').addEventListener('click', function () {
-        const name = document.getElementById('postViewFileName').textContent;
-        const downloadUrl = activeModalFile ? getDownloadUrl(activeModalFile.filePath) : '#';
-        if (downloadUrl && downloadUrl !== '#') {
-            window.open(downloadUrl, '_blank');
-            notify(`Downloading "${name}"...`, 'info');
+        const binHeader = e.target.closest('.fb-bin-header');
+        if (binHeader && !e.target.closest('.fb-bin-actions')) {
+            closeAllDropdowns();
+            enterBin(Number(binHeader.dataset.bin));
             return;
         }
-        notify('Download link unavailable for this file.', 'danger');
+
+        const fileRow = e.target.closest('.fb-file-row');
+        if (fileRow && !e.target.closest('.fb-file-actions')) {
+            const filePath = fileRow.dataset.filePath || '';
+            closeAllDropdowns();
+
+            const downloadUrl = getDownloadUrl(filePath);
+            if (downloadUrl && downloadUrl !== '#') {
+                window.open(downloadUrl, '_blank');
+            }
+            return;
+        }
+
+        closeAllDropdowns();
     });
+
+    window.addEventListener('scroll', closeAllDropdowns, true);
+    document.addEventListener('scroll', closeAllDropdowns, true);
+    window.addEventListener('resize', closeAllDropdowns);
 
     if (!groupId) {
         notify('Missing group ID. File bank cannot load.', 'danger');
