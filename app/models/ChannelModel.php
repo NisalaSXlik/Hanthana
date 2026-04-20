@@ -189,7 +189,7 @@ class ChannelModel {
             $this->syncChannelParticipantsWithAdmins($conversationId, $groupId, $creatorUserId);
         }
     }
-
+// channel form
     public function listChannelsForUser(int $groupId, int $userId): array
     {
         $this->ensureMainChannelSetup($groupId);
@@ -240,7 +240,7 @@ class ChannelModel {
 
         return $channels;
     }
-
+// channel form
     public function createChannel(array $payload, int $userId): ?array
     {
         $groupId = (int) ($payload['group_id'] ?? 0);
@@ -276,7 +276,7 @@ class ChannelModel {
                 'Channel created'
             ]);
             $conversationId = (int) $this->db->lastInsertId();
-
+// channel form
             $channelStmt = $this->db->prepare(
                 "INSERT INTO Channel (conversation_id, group_id, name, description, display_picture, created_by)
                  VALUES (?, ?, ?, ?, ?, ?)"
